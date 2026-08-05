@@ -56,10 +56,11 @@ def degree_jacobi_anger_approximation(t: SymbolicFloat, *, precision: SymbolicFl
     def term_too_small(n: int) -> bool:
         return bool(np.isclose(scipy.special.jv(n, t), 0, atol=float(precision)))
 
-    # `|J_n(t)|` oscillates and crosses zero many times for `n < t`, and only decays
-    # monotonically for `n >= t`. Restricting the search to the decaying region keeps
-    # `term_too_small` monotonic, so we do not truncate at a zero crossing.
-    d_min = max(1, int(np.ceil(float(t))))
+    # `|J_n(t)|` oscillates and crosses zero many times for `n < |t|`, and only decays
+    # monotonically for `n >= |t|`. Restricting the search to the decaying region keeps
+    # `term_too_small` monotonic, so we do not truncate at a zero crossing. The magnitude
+    # is symmetric in `t` (`|J_n(-t)| = |J_n(t)|`), so the bound is on `abs(t)`.
+    d_min = max(1, int(np.ceil(abs(float(t)))))
 
     def tail_term_too_small(n: int) -> bool:
         return n >= d_min and term_too_small(n)

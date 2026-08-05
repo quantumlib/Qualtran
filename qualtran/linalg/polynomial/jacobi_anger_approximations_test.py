@@ -37,11 +37,11 @@ def test_exp_cos_approximation(t: float, precision: float):
     )
 
 
-@pytest.mark.parametrize("t", [20, 50])
+@pytest.mark.parametrize("t", [-50, -20, 20, 50])
 @pytest.mark.parametrize("precision", [1e-2, 1e-3])
 def test_exp_cos_approximation_loose_precision(t: float, precision: float):
-    """`|J_n(t)|` oscillates through zero for `n < t`, so the degree search must not stop there."""
-    random_state = np.random.RandomState(42 + int(t))
+    """`|J_n(t)|` oscillates through zero for `n < |t|`, so the degree search must not stop there."""
+    random_state = np.random.RandomState(42 + abs(int(t)))
 
     degree = degree_jacobi_anger_approximation(t, precision=precision)
     P = np.polynomial.Polynomial(approx_exp_cos_by_jacobi_anger(t, degree=degree))
