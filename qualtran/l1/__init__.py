@@ -16,6 +16,7 @@ from ._ast_to_code import L1ASTPrinter
 from ._ast_visitor_base import L1VisitorBase
 from ._eval import eval_cvalue_node, eval_module
 from ._examples import get_l1_examples, L1_EXAMPLES, L1Example
+from ._library import build_library_entry, BuildOutcome, L1BuildResult, library_qlt_path
 from ._parse import dump_ast, parse_module, parse_objectstring
 from ._parse_eval import load_bloq, load_module, load_objectstring
 from ._roundtrip import (

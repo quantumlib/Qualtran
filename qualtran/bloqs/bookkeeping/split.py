@@ -115,6 +115,9 @@ class Split(_BookkeepingBloq):
             return directional_text_box(text, side=reg.side)
         return directional_text_box(' ', side=reg.side)
 
+    def __str__(self):
+        return f'Split({self.dtype.num_bits})'
+
 
 @bloq_example
 def _split() -> Split:

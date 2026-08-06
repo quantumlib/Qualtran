@@ -523,7 +523,7 @@ def _eval_qdef_impl_node(
                 cbloq, decomposed_from=bobj
             )  # TODO: Include decomposed_frm in BloqBuilder
         except Exception as e:  # pylint: disable=broad-except
-            logger.error(
+            logger.warning(
                 "Failed to load the corresponding bloq 'from' for %s: %s", qdef.bloq_key, e
             )
     return cbloq
