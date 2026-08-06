@@ -531,7 +531,7 @@ def mixed_magnitude_approx(
         *   Based on the X approximations, approximates the two Z rotations.
         *   Computes a probability of each produced gate sequence and returns the probability
             channel.
-    
+
     Args:
         unitary: the target unitary, this can be 2x2 numpy array of mpmath.mpc objects.
         eps: Target error.
@@ -550,24 +550,19 @@ def mixed_magnitude_approx(
     # $3\epsilon$-approximation to the target unitary.
     eps = config.number(eps) / 3
 
-    alpha, theta, beta = rsad.su_unitary_to_zxz_angles(
-        unitary,
-        config,
-    )
+    alpha, theta, beta = rsad.su_unitary_to_zxz_angles(unitary, config)
 
     rz_prob_approx = mixed_diagonal_protocol(
-        theta=-theta/2,
-        eps=eps,
-        max_n=max_n,
-        config=config,
-        verbose=verbose,
+        theta=-theta / 2, eps=eps, max_n=max_n, config=config, verbose=verbose
     )
     if rz_prob_approx is None:
         return None
 
     rz_under_rotation = rz_prob_approx.c2.to_matrix()
     rz_over_rotation = rz_prob_approx.c1.to_matrix()
-    rx_under_rotation = (_su2_ct.HSqrt2 @ rz_under_rotation @ _su2_ct.HSqrt2.adjoint()).numpy(config)
+    rx_under_rotation = (_su2_ct.HSqrt2 @ rz_under_rotation @ _su2_ct.HSqrt2.adjoint()).numpy(
+        config
+    )
     rx_over_rotation = (_su2_ct.HSqrt2 @ rz_over_rotation @ _su2_ct.HSqrt2.adjoint()).numpy(config)
 
     # Probabilities produced by `mixed_diagonal_protocol` (Theorem 3.12) differ from what is
@@ -577,35 +572,19 @@ def mixed_magnitude_approx(
     # two under-rotations (and thus a negative probability value).
     delta_under = config.arccos(abs(rx_under_rotation[0, 0])) + (-theta / 2)
     delta_over = config.arccos(abs(rx_over_rotation[0, 0])) + (-theta / 2)
-    p = (
-        config.sin(2 * delta_over) / (
-            config.sin(2 * delta_over) - config.sin(2 * delta_under)
-        )
-    )
+    p = config.sin(2 * delta_over) / (config.sin(2 * delta_over) - config.sin(2 * delta_under))
     if p < 0:
         return None
 
-    zxz_under_rotation = rsad.su_unitary_to_zxz_angles(
-        rx_under_rotation,
-        config,
-    )
-    zxz_over_rotation = rsad.su_unitary_to_zxz_angles(
-        rx_over_rotation,
-        config,
-    )
+    zxz_under_rotation = rsad.su_unitary_to_zxz_angles(rx_under_rotation, config)
+    zxz_over_rotation = rsad.su_unitary_to_zxz_angles(rx_over_rotation, config)
 
     z_under_rotations = (
         diagonal_unitary_approx(
-            theta=-(alpha - zxz_under_rotation[0]) / 2,
-            eps=eps,
-            max_n=max_n,
-            config=config,
+            theta=-(alpha - zxz_under_rotation[0]) / 2, eps=eps, max_n=max_n, config=config
         ),
         diagonal_unitary_approx(
-            theta=-(beta - zxz_under_rotation[2]) / 2,
-            eps=eps,
-            max_n=max_n,
-            config=config,
+            theta=-(beta - zxz_under_rotation[2]) / 2, eps=eps, max_n=max_n, config=config
         ),
     )
 
