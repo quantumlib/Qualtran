@@ -550,12 +550,12 @@ def mixed_magnitude_approx(
     # $3\epsilon$-approximation to the target unitary.
     eps = config.number(eps) / 3
 
-    alpha, theta, beta = matrix.su_unitary_to_zxz_angles(
+    alpha, theta, beta = rsad.su_unitary_to_zxz_angles(
         unitary,
         config,
     )
 
-    rz_prob_approx = protocols.mixed_diagonal_protocol(
+    rz_prob_approx = mixed_diagonal_protocol(
         theta=-theta/2,
         eps=eps,
         max_n=max_n,
@@ -567,8 +567,8 @@ def mixed_magnitude_approx(
 
     rz_under_rotation = rz_prob_approx.c2.to_matrix()
     rz_over_rotation = rz_prob_approx.c1.to_matrix()
-    rx_under_rotation = (su2.HSqrt2 @ rz_under_rotation @ su2.HSqrt2.adjoint()).numpy(config)
-    rx_over_rotation = (su2.HSqrt2 @ rz_over_rotation @ su2.HSqrt2.adjoint()).numpy(config)
+    rx_under_rotation = (_su2_ct.HSqrt2 @ rz_under_rotation @ _su2_ct.HSqrt2.adjoint()).numpy(config)
+    rx_over_rotation = (_su2_ct.HSqrt2 @ rz_over_rotation @ _su2_ct.HSqrt2.adjoint()).numpy(config)
 
     # Probabilities produced by `mixed_diagonal_protocol` (Theorem 3.12) differ from what is
     # calculated via mixed magnitue approximation (Proposition 3.21), so we need to recalculate
@@ -585,23 +585,23 @@ def mixed_magnitude_approx(
     if p < 0:
         return None
 
-    zxz_under_rotation = matrix.su_unitary_to_zxz_angles(
+    zxz_under_rotation = rsad.su_unitary_to_zxz_angles(
         rx_under_rotation,
         config,
     )
-    zxz_over_rotation = matrix.su_unitary_to_zxz_angles(
+    zxz_over_rotation = rsad.su_unitary_to_zxz_angles(
         rx_over_rotation,
         config,
     )
 
     z_under_rotations = (
-        protocols.diagonal_unitary_approx(
+        diagonal_unitary_approx(
             theta=-(alpha - zxz_under_rotation[0]) / 2,
             eps=eps,
             max_n=max_n,
             config=config,
         ),
-        protocols.diagonal_unitary_approx(
+        diagonal_unitary_approx(
             theta=-(beta - zxz_under_rotation[2]) / 2,
             eps=eps,
             max_n=max_n,
@@ -610,14 +610,14 @@ def mixed_magnitude_approx(
     )
 
     z_over_rotations = (
-        protocols.diagonal_unitary_approx(
+        diagonal_unitary_approx(
             theta=-(alpha - zxz_over_rotation[0]) / 2,
             eps=eps,
             max_n=max_n,
             config=config,
             verbose=verbose,
         ),
-        protocols.diagonal_unitary_approx(
+        diagonal_unitary_approx(
             theta=-(beta - zxz_over_rotation[2]) / 2,
             eps=eps,
             max_n=max_n,
@@ -629,19 +629,19 @@ def mixed_magnitude_approx(
     if None in [*z_under_rotations, *z_over_rotations]:
         return None
 
-    return rs.channels.ProbabilisticChannel(
-        c1=rs.channels.UnitaryChannel.from_unitaries(
+    return channels.ProbabilisticChannel(
+        c1=channels.UnitaryChannel.from_unitaries(
             z_under_rotations[0].to_matrix(),
-            su2.HSqrt2,
+            _su2_ct.HSqrt2,
             rz_under_rotation,
-            su2.HSqrt2.adjoint(),
+            _su2_ct.HSqrt2.adjoint(),
             z_under_rotations[1].to_matrix(),
         ),
-        c2=rs.channels.UnitaryChannel.from_unitaries(
+        c2=channels.UnitaryChannel.from_unitaries(
             z_over_rotations[0].to_matrix(),
-            su2.HSqrt2,
+            _su2_ct.HSqrt2,
             rz_over_rotation,
-            su2.HSqrt2.adjoint(),
+            _su2_ct.HSqrt2.adjoint(),
             z_over_rotations[1].to_matrix(),
         ),
         probability=p,
