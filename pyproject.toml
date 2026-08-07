@@ -51,7 +51,7 @@ dependencies = [
     "ipywidgets",
 
     # ui
-    "dash",
+    "dash<4.2.0",
     "plotly",
 
     # quimb simulation
