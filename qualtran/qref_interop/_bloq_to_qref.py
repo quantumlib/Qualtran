@@ -24,8 +24,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterable
 from functools import singledispatch
-from typing import Any, cast, Iterable, Optional, Union
+from typing import Any, cast, Optional, Union
 
 import networkx as nx
 import sympy
@@ -131,7 +132,7 @@ def _bloq_instance_name(instance: BloqInstance) -> str:
 
 @singledispatch
 def bloq_to_qref(
-    obj: Union[Bloq, CompositeBloq, BloqInstance],
+    obj: Bloq | CompositeBloq | BloqInstance,
     *,
     from_callgraph: bool = False,
     decomposition_rules: Union[bool, Iterable[type[Bloq]]] = False,
@@ -382,7 +383,7 @@ def _import_connection(connection: QualtranConnection) -> dict[str, Any]:
     }
 
 
-def _ensure_primitive_type(value: Any) -> Union[int, float, str, None]:
+def _ensure_primitive_type(value: Any) -> int | float | str | None:
     """Ensure given value is of primitive type (e.g. is not a sympy expression)."""
     return value if value is None or not is_symbolic(value) else str(value)
 

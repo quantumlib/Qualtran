@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict
 
 import numpy as np
 import sympy
@@ -152,7 +151,7 @@ class ParallelComparators(Bloq):
         rest = self.k % (2 * self.offset)
         return full + max(rest - self.offset, 0)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', xs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', xs: 'SoquetT') -> dict[str, 'SoquetT']:
         if is_symbolic(self.k) or is_symbolic(self.offset):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
 

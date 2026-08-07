@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import itertools
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -79,9 +80,9 @@ class Toffoli(Bloq):
 
     def my_tensors(
         self,
-        incoming: Dict[str, NDArray[Connection]],  # type: ignore[type-var]
-        outgoing: Dict[str, NDArray[Connection]],  # type: ignore[type-var]
-    ) -> List['qtn.Tensor']:
+        incoming: dict[str, NDArray[Connection]],  # type: ignore[type-var]
+        outgoing: dict[str, NDArray[Connection]],  # type: ignore[type-var]
+    ) -> list['qtn.Tensor']:
         import quimb.tensor as qtn
 
         from qualtran.bloqs.basic_gates.cnot import XOR
@@ -112,7 +113,7 @@ class Toffoli(Bloq):
 
     def on_classical_vals(
         self, ctrl: NDArray[np.integer], target: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         assert target in [0, 1]
         if ctrl[0] == 1 and ctrl[1] == 1:
             target = (target + 1) % 2
@@ -124,7 +125,7 @@ class Toffoli(Bloq):
         qubit_manager: 'cirq.QubitManager',
         ctrl: 'CirqQuregT',
         target: 'CirqQuregT',  # type: ignore[type-var]
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
+    ) -> tuple[Optional['cirq.Operation'], dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         import cirq
 
         (trg,) = target
@@ -135,7 +136,7 @@ class Toffoli(Bloq):
 
         return qml.Toffoli(wires=wires)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         from qualtran.drawing import Circle, ModPlus, Text
 
         if reg is None:
@@ -147,7 +148,7 @@ class Toffoli(Bloq):
             return ModPlus()
         raise ValueError(f'Unknown wire symbol register name: {reg.name}')
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
         from qualtran.bloqs.basic_gates import XGate
 
         # Perform the Logical-AND of `ctrl_spec` with Toffoli's implicit XGate ctrl spec
@@ -160,8 +161,8 @@ class Toffoli(Bloq):
         # We have to wire up the *new* ctrl registers vs Toffoli's *existing* ctrl register
         # while also translating between Toffoli() and ControlledViaAnd(XGate(), cvs=(1,1)).
         def adder2(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
+        ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
             # Note: in adder2, `ctrl_soqs` matches the requested `ctrl_spec`
             #       in adder1, `ctrl_soqs` matches `anded_ctrl_spec`
             # Note: in adder2 `in_soqs` matches the signature of Toffoli

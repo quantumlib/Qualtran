@@ -15,7 +15,7 @@
 # test_ising_example.py
 # Tests for the ising_example.py script.
 
-from typing import cast, Optional, Tuple, Union
+from typing import cast, Optional, Union
 
 import cirq
 import numpy as np
@@ -489,7 +489,7 @@ def _find_min_time_config_and_summary(
     phys_error_rate: float,
     n_total_physical_qubits_available: int,
     time_per_surface_code_cycle: float,
-) -> Tuple[Union[float, sympy.Expr], FLASQSummary]:
+) -> tuple[Union[float, sympy.Expr], FLASQSummary]:
     """
     Helper function to find the configuration (code_distance) that yields the
     minimum effective_time_per_noiseless_sample for an Ising model simulation.

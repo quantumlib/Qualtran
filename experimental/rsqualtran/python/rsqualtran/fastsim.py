@@ -13,7 +13,7 @@
 #  limitations under the License.
 """Python bindings for qlt_fastsim."""
 
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING
 
 import numpy as np
 
@@ -51,7 +51,7 @@ def compile_l1_to_fastsim(module: _rsqlt.L1Module) -> _rsqlt.CompiledModule:
 
 
 def _convert_output_value(
-    val_str: str, dtype_str: str, name: str, n_bits: int, shape: Optional[List[int]]
+    val_str: str, dtype_str: str, name: str, n_bits: int, shape: Optional[list[int]]
 ) -> ClassicalValT:
     """Convert a string output value to its appropriate Python type.
 
@@ -113,7 +113,7 @@ def _convert_output_value(
     return flat_values.reshape(shape)
 
 
-def _int_to_bits(val: int, n_bits: int, dtype: str) -> List[bool]:
+def _int_to_bits(val: int, n_bits: int, dtype: str) -> list[bool]:
     """Convert an integer value to a bit vector right-sized for n_bits and dtype."""
     if n_bits <= 63:
         if not _is_signed_dtype(dtype) and val < 0:
@@ -127,8 +127,8 @@ def _int_to_bits(val: int, n_bits: int, dtype: str) -> List[bool]:
 
 
 def _ndarray_to_bits(
-    arr: np.ndarray, n_bits: int, shape: List[int], dtype: str, name: str
-) -> List[bool]:
+    arr: np.ndarray, n_bits: int, shape: list[int], dtype: str, name: str
+) -> list[bool]:
     """Convert an np.ndarray input to a flat bit vector.
 
     The array is flattened in row-major (C) order and each element is
@@ -172,7 +172,7 @@ def _ndarray_to_bits(
     if dtype not in _SUPPORTED_INT_DTYPES:
         raise TypeError(f"Unsupported dtype '{dtype}' for nd-array register '{name}'.")
 
-    bits: List[bool] = []
+    bits: list[bool] = []
     for val in arr.flat:
         elem_val = int(val)
         elem_bits = _int_to_bits(elem_val, element_bits, dtype)
@@ -197,8 +197,8 @@ class QLTFastsim:
         self._sim = _rsqlt.VmSimulator(compiled_module, entrypoint)
 
         self._sig = compiled_module.get_subroutine_signature(entrypoint)
-        self._inputs: Dict[str, Tuple[int, str, Optional[List[int]]]] = {}
-        self._outputs: Dict[str, Tuple[int, str, Optional[List[int]]]] = {}
+        self._inputs: dict[str, tuple[int, str, Optional[list[int]]]] = {}
+        self._outputs: dict[str, tuple[int, str, Optional[list[int]]]] = {}
         for name, n_bits, dir_, dtype, shape in self._sig:
             if dir_ in ("Thru", "LeftOnly", "Cast"):
                 self._inputs[name] = (n_bits, dtype, shape)
@@ -219,7 +219,7 @@ class QLTFastsim:
         bc = compile_l1_to_fastsim(l1_mod)
         return cls(bc, root_bloq_key)
 
-    def _prepare_inputs(self, kwargs: Dict[str, Any]) -> List[Tuple[str, List[bool]]]:
+    def _prepare_inputs(self, kwargs: dict[str, Any]) -> list[tuple[str, list[bool]]]:
         """Validate and convert keyword arguments to bit-vector inputs.
 
         Args:
@@ -238,7 +238,7 @@ class QLTFastsim:
                     f"Unexpected input register '{key}' for subroutine '{self._entrypoint}'"
                 )
 
-        input_values: List[Tuple[str, List[bool]]] = []
+        input_values: list[tuple[str, list[bool]]] = []
         for name, (n_bits, dtype, shape) in self._inputs.items():
             if name not in kwargs:
                 raise ValueError(f"Missing required input register: '{name}'")
@@ -264,7 +264,7 @@ class QLTFastsim:
 
         return input_values
 
-    def call_classically(self, **kwargs: Any) -> Tuple[ClassicalValT, ...]:
+    def call_classically(self, **kwargs: Any) -> tuple[ClassicalValT, ...]:
         """Execute a simulation run and return output values.
 
         Compatible with the `qualtran.Bloq.call_classically` interface:
@@ -302,7 +302,7 @@ class QLTFastsim:
             results.append(_convert_output_value(val_str, dtype_str, name, out_n_bits, out_shape))
         return tuple(results)
 
-    def simulate(self, **kwargs: Any) -> Tuple[Dict[str, ClassicalValT], float]:
+    def simulate(self, **kwargs: Any) -> tuple[dict[str, ClassicalValT], float]:
         """Execute a simulation run and return outputs as a dict with phase exponent.
 
         Unlike `call_classically`, this method does not require the
@@ -329,7 +329,7 @@ class QLTFastsim:
         input_values = self._prepare_inputs(kwargs)
         raw_outputs, phase_exponent = self._sim.execute_run(input_values)
 
-        outputs: Dict[str, ClassicalValT] = {}
+        outputs: dict[str, ClassicalValT] = {}
         for name, val_str, dtype_str in raw_outputs:
             out_n_bits, _, out_shape = self._outputs[name]
             outputs[name] = _convert_output_value(val_str, dtype_str, name, out_n_bits, out_shape)

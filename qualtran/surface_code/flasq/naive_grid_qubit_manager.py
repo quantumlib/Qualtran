@@ -14,7 +14,7 @@
 
 """Grid qubit allocation strategy for constructing circuits on a 2D layout."""
 
-from typing import Iterable, List, Set, Tuple
+from collections.abc import Iterable
 
 import cirq
 from cirq import QubitManager
@@ -54,11 +54,11 @@ class NaiveGridQubitManager(QubitManager):
             raise ValueError("max_cols must be a positive integer.")
         self._max_cols = max_cols
         self._negative = negative
-        self._allocated_qubits: Set[cirq.GridQubit] = set()
-        self._free_qubits: List[cirq.GridQubit] = []
+        self._allocated_qubits: set[cirq.GridQubit] = set()
+        self._free_qubits: list[cirq.GridQubit] = []
         self._num_generated: int = 0
 
-    def _get_coords(self, index: int) -> Tuple[int, int]:
+    def _get_coords(self, index: int) -> tuple[int, int]:
         """Calculates the grid coordinates for the nth generated qubit.
 
         Args:
@@ -96,7 +96,7 @@ class NaiveGridQubitManager(QubitManager):
         self._num_generated += 1
         return qubit
 
-    def qalloc(self, n: int, dim: int = 2) -> List["cirq.Qid"]:
+    def qalloc(self, n: int, dim: int = 2) -> list["cirq.Qid"]:
         """Allocates `n` clean GridQubits.
 
         Prefers reusing previously freed qubits before generating new ones
@@ -119,7 +119,7 @@ class NaiveGridQubitManager(QubitManager):
         if n == 0:
             return []
 
-        allocated: List[cirq.GridQubit] = []
+        allocated: list[cirq.GridQubit] = []
 
         # Step 1: Reuse qubits from the free list
         num_reuse = min(n, len(self._free_qubits))
@@ -145,7 +145,7 @@ class NaiveGridQubitManager(QubitManager):
 
         return allocated  # type: ignore # Ignore because we know they are GridQubits
 
-    def qborrow(self, n: int, dim: int = 2) -> List["cirq.Qid"]:
+    def qborrow(self, n: int, dim: int = 2) -> list["cirq.Qid"]:
         """Not implemented for NaiveGridQubitManager."""
         raise NotImplementedError("qborrow is not implemented for NaiveGridQubitManager.")
 
@@ -179,7 +179,7 @@ class NaiveGridQubitManager(QubitManager):
             self._allocated_qubits.remove(q)
             self._free_qubits.append(q)
 
-    def all_qubits(self) -> List[cirq.GridQubit]:
+    def all_qubits(self) -> list[cirq.GridQubit]:
         """Returns a sorted list of all currently allocated qubits."""
         # Returning a sorted list makes the output deterministic for testing.
         return sorted(list(self._allocated_qubits))

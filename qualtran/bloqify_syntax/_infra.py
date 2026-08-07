@@ -13,7 +13,8 @@
 #  limitations under the License.
 # pylint: disable=keyword-arg-before-vararg
 import inspect
-from typing import Any, Dict, Optional, Protocol, Sequence, Set, TYPE_CHECKING
+from collections.abc import Sequence
+from typing import Any, Optional, Protocol, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -30,7 +31,7 @@ class _TracingBloqFuncT(Protocol):
 
     __name__: str
 
-    def __call__(self, bb: 'BloqBuilder', *args: Any, **kwargs: Any) -> Dict[str, Any]:
+    def __call__(self, bb: 'BloqBuilder', *args: Any, **kwargs: Any) -> dict[str, Any]:
         """the structure of the function.
 
         During normal operation
@@ -56,8 +57,8 @@ class _BloqifyPrepResult:
     """Container for the results of tracing a function to build a Bloq."""
 
     cbloq: 'CompositeBloq'
-    in_qargnames: Set[str]
-    out_qargnames: Set[str]
+    in_qargnames: set[str]
+    out_qargnames: set[str]
     explicit_bb: Optional['BloqBuilder'] = None
     found_bb: Optional['BloqBuilder'] = None
 

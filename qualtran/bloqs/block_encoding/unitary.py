@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict
 
 from attrs import frozen
 
@@ -79,7 +78,7 @@ class Unitary(BlockEncoding):
 
     def build_composite_bloq(
         self, bb: BloqBuilder, system: SoquetT, **soqs: SoquetT
-    ) -> Dict[str, SoquetT]:
+    ) -> dict[str, SoquetT]:
         partitions = [(self.signature.get_left("system"), tuple(r.name for r in self.U.signature))]
         return {
             "system": bb.add_and_partition(self.U, partitions=partitions, system=system),

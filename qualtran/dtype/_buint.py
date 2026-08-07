@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Iterable, List, Sequence
+from collections.abc import Iterable, Sequence
 
 import attrs
 import numpy as np
@@ -59,7 +59,7 @@ class _BUInt(BitEncoding[int]):
         if val >= self.bound:
             raise ValueError(f"Too-large classical value encountered in {debug_str}")
 
-    def to_bits(self, x: int) -> List[int]:
+    def to_bits(self, x: int) -> list[int]:
         """Yields individual bits corresponding to binary representation of x"""
         self.assert_valid_val(x)
         return _UInt(self.bitsize).to_bits(x)
@@ -83,7 +83,7 @@ class BQUInt(QDType[int]):
 
     LCU methods often make use of coherent for-loops via UnaryIteration, iterating over a range
     of values stored as a superposition over the `SELECT` register. Such (nested) coherent
-    for-loops can be represented using a `Tuple[Register(dtype=BQUInt), ...]` where the
+    for-loops can be represented using a `tuple[Register(dtype=BQUInt), ...]` where the
     i'th entry stores the bitsize and iteration length of i'th
     nested for-loop.
 

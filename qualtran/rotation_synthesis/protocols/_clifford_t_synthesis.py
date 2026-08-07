@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 import itertools
-from typing import cast, Optional, Union
+from typing import cast, Optional
 
 import attrs
 import mpmath
@@ -39,7 +39,7 @@ def _solve(
     collector: rsp.PointCollector,
     relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
     verbose: bool = False,
-) -> Optional[Union[list[channels.Channel], tuple[list[channels.Channel], list[channels.Channel]]]]:
+) -> Optional[list[channels.Channel] | tuple[list[channels.Channel], list[channels.Channel]]]:
     """Iterates over lattice points that satisify the geometric constraints defined by the protocol.
 
     Each valid point gets added to the collector which decides whether to terminate or not.

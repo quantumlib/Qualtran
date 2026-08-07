@@ -15,7 +15,7 @@
 """Classes to apply single qubit bloq to multiple qubits."""
 
 from functools import cached_property
-from typing import cast, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import cast, Optional, TYPE_CHECKING
 
 import attrs
 import sympy
@@ -80,7 +80,7 @@ class OnEach(Bloq):
     def qcall(cls, q: 'QVar', *, gate: Bloq) -> 'QVar':
         return q.bb.add(cls(n=q.dtype.num_qubits, gate=gate, target_dtype=q.dtype), q=q)  # type: ignore[arg-type]
 
-    def build_composite_bloq(self, bb: BloqBuilder, *, q: Soquet) -> Dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, *, q: Soquet) -> dict[str, SoquetT]:
         if isinstance(self.n, sympy.Expr):
             raise DecomposeTypeError(f'Cannote decompose {self} with symbolic bitsize {self.n}')
         qs = bb.split(q)
@@ -88,7 +88,7 @@ class OnEach(Bloq):
             qs[i] = bb.add(self.gate, q=qs[i])
         return {'q': bb.join(qs, self.target_dtype)}
 
-    def on_classical_vals(self, q: int) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, q: int) -> dict[str, 'ClassicalValT']:
         n = self.n
         if isinstance(n, sympy.Expr):
             raise ValueError(f'Cannot simulate symbolic bloq {self}')
@@ -105,7 +105,7 @@ class OnEach(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {self.gate: self.n}
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> WireSymbol:
         one_reg = self.gate.wire_symbol(reg=reg, idx=idx)
         if isinstance(one_reg, TextBox):
             new_text = f'{one_reg.text}⨂{self.n}'

@@ -11,8 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from collections.abc import Iterator
 from functools import cached_property
-from typing import Dict, Iterator
 
 import cirq
 import sympy
@@ -67,7 +67,7 @@ class MultiTargetCNOT(GateWithRegisters):
 
     def on_classical_vals(
         self, control: 'ClassicalValT', targets: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         if control:
             targets = (2**self.bitsize - 1) ^ targets
         return {'control': control, 'targets': targets}

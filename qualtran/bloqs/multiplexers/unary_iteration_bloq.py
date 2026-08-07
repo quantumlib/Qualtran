@@ -14,8 +14,9 @@
 
 import abc
 from collections import defaultdict
+from collections.abc import Callable, Iterator, Sequence
 from functools import cached_property
-from typing import Callable, Dict, Iterator, List, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -35,7 +36,7 @@ if TYPE_CHECKING:
 
 
 def _unary_iteration_segtree(
-    ops: List[cirq.Operation],
+    ops: list[cirq.Operation],
     control: cirq.Qid,
     selection: Sequence[cirq.Qid],
     ancilla: Sequence[cirq.Qid],
@@ -45,7 +46,7 @@ def _unary_iteration_segtree(
     l_iter: int,
     r_iter: int,
     break_early: Callable[[int, int], bool],
-) -> Iterator[Tuple[cirq.OP_TREE, cirq.Qid, int]]:
+) -> Iterator[tuple[cirq.OP_TREE, cirq.Qid, int]]:
     """Constructs a unary iteration circuit by iterating over nodes of an implicit Segment Tree.
 
     Args:
@@ -71,7 +72,7 @@ def _unary_iteration_segtree(
             `(OP_TREE, control_qubit, l)` for all integers in the range `[l, r)`.
 
     Yields:
-        One `Tuple[cirq.OP_TREE, cirq.Qid, int]` for each leaf node in the segment tree. The i'th
+        One `tuple[cirq.OP_TREE, cirq.Qid, int]` for each leaf node in the segment tree. The i'th
         yielded element corresponds to the i'th leaf node which represents the `l_iter + i`'th
         integer. The tuple corresponds to:
             - cirq.OP_TREE: Operations to be inserted in the circuit in between the last leaf node
@@ -116,13 +117,13 @@ def _unary_iteration_segtree(
 
 
 def _unary_iteration_zero_control(
-    ops: List[cirq.Operation],
+    ops: list[cirq.Operation],
     selection: Sequence[cirq.Qid],
     ancilla: Sequence[cirq.Qid],
     l_iter: int,
     r_iter: int,
     break_early: Callable[[int, int], bool],
-) -> Iterator[Tuple[cirq.OP_TREE, cirq.Qid, int]]:
+) -> Iterator[tuple[cirq.OP_TREE, cirq.Qid, int]]:
     sl, l, r = 0, 0, 2 ** len(selection)
     m = (l + r) >> 1
     if r_iter <= m:
@@ -141,14 +142,14 @@ def _unary_iteration_zero_control(
 
 
 def _unary_iteration_single_control(
-    ops: List[cirq.Operation],
+    ops: list[cirq.Operation],
     control: cirq.Qid,
     selection: Sequence[cirq.Qid],
     ancilla: Sequence[cirq.Qid],
     l_iter: int,
     r_iter: int,
     break_early: Callable[[int, int], bool],
-) -> Iterator[Tuple[cirq.OP_TREE, cirq.Qid, int]]:
+) -> Iterator[tuple[cirq.OP_TREE, cirq.Qid, int]]:
     sl, l, r = 0, 0, 2 ** len(selection)
     yield from _unary_iteration_segtree(
         ops, control, selection, ancilla, sl, l, r, l_iter, r_iter, break_early
@@ -156,14 +157,14 @@ def _unary_iteration_single_control(
 
 
 def _unary_iteration_multi_controls(
-    ops: List[cirq.Operation],
+    ops: list[cirq.Operation],
     controls: Sequence[cirq.Qid],
     selection: Sequence[cirq.Qid],
     ancilla: Sequence[cirq.Qid],
     l_iter: int,
     r_iter: int,
     break_early: Callable[[int, int], bool],
-) -> Iterator[Tuple[cirq.OP_TREE, cirq.Qid, int]]:
+) -> Iterator[tuple[cirq.OP_TREE, cirq.Qid, int]]:
     num_controls = len(controls)
     and_ancilla = ancilla[: num_controls - 2]
     and_target = ancilla[num_controls - 2]
@@ -188,12 +189,12 @@ def _unary_iteration_multi_controls(
 def unary_iteration(
     l_iter: int,
     r_iter: int,
-    flanking_ops: List[cirq.Operation],
+    flanking_ops: list[cirq.Operation],
     controls: Sequence[cirq.Qid],
     selection: Sequence[cirq.Qid],
     qubit_manager: cirq.QubitManager,
     break_early: Callable[[int, int], bool] = lambda l, r: False,
-) -> Iterator[Tuple[cirq.OP_TREE, cirq.Qid, int]]:
+) -> Iterator[tuple[cirq.OP_TREE, cirq.Qid, int]]:
     """The method performs unary iteration on `selection` integer in `range(l_iter, r_iter)`.
 
     Unary iteration is a coherent for loop that can be used to conditionally perform a different
@@ -244,7 +245,7 @@ def unary_iteration(
         (r_iter - l_iter) different tuples, each corresponding to an integer in range
         [l_iter, r_iter).
         Each returned tuple also corresponds to a unique leaf in the unary iteration tree.
-        The values of yielded `Tuple[cirq.OP_TREE, cirq.Qid, int]` correspond to:
+        The values of yielded `tuple[cirq.OP_TREE, cirq.Qid, int]` correspond to:
         - cirq.OP_TREE: The op-tree to be inserted in the circuit to get to the current leaf.
         - cirq.Qid: Control qubit used to conditionally apply operations on the target conditioned
             on the returned integer.
@@ -274,8 +275,8 @@ def _unary_iteration_callgraph_segtree(
     l_range: int,
     r_range: int,
     break_early: Callable[[int, int], bool],
-    bloq_counts: Dict['Bloq', Union[int, 'sympy.Expr']],
-) -> List[int]:
+    bloq_counts: dict['Bloq', Union[int, 'sympy.Expr']],
+) -> list[int]:
     """Iterative segment tree used to construct call graph for Unary iteration.
 
     See https://codeforces.com/blog/entry/18051 for an explanation of how iterative
@@ -310,7 +311,7 @@ def _unary_iteration_callgraph_segtree(
     n_levels = n.bit_length()
     marked = np.zeros(2 * n, dtype=bool)
     num_ands = 0
-    ret: List[int] = []
+    ret: list[int] = []
     step_size = n
     for lvl in range(1, n_levels + 1):
         r = l_range
@@ -350,7 +351,7 @@ def _unary_iteration_callgraph(
     selection_bitsize: int,
     control_bitsize: int,
     break_early: Callable[[int, int], bool],
-    bloq_counts: Dict['Bloq', Union[int, 'sympy.Expr']],
+    bloq_counts: dict['Bloq', Union[int, 'sympy.Expr']],
 ) -> Sequence[int]:
     """Helper to compute the call graph for unary iteration.
 
@@ -409,17 +410,17 @@ class UnaryIterationGate(GateWithRegisters):
 
     @cached_property
     @abc.abstractmethod
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         pass
 
     @cached_property
     @abc.abstractmethod
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         pass
 
     @cached_property
     @abc.abstractmethod
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         pass
 
     @cached_property
@@ -429,7 +430,7 @@ class UnaryIterationGate(GateWithRegisters):
         )
 
     @cached_property
-    def extra_registers(self) -> Tuple[Register, ...]:
+    def extra_registers(self) -> tuple[Register, ...]:
         return ()
 
     @abc.abstractmethod
@@ -479,7 +480,7 @@ class UnaryIterationGate(GateWithRegisters):
         raise NotImplementedError("Selection register must not be empty.")
 
     def _break_early(
-        self, selection_index_prefix: Tuple[int, ...], l: 'SymbolicInt', r: 'SymbolicInt'
+        self, selection_index_prefix: tuple[int, ...], l: 'SymbolicInt', r: 'SymbolicInt'
     ) -> bool:
         """Derived classes should override this method to specify an early termination condition.
 
@@ -520,7 +521,7 @@ class UnaryIterationGate(GateWithRegisters):
 
         def unary_iteration_loops(
             nested_depth: int,
-            selection_reg_name_to_val: Dict[str, int],
+            selection_reg_name_to_val: dict[str, int],
             controls: Sequence[cirq.Qid],
         ) -> Iterator[cirq.OP_TREE]:
             """Recursively write any number of nested coherent for-loops using unary iteration.
@@ -553,7 +554,7 @@ class UnaryIterationGate(GateWithRegisters):
                 )
                 return
             # Use recursion to write `num_loops` nested loops using unary_iteration().
-            ops: List[cirq.Operation] = []
+            ops: list[cirq.Operation] = []
             selection_index_prefix = tuple(selection_reg_name_to_val.values())
             ith_for_loop = unary_iteration(
                 l_iter=0,
@@ -586,23 +587,23 @@ class UnaryIterationGate(GateWithRegisters):
         wire_symbols += [self.__class__.__name__] * total_bits(self.target_registers)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def nth_operation_callgraph(self, **selection_regs_name_to_val) -> Set['BloqCountT']:
+    def nth_operation_callgraph(self, **selection_regs_name_to_val) -> set['BloqCountT']:
         raise NotImplementedError(
             f"Derived class {type(self)} does not implement `nth_operation_callgraph`."
         )
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+    ) -> Union['BloqCountDictT', set['BloqCountT']]:
         if total_bits(self.selection_registers) == 0 or self._break_early(
             (), 0, self.selection_registers[0].dtype.iteration_length_or_zero()
         ):
             return self.decompose_bloq().build_call_graph(ssa)
         num_loops = len(self.selection_registers)
-        bloq_counts: Dict['Bloq', Union[int, 'sympy.Expr']] = defaultdict(lambda: 0)
+        bloq_counts: dict['Bloq', Union[int, 'sympy.Expr']] = defaultdict(lambda: 0)
 
         def unary_iteration_loops(
-            nested_depth: int, selection_reg_name_to_val: Dict[str, int], num_controls: int
+            nested_depth: int, selection_reg_name_to_val: dict[str, int], num_controls: int
         ) -> None:
             if nested_depth == num_loops:
                 for bloq, count in self.nth_operation_callgraph(**selection_reg_name_to_val):

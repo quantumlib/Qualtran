@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -87,14 +87,14 @@ class TwoBitFFFT(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('x', QBit()), Register('y', QBit())])
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('F(k, n)')
         return super().wire_symbol(reg, idx)
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['qtn.Tensor']:
         import quimb.tensor as qtn
 
         # TODO: https://github.com/quantumlib/Qualtran/issues/873. This tensor definition
@@ -119,7 +119,7 @@ class TwoBitFFFT(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x: 'Soquet', y: 'Soquet'
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         x = bb.add(Rz(2 * np.pi * self.k / self.n, eps=self.eps), q=x)
         y = bb.add(SGate(), q=y)
         x = bb.add(Hadamard(), q=x)

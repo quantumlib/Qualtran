@@ -13,7 +13,8 @@
 #  limitations under the License.
 
 import itertools
-from typing import Callable, Iterable, List, Tuple, Union
+from collections.abc import Callable, Iterable
+from typing import Union
 
 import attrs
 import numpy as np
@@ -49,7 +50,7 @@ class SweepResult:
     core_config: CoreParametersConfig
     total_allowable_rotation_error: float
     reaction_time_in_cycles: float
-    flasq_model_config: Tuple[FLASQCostModel, str]
+    flasq_model_config: tuple[FLASQCostModel, str]
     n_phys_qubits: int
     logical_circuit_analysis: frozendict
     flasq_summary: FLASQSummary
@@ -81,10 +82,10 @@ def run_sweep(
     core_configs_list: Union[CoreParametersConfig, Iterable[CoreParametersConfig]],
     total_allowable_rotation_error_list: Union[float, Iterable[float]],
     reaction_time_in_cycles_list: Union[float, Iterable[float]],
-    flasq_model_configs: Iterable[Tuple[FLASQCostModel, str]],
+    flasq_model_configs: Iterable[tuple[FLASQCostModel, str]],
     n_phys_qubits_total_list: Union[int, Iterable[int]],
     print_level: int = 1,
-) -> List[SweepResult]:
+) -> list[SweepResult]:
     """
     Core sweep function to generate physical cost estimates (`FLASQSummary`) over a parameter space.
 

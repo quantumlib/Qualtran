@@ -21,7 +21,8 @@ Also called 'reaction depth' in the paper.
 """
 
 import logging
-from typing import Callable, Dict, Mapping, Optional, Union
+from collections.abc import Callable, Mapping
+from typing import Optional, Union
 
 import attrs
 import networkx as nx
@@ -126,7 +127,7 @@ class MeasurementDepth:
 
         return f"MeasurementDepth({', '.join(sorted(str_items))})"
 
-    def asdict(self) -> Dict[str, Union[SymbolicFloat, Mapping[Bloq, SymbolicInt]]]:
+    def asdict(self) -> dict[str, Union[SymbolicFloat, Mapping[Bloq, SymbolicInt]]]:
         """Returns a dictionary representation, filtering zero depth and empty unknowns."""
         # Use attrs.asdict, filtering out fields that are zero/empty
         d = attrs.asdict(
@@ -164,7 +165,7 @@ def _cbloq_measurement_depth(
     """
     binst_graph = cbloq._binst_graph.copy()
     # Use a mutable dict for efficient aggregation during the loop
-    total_unknown_bloqs_mut: Dict[Bloq, SymbolicInt] = {}
+    total_unknown_bloqs_mut: dict[Bloq, SymbolicInt] = {}
 
     # 1. Assign weights to edges based on the source node's measurement depth
     for node in binst_graph.nodes():

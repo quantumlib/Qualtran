@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Tuple, Union
+from typing import Optional, Union
 
 import attrs
 
@@ -40,7 +40,7 @@ from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.symbolics import SymbolicFloat
 
 
-def _total_bits(registers: Union[Tuple[Register, ...], Signature]) -> int:
+def _total_bits(registers: Union[tuple[Register, ...], Signature]) -> int:
     """Get the bitsize of a collection of registers"""
     return sum(r.total_bits() for r in registers)
 
@@ -111,15 +111,15 @@ class SelectBlockEncoding(BlockEncoding):
         return _total_bits(self.select.target_registers)
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return self.select.selection_registers
 
     @cached_property
-    def junk_registers(self) -> Tuple[Register, ...]:
+    def junk_registers(self) -> tuple[Register, ...]:
         return ()
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return self.select.target_registers
 
     @property
@@ -139,12 +139,12 @@ class SelectBlockEncoding(BlockEncoding):
     def signal_state(self) -> Union[BlackBoxPrepare, PrepareOracle]:
         return self.prepare
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> dict[str, 'SoquetT']:
         select_reg = {reg.name: soqs[reg.name] for reg in self.select.signature}
         soqs |= bb.add_d(self.select, **select_reg)
         return soqs
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         else:
@@ -205,7 +205,7 @@ class LCUBlockEncoding(BlockEncoding):
     control_val: Optional[int] = None
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return () if self.control_val is None else (Register('ctrl', QBit()),)
 
     @cached_property
@@ -221,15 +221,15 @@ class LCUBlockEncoding(BlockEncoding):
         return _total_bits(self.select.target_registers)
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return self.prepare.selection_registers
 
     @cached_property
-    def junk_registers(self) -> Tuple[Register, ...]:
+    def junk_registers(self) -> tuple[Register, ...]:
         return tuple(reg for reg in self.prepare.junk_registers if reg.side == Side.THRU)
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return self.select.target_registers
 
     @property
@@ -257,8 +257,8 @@ class LCUBlockEncoding(BlockEncoding):
     def signal_state(self) -> Union[BlackBoxPrepare, PrepareOracle]:
         return PrepareIdentity(self.selection_registers)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> Dict[str, 'SoquetT']:
-        def _extract_soqs(bloq: Bloq) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> dict[str, 'SoquetT']:
+        def _extract_soqs(bloq: Bloq) -> dict[str, 'SoquetT']:
             return {reg.name: soqs.pop(reg.name) for reg in bloq.signature.lefts()}
 
         soqs |= bb.add_d(self.prepare, **_extract_soqs(self.prepare))
@@ -276,7 +276,7 @@ class LCUBlockEncoding(BlockEncoding):
 
         return soqs
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         if reg.name == 'control':

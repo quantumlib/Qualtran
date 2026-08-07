@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import warnings
-from typing import Mapping
+from collections.abc import Mapping
 
 from qualtran import Bloq, Controlled
 from qualtran.symbolics import ceil, SymbolicInt

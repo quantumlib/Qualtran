@@ -13,8 +13,9 @@
 #  limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Dict, Iterable, Optional, Sequence, Tuple
+from typing import Optional
 
 import attrs
 import networkx as nx
@@ -58,7 +59,7 @@ class DecompBloq(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(x=self.bitsize)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> dict[str, 'SoquetT']:
         qs = bb.split(x)
         for i in range(self.bitsize):
             qs[i] = bb.add(SubBloq(unrelated_param=i / 12), q=qs[i])
@@ -78,7 +79,7 @@ class SubBloq(Bloq):
         return {TGate(): 3}
 
 
-def get_big_bloq_counts_graph_1(bloq: Bloq) -> Tuple[nx.DiGraph, Dict[Bloq, SymbolicInt]]:
+def get_big_bloq_counts_graph_1(bloq: Bloq) -> tuple[nx.DiGraph, dict[Bloq, SymbolicInt]]:
     ss = SympySymbolAllocator()
     n_c = ss.new_symbol('n_c')
 

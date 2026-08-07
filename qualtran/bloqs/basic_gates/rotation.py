@@ -42,8 +42,9 @@ with different costs.
    Barenco et. al. 1995.
 """
 
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Dict, Iterable, Optional, Sequence, Tuple, Type, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -143,15 +144,15 @@ class ZPowGate(CirqGateAsBloqBase):
     def cirq_gate(self) -> cirq.Gate:
         return cirq.ZPowGate(exponent=self.exponent, global_shift=0)
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
         if ctrl_spec != CtrlSpec():
             return super().get_ctrl_system(ctrl_spec)
 
         ctrl_bloq = CZPowGate(exponent=self.exponent, eps=self.eps)
 
         def add_ctrled(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
+        ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
             (ctrl_soq,) = ctrl_soqs
             ctrl_soq, q = bb.add(ctrl_bloq, q=np.array([ctrl_soq, in_soqs['q']]))
             return (ctrl_soq,), (q,)
@@ -165,7 +166,7 @@ class ZPowGate(CirqGateAsBloqBase):
     def adjoint(self) -> 'ZPowGate':
         return attrs.evolve(self, exponent=-self.exponent)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         return TextBox(f'Z^{self.exponent}')
@@ -231,7 +232,7 @@ class CZPowGate(Bloq):
         bb = np.asarray(q).reshape(-1)[0].bb
         return bb.add(cls(exponent=exponent, eps=eps), q=q)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> dict[str, 'SoquetT']:
         from qualtran.bloqs.mcmt import And
 
         (q1, q2), anc = bb.add(And(), ctrl=q)
@@ -326,7 +327,7 @@ class XPowGate(CirqGateAsBloqBase):
     def adjoint(self) -> 'XPowGate':
         return attrs.evolve(self, exponent=-self.exponent)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         return TextBox(f'X^{self.exponent}')
@@ -412,7 +413,7 @@ class YPowGate(CirqGateAsBloqBase):
     def adjoint(self) -> 'YPowGate':
         return attrs.evolve(self, exponent=-self.exponent)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         return TextBox(f'Y^{self.exponent}')
@@ -493,7 +494,7 @@ class Rz(CirqGateAsBloqBase):
 
         return qml.RZ(phi=self.angle, wires=wires)
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
         if ctrl_spec != CtrlSpec():
             return super().get_ctrl_system(ctrl_spec)
 
@@ -510,7 +511,7 @@ class Rz(CirqGateAsBloqBase):
     def adjoint(self) -> 'Rz':
         return attrs.evolve(self, angle=-self.angle)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         return TextBox(str(self))
@@ -528,7 +529,7 @@ def _rz() -> Rz:
 
 _RZ_DOC = BloqDocSpec(bloq_cls=Rz, examples=[_rz], call_graph_example=None)
 
-_PowClsT = Union[Type[XPowGate], Type[YPowGate], Type[ZPowGate]]
+_PowClsT = Union[type[XPowGate], type[YPowGate], type[ZPowGate]]
 
 
 def _controlled_rp_circuit(
@@ -540,7 +541,7 @@ def _controlled_rp_circuit(
     eps: SymbolicFloat,
     ctrl: 'Soquet',
     q: 'Soquet',
-) -> Dict[str, 'SoquetT']:
+) -> dict[str, 'SoquetT']:
     from qualtran.bloqs.basic_gates import CNOT
 
     t = angle / np.pi
@@ -599,7 +600,7 @@ class CRz(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'Soquet', q: 'Soquet'
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         return _controlled_rp_circuit(
             bb, single_q_pow_cls=ZPowGate, angle=self.angle, eps=self.eps, ctrl=ctrl, q=q
         )
@@ -680,7 +681,7 @@ class Rx(CirqGateAsBloqBase):
     def adjoint(self) -> 'Rx':
         return attrs.evolve(self, angle=-self.angle)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         return TextBox(str(self))
@@ -751,7 +752,7 @@ class Ry(CirqGateAsBloqBase):
     def adjoint(self) -> 'Ry':
         return attrs.evolve(self, angle=-self.angle)
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
         if ctrl_spec != CtrlSpec():
             return super().get_ctrl_system(ctrl_spec)
 
@@ -765,7 +766,7 @@ class Ry(CirqGateAsBloqBase):
             ctrl_reg_name='ctrl',
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         return TextBox(str(self))
@@ -814,7 +815,7 @@ class CRy(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'Soquet', q: 'Soquet'
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         return _controlled_rp_circuit(
             bb, single_q_pow_cls=YPowGate, angle=self.angle, eps=self.eps, ctrl=ctrl, q=q
         )

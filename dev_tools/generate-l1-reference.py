@@ -31,7 +31,6 @@ python dev_tools/generate-l1-reference.py --check   # verify only
 
 import argparse
 import sys
-from typing import List
 
 from qualtran_dev_tools.write_if_different import WriteIfDifferent
 
@@ -67,7 +66,7 @@ def render_reference(example: L1Example) -> str:
     return artifacts.l1_code
 
 
-def generate(check: bool = False, include_slow: bool = True) -> List[str]:
+def generate(check: bool = False, include_slow: bool = True) -> list[str]:
     """Generate or verify all reference files.
 
     Args:
@@ -79,7 +78,7 @@ def generate(check: bool = False, include_slow: bool = True) -> List[str]:
         A list of human-readable descriptions of stale/missing files (always empty
         unless `check=True`).
     """
-    stale: List[str] = []
+    stale: list[str] = []
     for example in get_l1_examples(include_slow=include_slow):
         code = render_reference(example)
         path = example.reference_path()

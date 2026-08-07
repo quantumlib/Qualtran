@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -63,8 +63,8 @@ class SGate(Bloq):
         return q.bb.add(cls(is_adjoint=is_adjoint), q=q)
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['qtn.Tensor']:
         import quimb.tensor as qtn
 
         data = _SMATRIX.conj().T if self.is_adjoint else _SMATRIX
@@ -74,7 +74,7 @@ class SGate(Bloq):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'  # type: ignore[type-var]
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
+    ) -> tuple['cirq.Operation', dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         import cirq
 
         (q,) = q
@@ -90,7 +90,7 @@ class SGate(Bloq):
         maybe_dag = '†' if self.is_adjoint else ''
         return f'S{maybe_dag}'
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         return TextBox(str(self))

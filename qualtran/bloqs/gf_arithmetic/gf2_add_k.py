@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from collections.abc import Sequence
 from functools import cached_property
-from typing import Dict, Sequence, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import attrs
 
@@ -66,7 +67,7 @@ class GF2AddK(Bloq):
     def is_symbolic(self):
         return is_symbolic(self.k, self.bitsize)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'Soquet') -> Dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'Soquet') -> dict[str, 'Soquet']:
         if self.is_symbolic():
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
         xs = bb.split(x)
@@ -83,7 +84,7 @@ class GF2AddK(Bloq):
         num_flips = self.bitsize if self.is_symbolic() else sum(self._bits_k)
         return {XGate(): num_flips}
 
-    def on_classical_vals(self, *, x) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, *, x) -> dict[str, 'ClassicalValT']:
         assert isinstance(x, self.qgf.gf_type)
         return {'x': x + self.qgf.gf_type(self.k)}
 

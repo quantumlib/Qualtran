@@ -12,8 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Iterable, List, Sequence
 
 import attrs
 import numpy as np
@@ -42,7 +42,7 @@ class _Int(BitEncoding[int]):
         max_val = 1 << (self.bitsize - 1)
         return range(-max_val, max_val)
 
-    def to_bits(self, x: int) -> List[int]:
+    def to_bits(self, x: int) -> list[int]:
         if is_symbolic(self.bitsize):
             raise ValueError(f"cannot compute bits with symbolic {self.bitsize=}")
 

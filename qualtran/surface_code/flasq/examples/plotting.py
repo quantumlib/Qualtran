@@ -16,7 +16,8 @@
 
 from __future__ import annotations
 
-from typing import Callable, Optional, Tuple, TYPE_CHECKING
+from collections.abc import Callable
+from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import matplotlib.pyplot as plt
@@ -113,7 +114,7 @@ def plot_flasq_heatmap(
     x_formatter: Optional[Callable] = _k_formatter,
     y_formatter: Optional[Callable] = _scientific_formatter,
     cmap: str = "viridis",
-    figsize: Tuple[float, float] = (7.5, 4.0),
+    figsize: tuple[float, float] = (7.5, 4.0),
     ax: Optional[plt.Axes] = None,
     cbar_label: Optional[str] = None,
     vmin: Optional[float] = None,
@@ -121,7 +122,7 @@ def plot_flasq_heatmap(
     center: Optional[float] = None,
     skip_decimal_formatting: bool = False,
     invert_yaxis: bool = False,
-) -> Tuple[plt.Figure, plt.Axes]:
+) -> tuple[plt.Figure, plt.Axes]:
     """Plots a publication-quality heatmap from prepared FLASQ simulation data.
 
     This function encapsulates the aesthetic choices from the `ising_notebook.py`

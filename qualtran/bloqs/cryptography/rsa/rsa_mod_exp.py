@@ -13,7 +13,7 @@
 #  limitations under the License.
 import math
 from functools import cached_property
-from typing import cast, Dict, Optional, Tuple, Union
+from typing import cast, Optional, Union
 
 import attrs
 import numpy as np
@@ -121,7 +121,7 @@ class ModExp(Bloq):
         """Helper method to return a `CModMulK` with attributes forwarded."""
         return CModMulK(QUInt(self.x_bitsize), k=k, mod=self.mod)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', exponent: 'Soquet') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', exponent: 'Soquet') -> dict[str, 'SoquetT']:
         if is_symbolic(self.exp_bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `exp_bitsize`.")
         # https://en.wikipedia.org/wiki/Modular_exponentiation#Right-to-left_binary_method
@@ -139,11 +139,11 @@ class ModExp(Bloq):
         k = ssa.new_symbol('k')
         return {self._CtrlModMul(k=k): self.exp_bitsize, IntState(val=1, bitsize=self.x_bitsize): 1}
 
-    def on_classical_vals(self, exponent) -> Dict[str, Union['ClassicalValT', sympy.Expr]]:
+    def on_classical_vals(self, exponent) -> dict[str, Union['ClassicalValT', sympy.Expr]]:
         return {'exponent': exponent, 'x': (self.base**exponent) % self.mod}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text(f'{self.base}^e % {self.mod}')

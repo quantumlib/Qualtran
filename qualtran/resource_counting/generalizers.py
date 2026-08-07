@@ -20,7 +20,8 @@ into one, more general bloq. The functions in this module can be used as general
 for this argument.
 """
 
-from typing import Callable, Optional
+from collections.abc import Callable
+from typing import Optional
 
 import attrs
 import sympy

@@ -13,7 +13,8 @@
 #  limitations under the License.
 
 import itertools
-from typing import Any, Iterable, List, NamedTuple, Optional, Union
+from collections.abc import Iterable
+from typing import Any, NamedTuple, Optional, Union
 
 from frozendict import frozendict
 
@@ -108,7 +109,7 @@ def generate_configs_for_specific_cultivation_assumptions(
     phys_error_rate_list: Union[float, Iterable[float]],
     cultivation_error_rate: float,
     vcult_factor: float,
-) -> List[CoreParametersConfig]:
+) -> list[CoreParametersConfig]:
     """
     Generates a list of CoreParametersConfig objects for fixed cultivation
     error rate and V_CULT_FACTOR, sweeping over code distances and physical error rates.
@@ -150,7 +151,7 @@ def generate_configs_from_cultivation_data(
     ] = 100,  # Default value from cultivation_analysis
     cultivation_data_sampling_frequency: Optional[int] = None,
     round_error_rate_up_to_simulated_cultivation_data: bool = True,
-) -> List[CoreParametersConfig]:
+) -> list[CoreParametersConfig]:
     """
     Generates CoreParametersConfig objects by deriving cultivation_error_rate and
     vcult_factor from cultivation analysis data.

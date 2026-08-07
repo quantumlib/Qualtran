@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterator
 from functools import cached_property
-from typing import Iterator, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import attrs
 from numpy.typing import NDArray
@@ -95,7 +96,7 @@ class MeanEstimationOperator(GateWithRegisters):
         return ComplexPhaseOracle(self.code.encoder, self.arctan_bitsize)
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return self.code.encoder.selection_registers
 
     @cached_property
@@ -106,7 +107,7 @@ class MeanEstimationOperator(GateWithRegisters):
         self,
         *,
         context: 'cirq.DecompositionContext',
-        **quregs: NDArray['cirq.Qid'],  # type:ignore[type-var]
+        **quregs: NDArray['cirq.Qid'],  # type: ignore[type-var]
     ) -> Iterator['cirq.OP_TREE']:
         select_reg = {reg.name: quregs[reg.name] for reg in self.select.signature}
         reflect_reg = {reg.name: quregs[reg.name] for reg in self.reflect.signature}

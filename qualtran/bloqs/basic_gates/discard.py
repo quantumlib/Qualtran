@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import frozen
 
@@ -38,12 +38,12 @@ class Discard(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('c', CBit(), side=Side.LEFT)])
 
-    def on_classical_vals(self, c: int) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, c: int) -> dict[str, 'ClassicalValT']:
         return {}
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['DiscardInd']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['DiscardInd']:
 
         from qualtran.simulation.tensor import DiscardInd
 
@@ -68,8 +68,8 @@ class DiscardQ(Bloq):
         return q.bb.add(cls(), q=q)
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['DiscardInd']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['DiscardInd']:
 
         from qualtran.simulation.tensor import DiscardInd
 

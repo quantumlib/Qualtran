@@ -16,7 +16,8 @@
 
 import html
 import itertools
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from collections.abc import Iterable
+from typing import Any, Optional
 
 import IPython.display
 import pydot
@@ -39,7 +40,7 @@ from qualtran._infra.quantum_graph import _Soquet
 
 def _assign_ids_to_bloqs_and_soqs(
     bloq_instances: Iterable[BloqInstance], all_soquets: Iterable[_Soquet]
-) -> Dict[Any, str]:
+) -> dict[Any, str]:
     """Assign unique identifiers to bloq instances, soquets, and register groups.
 
     Graphviz is very forgiving in its input format. If you accidentally introduce a new id (e.g.
@@ -54,8 +55,8 @@ def _assign_ids_to_bloqs_and_soqs(
         shared names (but differing `side` attributes) are implicitly grouped. 3) Each
         Soquet in `all_soquets`.
     """
-    to_id: Dict[Any, str] = {}
-    ids: Set[str] = set()
+    to_id: dict[Any, str] = {}
+    ids: set[str] = set()
     disambiguator = 0
 
     def add(item: Any, desired_id: str):
@@ -86,7 +87,7 @@ def _assign_ids_to_bloqs_and_soqs(
 
 def _parition_registers_in_a_group(
     regs: Iterable[Register], binst: BloqInstance
-) -> Tuple[List[_Soquet], List[_Soquet], List[_Soquet]]:
+) -> tuple[list[_Soquet], list[_Soquet], list[_Soquet]]:
     """Construct and sort the expected Soquets for a given register group.
 
     Since we expect the input registers to be in a group, we assert that

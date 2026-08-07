@@ -15,7 +15,8 @@
 """Utility methods for LCU circuits as implemented in https://github.com/quantumlib/OpenFermion"""
 
 import math
-from typing import Optional, overload, Sequence
+from collections.abc import Sequence
+from typing import Optional, overload
 
 from qualtran.symbolics import ceil, is_symbolic, log2, SymbolicFloat, SymbolicInt
 

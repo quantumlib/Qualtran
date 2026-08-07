@@ -13,8 +13,9 @@
 #  limitations under the License.
 
 import itertools
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Any, Iterable, List, Sequence, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -68,7 +69,7 @@ class _GFPoly(BitEncoding):
 
         return galois.Poly(f_x, field=self.gf.gf_type)
 
-    def to_bits(self, x) -> List[int]:
+    def to_bits(self, x) -> list[int]:
         """Returns individual bits corresponding to binary representation of x"""
         import galois
 

@@ -30,7 +30,8 @@ cheap and does not construct (potentially expensive) bloqs eagerly.
 from __future__ import annotations
 
 import pathlib
-from typing import Callable, List, TYPE_CHECKING
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import attrs
 
@@ -157,7 +158,7 @@ def _qrom() -> 'qlt.Bloq':
     return QROM.build_from_data([1, 2, 3, 4])
 
 
-L1_EXAMPLES: List[L1Example] = [
+L1_EXAMPLES: list[L1Example] = [
     L1Example('cnot', _cnot, docstring='An atomic two-qubit gate (externed leaf).'),
     L1Example(
         'and_bloq',
@@ -221,7 +222,7 @@ L1_EXAMPLES: List[L1Example] = [
 ]
 
 
-def get_l1_examples(include_slow: bool = True) -> List[L1Example]:
+def get_l1_examples(include_slow: bool = True) -> list[L1Example]:
     """Return the curated example bloqs.
 
     Args:

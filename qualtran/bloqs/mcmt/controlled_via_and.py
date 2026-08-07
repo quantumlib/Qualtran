@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from collections import Counter
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Iterable, Sequence, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -66,7 +67,7 @@ class ControlledViaAnd(_ControlledBase):
     @classmethod
     def make_ctrl_system(
         cls, bloq: 'Bloq', ctrl_spec: 'CtrlSpec'
-    ) -> Tuple['_ControlledBase', 'AddControlledT']:
+    ) -> tuple['_ControlledBase', 'AddControlledT']:
         """A factory method for creating both the Controlled and the adder function.
 
         See `Bloq.get_ctrl_system`.

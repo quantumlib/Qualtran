@@ -14,7 +14,8 @@
 
 import functools
 import itertools
-from typing import cast, Mapping, Optional, Sequence, Union
+from collections.abc import Mapping, Sequence
+from typing import cast, Optional
 
 import attrs
 import numpy as np
@@ -103,7 +104,7 @@ class SU2CliffordT:
     def adjoint(self) -> "SU2CliffordT":
         return SU2CliffordT(self.matrix.T.conj())
 
-    def scale_down(self) -> Union["SU2CliffordT", None]:
+    def scale_down(self) -> Optional["SU2CliffordT"]:
         for v in self.matrix.flat:
             if not v.is_divisible_by(_zw.LAMBDA_KLIUCHNIKOV):
                 return None
@@ -144,7 +145,7 @@ class SU2CliffordT:
 
     @staticmethod
     def from_parametric_form(
-        pf: tuple[_zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2]
+        pf: tuple[_zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2],
     ) -> "SU2CliffordT":
         res = np.array([_zw.Zero] * 4).reshape((2, 2))
         for a, m in zip(pf, PARAMETRIC_FORM_BASES):

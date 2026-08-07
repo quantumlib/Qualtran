@@ -15,7 +15,8 @@
 """Mathematical functions that support either symbolic or concrete values."""
 
 import math
-from typing import Any, cast, Iterable, overload, TypeVar
+from collections.abc import Iterable
+from typing import Any, cast, overload, TypeVar
 
 import numpy as np
 import sympy

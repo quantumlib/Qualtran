@@ -295,7 +295,7 @@ impl QDTypeNode {
     }
 }
 
-/// Represents `Union[QDTypeNode, Tuple[Optional[QDTypeNode], Optional[QDTypeNode]]]`
+/// Represents `Union[QDTypeNode, tuple[Optional[QDTypeNode], Optional[QDTypeNode]]]`
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "wasm", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "wasm", derive(ts_rs::TS))]

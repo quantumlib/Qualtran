@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Dict, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
@@ -107,7 +107,7 @@ class CAdd(Bloq):
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', a: 'ClassicalValT', b: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         if ctrl != self.cv:
             return {'ctrl': ctrl, 'a': a, 'b': b}
         if not isinstance(self.b_dtype.bitsize, int):
@@ -124,7 +124,7 @@ class CAdd(Bloq):
         return "a+b"
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         from qualtran.drawing import directional_text_box
 
@@ -141,7 +141,7 @@ class CAdd(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'Soquet', a: 'Soquet', b: 'Soquet'
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         if is_symbolic(self.a_dtype.bitsize, self.b_dtype.bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
 

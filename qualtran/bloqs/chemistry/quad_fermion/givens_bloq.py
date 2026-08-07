@@ -47,7 +47,6 @@ References:
 """
 
 from functools import cached_property
-from typing import Dict
 
 from attrs import frozen
 
@@ -121,7 +120,7 @@ class RealGivensRotationByPhaseGradient(Bloq):
         target_j: SoquetT,
         rom_data: SoquetT,
         phase_gradient: SoquetT,
-    ) -> Dict[str, SoquetT]:
+    ) -> dict[str, SoquetT]:
         # clifford block
         target_i = bb.add(XGate(), q=target_i)
         target_j = bb.add(SGate(), q=target_j)
@@ -215,7 +214,7 @@ class ComplexGivensRotationByPhaseGradient(Bloq):
         real_rom_data: SoquetT,
         cplx_rom_data: SoquetT,
         phase_gradient: SoquetT,
-    ) -> Dict[str, SoquetT]:
+    ) -> dict[str, SoquetT]:
         real_givens_gate = RealGivensRotationByPhaseGradient(
             phasegrad_bitsize=self.phasegrad_bitsize
         )

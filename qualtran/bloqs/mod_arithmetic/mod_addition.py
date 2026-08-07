@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
@@ -86,7 +86,7 @@ class ModAdd(Bloq):
 
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         # The construction still works when at most one of inputs equals `mod`.
         special_case = (x == self.mod) ^ (y == self.mod)
         if not (0 <= x < self.mod or special_case):
@@ -101,7 +101,7 @@ class ModAdd(Bloq):
         y = (x + y) % self.mod
         return {'x': x, 'y': y}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> dict[str, 'SoquetT']:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
         # Allocate ancilla bits for use in addition.
@@ -197,7 +197,7 @@ class ModAddK(GateWithRegisters):
     bitsize: int
     mod: int = field()
     add_val: int = 1
-    cvs: Tuple[int, ...] = field(
+    cvs: tuple[int, ...] = field(
         converter=lambda v: (v,) if isinstance(v, int) else tuple(v), default=()
     )
 
@@ -226,7 +226,7 @@ class ModAddK(GateWithRegisters):
 
     def on_classical_vals(
         self, *, x: int, ctrl: Optional[int] = None
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         out = self._classical_unctrled(x)
         if self.cvs:
             assert ctrl is not None
@@ -306,7 +306,7 @@ class CModAddK(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'Soquet', x: 'Soquet'
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         k = bb.add(IntState(bitsize=self.bitsize, val=self.k))
         ctrl, k, x = bb.add(CModAdd(QUInt(self.bitsize), mod=self.mod), ctrl=ctrl, x=k, y=x)
         bb.add(IntEffect(bitsize=self.bitsize, val=self.k), val=k)
@@ -314,7 +314,7 @@ class CModAddK(Bloq):
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         if ctrl == 0:
             return {'ctrl': 0, 'x': x}
 
@@ -332,7 +332,7 @@ class CModAddK(Bloq):
         return {CModAdd(QUInt(self.bitsize), mod=self.mod): 1}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text(f"mod {self.mod}")
@@ -396,7 +396,7 @@ class CtrlScaleModAdd(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'Soquet', x: 'Soquet', y: 'Soquet'
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
         x_split = bb.split(x)
@@ -429,7 +429,7 @@ class CtrlScaleModAdd(Bloq):
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         if ctrl == 0:
             return {'ctrl': 0, 'x': x, 'y': y}
 
@@ -438,7 +438,7 @@ class CtrlScaleModAdd(Bloq):
         return {'ctrl': ctrl, 'x': x, 'y': y_out}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text(f"mod {self.mod}")
@@ -506,7 +506,7 @@ class CModAdd(Bloq):
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         if ctrl != self.cv:
             return {'ctrl': ctrl, 'x': x, 'y': y}
 
@@ -526,7 +526,7 @@ class CModAdd(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl, x: Soquet, y: Soquet
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         if is_symbolic(self.dtype.bitsize):
             raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
         y_arr = bb.split(y)

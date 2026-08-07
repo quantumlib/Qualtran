@@ -20,7 +20,6 @@ and physical error parameters.
 """
 
 from functools import lru_cache
-from typing import Tuple
 
 import sympy
 
@@ -39,7 +38,7 @@ def calculate_error_mitigation_metrics(
     code_distance: SymbolicFloat,  # Can be int or float, using SymbolicFloat for flexibility
     lambda_val: SymbolicFloat,  # Renamed to avoid conflict with Python's lambda keyword
     cultivation_error_rate: SymbolicFloat,
-) -> Tuple[SymbolicFloat, SymbolicFloat, SymbolicFloat]:
+) -> tuple[SymbolicFloat, SymbolicFloat, SymbolicFloat]:
     """Calculates PEC overhead and wall-clock time per noiseless sample.
 
     Args:
@@ -113,7 +112,7 @@ def calculate_failure_probabilities(
     lambda_val: SymbolicFloat,
     cultivation_error_rate: SymbolicFloat,
     error_prefactor: SymbolicFloat = ERROR_PER_CYCLE_PREFACTOR,
-) -> Tuple[SymbolicFloat, SymbolicFloat]:
+) -> tuple[SymbolicFloat, SymbolicFloat]:
     """
     Calculates failure probabilities (P_fail) for Clifford operations and T-gates.
 

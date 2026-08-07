@@ -18,20 +18,8 @@ import itertools
 import logging
 import uuid
 import warnings
-from typing import (
-    Callable,
-    cast,
-    Container,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    TYPE_CHECKING,
-    TypeAlias,
-    Union,
-)
+from collections.abc import Callable, Container, Sequence
+from typing import cast, Optional, TYPE_CHECKING, TypeAlias, Union
 
 import attrs
 import numpy as np
@@ -78,9 +66,9 @@ class QDefWithContext:
 class Locals:
     """Handles assigning variable names for our variable *objects*, i.e. soquets and bloqs."""
 
-    soqvars: Dict[_Soquet, QArgValueNode] = attrs.field(factory=dict)
-    bloqvars: Dict[qlt.Bloq, BloqKey] = attrs.field(factory=dict)
-    varnames: Set[str] = attrs.field(factory=set)
+    soqvars: dict[_Soquet, QArgValueNode] = attrs.field(factory=dict)
+    bloqvars: dict[qlt.Bloq, BloqKey] = attrs.field(factory=dict)
+    varnames: set[str] = attrs.field(factory=set)
     nodes: L1Nodes = attrs.field(default=qualtran_l1_nodes)
 
     def get_unique_name(self, prefix: str) -> str:
@@ -152,7 +140,7 @@ def regs_to_sig_entry(
 
 def signature_to_l1_entries(
     signature: 'qlt.Signature', *, nodes: L1Nodes = qualtran_l1_nodes
-) -> List[QSignatureEntry]:
+) -> list[QSignatureEntry]:
     """Convert a `qualtran.Signature` to a list of `QSignatureEntry` AST nodes.
 
     This is a convenience wrapper around `regs_to_sig_entry` for all register
@@ -165,12 +153,12 @@ def signature_to_l1_entries(
 class QDefBuilder:
     bloq: qlt.Bloq
     bloq_key: str
-    qglobals: Dict[qlt.Bloq, str]
+    qglobals: dict[qlt.Bloq, str]
     nodes: L1Nodes = attrs.field(default=qualtran_l1_nodes)
     qlocals: Locals = attrs.field(factory=Locals)
 
-    _sig_entries: List[QSignatureEntry] = attrs.field(factory=list)
-    _stmnts: List[StatementNode] = attrs.field(factory=list)
+    _sig_entries: list[QSignatureEntry] = attrs.field(factory=list)
+    _stmnts: list[StatementNode] = attrs.field(factory=list)
 
     def __attrs_post_init__(self):
         if self.qlocals.nodes is qualtran_l1_nodes and self.nodes is not qualtran_l1_nodes:
@@ -282,7 +270,7 @@ class QDefBuilder:
                     self.qlocals.soqvars[suc.left] = v
             return
 
-        kwargs: List[QArgNode] = []
+        kwargs: list[QArgNode] = []
 
         # Case: this bloqnection represents an output from self.bloq to the outside world.
         if binst is qlt.RightDangle:
@@ -337,7 +325,7 @@ class QDefBuilder:
             get_me=lambda cxn: cxn.left,
             get_assign=lambda cxn: cxn.left,
         )
-        rets: List[str] = []
+        rets: list[str] = []
         for reg in binst.bloq.signature.rights():
             regname = reg.name
             soqs = retsoqs[regname]
@@ -384,13 +372,13 @@ class QDefBuilder:
 
 def bloq_to_ast(
     bloq: qlt.Bloq,
-    qglobals: Dict[qlt.Bloq, BloqKey],
+    qglobals: dict[qlt.Bloq, BloqKey],
     *,
     extern_only_from: bool,
     force_extern: bool = False,
     level: int = 0,
     nodes: L1Nodes = qualtran_l1_nodes,
-) -> Tuple[QDefWithContext, List['qlt.Bloq']]:
+) -> tuple[QDefWithContext, list['qlt.Bloq']]:
     """Turn a bloq into Qualtran-L1 code.
 
     Generally just calls the right methods on `SubroutineFormatter`.
@@ -460,12 +448,12 @@ def bloq_to_ast(
 class L1ModuleBuilder:
     """Format and export a Qualtran-L1 'module': a collection of 'qdef' bloq definitions."""
 
-    qglobals: Dict[qlt.Bloq, BloqKey] = attrs.field(factory=dict)
-    done: Set[qlt.Bloq] = attrs.field(factory=set)
-    qdefs: List[QDefWithContext] = attrs.field(factory=list)
-    extern_qdefs: List[QDefWithContext] = attrs.field(factory=list)
+    qglobals: dict[qlt.Bloq, BloqKey] = attrs.field(factory=dict)
+    done: set[qlt.Bloq] = attrs.field(factory=set)
+    qdefs: list[QDefWithContext] = attrs.field(factory=list)
+    extern_qdefs: list[QDefWithContext] = attrs.field(factory=list)
     nodes: L1Nodes = attrs.field(default=qualtran_l1_nodes)
-    # all_costs: Dict['CostKey', Dict] = attrs.field(factory=dict)
+    # all_costs: dict['CostKey', dict] = attrs.field(factory=dict)
 
     def add_bloqs(
         self,
@@ -477,7 +465,7 @@ class L1ModuleBuilder:
     ) -> BloqKey:
 
         # Stack of (Bloq, level) indices where `level` is the level of recursion
-        subbloqs: List[Tuple[qlt.Bloq, int]] = [(root, 0)]
+        subbloqs: list[tuple[qlt.Bloq, int]] = [(root, 0)]
 
         # cks = [QECGatesCost(), QubitCount()]
         # if not self.all_costs:

@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Tuple
 
 import cirq
 from attrs import field, frozen
@@ -41,14 +40,14 @@ class MultiplexedCSwap(UnaryIterationGate):
     the registers to swap, and $n_c$ is the number of controls.
 
     Args:
-        selection_regs: Indexing `select` signature of type Tuple[`Register`, ...].
+        selection_regs: Indexing `select` signature of type tuple[`Register`, ...].
             It also contains information about the iteration length of each selection register.
         target_bitsize: The size of the registers we want to swap.
         control_regs: Control registers for constructing a controlled version of the gate.
 
     Registers:
         control_registers: Control registers
-        selection_regs: Indexing `select` signature of type Tuple[`Register`, ...].
+        selection_regs: Indexing `select` signature of type tuple[`Register`, ...].
             It also contains information about the iteration length of each selection register.
         target_registers: Target registers to swap. We swap FROM registers
             labelled x`i`, where i is an integer and TO a single register called y
@@ -58,24 +57,24 @@ class MultiplexedCSwap(UnaryIterationGate):
         page 20 paragraph 2.
     """
 
-    selection_regs: Tuple[Register, ...] = field(
+    selection_regs: tuple[Register, ...] = field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )
     target_bitsize: int
-    control_regs: Tuple[Register, ...] = field(
+    control_regs: tuple[Register, ...] = field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v), default=()
     )
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return self.control_regs
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return self.selection_regs
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         target_shape = tuple(
             sreg.dtype.iteration_length_or_zero() for sreg in self.selection_registers
         )

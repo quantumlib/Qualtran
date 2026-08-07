@@ -14,7 +14,7 @@
 r"""Bloqs for PREPARE T for the first quantized chemistry Hamiltonian."""
 
 from functools import cached_property
-from typing import Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -62,7 +62,7 @@ class PreparePowerTwoState(Bloq):
         return {Toffoli(): (self.bitsize - 2)}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text(r'PREP 2^(r/2) |r⟩')
@@ -110,7 +110,7 @@ class PrepareTFirstQuantization(Bloq):
 
     def build_composite_bloq(
         self, bb: BloqBuilder, w: SoquetT, r: SoquetT, s: SoquetT
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         w = bb.add(PrepareUniformSuperposition(3), target=w)
         r = bb.add(PreparePowerTwoState(self.num_bits_p), r=r)
         s = bb.add(PreparePowerTwoState(self.num_bits_p), r=s)
@@ -125,7 +125,7 @@ class PrepareTFirstQuantization(Bloq):
         return {Toffoli(): 13, PreparePowerTwoState(bitsize=self.num_bits_p): 2}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text(r'PREP T')

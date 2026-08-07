@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Mapping
 from functools import cached_property
-from typing import cast, Dict, Mapping, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import cast, Optional, Set, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
@@ -73,7 +74,7 @@ class _QConst(Bloq):
         return Signature([Register('val', self.qdtype, side=side)])
 
     @staticmethod
-    def _build_composite_state(bb: 'BloqBuilder', bits: NDArray[np.uint8]) -> Dict[str, 'SoquetT']:
+    def _build_composite_state(bb: 'BloqBuilder', bits: NDArray[np.uint8]) -> dict[str, 'SoquetT']:
         from qualtran.bloqs.basic_gates.z_basis import OneState, ZeroState
 
         states = [ZeroState(), OneState()]
@@ -88,7 +89,7 @@ class _QConst(Bloq):
     @staticmethod
     def _build_composite_effect(
         bb: 'BloqBuilder', val: 'Soquet', bits: NDArray[np.uint8]
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         from qualtran.bloqs.basic_gates.z_basis import OneEffect, ZeroEffect
 
         xs = bb.split(val)
@@ -97,7 +98,7 @@ class _QConst(Bloq):
             bb.add(effects[bit], q=xs[i])
         return {}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **val: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **val: 'SoquetT') -> dict[str, 'SoquetT']:
         if is_symbolic(self.qdtype) or is_symbolic(self.val):
             raise DecomposeTypeError(
                 f'Symbolic qdtype {self.qdtype} or val {self.val} not supported'
@@ -109,7 +110,7 @@ class _QConst(Bloq):
         else:
             return self._build_composite_effect(bb, cast(Soquet, val['val']), bits)
 
-    def on_classical_vals(self, *, val: Optional[int] = None) -> Dict[str, Union[int, sympy.Expr]]:
+    def on_classical_vals(self, *, val: Optional[int] = None) -> dict[str, Union[int, sympy.Expr]]:
         if self.state:
             assert val is None
             return {'val': self.val}
@@ -127,7 +128,7 @@ class _QConst(Bloq):
         s = f'{self.val}'
         return f'QConst({s})'
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
 
@@ -162,7 +163,7 @@ class QIntState(Bloq):
     def signature(self) -> 'Signature':
         return self._impl.signature
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         return self._impl.build_composite_bloq(bb, **soqs)
 
     def on_classical_vals(
@@ -176,7 +177,7 @@ class QIntState(Bloq):
         return self._impl.build_call_graph(ssa)
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         return self._impl.wire_symbol(reg, idx)
 
@@ -224,7 +225,7 @@ class QIntEffect(Bloq):
     def signature(self) -> 'Signature':
         return self._impl.signature
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         return self._impl.build_composite_bloq(bb, **soqs)
 
     def on_classical_vals(
@@ -238,7 +239,7 @@ class QIntEffect(Bloq):
         return self._impl.build_call_graph(ssa)
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         return self._impl.wire_symbol(reg, idx)
 
@@ -286,7 +287,7 @@ class QUIntState(Bloq):
     def signature(self) -> 'Signature':
         return self._impl.signature
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         return self._impl.build_composite_bloq(bb, **soqs)
 
     def on_classical_vals(
@@ -300,7 +301,7 @@ class QUIntState(Bloq):
         return self._impl.build_call_graph(ssa)
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         return self._impl.wire_symbol(reg, idx)
 
@@ -348,7 +349,7 @@ class QUIntEffect(Bloq):
     def signature(self) -> 'Signature':
         return self._impl.signature
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         return self._impl.build_composite_bloq(bb, **soqs)
 
     def on_classical_vals(
@@ -362,7 +363,7 @@ class QUIntEffect(Bloq):
         return self._impl.build_call_graph(ssa)
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         return self._impl.wire_symbol(reg, idx)
 

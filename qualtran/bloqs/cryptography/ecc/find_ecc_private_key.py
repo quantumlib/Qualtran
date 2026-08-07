@@ -14,7 +14,6 @@
 
 import functools
 from functools import cached_property
-from typing import Dict
 
 import sympy
 from attrs import frozen
@@ -106,7 +105,7 @@ class FindECCPrivateKey(Bloq):
             mul_window_size=self.mul_window_size,
         )
 
-    def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder') -> dict[str, 'SoquetT']:
         x = bb.add(IntState(bitsize=self.n, val=self.base_point.x))
         y = bb.add(IntState(bitsize=self.n, val=self.base_point.y))
 

@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Dict, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
@@ -121,7 +121,7 @@ class Subtract(Bloq):
 
     def on_classical_vals(
         self, a: 'ClassicalValT', b: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         unsigned = isinstance(self.a_dtype, (QUInt, QMontgomeryUInt))
         b_bitsize = self.b_dtype.bitsize
         N = 2**b_bitsize
@@ -138,7 +138,7 @@ class Subtract(Bloq):
         return {'a': a, 'b': int((a - b + half_n) % N) - half_n}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         from qualtran.drawing import directional_text_box
 
@@ -164,7 +164,7 @@ class Subtract(Bloq):
                 costs[MultiTargetCNOT(delta)] = 2
         return costs
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> dict[str, 'SoquetT']:
         delta = self.b_dtype.bitsize - self.a_dtype.bitsize
         n_bits = self.b_dtype.bitsize
         if delta:
@@ -269,7 +269,7 @@ class SubtractFrom(Bloq):
 
     def on_classical_vals(
         self, a: 'ClassicalValT', b: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         return {
             'a': a,
             'b': add_ints(
@@ -281,7 +281,7 @@ class SubtractFrom(Bloq):
         }
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         from qualtran.drawing import directional_text_box
 
@@ -297,7 +297,7 @@ class SubtractFrom(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {BitwiseNot(self.dtype): 2, Add(self.dtype, self.dtype): 1}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> dict[str, 'SoquetT']:
         b = bb.add(BitwiseNot(self.dtype), x=b)  # a, -1 - b
         a, b = bb.add_t(Add(self.dtype, self.dtype), a=a, b=b)  # a, a - 1 - b
         b = bb.add(BitwiseNot(self.dtype), x=b)  # a, -1 - (a - 1 - b) = a, -a + b

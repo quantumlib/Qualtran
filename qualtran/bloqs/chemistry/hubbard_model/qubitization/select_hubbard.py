@@ -38,8 +38,9 @@ considered in both the PREPARE and SELECT operations corresponding to the terms 
  - $p>q$, YZY term.
 """
 
+from collections.abc import Iterator
 from functools import cached_property
-from typing import Dict, Iterator, Optional, Set, Tuple, Union
+from typing import Optional, Union
 
 import attrs
 import cirq
@@ -139,11 +140,11 @@ class SelectHubbard(SelectOracle):
         return ceil(log2(self.x_dim))
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return () if self.control_val is None else (Register('control', QBit()),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (
             Register('U', BQUInt(1, 2)),
             Register('V', BQUInt(1, 2)),
@@ -156,7 +157,7 @@ class SelectHubbard(SelectOracle):
         )
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return (Register('target', QAny(self.x_dim * self.y_dim * 2)),)
 
     @cached_property
@@ -172,7 +173,7 @@ class SelectHubbard(SelectOracle):
         self,
         *,
         context: cirq.DecompositionContext,
-        **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
+        **quregs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         p_x, p_y, q_x, q_y = quregs['p_x'], quregs['p_y'], quregs['q_x'], quregs['q_y']
         U, V, alpha, beta = quregs['U'], quregs['V'], quregs['alpha'], quregs['beta']
@@ -203,7 +204,7 @@ class SelectHubbard(SelectOracle):
             x_dim=self.x_dim, y_dim=self.y_dim, control_val=self.control_val
         ).on_registers(x=q_x, y=q_y, V=V, control=control, target=target)
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
 
         return get_ctrl_system_1bit_cv_from_bloqs(
@@ -282,11 +283,11 @@ class HubbardMajorannaOperator(Bloq):
         return 2 * self.x_dim * self.y_dim
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return () if self.control_val is None else (Register('control', QBit()),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (
             Register('x', BQUInt(self.log_m, self.x_dim)),
             Register('y', BQUInt(self.log_m, self.y_dim)),
@@ -294,7 +295,7 @@ class HubbardMajorannaOperator(Bloq):
         )
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return (Register('target', QAny(self.N)),)
 
     @cached_property
@@ -314,7 +315,7 @@ class HubbardMajorannaOperator(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x, y, spin, target, control=None
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         if is_symbolic(self.x_dim, self.y_dim):
             raise DecomposeTypeError(f"Cannot decompose symbolic x_dim, y_dim in {self}")
 
@@ -338,7 +339,7 @@ class HubbardMajorannaOperator(Bloq):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+    ) -> Union['BloqCountDictT', set['BloqCountT']]:
 
         count = self.N - 1
         if self.control_val is None:
@@ -346,7 +347,7 @@ class HubbardMajorannaOperator(Bloq):
         return {And(): count, And().adjoint(): count}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return TextBox("")
@@ -420,11 +421,11 @@ class HubbardSpinUpZ(Bloq):
         return ceil(log2(self.x_dim))
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return () if self.control_val is None else (Register('control', QBit()),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (
             Register('V', BQUInt(1, 2)),
             Register('x', BQUInt(self.log_m, self.x_dim)),
@@ -432,7 +433,7 @@ class HubbardSpinUpZ(Bloq):
         )
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return (Register('target', QAny(self.x_dim * self.y_dim * 2)),)
 
     @cached_property
@@ -443,7 +444,7 @@ class HubbardSpinUpZ(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', V, x, y, target, control=None
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         if is_symbolic(self.x_dim, self.y_dim):
             raise DecomposeTypeError(f"Cannot decompose symbolic x_dim, y_dim in {self}")
 
@@ -490,7 +491,7 @@ class HubbardSpinUpZ(Bloq):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+    ) -> Union['BloqCountDictT', set['BloqCountT']]:
         half_N = self.x_dim * self.y_dim
         count = half_N
         if self.control_val is None:
@@ -498,7 +499,7 @@ class HubbardSpinUpZ(Bloq):
         return {And(): count, And().adjoint(): count, CNOT(): half_N - 1, CZ(): half_N}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return TextBox('')

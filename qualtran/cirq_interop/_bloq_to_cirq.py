@@ -14,7 +14,8 @@
 
 """Qualtran Bloqs to Cirq gates/circuits conversion."""
 
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+from collections.abc import Iterable, Sequence
+from typing import Optional
 
 import cirq
 import networkx as nx
@@ -97,9 +98,9 @@ class BloqAsCirqGate(cirq.Gate):
     def bloq_on(
         cls,
         bloq: Bloq,
-        cirq_quregs: Dict[str, 'CirqQuregT'],
+        cirq_quregs: dict[str, 'CirqQuregT'],
         qubit_manager: cirq.QubitManager,  # type: ignore[type-var]
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
+    ) -> tuple['cirq.Operation', dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         """Shim `bloq` into a cirq gate and call it on `cirq_quregs`.
 
         This is used as a default implementation for `Bloq.as_cirq_op` if a native
@@ -186,7 +187,7 @@ class BloqAsCirqGate(cirq.Gate):
         return f'BloqAsCirqGate({self.bloq})'
 
 
-def _track_soq_name_changes(cxns: Iterable[Connection], qvar_to_qreg: Dict[_Soquet, _QReg]):
+def _track_soq_name_changes(cxns: Iterable[Connection], qvar_to_qreg: dict[_Soquet, _QReg]):
     """Track inter-Bloq name changes across the two ends of a connection."""
     for cxn in cxns:
         qvar_to_qreg[cxn.right] = qvar_to_qreg[cxn.left]
@@ -197,11 +198,11 @@ def _bloq_to_cirq_op(
     bloq: Bloq,
     pred_cxns: Iterable[Connection],
     succ_cxns: Iterable[Connection],
-    qvar_to_qreg: Dict[_Soquet, _QReg],
+    qvar_to_qreg: dict[_Soquet, _QReg],
     qubit_manager: cirq.QubitManager,
 ) -> Optional[cirq.Operation]:
     _track_soq_name_changes(pred_cxns, qvar_to_qreg)
-    in_quregs: Dict[str, CirqQuregT] = {
+    in_quregs: dict[str, CirqQuregT] = {
         reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object)
         for reg in bloq.signature.lefts()
     }
@@ -229,10 +230,10 @@ def _bloq_to_cirq_op(
 
 def _cbloq_to_cirq_circuit(
     signature: Signature,
-    cirq_quregs: Dict[str, 'CirqQuregInT'],
+    cirq_quregs: dict[str, 'CirqQuregInT'],
     binst_graph: nx.DiGraph,
     qubit_manager: cirq.QubitManager,
-) -> Tuple[cirq.FrozenCircuit, Dict[str, 'CirqQuregT']]:
+) -> tuple[cirq.FrozenCircuit, dict[str, 'CirqQuregT']]:
     """Propagate `as_cirq_op` calls through a composite bloq's contents to export a `cirq.Circuit`.
 
     Args:
@@ -245,16 +246,16 @@ def _cbloq_to_cirq_circuit(
         circuit: The cirq.FrozenCircuit version of this composite bloq.
         cirq_quregs: The output mapping from right register names to Cirq qubit arrays.
     """
-    cirq_quregs: Dict[str, 'CirqQuregInT'] = {
+    cirq_quregs: dict[str, 'CirqQuregInT'] = {
         k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore
         for k, v in cirq_quregs.items()
     }
-    qvar_to_qreg: Dict[_Soquet, _QReg] = {
+    qvar_to_qreg: dict[_Soquet, _QReg] = {
         _Soquet(LeftDangle, idx=idx, reg=reg): np.asarray(cirq_quregs[reg.name]).item(idx)
         for reg in signature.lefts()
         for idx in reg.all_idxs()
     }
-    ops: List[cirq.Operation] = []
+    ops: list[cirq.Operation] = []
     for binst in greedy_topological_sort(binst_graph):
         if binst is LeftDangle:
             continue

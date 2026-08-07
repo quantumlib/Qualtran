@@ -14,7 +14,8 @@
 
 from __future__ import annotations
 
-from typing import Callable, Iterator, Optional, TYPE_CHECKING
+from collections.abc import Callable, Iterator
+from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import matplotlib.pyplot as plt

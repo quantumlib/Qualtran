@@ -14,7 +14,8 @@
 import logging
 import warnings
 from collections import defaultdict
-from typing import Callable, cast, Dict, Sequence, Tuple, TYPE_CHECKING
+from collections.abc import Callable, Sequence
+from typing import cast, TYPE_CHECKING
 
 import attrs
 import networkx as nx
@@ -38,10 +39,10 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-BloqCountDict = Dict['Bloq', int]
+BloqCountDict = dict['Bloq', int]
 
 
-def _gateset_bloqs_to_tuple(bloqs: Sequence['Bloq']) -> Tuple['Bloq', ...]:
+def _gateset_bloqs_to_tuple(bloqs: Sequence['Bloq']) -> tuple['Bloq', ...]:
     return tuple(bloqs)
 
 
@@ -74,7 +75,7 @@ class BloqCount(CostKey[BloqCountDict]):
         """
         from qualtran.bloqs.basic_gates import TGate, Toffoli, TwoBitCSwap
 
-        bloqs: Tuple['Bloq', ...]
+        bloqs: tuple['Bloq', ...]
         if gateset_name == 't':
             bloqs = (TGate(), TGate(is_adjoint=True))
         elif gateset_name == 't+tof':
@@ -172,7 +173,7 @@ class GateCounts:
             return ', '.join(strs)
         return '-'
 
-    def asdict(self) -> Dict[str, int]:
+    def asdict(self) -> dict[str, int]:
         d = attrs.asdict(self)
 
         def _is_nonzero(v):
@@ -206,7 +207,7 @@ class GateCounts:
             + ts_per_rotation * self.rotation
         )
 
-    def total_t_and_ccz_count(self, ts_per_rotation: int = 11) -> Dict[str, SymbolicInt]:
+    def total_t_and_ccz_count(self, ts_per_rotation: int = 11) -> dict[str, SymbolicInt]:
         n_ccz = self.toffoli + self.cswap + self.and_bloq
         n_t = self.t + ts_per_rotation * self.rotation
         return {'n_t': n_t, 'n_ccz': n_ccz}
@@ -257,7 +258,7 @@ class GateCounts:
             + cliffords_per_cswap * self.cswap,
         )
 
-    def total_beverland_count(self) -> Dict[str, SymbolicInt]:
+    def total_beverland_count(self) -> dict[str, SymbolicInt]:
         r"""Counts used by Beverland et al. using notation from the reference.
 
          - $M_\mathrm{meas}$ is the number of measurements.
