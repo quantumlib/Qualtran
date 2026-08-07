@@ -546,15 +546,38 @@ def dump_l1(
     bloq: qlt.Bloq,
     f: Optional[io.IOBase] = None,
     *,
+    root_bloq_key: Optional[str] = None,
     annotate_costs: bool = False,
     extern_only_from: bool = False,
     force_extern_pred: Callable[['qlt.Bloq'], bool] = lambda b: False,
     nodes: L1Nodes = qualtran_l1_nodes,
 ) -> Optional[str]:
+    """Serialize a bloq (and its decomposition) to Qualtran-L1 source text.
+
+    Args:
+        bloq: The root bloq to serialize.
+        f: An optional writable file-like object. If provided, the L1 text is
+            written to it and the root bloq key is returned. If `None`, the L1
+            text itself is returned.
+        root_bloq_key: An optional key to assign to the root `bloq`. When given,
+            the root is emitted with exactly this `qdef` name instead of a name
+            derived from `str(bloq)`. Keys for sub-bloqs are still generated automatically.
+        annotate_costs: Whether to annotate the output with cost information.
+        extern_only_from: Whether to only include a `from` clause for `exern` bloqs.
+        force_extern_pred: A predicate selecting bloqs to force to `extern`.
+        nodes: The set of L1 AST node classes to build with (advanced).
+
+    Returns:
+        If `f` is `None`, the serialized L1 text. Otherwise, the `BloqKey`
+        assigned to the root `bloq`.
+    """
     from qualtran.l1 import L1ASTPrinter
 
     l1_mb = L1ModuleBuilder(nodes=nodes)
-    root_bloq_key = l1_mb.add_bloqs(
+    if root_bloq_key is not None:
+        # Seed the globals so the root is emitted with exactly this key.
+        l1_mb.qglobals[bloq] = root_bloq_key
+    assigned_root_key = l1_mb.add_bloqs(
         root=bloq,
         annotate_costs=annotate_costs,
         extern_only_from=extern_only_from,
@@ -567,7 +590,7 @@ def dump_l1(
         return l1_txt
 
     f.write(l1_txt)
-    return root_bloq_key
+    return assigned_root_key
 
 
 def dump_root_l1(bloq: qlt.Bloq, *, nodes: L1Nodes = qualtran_l1_nodes) -> str:
