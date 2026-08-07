@@ -54,7 +54,7 @@ jobs:
         id: pytest-full
         env:
           # Adding xtrace makes Bash commands & scripts run with "-x".
-          SHELLOPTS: ${{runner.debug == '1' && 'xtrace'}}
+          SHELLOPTS: ${{runner.debug == '1' && 'xtrace' || ''}}
         run: |
           if [[ "${{runner.debug}}" == "1" ]]; then
             # When debugging, print memory information continuously.
