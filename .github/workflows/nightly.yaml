@@ -47,7 +47,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --frozen --no-dev --group test
+          uv sync --frozen --no-dev --group test --no-install-project
+          uv pip install --no-deps -e .
           uv pip install pytest-instafail
 
       - name: Run the full Pytest suite

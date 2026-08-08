@@ -20,7 +20,7 @@
 #
 # Prerequisites: the current Python environment must have qualtran installed
 # (with --no-deps) plus only the packages in requirements-minimal.txt and
-# pytest. See dev_tools/minimal-installs.md for setup instructions.
+# pytest. See the pytest-minimal-install job in .github/workflows/pr.yaml for setup.
 #
 # Usage:
 #   ./check/pytest-minimal-install
