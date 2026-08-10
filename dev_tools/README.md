@@ -14,7 +14,7 @@ as well as pinned-version environment specifications.
 At the top level of `dev_tools/.`, there are scripts that do various things. These scripts
 should be run from the command line (if you know what you're doing). 
 
-`qualtran_dev_tools/` contains re-usable library code that may be helpful for writing 
+`qualtran_dev_tools/` contains reusable library code that may be helpful for writing 
 developer-oriented scripts that e.g. do meta-analysis on the codebase. If you do
 `pip install -e /path/to/Qualtran/dev_tools/`, it will install a package called 
 `qualtran-dev-tools` which can be accessed from Python by `import qualtran_dev_tools.submodule`.

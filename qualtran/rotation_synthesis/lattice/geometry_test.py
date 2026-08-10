@@ -38,7 +38,7 @@ class TestEllipse:
     @pytest.mark.parametrize("theta", np.random.random(5) * np.pi)
     def test_bounding_tilt(self, a: rst.Real, b: rst.Real, theta: np.ndarray):
         if a < b:
-            # to make the choice of the 4 possiblities unique we make 0 < theta < pi and a >= b
+            # to make the choice of the 4 possibilities unique we make 0 < theta < pi and a >= b
             a, b = b, a
         e = lattice.Ellipse.from_axes(a, b, theta, np.zeros(2), mc.NumpyConfig)
         np.testing.assert_allclose(e.tilt(mc.NumpyConfig), np.pi - theta)

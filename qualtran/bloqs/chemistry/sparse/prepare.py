@@ -69,7 +69,7 @@ def get_sparse_inputs_from_integrals(
 
     Returns:
         integrals: Sparsified, symmetry inequivalent integrals.
-        indicies: corresponding indices of the non-zero matrix elements.
+        indices: corresponding indices of the non-zero matrix elements.
 
     References:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
@@ -151,8 +151,8 @@ class PrepareSparse(PrepareOracle):
         d: the register indexing non-zero matrix elements.
         pqrs: the register to store the spatial orbital index.
         sigma: the register prepared for alias sampling.
-        alpha: spin for (pq) indicies.
-        beta: spin for (rs) indicies.
+        alpha: spin for (pq) indices.
+        beta: spin for (rs) indices.
         rot_aa: the qubit rotated for amplitude amplification.
         swap_pq: a |+> state to restore the symmetries of the p and q indices.
         swap_rs: a |+> state to restore the symmetries of the r and s indices.
@@ -165,7 +165,7 @@ class PrepareSparse(PrepareOracle):
         flag_1b: a single qubit register indicating whether to apply only the one-body SELECT.
         alt_flag_1b: alternate value for flag_1b
 
-    Refererences:
+    References:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             hypercontraction](https://arxiv.org/abs/2011.03494) Eq. A11.
     """
@@ -285,7 +285,7 @@ class PrepareSparse(PrepareOracle):
             [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://arxiv.org/abs/1902.02134).
             Berry et al. 2019. Sec 5, page 15
         """
-        indicies, integrals = get_sparse_inputs_from_integrals(
+        indices, integrals = get_sparse_inputs_from_integrals(
             tpq_prime, eris, drop_element_thresh=drop_element_thresh
         )
         num_non_zero = len(integrals)
@@ -296,7 +296,7 @@ class PrepareSparse(PrepareOracle):
         num_spatial = num_spin_orb // 2
         num_lt = num_spatial * (num_spatial + 1) // 2
         one_body = np.array([0] * num_lt + [1] * len(integrals[num_lt:]))
-        alt_pqrs = indicies[alt]
+        alt_pqrs = indices[alt]
         alt_theta = theta[alt]
         alt_one_body = one_body[alt]
         if log_block_size is None:
@@ -312,7 +312,7 @@ class PrepareSparse(PrepareOracle):
             tuple(tuple([int(_) for _ in x]) for x in alt_pqrs.T),
             tuple([int(_) for _ in alt_theta]),
             tuple([int(_) for _ in alt_one_body]),
-            tuple(tuple([int(_) for _ in x]) for x in indicies.T),
+            tuple(tuple([int(_) for _ in x]) for x in indices.T),
             tuple([int(_) for _ in theta]),
             tuple([int(_) for _ in one_body]),
             tuple(keep),

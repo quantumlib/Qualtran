@@ -123,7 +123,7 @@ class Fallback(_protocol.ApproxProblem):
 
     where a cheap (in terms of T gates) rotation `V` is applied and then depending on
     the result of the measurement we may need to apply an expensive correction. The problem
-    is formulated so that we need to apply the correction in afew (<1%) occurences.
+    is formulated so that we need to apply the correction in a few (<1%) occurrences.
 
     Attributes:
         theta: the target angle.

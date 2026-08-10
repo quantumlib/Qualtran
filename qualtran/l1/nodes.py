@@ -130,7 +130,7 @@ class LValueNode(L1ASTNode):
 class StatementNode(L1ASTNode, metaclass=abc.ABCMeta):
     """Nodes which can serve as statements in a qdef.
 
-    This base class's implementors include:
+    This base class's implementers include:
      - `AliasAssignmentNode`
      - `QCallNode`
      - `QReturnNode`
@@ -197,7 +197,7 @@ class QReturnNode(StatementNode):
 class QDefNode(L1ASTNode, metaclass=abc.ABCMeta):
     """Nodes that serve as 'qdefs'.
 
-    This base class's implementors include:
+    This base class's implementers include:
      - `QDefImplNode`
      - `QDefExternNode`
     """
