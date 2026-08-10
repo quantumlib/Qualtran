@@ -31,7 +31,7 @@ class LargeBloq(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', select, target) -> dict[str, 'SoquetT']:
         sel = bb.split(select)
-        ancs: list[Soquet] = [None] * self.n_select  # type: ignore
+        ancs: list[Soquet] = [None] * self.n_select  # type: ignore[list-item]
         ancs[0] = sel[0]
 
         cvs = QUInt(self.n_select - 1).to_bits_array(np.arange(self.n_ops) % (self.n_select - 1))

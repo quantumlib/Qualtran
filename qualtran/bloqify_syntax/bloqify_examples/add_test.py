@@ -92,7 +92,7 @@ def add_bits(bb: 'BloqBuilder', i: 'QVarT', t: 'QVarT'):
     n = i.shape[0]
 
     # First bit: no input carry
-    [i[0], t[0]], c0 = bb.And([i[0], t[0]])  # type: ignore
+    [i[0], t[0]], c0 = bb.And([i[0], t[0]])
     c = [c0]
 
     # Ripple-carry
@@ -102,7 +102,7 @@ def add_bits(bb: 'BloqBuilder', i: 'QVarT', t: 'QVarT'):
 
     # Last bit: no output carry
     k = n - 1
-    c[k - 1], t[k] = bb.CNOT(c[k - 1], t[k])  # type: ignore
+    c[k - 1], t[k] = bb.CNOT(c[k - 1], t[k])  # type: ignore[arg-type]
 
     # Un-ripple-carry
     for k in range(n - 1 - 1, 1 - 1, -1):
@@ -112,7 +112,7 @@ def add_bits(bb: 'BloqBuilder', i: 'QVarT', t: 'QVarT'):
     i[0], t[0] = bb.UnAnd([i[0], t[0]], c[0])
 
     for k in range(n):
-        i[k], t[k] = bb.CNOT(i[k], t[k])  # type: ignore
+        i[k], t[k] = bb.CNOT(i[k], t[k])  # type: ignore[arg-type]
 
     return {'i': i, 't': t}
 
@@ -127,7 +127,7 @@ def add(bb: 'BloqBuilder', a: 'QVar', b: 'QVar'):
 
     # Account for endianness!
     i_out, t_out = add_bits.inline(bb, i=i[::-1], t=t[::-1])
-    return {'a': bb.join(i_out[::-1], dtype=a.dtype), 'b': bb.join(t_out[::-1], dtype=b.dtype)}  # type: ignore
+    return {'a': bb.join(i_out[::-1], dtype=a.dtype), 'b': bb.join(t_out[::-1], dtype=b.dtype)}  # type: ignore[arg-type]
 
 
 def test_add():

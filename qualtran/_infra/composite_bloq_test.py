@@ -204,8 +204,8 @@ def test_bloq_builder():
 
     # Using deprecated Soquet constructor (to be removed)
     assert initial_soqs == {
-        'x': _QVar(Soquet(LeftDangle, x_reg), bb=bb),  # type: ignore
-        'y': _QVar(Soquet(LeftDangle, y_reg), bb=bb),  # type: ignore
+        'x': _QVar(Soquet(LeftDangle, x_reg), bb=bb),  # type: ignore[arg-type, misc]
+        'y': _QVar(Soquet(LeftDangle, y_reg), bb=bb),  # type: ignore[arg-type, misc]
     }
 
     # Using private constructor

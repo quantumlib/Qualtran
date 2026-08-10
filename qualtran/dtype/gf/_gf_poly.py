@@ -80,7 +80,7 @@ class _GFPoly(BitEncoding):
     def from_bits(self, bits: Sequence[int]):
         """Combine individual bits to form x"""
         reshaped_bits = np.array(bits).reshape((int(self.degree) + 1, int(self.gf.bitsize)))
-        return self.from_gf_coefficients(self.gf.from_bits_array(reshaped_bits))  # type: ignore
+        return self.from_gf_coefficients(self.gf.from_bits_array(reshaped_bits))
 
     def assert_valid_val(self, val: Any, debug_str: str = 'val'):
         """Raises an exception if `val` is not a valid classical value for this type.

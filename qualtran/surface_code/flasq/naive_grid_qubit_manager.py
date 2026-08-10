@@ -143,7 +143,7 @@ class NaiveGridQubitManager(QubitManager):
             allocated.append(new_qubit)
             self._allocated_qubits.add(new_qubit)
 
-        return allocated  # type: ignore # Ignore because we know they are GridQubits
+        return allocated  # type: ignore[return-value]
 
     def qborrow(self, n: int, dim: int = 2) -> list["cirq.Qid"]:
         """Not implemented for NaiveGridQubitManager."""

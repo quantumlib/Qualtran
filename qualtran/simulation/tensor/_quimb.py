@@ -104,7 +104,7 @@ def _get_placeholder_tensors(cxn):
     RightDangle sentinel values.
     """
     for j in range(cxn.left.reg.bitsize):
-        placeholder = _Soquet(None, Register('simulation_placeholder', QBit()))  # type: ignore
+        placeholder = _Soquet(None, Register('simulation_placeholder', QBit()))  # type: ignore[arg-type]
         Connection(cxn.left, placeholder)
         yield qtn.Tensor(
             data=np.eye(2),

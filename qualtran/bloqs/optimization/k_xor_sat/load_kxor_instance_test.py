@@ -33,7 +33,7 @@ def test_load_instance():
     assert gc == GateCounts(and_bloq=3, clifford=ANY, measurement=ANY)
 
     # classical action
-    for j, (S, _) in enumerate(tuple(bloq.inst.batched_scopes)):  # type: ignore
+    for j, (S, _) in enumerate(tuple(bloq.inst.batched_scopes)):  # type: ignore[arg-type]
         assert bloq.call_classically(j=j) == (j, bloq.inst.scope_as_int(S))
 
 

@@ -336,7 +336,7 @@ def _ports_from_register(reg: Register) -> Iterable[PortV1]:
             #   required number of single ports.
             PortV1(
                 name=expanded_name,
-                direction=direction,  # type: ignore
+                direction=direction,  # type: ignore[arg-type]
                 size=reg.bitsize if isinstance(reg.bitsize, int) else str(reg.bitsize),
             )
             for flat_name, direction in _names_and_dir_from_register(reg)
@@ -472,7 +472,7 @@ def bloq_to_routine_from_callgraph(bloq: Bloq | CompositeBloq) -> RoutineV1:
     nodes_to_routine_map = _call_graph_to_routine_map(call_graph)
 
     for routine in nodes_to_routine_map.values():
-        routine.ports = []  # type: ignore
+        routine.ports = []  # type: ignore[assignment]
         routine.connections = []
 
     for edge in list(call_graph.edges)[::-1]:

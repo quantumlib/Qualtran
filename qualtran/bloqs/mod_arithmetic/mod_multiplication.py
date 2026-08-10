@@ -709,7 +709,7 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
             assert qrom_indices is not None
             assert reduced is not None
 
-            x, y, target, qrom_indices, reduced = bb.add_from(  # type: ignore
+            x, y, target, qrom_indices, reduced = bb.add_from(
                 self._mod_mul_impl,
                 x=x,
                 y=y,

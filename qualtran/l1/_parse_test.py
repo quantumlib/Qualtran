@@ -350,8 +350,8 @@ def test_parse_empty_brackets():
     code = "qdef Foo() [] { a = MyBloq()[] } qdef Bar() [a: t[]] { c = qualtran.bloqs.Bloq }"
     module = parse_module(code)
     assert module.qdefs[0].qsignature == ()
-    assert module.qdefs[0].body[0].qargs == ()  # type: ignore
-    assert module.qdefs[1].qsignature[0].dtype.shape == []  # type: ignore
+    assert module.qdefs[0].body[0].qargs == ()  # type: ignore[attr-defined]
+    assert module.qdefs[1].qsignature[0].dtype.shape == []  # type: ignore[union-attr]
     assert module.qdefs[1].body[0].alias == "c"  # type: ignore[attr-defined]
 
 

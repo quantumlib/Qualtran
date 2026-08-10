@@ -125,7 +125,7 @@ class CtrlSpec:
         shapes = self.shapes
         if is_symbolic(*shapes):
             raise ValueError(f"cannot get concrete shapes: found symbolic {self.shapes}")
-        return shapes  # type: ignore
+        return shapes  # type: ignore[return-value]
 
     @cached_property
     def num_bits(self) -> SymbolicInt:
@@ -280,7 +280,7 @@ class CtrlSpec:
         for dtype, shape in zip(qdtypes, shapes):
             full_shape = shape + (dtype.num_bits,)
             curr_cvs_bits = np.array(cv[idx : idx + int(np.prod(full_shape))]).reshape(full_shape)
-            curr_cvs = np.apply_along_axis(dtype.from_bits, -1, curr_cvs_bits)  # type: ignore
+            curr_cvs = np.apply_along_axis(dtype.from_bits, -1, curr_cvs_bits)  # type: ignore[call-overload]
             bloq_cvs.append(curr_cvs)
         return CtrlSpec(tuple(qdtypes), tuple(bloq_cvs))
 

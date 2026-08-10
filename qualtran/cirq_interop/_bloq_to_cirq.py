@@ -246,7 +246,7 @@ def _cbloq_to_cirq_circuit(
         cirq_quregs: The output mapping from right register names to Cirq qubit arrays.
     """
     cirq_quregs = {
-        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore
+        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore[call-overload]
         for k, v in cirq_quregs.items()
     }
     qvar_to_qreg: dict[_Soquet, _QReg] = {

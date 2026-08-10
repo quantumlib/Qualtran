@@ -99,7 +99,7 @@ class ApplyLthBloq(UnaryIterationGate, SelectOracle):  # type: ignore[misc]
 
     @cached_property
     def target_registers(self) -> tuple[Register, ...]:
-        return tuple(self.ops.flat[0].signature)  # type: ignore
+        return tuple(self.ops.flat[0].signature)  # type: ignore[call-overload]
 
     def nth_operation_callgraph(self, **kwargs: int) -> set[BloqCountT]:
         return {(self.ops[tuple(kwargs.values())].controlled(), 1)}

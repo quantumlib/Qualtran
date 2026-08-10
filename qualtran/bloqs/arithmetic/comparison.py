@@ -1483,9 +1483,9 @@ class _HalfComparisonBase(Bloq):
 
     def _compute(self, bb: 'BloqBuilder', a: 'Soquet', b: 'Soquet') -> dict[str, 'SoquetT']:
         if self._op_symbol in ('>', '<='):
-            a, b, c, target = bb.add_from(self._half_greater_than_bloq, a=a, b=b)  # type: ignore
+            a, b, c, target = bb.add_from(self._half_greater_than_bloq, a=a, b=b)
         else:
-            b, a, c, target = bb.add_from(self._half_greater_than_bloq, a=b, b=a)  # type: ignore
+            b, a, c, target = bb.add_from(self._half_greater_than_bloq, a=b, b=a)
 
         if self._op_symbol in ('<=', '>='):
             target = bb.add(XGate(), q=target)
@@ -1499,9 +1499,9 @@ class _HalfComparisonBase(Bloq):
             target = bb.add(XGate(), q=target)
 
         if self._op_symbol in ('>', '<='):
-            a, b = bb.add_from(self._half_greater_than_bloq.adjoint(), a=a, b=b, c=c, target=target)  # type: ignore
+            a, b = bb.add_from(self._half_greater_than_bloq.adjoint(), a=a, b=b, c=c, target=target)
         else:
-            a, b = bb.add_from(self._half_greater_than_bloq.adjoint(), a=b, b=a, c=c, target=target)  # type: ignore
+            a, b = bb.add_from(self._half_greater_than_bloq.adjoint(), a=b, b=a, c=c, target=target)
 
         return {'a': a, 'b': b}
 

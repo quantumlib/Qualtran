@@ -133,7 +133,7 @@ def calculate_failure_probabilities(
     """
     # 1. Calculate logical error rate per cycle (p_cyc)
     # p_cyc = c_cyc * Λ^(-(d+1)/2)
-    p_cyc = error_prefactor * lambda_val ** (-(code_distance + 1) / 2)  # type: ignore
+    p_cyc = error_prefactor * lambda_val ** (-(code_distance + 1) / 2)
 
     # 2. Calculate P_fail_Clifford (Probability of at least one Clifford failure)
     # The relevant volume is the total spacetime volume except for that used by cultivation

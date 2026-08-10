@@ -67,7 +67,7 @@ class GuidedHamiltonianPhaseEstimation(Bloq):
         #      QubitizationWalkOperator currently accepts only specific
         #      block-encodings, but should be generalized.
         #      For now we ignore the type here.
-        return QubitizationWalkOperator(self.hamiltonian)  # type: ignore
+        return QubitizationWalkOperator(self.hamiltonian)  # type: ignore[arg-type]
 
     @cached_property
     def qpe_window_state(self) -> QPEWindowStateBase:
@@ -85,7 +85,7 @@ class GuidedHamiltonianPhaseEstimation(Bloq):
 
     @cached_property
     def qpe_bloq(self) -> QubitizationQPE:
-        return QubitizationQPE(self.walk_operator, self.qpe_window_state)  # type: ignore
+        return QubitizationQPE(self.walk_operator, self.qpe_window_state)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {self.guiding_state: 1, self.qpe_bloq: 1}

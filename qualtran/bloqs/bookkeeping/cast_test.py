@@ -50,7 +50,7 @@ def test_cast_classical_sim():
     c = Cast(qfxp, qint)
     val = 1.2
     val_as_int = qfxp.to_fixed_width_int(val)
-    assert c.call_classically(reg=val_as_int) == (val_as_int,)  # type: ignore
+    assert c.call_classically(reg=val_as_int) == (val_as_int,)
 
 
 def test_cast_unsiged_signed():
