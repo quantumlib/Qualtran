@@ -207,7 +207,6 @@ jobs:
           sudo apt-get install --no-install-recommends -y yamllint
 
       - name: Lint the YAML files
-        continue-on-error: ${{inputs.soft-linting == 'true'}}
         run: |
           echo "::add-matcher::.github/problem-matchers/yamllint.json"
           yamllint -f github . CITATION.cff
