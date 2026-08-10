@@ -154,14 +154,40 @@ jobs:
       - run: |
           uv run --no-sync check/mypy
 
+  license-headers-check:
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Check out a copy of the git repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check that files contain appropriate license headers
+        env:
+          LICENSE_IGNORE: '-ignore .github/ISSUE_TEMPLATE/**'
+        run: |
+          # shellcheck disable=SC2086  # Need the var. value to be unquoted.
+          go run github.com/google/addlicense@v1.2.0 ${LICENSE_IGNORE} -check . |
+            while IFS= read -r file; do
+              if [[ -n "$file" ]]; then
+                printf "::error:: ❌ %s\\n" "$file"
+                exit 1
+              fi
+            done
+
   action-lint:
     runs-on: ubuntu-slim
     permissions:
       contents: read
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: raven-actions/actionlint@3d39aea434753780c3b3d4a1a31c854b4dbf49d7 # v2.2.0
+      - name: Check out a copy of the git repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Lint the GitHub Actions workflow files
+        uses: raven-actions/actionlint@3d39aea434753780c3b3d4a1a31c854b4dbf49d7 # v2.2.0
         with:
           files: '.github/workflows/*.{yaml,yml}'
           pyflakes: false
