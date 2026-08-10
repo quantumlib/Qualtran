@@ -192,6 +192,26 @@ jobs:
           files: '.github/workflows/*.{yaml,yml}'
           pyflakes: false
 
+  yaml-lint:
+    runs-on: ubuntu-slim
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Check out a copy of the git repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install yamllint
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y yamllint
+
+      - name: Lint the YAML files
+        continue-on-error: ${{inputs.soft-linting == 'true'}}
+        run: |
+          echo "::add-matcher::.github/problem-matchers/yamllint.json"
+          yamllint -f github . CITATION.cff
+
   autogenerate-notebooks:
     runs-on: ubuntu-24.04-x64-8-core
     permissions:
