@@ -32,9 +32,7 @@ class _BookkeepingBloq(Bloq, metaclass=abc.ABCMeta):
     - does not affect T complexity.
     """
 
-    def get_ctrl_system(
-        self, ctrl_spec: CtrlSpec | None = None
-    ) -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec | None = None) -> tuple['Bloq', 'AddControlledT']:
         def add_controlled(
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
         ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:

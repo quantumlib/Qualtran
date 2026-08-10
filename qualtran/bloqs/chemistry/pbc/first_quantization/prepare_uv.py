@@ -103,9 +103,7 @@ class PrepareUVFirstQuantization(Bloq):
             PrepareZetaState(self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos): 1,
         }
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('PREP UV')
         return super().wire_symbol(reg, idx)

@@ -86,9 +86,7 @@ class GF2Addition(Bloq):
         x, y = (bb.join(x, dtype=self.qgf), bb.join(y, dtype=self.qgf))
         return {'x': x, 'y': y}
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         return {CNOT(): self.bitsize}
 
     def on_classical_vals(self, *, x, y) -> dict[str, 'ClassicalValT']:

@@ -91,11 +91,7 @@ def show_call_graph(
 
 
 def show_call_graph(
-    item: Bloq | nx.Graph,
-    /,
-    *,
-    max_depth: int | None = None,
-    agg_gate_counts: str | None = None,
+    item: Bloq | nx.Graph, /, *, max_depth: int | None = None, agg_gate_counts: str | None = None
 ) -> None:
     """Display a graph representation of the call graph.
 

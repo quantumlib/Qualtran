@@ -125,9 +125,7 @@ class CAdd(Bloq):
     def short_name(self) -> str:
         return "a+b"
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         from qualtran.drawing import directional_text_box
 
         if reg is None:

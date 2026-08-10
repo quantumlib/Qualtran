@@ -144,9 +144,7 @@ class ModExp(Bloq):
     def on_classical_vals(self, exponent) -> dict[str, ClassicalValT | sympy.Expr]:
         return {'exponent': exponent, 'x': (self.base**exponent) % self.mod}
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text(f'{self.base}^e % {self.mod}')
         return super().wire_symbol(reg, idx)

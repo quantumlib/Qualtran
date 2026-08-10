@@ -269,9 +269,7 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         return NotImplemented
 
-    def basis_state_phase(
-        self, **vals: 'ClassicalValT'
-    ) -> complex | MeasurementPhase | None:
+    def basis_state_phase(self, **vals: 'ClassicalValT') -> complex | MeasurementPhase | None:
         """How this bloq phases classical basis states.
 
         Override this method if your bloq represents classical logic with basis-state
@@ -291,9 +289,7 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         return None
 
-    def call_classically(
-        self, **vals: sympy.Symbol | ClassicalValT
-    ) -> tuple['ClassicalValT', ...]:
+    def call_classically(self, **vals: sympy.Symbol | ClassicalValT) -> tuple['ClassicalValT', ...]:
         """Call this bloq on classical data.
 
         Bloq users can call this function to apply bloqs to classical data. If you're
@@ -385,9 +381,7 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError(f"{self} does not support tensor simulation.")
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         """Override this method to build the bloq call graph.
 
         This method must return a set of `(bloq, n)` tuples where `bloq` is called `n` times in
@@ -649,9 +643,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
         return self.on(*merge_qubits(self.signature, **qubit_regs))
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         """On a musical score visualization, use this `WireSymbol` to represent the register.
 
         By default, we use a textbox containing the register name (and optionally the index for

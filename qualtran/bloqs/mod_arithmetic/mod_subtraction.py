@@ -107,9 +107,7 @@ class ModNeg(Bloq):
             XGate(): 2,
         }
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("")
         if reg.name == 'x':
@@ -200,9 +198,7 @@ class CModNeg(Bloq):
             XGate(): 2,
         }
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("")
         if reg.name == 'ctrl':
@@ -283,9 +279,7 @@ class ModSub(Bloq):
             ModAdd(self.dtype.bitsize, self.mod): 1,
         }
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("")
         if reg.name == 'x':
@@ -363,9 +357,7 @@ class CModSub(Bloq):
             CModAdd(self.dtype, self.mod, self.cv): 1,
         }
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("")
         if reg.name == 'ctrl':

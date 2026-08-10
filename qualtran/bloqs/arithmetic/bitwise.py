@@ -109,9 +109,7 @@ class XorK(Bloq):
             k = np.array(k, dtype=x.dtype)[()]
         return {'x': x ^ k}
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("")
 
@@ -186,9 +184,7 @@ class Xor(Bloq):
             raise ValueError(f"cannot classically simulate with symbolic {self.dtype=}")
         return {'x': x, 'y': x ^ y}
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return TextBox('')
         elif reg.name == 'x':
@@ -245,9 +241,7 @@ class BitwiseNot(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {XGate(): self.dtype.num_qubits}
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("")
 

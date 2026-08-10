@@ -526,9 +526,7 @@ class QROAMClean(SelectSwapQROM):
         soqs |= {reg.name: soq.flat[0] for reg, soq in zip(self.target_registers, qrom_targets)}  # type: ignore[attr-defined]
         return soqs
 
-    def on_classical_vals(
-        self, **vals: sympy.Symbol | ClassicalValT
-    ) -> dict[str, ClassicalValT]:
+    def on_classical_vals(self, **vals: sympy.Symbol | ClassicalValT) -> dict[str, ClassicalValT]:
         vals_without_junk = super().on_classical_vals(**vals)
         selection = cast(tuple[int, ...], tuple(vals[reg.name] for reg in self.selection_registers))
         for d, junk_reg in zip(self.batched_data_permuted, self.junk_registers):

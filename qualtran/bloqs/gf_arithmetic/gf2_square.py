@@ -114,9 +114,7 @@ class GF2Square(Bloq):
         x = bb.join(x[::-1], dtype=self.qgf)
         return {'x': x}
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         return {self.synthesize_squaring_matrix: 1}
 
     def adjoint(self):

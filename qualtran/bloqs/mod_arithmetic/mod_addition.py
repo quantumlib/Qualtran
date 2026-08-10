@@ -331,9 +331,7 @@ class CModAddK(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {CModAdd(QUInt(self.bitsize), mod=self.mod): 1}
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text(f"mod {self.mod}")
         if reg.name == 'ctrl':
@@ -437,9 +435,7 @@ class CtrlScaleModAdd(Bloq):
         y_out = (y + x * self.k) % self.mod
         return {'ctrl': ctrl, 'x': x, 'y': y_out}
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text(f"mod {self.mod}")
         if reg.name == 'ctrl':

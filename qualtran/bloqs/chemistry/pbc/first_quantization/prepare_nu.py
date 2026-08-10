@@ -65,9 +65,7 @@ class PrepareMuUnaryEncodedOneHot(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {Toffoli(): (self.num_bits_p - 1)}
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text(r'PREP √(2^μ)|μ⟩')
         return super().wire_symbol(reg, idx)
@@ -117,9 +115,7 @@ class PrepareNuSuperPositionState(Bloq):
         # controlled hadamards which cannot be inverted at zero Toffoli cost.
         return {Toffoli(): (3 * (self.num_bits_p - 1))}
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text(r'PREP (2^-μ)|μ⟩|ν⟩')
         return super().wire_symbol(reg, idx)
@@ -167,9 +163,7 @@ class FlagZeroAsFailure(Bloq):
             # check the result of the Toffolis.
             return {Toffoli(): (3 * self.num_bits_p + 2)}
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text(r'ν≠−0')
         return super().wire_symbol(reg, idx)
@@ -217,9 +211,7 @@ class TestNuLessThanMu(Bloq):
             # n_p controlled Toffolis with four controls.
             return {Toffoli(): 3 * self.num_bits_p}
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text(r'ν<2^(μ−2)')
         return super().wire_symbol(reg, idx)
@@ -300,9 +292,7 @@ class TestNuInequality(Bloq):
             cost_4 = (Toffoli(), 3)
             return dict([cost_1, cost_2, cost_3, cost_4])
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text(r'(2^(μ-2))^2 M > m ν^2')
         return super().wire_symbol(reg, idx)
@@ -406,9 +396,7 @@ class PrepareNuState(Bloq):
         cost_6 = (TestNuInequality(self.num_bits_p, n_m), 1)
         return dict([cost_1, cost_2, cost_3, cost_4, cost_6])
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text(r"PREP 1/‖ν‖ ∣ν⟩")
         return super().wire_symbol(reg, idx)

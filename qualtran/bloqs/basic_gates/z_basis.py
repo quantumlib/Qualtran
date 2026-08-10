@@ -133,9 +133,7 @@ class _ZVector(Bloq, metaclass=abc.ABCMeta):
         s = '1' if self.bit else '0'
         return f'|{s}>' if self.state else f'<{s}|'
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         s = '1' if self.bit else '0'
@@ -324,9 +322,7 @@ class ZGate(Bloq):
 
         return qml.Z(wires=wires)
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
 
@@ -531,14 +527,10 @@ class IntState(Bloq):
     ) -> Mapping[str, 'ClassicalValRetT']:
         return self._impl.on_classical_vals(**vals)
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         return self._impl.build_call_graph(ssa)
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         return self._impl.wire_symbol(reg, idx)
 
     def __str__(self) -> str:
@@ -599,14 +591,10 @@ class IntEffect(Bloq):
     ) -> Mapping[str, 'ClassicalValRetT']:
         return self._impl.on_classical_vals(**vals)
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         return self._impl.build_call_graph(ssa)
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         return self._impl.wire_symbol(reg, idx)
 
     def __str__(self) -> str:

@@ -308,9 +308,7 @@ class QROMBase(metaclass=abc.ABCMeta):
             if is_symbolic(l) or l
         )
 
-    def on_classical_vals(
-        self, **vals: sympy.Symbol | ClassicalValT
-    ) -> dict[str, ClassicalValT]:
+    def on_classical_vals(self, **vals: sympy.Symbol | ClassicalValT) -> dict[str, ClassicalValT]:
         if not self.has_data():
             raise NotImplementedError(f'Symbolic {self} does not support classical simulation')
         vals = cast(dict[str, 'ClassicalValT'], vals)

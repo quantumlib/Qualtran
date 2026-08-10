@@ -122,9 +122,7 @@ class _XVector(Bloq, metaclass=abc.ABCMeta):
         s = '-' if self.bit else '+'
         return f'|{s}>' if self.state else f'<{s}|'
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         s = '-' if self.bit else '+'

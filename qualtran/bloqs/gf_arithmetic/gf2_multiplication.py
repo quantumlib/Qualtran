@@ -131,9 +131,7 @@ class SynthesizeLRCircuit(Bloq):
         assert isinstance(q, np.ndarray)
         return {'q': np.array(matrix @ q)}
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         n = self.matrix.shape[0]
         if isinstance(self.matrix, Shaped):
             return {CNOT(): n**2 - n}
@@ -252,9 +250,7 @@ class GF2Multiplication(Bloq):
         )
         return {'x': x, 'y': y, 'result': result}
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         m = self.bitsize
         plus_equal_prod = {GF2ShiftRight(self.qgf, m).adjoint(): 1} if self.plus_equal_prod else {}
         return {Toffoli(): m**2, GF2ShiftRight(self.qgf, m): 1} | plus_equal_prod
@@ -380,9 +376,7 @@ class GF2MulMBUC(Bloq):
             bb.add(Discard(), c=c)
         return {'x': bb.join(x[::-1], dtype=self.qgf), 'y': bb.join(y[::-1], dtype=self.qgf)}
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         m = self.bitsize
         return {CZ(): m**2}
 
@@ -469,9 +463,7 @@ class GF2MulK(Bloq):
         g = bb.join(g_arr, dtype=self.qgf)
         return {'g': g}
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         return {SynthesizeLRCircuit(self.reduction_matrix_q): 1}
 
 
@@ -604,9 +596,7 @@ class MultiplyPolyByOnePlusXk(Bloq):
         assert len(h) == original, f'{original=} {len(h)}'
         return {'f': f, 'g': g, 'h': h}
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         if not is_symbolic(self.n) and self.n == 1:
             return {CNOT(): 2, Toffoli(): 1}
         return {CNOT(): 2 * (self.l + self.k), BinaryPolynomialMultiplication(self.n): 1}
@@ -733,9 +723,7 @@ class BinaryPolynomialMultiplication(Bloq):
 
         return {'f': f, 'g': g, 'h': h}
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         if not is_symbolic(self.n) and self.n == 1:
             return {Toffoli(): 1}
         if not is_symbolic(self.n) and 2 * self.k == self.n:
@@ -828,9 +816,7 @@ class GF2ShiftLeft(Bloq):
         f = bb.join(f_arr)
         return {'f': f}
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         if is_symbolic(self.n):
             w = 5  # Assume a pentanomial is used.
             return {CNOT(): (w - 2) * self.k}
@@ -921,9 +907,7 @@ class GF2ShiftRight(Bloq):
         f = bb.join(f_arr)
         return {'f': f}
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         if is_symbolic(self.n):
             w = 5  # Assume a pentanomial is used.
             return {CNOT(): (w - 2) * self.k}
@@ -1122,9 +1106,7 @@ class GF2MulViaKaratsuba(Bloq):
 
         return {'x': x, 'y': y, 'result': result}
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         if is_symbolic(self.n):
             return {Toffoli(): self.n ** (log2(3)), CNOT(): self.n**2}
 

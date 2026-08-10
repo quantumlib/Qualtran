@@ -148,9 +148,7 @@ class _TracingBloqIntermediate:
             cbloq=cbloq, in_qargnames=set(qkwargs.keys()), out_qargnames=set(out_qvars.keys())
         )
 
-    def make(
-        self, signature: qlt.Signature | None = None, *classical_args, **classical_kwargs
-    ):
+    def make(self, signature: qlt.Signature | None = None, *classical_args, **classical_kwargs):
         """Trace the function and finalize it into a CompositeBloq."""
         if signature is None:
             signature = Signature([])
@@ -182,23 +180,17 @@ class _TracingBloqIntermediate:
         ret_dict = self.func(bb, *args, **kwargs)
         return tuple(ret_dict.values())
 
-    def dump_l1(
-        self, signature: qlt.Signature | None = None, *classical_args, **classical_kwargs
-    ):
+    def dump_l1(self, signature: qlt.Signature | None = None, *classical_args, **classical_kwargs):
         """Trace the function and return its L1 representation."""
         from qualtran.l1 import dump_root_l1
 
         return dump_root_l1(self.make(signature, *classical_args, **classical_kwargs))
 
-    def print_l1(
-        self, signature: qlt.Signature | None = None, *classical_args, **classical_kwargs
-    ):
+    def print_l1(self, signature: qlt.Signature | None = None, *classical_args, **classical_kwargs):
         """Trace the function and print its L1 representation."""
         print(self.dump_l1(signature, *classical_args, **classical_kwargs))
 
-    def draw(
-        self, signature: qlt.Signature | None = None, *classical_args, **classical_kwargs
-    ):
+    def draw(self, signature: qlt.Signature | None = None, *classical_args, **classical_kwargs):
         """Trace the function and draw the resulting CompositeBloq."""
         draw_type = classical_kwargs.pop("type", 'graph')
         self.make(signature, *classical_args, **classical_kwargs).draw(type=draw_type)

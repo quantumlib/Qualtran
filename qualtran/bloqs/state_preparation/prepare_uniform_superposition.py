@@ -75,9 +75,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
     def signature(self) -> Signature:
         return Signature.build(ctrl=slen(self.cvs), target=bit_length(self.n - 1))
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('Σ |l>')
         return super().wire_symbol(reg, idx)
@@ -151,9 +149,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
         yield cirq.H.on_each(*logL_qubits)
         context.qubit_manager.qfree([*and_target, *and_ancilla])
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         if not is_symbolic(self.n, self.cvs):
             # build from decomposition
             return super().build_call_graph(ssa)

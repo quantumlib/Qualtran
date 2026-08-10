@@ -112,9 +112,7 @@ class YGate(Bloq):
 
         return qml.PauliY(wires=wires)
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         return TextBox('Y')
@@ -186,9 +184,7 @@ class CYGate(Bloq):
 
         return qml.CY(wires=wires)
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         if reg.name == 'ctrl':

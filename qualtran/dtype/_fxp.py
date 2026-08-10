@@ -90,11 +90,7 @@ class _Fxp(BitEncoding[int]):
         self._int_encoding.assert_valid_val(val, debug_str)
 
     def to_fixed_width_int(
-        self,
-        x: float | fxpmath.Fxp,
-        *,
-        require_exact: bool = False,
-        complement: bool = True,
+        self, x: float | fxpmath.Fxp, *, require_exact: bool = False, complement: bool = True
     ) -> int:
         """Returns the interpretation of the binary representation of `x` as an integer.
 
@@ -282,11 +278,7 @@ class QFxp(QDType[int]):
         return is_symbolic(self.bitsize, self.num_frac)
 
     def to_fixed_width_int(
-        self,
-        x: float | fxpmath.Fxp,
-        *,
-        require_exact: bool = False,
-        complement: bool = True,
+        self, x: float | fxpmath.Fxp, *, require_exact: bool = False, complement: bool = True
     ) -> int:
         """Returns the interpretation of the binary representation of `x` as an integer.
 

@@ -95,9 +95,7 @@ class GF2PolyAddK(Bloq):
         f_x = bb.add(GFPolyJoin(self.qgf_poly), reg=f_x)
         return {'f_x': f_x}
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         if self.is_symbolic():
             k = ssa.new_symbol('g_x')
             return {GF2AddK(self.qgf_poly.qgf.bitsize, k): self.qgf_poly.degree + 1}

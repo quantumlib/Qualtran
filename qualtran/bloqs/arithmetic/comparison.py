@@ -79,9 +79,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("")
         if reg.name == 'x':
@@ -466,9 +464,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
         x_val, y_val, target_val = register_vals
         return x_val, y_val, target_val ^ (x_val <= y_val)
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         if reg.name == "x":
@@ -873,9 +869,7 @@ class LinearDepthGreaterThan(Bloq):
         # Return the output registers.
         return {'a': a, 'b': b, 'target': target}
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         if reg.name == "a":
@@ -1143,9 +1137,7 @@ class CLinearDepthGreaterThan(Bloq):
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(ctrl=QBit(), a=self.dtype, b=self.dtype, target=QBit())
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         if reg.name == 'ctrl':

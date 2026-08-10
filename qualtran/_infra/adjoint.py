@@ -187,9 +187,7 @@ class Adjoint(GateWithRegisters):
     def _pkg_(cls) -> str:
         return 'qualtran'
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         # Note: since we pass are passed a soquet which has the 'new' side, we flip it before
         # delegating and then flip back. Subbloqs only have to answer this protocol
         # if the provided soquet is facing the correct direction.

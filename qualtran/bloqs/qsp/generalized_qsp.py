@@ -71,7 +71,7 @@ def qsp_complementary_polynomial(
 
     Args:
         P: Co-efficients of a complex polynomial.
-        verify: sanity check the computed polynomial roots (defaults to False).
+        verify: check the computed polynomial roots (defaults to False).
         verify_precision: precision to compare values while verifying
 
     References:

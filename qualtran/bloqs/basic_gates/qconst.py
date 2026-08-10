@@ -173,14 +173,10 @@ class QIntState(Bloq):
     ) -> Mapping[str, 'ClassicalValRetT']:
         return self._impl.on_classical_vals(**vals)
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         return self._impl.build_call_graph(ssa)
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         return self._impl.wire_symbol(reg, idx)
 
     def adjoint(self) -> 'QIntEffect':
@@ -235,14 +231,10 @@ class QIntEffect(Bloq):
     ) -> Mapping[str, 'ClassicalValRetT']:
         return self._impl.on_classical_vals(**vals)
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         return self._impl.build_call_graph(ssa)
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         return self._impl.wire_symbol(reg, idx)
 
     def adjoint(self) -> 'QIntState':
@@ -297,14 +289,10 @@ class QUIntState(Bloq):
     ) -> Mapping[str, 'ClassicalValRetT']:
         return self._impl.on_classical_vals(**vals)
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         return self._impl.build_call_graph(ssa)
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         return self._impl.wire_symbol(reg, idx)
 
     def adjoint(self) -> 'QUIntEffect':
@@ -359,14 +347,10 @@ class QUIntEffect(Bloq):
     ) -> Mapping[str, 'ClassicalValRetT']:
         return self._impl.on_classical_vals(**vals)
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         return self._impl.build_call_graph(ssa)
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         return self._impl.wire_symbol(reg, idx)
 
     def adjoint(self) -> 'QUIntState':

@@ -63,9 +63,7 @@ class PreparePowerTwoState(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {Toffoli(): (self.bitsize - 2)}
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text(r'PREP 2^(r/2) |r⟩')
         return super().wire_symbol(reg, idx)
@@ -126,9 +124,7 @@ class PrepareTFirstQuantization(Bloq):
         # Factor of two for PreparePowerTwoState for r and s registers.
         return {Toffoli(): 13, PreparePowerTwoState(bitsize=self.num_bits_p): 2}
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text(r'PREP T')
         return super().wire_symbol(reg, idx)

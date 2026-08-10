@@ -77,14 +77,10 @@ class Always(Bloq):
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Mapping[str, 'ClassicalValRetT']:
         return self.subbloq.on_classical_vals(**vals)
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         return self.subbloq.build_call_graph(ssa)
 
-    def get_ctrl_system(
-        self, ctrl_spec: CtrlSpec | None = None
-    ) -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec | None = None) -> tuple['Bloq', 'AddControlledT']:
         """Pass-through the control registers as-is"""
 
         def add_controlled(

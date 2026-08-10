@@ -200,9 +200,7 @@ class GF2Inverse(Bloq):
 
         return {'x': f[0], 'result': f[k], 'junk': np.array(f[1:k])}
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         if not is_symbolic(self.bitsize) and self.bitsize == 1:
             return {GF2Addition(self.qgf): 1}
         k1 = bit_length(self.bitsize - 1) - 1

@@ -60,9 +60,7 @@ class QDTypeCheckingSeverity(Enum):
     """Strictly enforce type checking between registers. Only single bit conversions are allowed."""
 
 
-def _check_uint_fxp_consistent(
-    a: QUInt | BQUInt | QMontgomeryUInt | QGF, b: QFxp
-) -> bool:
+def _check_uint_fxp_consistent(a: QUInt | BQUInt | QMontgomeryUInt | QGF, b: QFxp) -> bool:
     """A uint / qfxp is consistent with a whole or totally fractional unsigned QFxp."""
     if b.signed:
         return False

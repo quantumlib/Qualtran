@@ -338,18 +338,14 @@ class HubbardMajorannaOperator(Bloq):
             x, y, spin, target = bb.add_from(smf, x=x, y=y, spin=spin, target=target)
             return {'x': x, 'y': y, 'spin': spin, 'target': target}
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
 
         count = self.N - 1
         if self.control_val is None:
             count -= 1
         return {And(): count, And().adjoint(): count}
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return TextBox("")
         if reg.name == 'control':
@@ -490,18 +486,14 @@ class HubbardSpinUpZ(Bloq):
 
         return ret | {'x': x, 'y': y, 'target': target}
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         half_N = self.x_dim * self.y_dim
         count = half_N
         if self.control_val is None:
             count -= 1
         return {And(): count, And().adjoint(): count, CNOT(): half_N - 1, CZ(): half_N}
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return TextBox('')
         if reg.name == 'control' or reg.name == 'V':

@@ -437,9 +437,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
         return vals
 
-    def basis_state_phase(
-        self, **vals: 'ClassicalValT'
-    ) -> complex | MeasurementPhase | None:
+    def basis_state_phase(self, **vals: 'ClassicalValT') -> complex | MeasurementPhase | None:
         """Phasing action of controlled bloqs.
 
         This involves conditionally doing the phasing action of `subbloq`. All implementers

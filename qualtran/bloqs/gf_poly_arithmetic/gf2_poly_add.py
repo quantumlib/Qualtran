@@ -85,9 +85,7 @@ class GF2PolyAdd(Bloq):
         g_x = bb.add(GFPolyJoin(self.qgf_poly), reg=g_x)
         return {'f_x': f_x, 'g_x': g_x}
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
         return {GF2Addition(self.qgf_poly.qgf.bitsize): self.qgf_poly.degree + 1}
 
     def on_classical_vals(self, *, f_x, g_x) -> dict[str, 'ClassicalValT']:

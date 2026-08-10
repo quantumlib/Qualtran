@@ -137,9 +137,7 @@ class Subtract(Bloq):
         half_n = N >> 1
         return {'a': a, 'b': int((a - b + half_n) % N) - half_n}
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         from qualtran.drawing import directional_text_box
 
         if reg is None:
@@ -280,9 +278,7 @@ class SubtractFrom(Bloq):
             ),
         }
 
-    def wire_symbol(
-        self, reg: Register | None, idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         from qualtran.drawing import directional_text_box
 
         if reg is None:
