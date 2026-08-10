@@ -113,7 +113,7 @@ test = [
 ]
 
 typing = [
-    "mypy~=1.14",
+    "mypy~=2.0",
     "mypy-protobuf",
     "sympy",
     "pandas-stubs",
