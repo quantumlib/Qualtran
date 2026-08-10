@@ -54,7 +54,7 @@ _T_list = [
 
 
 def _xz_sequence(
-    matrix: _su2_ct.SU2CliffordT, use_hs: bool = True, prv: str = 'dummy'
+    matrix: _su2_ct.SU2CliffordT, use_hs: bool = True, prv: str = 'placeholder'
 ) -> Optional[tuple[str, ...]]:
     if matrix.det() == 2:
         return clifford(matrix)
