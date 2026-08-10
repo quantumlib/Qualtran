@@ -12,10 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from collections import defaultdict
 from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Optional
 
 import attrs
 import networkx as nx
@@ -47,7 +48,7 @@ class BigBloq(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(x=self.bitsize)
 
-    def build_call_graph(self, ssa: Optional['SympySymbolAllocator']) -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator | None) -> 'BloqCountDictT':
         return {SubBloq(unrelated_param=0.5): sympy.log(self.bitsize)}
 
 
@@ -83,7 +84,7 @@ def get_big_bloq_counts_graph_1(bloq: Bloq) -> tuple[nx.DiGraph, dict[Bloq, Symb
     ss = SympySymbolAllocator()
     n_c = ss.new_symbol('n_c')
 
-    def generalize(bloq: Bloq) -> Optional[Bloq]:
+    def generalize(bloq: Bloq) -> Bloq | None:
         if isinstance(bloq, ArbitraryClifford):
             return attrs.evolve(bloq, n=n_c)
 

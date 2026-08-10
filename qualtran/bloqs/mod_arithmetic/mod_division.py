@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import cast, Optional, TYPE_CHECKING, Union
+from typing import cast, TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -96,7 +96,7 @@ class _KaliskiIterationStep1(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if is_symbolic(self.bitsize):
-            cvs: Union[HasLength, list[int]] = HasLength(self.bitsize + 1)
+            cvs: HasLength | list[int] = HasLength(self.bitsize + 1)
         else:
             cvs = [0] * int(self.bitsize) + [1]
         return {MultiAnd(cvs=cvs): 1, MultiAnd(cvs=cvs).adjoint(): 1, CNOT(): 3}
@@ -663,7 +663,7 @@ class KaliskiModInverse(Bloq):
         )
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: Soquet, junk: Optional[Soquet] = None
+        self, bb: 'BloqBuilder', x: Soquet, junk: Soquet | None = None
     ) -> dict[str, 'SoquetT']:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")

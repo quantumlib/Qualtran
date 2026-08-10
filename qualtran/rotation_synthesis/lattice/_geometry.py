@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 import functools
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import matplotlib.pyplot as plt
@@ -205,7 +205,7 @@ class Ellipse:
         phi = config.arctan2(y, x) % (2 * np.pi)
         return phi / 2
 
-    def plot(self, ax: Optional[plt.Axes] = None, add_label: bool = True, **patch_args) -> plt.Axes:
+    def plot(self, ax: plt.Axes | None = None, add_label: bool = True, **patch_args) -> plt.Axes:
         import matplotlib.pyplot as plt
         from matplotlib import patches
 

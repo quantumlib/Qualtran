@@ -14,7 +14,7 @@
 r"""PREPARE the potential energy terms of the first quantized chemistry Hamiltonian with projectile."""
 
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import frozen
 
@@ -77,7 +77,7 @@ class PrepareUVFirstQuantizationWithProj(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("PREP UV")
         return super().wire_symbol(reg, idx)

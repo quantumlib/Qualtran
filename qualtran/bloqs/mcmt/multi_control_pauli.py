@@ -14,7 +14,7 @@
 import abc
 import warnings
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -51,7 +51,7 @@ class MultiControlPauliBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def cvs(self) -> Union[HasLength, tuple[int, ...]]: ...
+    def cvs(self) -> HasLength | tuple[int, ...]: ...
 
     @property
     @abc.abstractmethod
@@ -77,7 +77,7 @@ class MultiControlPauliBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
     @property
     def _multi_ctrl_bloq(self) -> ControlledViaAnd:
-        cvs: Union[NDArray[np.integer], Shaped] = (
+        cvs: NDArray[np.integer] | Shaped = (
             Shaped((self.n_ctrls,)) if is_symbolic(self.n_ctrls) else np.array(self.concrete_cvs)
         )
         ctrl_spec = CtrlSpec(cvs=(cvs,))
@@ -111,7 +111,7 @@ class MultiControlPauliBase(GateWithRegisters, metaclass=abc.ABCMeta):
         ctrl = f'C^{n}' if is_symbolic(n) or n > 2 else ['', 'C', 'CC'][int(n)]
         return f'{ctrl}{self.target_bloq!s}'
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return TextBox(str(self))
         if reg.name == 'target':
@@ -164,7 +164,7 @@ class MultiControlPauli(MultiControlPauliBase):
         [Constructing Large Controlled Nots](https://algassert.com/circuits/2015/06/05/Constructing-Large-Controlled-Nots.html)
     """
 
-    cvs: Union[HasLength, tuple[int, ...]] = field(converter=_to_tuple_or_has_length)
+    cvs: HasLength | tuple[int, ...] = field(converter=_to_tuple_or_has_length)
     target_bloq: Bloq
 
     def __attrs_post_init__(self):
@@ -194,7 +194,7 @@ class MultiControlX(MultiControlPauliBase):
         target: single qubit target register.
     """
 
-    cvs: Union[HasLength, tuple[int, ...]] = field(converter=_to_tuple_or_has_length)
+    cvs: HasLength | tuple[int, ...] = field(converter=_to_tuple_or_has_length)
 
     @cached_property
     def target_bloq(self) -> 'Bloq':
@@ -241,7 +241,7 @@ class MultiControlZ(MultiControlPauliBase):
         target: single qubit target register.
     """
 
-    cvs: Union[HasLength, tuple[int, ...]] = field(converter=_to_tuple_or_has_length)
+    cvs: HasLength | tuple[int, ...] = field(converter=_to_tuple_or_has_length)
 
     @cached_property
     def target_bloq(self) -> 'Bloq':

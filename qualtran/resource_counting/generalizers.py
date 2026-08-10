@@ -21,7 +21,6 @@ for this argument.
 """
 
 from collections.abc import Callable
-from typing import Optional
 
 import attrs
 import sympy
@@ -33,7 +32,7 @@ PHI = sympy.Symbol(r'\phi')
 CV = sympy.Symbol("cv")
 
 
-def _ignore_wrapper(f: Callable[[Bloq], Optional[Bloq]], b: Bloq) -> Optional[Bloq]:
+def _ignore_wrapper(f: Callable[[Bloq], Bloq | None], b: Bloq) -> Bloq | None:
     """Helper for generalizers to traverse wrapper bloqs."""
     from qualtran.bloqs.bookkeeping import AutoPartition
 
@@ -43,7 +42,7 @@ def _ignore_wrapper(f: Callable[[Bloq], Optional[Bloq]], b: Bloq) -> Optional[Bl
     return b
 
 
-def ignore_split_join(b: Bloq) -> Optional[Bloq]:
+def ignore_split_join(b: Bloq) -> Bloq | None:
     """A generalizer that ignores split and join operations."""
     from qualtran.bloqs.bookkeeping import (
         AutoPartition,
@@ -62,7 +61,7 @@ def ignore_split_join(b: Bloq) -> Optional[Bloq]:
     return b
 
 
-def ignore_alloc_free(b: Bloq) -> Optional[Bloq]:
+def ignore_alloc_free(b: Bloq) -> Bloq | None:
     """A generalizer that ignores allocations and frees."""
     from qualtran.bloqs.bookkeeping import Allocate, Free
 
@@ -72,7 +71,7 @@ def ignore_alloc_free(b: Bloq) -> Optional[Bloq]:
     return _ignore_wrapper(ignore_alloc_free, b)
 
 
-def generalize_rotation_angle(b: Bloq) -> Optional[Bloq]:
+def generalize_rotation_angle(b: Bloq) -> Bloq | None:
     """A generalizer that replaces rotation angles with a shared symbol."""
     from qualtran.bloqs.basic_gates import Rx, Ry, Rz, SGate, TGate, XPowGate, YPowGate, ZPowGate
 
@@ -89,7 +88,7 @@ def generalize_rotation_angle(b: Bloq) -> Optional[Bloq]:
     return _ignore_wrapper(generalize_rotation_angle, b)
 
 
-def generalize_cvs(b: Bloq) -> Optional[Bloq]:
+def generalize_cvs(b: Bloq) -> Bloq | None:
     """A generalizer that replaces control variables with a shared symbol."""
     from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 
@@ -101,7 +100,7 @@ def generalize_cvs(b: Bloq) -> Optional[Bloq]:
     return _ignore_wrapper(generalize_cvs, b)
 
 
-def generalize_cswap_approx(b: Bloq) -> Optional[Bloq]:
+def generalize_cswap_approx(b: Bloq) -> Bloq | None:
     """A generalizer to replace CSwapApprox with a regular-old CSwap."""
     from qualtran import Adjoint
     from qualtran.bloqs.basic_gates import CSwap
@@ -115,7 +114,7 @@ def generalize_cswap_approx(b: Bloq) -> Optional[Bloq]:
     return _ignore_wrapper(generalize_cswap_approx, b)
 
 
-def ignore_cliffords(b: Bloq) -> Optional[Bloq]:
+def ignore_cliffords(b: Bloq) -> Bloq | None:
     """A generalizer that ignores known clifford bloqs."""
     from qualtran.resource_counting.classify_bloqs import bloq_is_clifford
 
@@ -124,7 +123,7 @@ def ignore_cliffords(b: Bloq) -> Optional[Bloq]:
     return _ignore_wrapper(ignore_cliffords, b)
 
 
-def cirq_to_bloqs(b: Bloq) -> Optional[Bloq]:
+def cirq_to_bloqs(b: Bloq) -> Bloq | None:
     """A generalizer that replaces Cirq gates with their equivalent bloq, where possible."""
     from qualtran.cirq_interop import CirqGateAsBloq
     from qualtran.cirq_interop._cirq_to_bloq import cirq_gate_to_bloq

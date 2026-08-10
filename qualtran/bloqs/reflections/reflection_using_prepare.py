@@ -12,9 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Iterator, Sequence
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import attrs
 import cirq
@@ -88,8 +90,8 @@ class ReflectionUsingPrepare(GateWithRegisters):
         Babbush et al. 2018. Figure 1.
     """
 
-    prepare_gate: Union['PrepareOracle', 'BlackBoxPrepare']
-    control_val: Optional[int] = None
+    prepare_gate: PrepareOracle | BlackBoxPrepare
+    control_val: int | None = None
     global_phase: complex = 1
     eps: float = 1e-11
 
@@ -109,7 +111,7 @@ class ReflectionUsingPrepare(GateWithRegisters):
     def reflection_around_zero(
         cls,
         bitsizes: Sequence[SymbolicInt],
-        control_val: Optional[int] = None,
+        control_val: int | None = None,
         global_phase: complex = 1,
         eps: float = 1e-11,
     ) -> 'ReflectionUsingPrepare':

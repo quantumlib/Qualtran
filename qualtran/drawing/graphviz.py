@@ -17,7 +17,7 @@
 import html
 import itertools
 from collections.abc import Iterable
-from typing import Any, Optional
+from typing import Any
 
 import IPython.display
 import pydot
@@ -190,7 +190,7 @@ class GraphDrawer:
             f'{html.escape(self.soq_label(thru))}</TD></TR>\n'
         )
 
-    def _register_td(self, soq: Optional[_Soquet], *, with_empty_td: bool, rowspan: int = 1) -> str:
+    def _register_td(self, soq: _Soquet | None, *, with_empty_td: bool, rowspan: int = 1) -> str:
         """Return the html code for an individual <TD>.
 
         This includes some factored-out complexity which aims to correctly pad cells that
@@ -219,8 +219,8 @@ class GraphDrawer:
 
     def _get_register_tr(
         self,
-        left: Optional[_Soquet],
-        right: Optional[_Soquet],
+        left: _Soquet | None,
+        right: _Soquet | None,
         *,
         with_empty_td: bool = True,
         left_rowspan: int = 1,

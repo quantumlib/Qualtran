@@ -12,12 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import abc
 import logging
 import time
 from collections import defaultdict
 from collections.abc import Callable, Iterable, Sequence
-from typing import Generic, Optional, TYPE_CHECKING, TypeVar, Union
+from typing import Generic, TYPE_CHECKING, TypeVar
 
 from qualtran import CompositeBloq
 
@@ -144,8 +146,8 @@ def _get_cost_value(
 def get_cost_value(
     bloq: 'Bloq',
     cost_key: CostKey[CostValT],
-    costs_cache: Optional[dict['Bloq', CostValT]] = None,
-    generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
+    costs_cache: dict['Bloq', CostValT] | None = None,
+    generalizer: GeneralizerT | Sequence[GeneralizerT] | None = None,
 ) -> CostValT:
     """Compute the specified cost of the provided bloq.
 
@@ -177,8 +179,8 @@ def get_cost_value(
 def get_cost_cache(
     bloq: 'Bloq',
     cost_key: CostKey[CostValT],
-    costs_cache: Optional[dict['Bloq', CostValT]] = None,
-    generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
+    costs_cache: dict['Bloq', CostValT] | None = None,
+    generalizer: GeneralizerT | Sequence[GeneralizerT] | None = None,
 ) -> dict['Bloq', CostValT]:
     """Build a cache of cost values for the bloq and its callees.
 
@@ -214,7 +216,7 @@ def get_cost_cache(
 def query_costs(
     bloq: 'Bloq',
     cost_keys: Iterable[CostKey],
-    generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
+    generalizer: GeneralizerT | Sequence[GeneralizerT] | None = None,
 ) -> dict['Bloq', dict[CostKey, CostValT]]:
     """Compute a selection of costs for a bloq and its callees.
 

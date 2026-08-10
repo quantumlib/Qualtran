@@ -19,7 +19,7 @@ import itertools
 from collections import defaultdict
 from collections.abc import Iterable, Iterator
 from functools import cached_property
-from typing import cast, overload, Union
+from typing import cast, overload
 
 import attrs
 from attrs import field, frozen
@@ -53,7 +53,7 @@ class Side(enum.Flag):
         return f'{self.__class__.__name__}.{self._name_}'
 
 
-def _consume_register_dtype(dtype: Union[QCDType, ShapedQCDType]) -> QCDType:
+def _consume_register_dtype(dtype: QCDType | ShapedQCDType) -> QCDType:
     # In __attrs_post_init__, we actually handle the ShapedQCDType case, which isn't accounted
     # for in attrs type checking.
     return cast(QCDType, dtype)

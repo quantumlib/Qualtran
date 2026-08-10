@@ -12,10 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import functools
 import itertools
 from collections.abc import Mapping, Sequence
-from typing import cast, Optional
+from typing import cast
 
 import attrs
 import numpy as np
@@ -49,7 +51,7 @@ class SU2CliffordT:
     """
 
     matrix: np.ndarray = attrs.field(converter=np.asarray)
-    gates: Optional[tuple[str, ...]] = None
+    gates: tuple[str, ...] | None = None
 
     def __mul__(self, other):
         assert not isinstance(other, SU2CliffordT)
@@ -59,7 +61,7 @@ class SU2CliffordT:
         res = self.matrix @ other.matrix
         for v in res.flat:
             assert v.is_divisible_by(_zw.SQRT_2)
-        gates: Optional[tuple[str, ...]] = None
+        gates: tuple[str, ...] | None = None
         if self.gates is not None and other.gates is not None:
             gates = other.gates + self.gates
         return SU2CliffordT([[v // _zw.SQRT_2 for v in r] for r in res], gates)
@@ -83,7 +85,7 @@ class SU2CliffordT:
     def __eq__(self, other):
         return np.all(self.matrix == other.matrix)
 
-    def numpy(self, config: Optional[mc.MathConfig] = None) -> np.ndarray:
+    def numpy(self, config: mc.MathConfig | None = None) -> np.ndarray:
         """Returns the numpy representation of the unitary.
         Args:
             config: An optional MathConfig used to convert the matrix entries to complex
@@ -104,7 +106,7 @@ class SU2CliffordT:
     def adjoint(self) -> "SU2CliffordT":
         return SU2CliffordT(self.matrix.T.conj())
 
-    def scale_down(self) -> Optional["SU2CliffordT"]:
+    def scale_down(self) -> SU2CliffordT | None:
         for v in self.matrix.flat:
             if not v.is_divisible_by(_zw.LAMBDA_KLIUCHNIKOV):
                 return None

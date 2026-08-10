@@ -14,7 +14,6 @@
 
 import subprocess
 import sys
-from typing import Union
 
 BOLD = 1
 DIM = 2
@@ -48,7 +47,7 @@ def abbreviate_command_arguments_after_switches(cmd: tuple[str, ...]) -> tuple[s
 
 
 def run(
-    args: Union[str, list[str]],
+    args: str | list[str],
     *,
     log_run_to_stderr: bool = True,
     abbreviate_non_option_arguments: bool = False,
@@ -96,7 +95,7 @@ def run(
     )
 
 
-def output_of(args: Union[str, list[str]], **kwargs) -> str:
+def output_of(args: str | list[str], **kwargs) -> str:
     """Invokes a subprocess and returns its output as a string.
 
     Args:

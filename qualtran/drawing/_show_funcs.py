@@ -14,9 +14,11 @@
 
 """Convenience functions for showing rich displays in Jupyter notebook."""
 
+from __future__ import annotations
+
 import os
 from collections.abc import Sequence
-from typing import Optional, overload, TYPE_CHECKING, Union
+from typing import overload, TYPE_CHECKING
 
 from qualtran import Bloq
 
@@ -52,7 +54,7 @@ def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-b
         )
 
 
-def show_bloqs(bloqs: Sequence['Bloq'], labels: Optional[Sequence[Optional[str]]] = None):
+def show_bloqs(bloqs: Sequence['Bloq'], labels: Sequence[str | None] | None = None):
     """Display multiple bloqs side-by-side in IPython."""
     import IPython.display
     import ipywidgets
@@ -78,22 +80,22 @@ def show_bloqs(bloqs: Sequence['Bloq'], labels: Optional[Sequence[Optional[str]]
 
 @overload
 def show_call_graph(
-    item: 'Bloq', /, *, max_depth: Optional[int] = None, agg_gate_counts: Optional[str] = None
+    item: 'Bloq', /, *, max_depth: int | None = None, agg_gate_counts: str | None = None
 ) -> None: ...
 
 
 @overload
 def show_call_graph(
-    item: 'nx.Graph', /, *, max_depth: Optional[int] = None, agg_gate_counts: Optional[str] = None
+    item: 'nx.Graph', /, *, max_depth: int | None = None, agg_gate_counts: str | None = None
 ) -> None: ...
 
 
 def show_call_graph(
-    item: Union['Bloq', 'nx.Graph'],
+    item: Bloq | nx.Graph,
     /,
     *,
-    max_depth: Optional[int] = None,
-    agg_gate_counts: Optional[str] = None,
+    max_depth: int | None = None,
+    agg_gate_counts: str | None = None,
 ) -> None:
     """Display a graph representation of the call graph.
 
@@ -125,7 +127,7 @@ def show_call_graph(
         IPython.display.display(GraphvizCallGraph(item).get_svg())
 
 
-def show_counts_sigma(sigma: dict['Bloq', Union[int, 'sympy.Expr']]):
+def show_counts_sigma(sigma: dict[Bloq, int | sympy.Expr]):
     """Display nicely formatted bloq counts sums `sigma`."""
     import IPython.display
 

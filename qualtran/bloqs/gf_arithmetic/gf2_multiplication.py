@@ -11,9 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from collections.abc import Mapping, Sequence
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -45,7 +47,7 @@ if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT
 
 
-def _data_or_shape_to_tuple(data_or_shape: Union[np.ndarray, Shaped]) -> tuple:
+def _data_or_shape_to_tuple(data_or_shape: np.ndarray | Shaped) -> tuple:
     return (
         tuple(data_or_shape.flatten())
         if isinstance(data_or_shape, np.ndarray)
@@ -64,7 +66,7 @@ class SynthesizeLRCircuit(Bloq):
         [Efficient Synthesis of Linear Reversible Circuits](https://arxiv.org/abs/quant-ph/0302002)
     """
 
-    matrix: Union[Shaped, np.ndarray] = attrs.field(eq=_data_or_shape_to_tuple)
+    matrix: Shaped | np.ndarray = attrs.field(eq=_data_or_shape_to_tuple)
     is_adjoint: bool = False
 
     def __attrs_post_init__(self):
@@ -131,7 +133,7 @@ class SynthesizeLRCircuit(Bloq):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', set['BloqCountT']]:
+    ) -> BloqCountDictT | set[BloqCountT]:
         n = self.matrix.shape[0]
         if isinstance(self.matrix, Shaped):
             return {CNOT(): n**2 - n}
@@ -252,7 +254,7 @@ class GF2Multiplication(Bloq):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', set['BloqCountT']]:
+    ) -> BloqCountDictT | set[BloqCountT]:
         m = self.bitsize
         plus_equal_prod = {GF2ShiftRight(self.qgf, m).adjoint(): 1} if self.plus_equal_prod else {}
         return {Toffoli(): m**2, GF2ShiftRight(self.qgf, m): 1} | plus_equal_prod
@@ -298,7 +300,7 @@ class Parity(Bloq):
         )
 
     def on_classical_vals(
-        self, *, x: Union['sympy.Symbol', 'ClassicalValT']
+        self, *, x: sympy.Symbol | ClassicalValT
     ) -> Mapping[str, 'ClassicalValRetT']:
         assert isinstance(x, np.ndarray)
         return {'x': x, 'parity': np.sum(x, dtype=int) & 1}
@@ -380,7 +382,7 @@ class GF2MulMBUC(Bloq):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', set['BloqCountT']]:
+    ) -> BloqCountDictT | set[BloqCountT]:
         m = self.bitsize
         return {CZ(): m**2}
 
@@ -428,7 +430,7 @@ class GF2MulK(Bloq):
 
     @staticmethod
     def from_polynomials(
-        f_x: Union['galois.Poly', Sequence[int]], m_x: Union['galois.Poly', Sequence[int]]
+        f_x: galois.Poly | Sequence[int], m_x: galois.Poly | Sequence[int]
     ) -> 'GF2MulK':
         if not isinstance(m_x, Poly):
             m_x = Poly.Degrees(m_x)
@@ -469,7 +471,7 @@ class GF2MulK(Bloq):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', set['BloqCountT']]:
+    ) -> BloqCountDictT | set[BloqCountT]:
         return {SynthesizeLRCircuit(self.reduction_matrix_q): 1}
 
 
@@ -604,7 +606,7 @@ class MultiplyPolyByOnePlusXk(Bloq):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', set['BloqCountT']]:
+    ) -> BloqCountDictT | set[BloqCountT]:
         if not is_symbolic(self.n) and self.n == 1:
             return {CNOT(): 2, Toffoli(): 1}
         return {CNOT(): 2 * (self.l + self.k), BinaryPolynomialMultiplication(self.n): 1}
@@ -733,7 +735,7 @@ class BinaryPolynomialMultiplication(Bloq):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', set['BloqCountT']]:
+    ) -> BloqCountDictT | set[BloqCountT]:
         if not is_symbolic(self.n) and self.n == 1:
             return {Toffoli(): 1}
         if not is_symbolic(self.n) and 2 * self.k == self.n:
@@ -828,7 +830,7 @@ class GF2ShiftLeft(Bloq):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', set['BloqCountT']]:
+    ) -> BloqCountDictT | set[BloqCountT]:
         if is_symbolic(self.n):
             w = 5  # Assume a pentanomial is used.
             return {CNOT(): (w - 2) * self.k}
@@ -921,7 +923,7 @@ class GF2ShiftRight(Bloq):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', set['BloqCountT']]:
+    ) -> BloqCountDictT | set[BloqCountT]:
         if is_symbolic(self.n):
             w = 5  # Assume a pentanomial is used.
             return {CNOT(): (w - 2) * self.k}
@@ -1122,7 +1124,7 @@ class GF2MulViaKaratsuba(Bloq):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', set['BloqCountT']]:
+    ) -> BloqCountDictT | set[BloqCountT]:
         if is_symbolic(self.n):
             return {Toffoli(): self.n ** (log2(3)), CNOT(): self.n**2}
 
@@ -1146,7 +1148,7 @@ class GF2MulViaKaratsuba(Bloq):
         }
 
     def on_classical_vals(
-        self, x: 'SymbolicInt', y: 'SymbolicInt', result: Optional['SymbolicInt'] = None
+        self, x: 'SymbolicInt', y: 'SymbolicInt', result: SymbolicInt | None = None
     ) -> dict[str, 'ClassicalValT']:
         assert isinstance(x, self.gf)
         assert isinstance(y, self.gf)

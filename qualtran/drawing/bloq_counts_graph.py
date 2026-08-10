@@ -18,7 +18,7 @@ import abc
 import html
 import warnings
 from collections.abc import Mapping
-from typing import Any, cast, Optional, TYPE_CHECKING, Union
+from typing import Any, cast, TYPE_CHECKING
 
 import IPython.display
 import networkx as nx
@@ -128,7 +128,7 @@ class GraphvizCallGraph(_CallGraphDrawerBase):
             in each node. The keys and values must support `str()`.
     """
 
-    def __init__(self, g: nx.DiGraph, bloq_data: Optional[dict['Bloq', dict[Any, Any]]] = None):
+    def __init__(self, g: nx.DiGraph, bloq_data: dict['Bloq', dict[Any, Any]] | None = None):
         super().__init__(g)
 
         if bloq_data is None:
@@ -149,7 +149,7 @@ class GraphvizCallGraph(_CallGraphDrawerBase):
         return {'Qubits': f'{val}'}
 
     @classmethod
-    def format_qec_gates_cost(cls, val: 'GateCounts', agg: Optional[str] = None) -> dict[str, str]:
+    def format_qec_gates_cost(cls, val: 'GateCounts', agg: str | None = None) -> dict[str, str]:
         """Format `QECGatesCost` cost values as a string.
 
         Args:
@@ -194,7 +194,7 @@ class GraphvizCallGraph(_CallGraphDrawerBase):
     def format_cost_data(
         cls,
         cost_data: dict['Bloq', dict['CostKey', 'CostValT']],
-        agg_gate_counts: Optional[str] = None,
+        agg_gate_counts: str | None = None,
     ) -> dict['Bloq', dict[str, str]]:
         """Format `cost_data` as human-readable strings.
 
@@ -231,7 +231,7 @@ class GraphvizCallGraph(_CallGraphDrawerBase):
 
     @classmethod
     def from_bloq(
-        cls, bloq: Bloq, *, max_depth: Optional[int] = None, agg_gate_counts: Optional[str] = None
+        cls, bloq: Bloq, *, max_depth: int | None = None, agg_gate_counts: str | None = None
     ) -> 'GraphvizCallGraph':
         """Draw a bloq call graph.
 
@@ -285,7 +285,7 @@ class GraphvizCallGraph(_CallGraphDrawerBase):
         return {'label': ''.join(label), 'shape': 'plaintext'}
 
 
-def _format_bloq_expr_markdown(bloq: Bloq, expr: Union[int, sympy.Expr]) -> str:
+def _format_bloq_expr_markdown(bloq: Bloq, expr: int | sympy.Expr) -> str:
     """Return "`bloq`: expr" as markdown."""
     if isinstance(expr, int):
         expr_str = str(expr)
@@ -316,7 +316,7 @@ def format_counts_graph_markdown(graph: nx.DiGraph) -> str:
     return m
 
 
-def format_counts_sigma(sigma: dict[Bloq, Union[int, sympy.Expr]]) -> str:
+def format_counts_sigma(sigma: dict[Bloq, int | sympy.Expr]) -> str:
     """Format `sigma` as markdown."""
     lines = [f' - {_format_bloq_expr_markdown(bloq, expr)}' for bloq, expr in sigma.items()]
     lines.sort()

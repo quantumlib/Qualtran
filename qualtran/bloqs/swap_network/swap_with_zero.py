@@ -14,7 +14,7 @@
 
 from collections.abc import Iterable, Iterator
 from functools import cached_property
-from typing import cast, TYPE_CHECKING, Union
+from typing import cast, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -43,7 +43,7 @@ if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
-def _to_tuple(x: Union[SymbolicInt, Iterable[SymbolicInt]]) -> tuple[SymbolicInt, ...]:
+def _to_tuple(x: SymbolicInt | Iterable[SymbolicInt]) -> tuple[SymbolicInt, ...]:
     if isinstance(x, np.ndarray):
         return _to_tuple(x.tolist())
     if isinstance(x, Iterable):

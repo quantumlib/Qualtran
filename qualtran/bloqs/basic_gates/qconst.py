@@ -12,9 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Mapping
 from functools import cached_property
-from typing import cast, Optional, Set, TYPE_CHECKING, Union
+from typing import cast, TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -110,7 +112,7 @@ class _QConst(Bloq):
         else:
             return self._build_composite_effect(bb, cast(Soquet, val['val']), bits)
 
-    def on_classical_vals(self, *, val: Optional[int] = None) -> dict[str, Union[int, sympy.Expr]]:
+    def on_classical_vals(self, *, val: int | None = None) -> dict[str, int | sympy.Expr]:
         if self.state:
             assert val is None
             return {'val': self.val}
@@ -128,7 +130,7 @@ class _QConst(Bloq):
         s = f'{self.val}'
         return f'QConst({s})'
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
 
@@ -167,17 +169,17 @@ class QIntState(Bloq):
         return self._impl.build_composite_bloq(bb, **soqs)
 
     def on_classical_vals(
-        self, **vals: Union['sympy.Symbol', 'ClassicalValT']
+        self, **vals: sympy.Symbol | ClassicalValT
     ) -> Mapping[str, 'ClassicalValRetT']:
         return self._impl.on_classical_vals(**vals)
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+    ) -> BloqCountDictT | set[BloqCountT]:
         return self._impl.build_call_graph(ssa)
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         return self._impl.wire_symbol(reg, idx)
 
@@ -229,17 +231,17 @@ class QIntEffect(Bloq):
         return self._impl.build_composite_bloq(bb, **soqs)
 
     def on_classical_vals(
-        self, **vals: Union['sympy.Symbol', 'ClassicalValT']
+        self, **vals: sympy.Symbol | ClassicalValT
     ) -> Mapping[str, 'ClassicalValRetT']:
         return self._impl.on_classical_vals(**vals)
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+    ) -> BloqCountDictT | set[BloqCountT]:
         return self._impl.build_call_graph(ssa)
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         return self._impl.wire_symbol(reg, idx)
 
@@ -291,17 +293,17 @@ class QUIntState(Bloq):
         return self._impl.build_composite_bloq(bb, **soqs)
 
     def on_classical_vals(
-        self, **vals: Union['sympy.Symbol', 'ClassicalValT']
+        self, **vals: sympy.Symbol | ClassicalValT
     ) -> Mapping[str, 'ClassicalValRetT']:
         return self._impl.on_classical_vals(**vals)
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+    ) -> BloqCountDictT | set[BloqCountT]:
         return self._impl.build_call_graph(ssa)
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         return self._impl.wire_symbol(reg, idx)
 
@@ -353,17 +355,17 @@ class QUIntEffect(Bloq):
         return self._impl.build_composite_bloq(bb, **soqs)
 
     def on_classical_vals(
-        self, **vals: Union['sympy.Symbol', 'ClassicalValT']
+        self, **vals: sympy.Symbol | ClassicalValT
     ) -> Mapping[str, 'ClassicalValRetT']:
         return self._impl.on_classical_vals(**vals)
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+    ) -> BloqCountDictT | set[BloqCountT]:
         return self._impl.build_call_graph(ssa)
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         return self._impl.wire_symbol(reg, idx)
 

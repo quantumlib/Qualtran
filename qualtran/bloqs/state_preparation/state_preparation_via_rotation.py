@@ -75,7 +75,7 @@ References:
 
 from collections import Counter
 from collections.abc import Iterable
-from typing import cast, TYPE_CHECKING, Union
+from typing import cast, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -103,9 +103,7 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
-def _to_tuple_or_has_length(
-    x: Union[HasLength, Iterable[complex]],
-) -> Union[HasLength, tuple[complex, ...]]:
+def _to_tuple_or_has_length(x: HasLength | Iterable[complex]) -> HasLength | tuple[complex, ...]:
     if isinstance(x, HasLength):
         return x
     return tuple(x)
@@ -135,7 +133,7 @@ class StatePreparationViaRotations(GateWithRegisters):
         Low, Kliuchnikov, Schaeffer. 2018.
     """
 
-    state_coefficients: Union[HasLength, tuple[complex, ...]] = attrs.field(
+    state_coefficients: HasLength | tuple[complex, ...] = attrs.field(
         converter=_to_tuple_or_has_length
     )
     phase_bitsize: SymbolicInt
@@ -201,7 +199,7 @@ class StatePreparationViaRotations(GateWithRegisters):
 
     @property
     def prga_prepare_phases(self) -> 'PRGAViaPhaseGradient':
-        data_or_shape: Union[Shaped, tuple[int, ...]] = (
+        data_or_shape: Shaped | tuple[int, ...] = (
             Shaped((slen(self.state_coefficients),))
             if is_symbolic(self.state_coefficients) or is_symbolic(self.phase_bitsize)
             else tuple(self.rotation_tree.get_rom_vals()[1])
@@ -411,7 +409,7 @@ class PRGAViaPhaseGradient(Bloq):
 
     selection_bitsize: SymbolicInt
     phase_bitsize: SymbolicInt
-    rom_values: Union[Shaped, tuple[int, ...]]
+    rom_values: Shaped | tuple[int, ...]
     control_bitsize: SymbolicInt
 
     @property

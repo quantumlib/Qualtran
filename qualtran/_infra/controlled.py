@@ -11,11 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import abc
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from functools import cached_property
-from typing import Any, Optional, Protocol, TYPE_CHECKING, TypeAlias, Union
+from typing import Any, Protocol, TYPE_CHECKING, TypeAlias
 
 import attrs
 import numpy as np
@@ -41,11 +43,11 @@ if TYPE_CHECKING:
 ControlBit: TypeAlias = int
 """A control bit, either 0 or 1."""
 
-_CVInLeafT: TypeAlias = Union[int, np.integer, NDArray[np.integer], Shaped]
-_CVInType: TypeAlias = Union[_CVInLeafT, Sequence['_CVInType']]
+_CVInLeafT: TypeAlias = int | np.integer | NDArray[np.integer] | Shaped
+_CVInType: TypeAlias = _CVInLeafT | Sequence['_CVInType']
 
 
-def _cvs_convert(cvs: _CVInType) -> tuple[Union[NDArray[np.integer], Shaped], ...]:
+def _cvs_convert(cvs: _CVInType) -> tuple[NDArray[np.integer] | Shaped, ...]:
     if isinstance(cvs, Shaped):
         return (cvs,)
     if isinstance(cvs, (int, np.integer)):
@@ -103,9 +105,7 @@ class CtrlSpec:
     qdtypes: tuple[QCDType, ...] = attrs.field(
         default=QBit(), converter=lambda qt: (qt,) if isinstance(qt, QCDType) else tuple(qt)
     )
-    cvs: tuple[Union[NDArray[np.integer], Shaped], ...] = attrs.field(
-        default=1, converter=_cvs_convert
-    )
+    cvs: tuple[NDArray[np.integer] | Shaped, ...] = attrs.field(default=1, converter=_cvs_convert)
 
     def __attrs_post_init__(self):
         assert len(self.qdtypes) == len(self.cvs)
@@ -208,10 +208,10 @@ class CtrlSpec:
             return TextBox(f'{cv}')
 
     @cached_property
-    def __cvs_tuple(self) -> tuple[Union[tuple[int, ...], Shaped], ...]:
+    def __cvs_tuple(self) -> tuple[tuple[int, ...] | Shaped, ...]:
         """Serialize the control values for hashing and equality checking."""
 
-        def _serialize(cvs) -> Union[tuple[int, ...], Shaped]:
+        def _serialize(cvs) -> tuple[int, ...] | Shaped:
             if isinstance(cvs, Shaped):
                 return cvs
             return tuple(cvs.reshape(-1))
@@ -254,8 +254,8 @@ class CtrlSpec:
         cls,
         cirq_cv: 'cirq.ops.AbstractControlValues',
         *,
-        qdtypes: Optional[Sequence[QCDType]] = None,
-        shapes: Optional[Sequence[tuple[int, ...]]] = None,
+        qdtypes: Sequence[QCDType] | None = None,
+        shapes: Sequence[tuple[int, ...]] | None = None,
     ) -> 'CtrlSpec':
         """Construct a CtrlSpec from cirq.SumOfProducts representation of control values."""
         conjunctions = [*cirq_cv.expand()]
@@ -439,7 +439,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
     def basis_state_phase(
         self, **vals: 'ClassicalValT'
-    ) -> Optional[Union[complex, 'MeasurementPhase']]:
+    ) -> complex | MeasurementPhase | None:
         """Phasing action of controlled bloqs.
 
         This involves conditionally doing the phasing action of `subbloq`. All implementers
@@ -515,7 +515,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         data = self._tensor_data().reshape((2,) * len(inds))
         return [qtn.Tensor(data=data, inds=inds, tags=[str(self)])]
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         from qualtran.drawing import Text
 
         if reg is None:
@@ -541,7 +541,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
-    ) -> tuple[Optional['cirq.Operation'], dict[str, 'CirqQuregT']]:
+    ) -> tuple[cirq.Operation | None, dict[str, 'CirqQuregT']]:
         ctrl_regs = {reg_name: cirq_quregs.pop(reg_name) for reg_name in self.ctrl_reg_names}
         ctrl_qubits = [q for reg in ctrl_regs.values() for q in reg.reshape(-1)]
         sub_op, cirq_quregs = self.subbloq.as_cirq_op(qubit_manager, **cirq_quregs)

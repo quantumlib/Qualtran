@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from collections.abc import Sequence
-from typing import Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -98,7 +97,7 @@ class FastComplementaryQSPHelper:
 
 
 def fast_complementary_polynomial(
-    P: Union[Sequence[float], Sequence[complex]],
+    P: Sequence[float] | Sequence[complex],
     random_state: np.random.RandomState,
     only_reals: bool = False,
     tolerance: float = 1e-10,

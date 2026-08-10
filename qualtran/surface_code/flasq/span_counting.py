@@ -22,7 +22,6 @@ compute_span_volume in FLASQCostModel to produce ancilla volumes.
 
 import logging
 from collections.abc import Callable, Mapping, Sequence
-from typing import Union
 
 import attrs
 import sympy
@@ -159,7 +158,7 @@ class GateSpan:
             return "-"
         return ", ".join(parts)
 
-    def asdict(self) -> dict[str, Union[SymbolicInt, dict["Bloq", SymbolicInt]]]:
+    def asdict(self) -> dict[str, SymbolicInt | dict["Bloq", SymbolicInt]]:
         # Filter out zero counts and empty dicts
         d = attrs.asdict(
             self, recurse=False, filter=lambda a, v: not is_zero(v) and v != frozendict()

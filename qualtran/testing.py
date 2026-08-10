@@ -14,12 +14,14 @@
 
 """Functions for testing bloqs."""
 
+from __future__ import annotations
+
 import itertools
 import traceback
 from collections.abc import Sequence
 from enum import Enum
 from pathlib import Path
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -231,7 +233,7 @@ def assert_valid_cbloq(cbloq: CompositeBloq):
     assert_soquets_used_exactly_once(cbloq)
 
 
-def assert_valid_bloq_decomposition(bloq: Optional[Bloq]) -> CompositeBloq:
+def assert_valid_bloq_decomposition(bloq: Bloq | None) -> CompositeBloq:
     """Check the validity of a bloq decomposition.
 
     Importantly, this does not do any correctness checking -- for that you likely
@@ -245,7 +247,7 @@ def assert_valid_bloq_decomposition(bloq: Optional[Bloq]) -> CompositeBloq:
     return cbloq
 
 
-def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: list[Union[str, 'WireSymbol']]):
+def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: list[str | WireSymbol]):
     """Assert a bloq's wire symbols match the expected ones.
 
     For multi-dimensional registers (with a shape), this will iterate
@@ -472,8 +474,8 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
 
     has_manual_counts: bool
     has_decomp_counts: bool
-    manual_counts: dict['Bloq', Union[int, 'sympy.Expr']] = {}
-    decomp_counts: dict['Bloq', Union[int, 'sympy.Expr']] = {}
+    manual_counts: dict['Bloq', int | 'sympy.Expr'] = {}
+    decomp_counts: dict['Bloq', int | 'sympy.Expr'] = {}
 
     # Notable implementation detail: since `bloq.build_call_graph` has a default fallback
     # that uses the decomposition, we could accidentally be comparing two identical code paths
@@ -524,7 +526,7 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
 
 
 def assert_equivalent_bloq_counts(
-    bloq: Bloq, generalizer: Union['GeneralizerT', Sequence['GeneralizerT']] = lambda x: x
+    bloq: Bloq, generalizer: GeneralizerT | Sequence[GeneralizerT] = lambda x: x
 ) -> None:
     """Assert that the BloqExample has consistent bloq counts.
 
@@ -705,8 +707,7 @@ def check_bloq_example_qtyping(bloq_ex: BloqExample) -> tuple[BloqCheckResult, s
 
 
 def assert_consistent_classical_action(
-    bloq: Bloq,
-    **parameter_ranges: Union[NDArray, Sequence[int], Sequence[Union[Sequence[int], NDArray]]],
+    bloq: Bloq, **parameter_ranges: NDArray | Sequence[int] | Sequence[Sequence[int] | NDArray]
 ):
     """Check that the bloq has a classical action consistent with its decomposition.
 
@@ -726,8 +727,7 @@ def assert_consistent_classical_action(
 
 
 def assert_consistent_phased_classical_action(
-    bloq: Bloq,
-    **parameter_ranges: Union[NDArray, Sequence[int], Sequence[Union[Sequence[int], NDArray]]],
+    bloq: Bloq, **parameter_ranges: NDArray | Sequence[int] | Sequence[Sequence[int] | NDArray]
 ):
     """Check that the bloq has a phased classical action consistent with its decomposition.
 

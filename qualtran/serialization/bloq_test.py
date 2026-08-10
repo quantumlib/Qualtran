@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 import dataclasses
-from typing import Union
 
 import attrs
 import cirq
@@ -90,7 +89,7 @@ def test_cbloq_to_proto_two_cnot():
 
 @attrs.frozen
 class TestCSwap(Bloq):
-    bitsize: Union[int, sympy.Expr]
+    bitsize: int | sympy.Expr
 
     @property
     def signature(self) -> 'Signature':
@@ -103,7 +102,7 @@ class TestCSwap(Bloq):
 
 @dataclasses.dataclass(frozen=True)
 class TestTwoCSwap(Bloq):
-    bitsize: Union[int, sympy.Expr]
+    bitsize: int | sympy.Expr
 
     @property
     def signature(self) -> 'Signature':

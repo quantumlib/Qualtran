@@ -14,6 +14,8 @@
 
 """Classes for building and manipulating `CompositeBloq`."""
 
+from __future__ import annotations
+
 import warnings
 from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping, Sequence
 from functools import cached_property
@@ -21,14 +23,12 @@ from typing import (
     _ProtocolMeta,
     cast,
     FrozenSet,
-    Optional,
     overload,
     Protocol,
     TYPE_CHECKING,
     TypeAlias,
     TypeGuard,
     TypeVar,
-    Union,
 )
 
 import attrs
@@ -177,7 +177,7 @@ SoquetT: TypeAlias = QVarT
 QVar: TypeAlias = Soquet
 
 
-SoquetInT = Union[QVarT, Sequence[QVarT]]
+SoquetInT = QVarT | Sequence[QVarT]
 """A soquet or array-like of soquets.
 
 This type alias is used for input argument to parts of the library that are more
@@ -187,7 +187,7 @@ canonicalize and return `SoquetT`.
 
 _ConnectionType = TypeVar('_ConnectionType', bound=np.generic)
 
-ConnectionT = Union[Connection, NDArray[_ConnectionType]]
+ConnectionT = Connection | NDArray[_ConnectionType]
 """A `Connection` or array of connections."""
 
 
@@ -248,8 +248,8 @@ class CompositeBloq(Bloq):
     signature: Signature
     bloq_instances: FrozenSet[BloqInstance] = attrs.field(converter=_to_set)
 
-    decomposed_from: Optional[Bloq] = attrs.field(default=None, kw_only=True)
-    bloq_key: Optional[str] = attrs.field(default=None, kw_only=True)
+    decomposed_from: Bloq | None = attrs.field(default=None, kw_only=True)
+    bloq_key: str | None = attrs.field(default=None, kw_only=True)
 
     @bloq_instances.default
     def _default_bloq_instances(self):
@@ -293,7 +293,7 @@ class CompositeBloq(Bloq):
         return cirq.CircuitOperation(circuit), out_quregs
 
     def to_cirq_circuit_and_quregs(
-        self, qubit_manager: Optional['cirq.QubitManager'] = None, **cirq_quregs: 'CirqQuregInT'
+        self, qubit_manager: 'cirq.QubitManager' | None = None, **cirq_quregs: 'CirqQuregInT'
     ) -> tuple['cirq.FrozenCircuit', dict[str, 'CirqQuregT']]:
         """Convert this CompositeBloq to a `cirq.Circuit` and output qubit registers.
 
@@ -320,8 +320,8 @@ class CompositeBloq(Bloq):
     def to_cirq_circuit(
         self,
         *,
-        qubit_manager: Optional['cirq.QubitManager'] = None,
-        cirq_quregs: Optional[Mapping[str, 'CirqQuregInT']] = None,
+        qubit_manager: 'cirq.QubitManager' | None = None,
+        cirq_quregs: Mapping[str, 'CirqQuregInT'] | None = None,
     ) -> 'cirq.FrozenCircuit':
         """Convert this CompositeBloq to a `cirq.Circuit`.
 
@@ -356,7 +356,7 @@ class CompositeBloq(Bloq):
         return cirq_optree_to_cbloq(circuit)
 
     def on_classical_vals(
-        self, **vals: Union[sympy.Symbol, 'ClassicalValT']
+        self, **vals: sympy.Symbol | 'ClassicalValT'
     ) -> dict[str, 'ClassicalValT']:
         """`CompositeBloq` implementation of `Bloq.on_classical_vals`.
 
@@ -386,7 +386,7 @@ class CompositeBloq(Bloq):
             "Consider using the composite bloq directly or using `.flatten()`."
         )
 
-    def build_call_graph(self, ssa: Optional['SympySymbolAllocator']) -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: 'SympySymbolAllocator' | None) -> 'BloqCountDictT':
         """`CompositeBloq` implementation of `Bloq.build_call_graph`.
 
         Build this composite bloq's call graph by counting up all the subbloqs.
@@ -629,9 +629,7 @@ class CompositeBloq(Bloq):
         delimited_gens = ('\n' + '-' * 20 + '\n').join(gen_texts)
         return delimited_gens
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         from qualtran.drawing import Text
 
         if reg is None:
@@ -677,7 +675,7 @@ def _create_binst_graph(
 
 
 def _binst_to_cxns(
-    binst: Union[BloqInstance, DanglingT], binst_graph: nx.DiGraph
+    binst: BloqInstance | DanglingT, binst_graph: nx.DiGraph
 ) -> tuple[list[Connection], list[Connection]]:
     """Helper method to extract all predecessor and successor Connections for a binst."""
     if binst not in binst_graph.nodes:
@@ -875,7 +873,7 @@ class _IgnoreAvailable:
         pass
 
 
-def _reg_to_soq(binst: Union[BloqInstance, DanglingT], reg: Register) -> _SoquetT:
+def _reg_to_soq(binst: BloqInstance | DanglingT, reg: Register) -> _SoquetT:
     """Create the soquet or array of soquets for a register.
 
     Args:
@@ -1109,7 +1107,7 @@ class BloqBuilder:
             by the framework or by the `BloqBuilder.from_signature(s)` factory method.
     """
 
-    def __init__(self, add_registers_allowed: bool = True, *, bloq_key: Optional[str] = None):
+    def __init__(self, add_registers_allowed: bool = True, *, bloq_key: str | None = None):
         # To be appended to:
         self._cxns: list[Connection] = []
         self._regs: list[Register] = []
@@ -1127,8 +1125,8 @@ class BloqBuilder:
         self._bloq_key = bloq_key
 
     def add_register_from_dtype(
-        self, reg: Union[str, Register], dtype: Optional[QCDType] = None
-    ) -> Union[None, QVarT]:
+        self, reg: str | Register, dtype: QCDType | None = None
+    ) -> None | QVarT:
         """Add a new typed register to the composite bloq being built.
 
         If this bloq builder was constructed with `add_registers_allowed=False`,
@@ -1176,7 +1174,7 @@ class BloqBuilder:
         return None
 
     @overload
-    def add_register(self, reg: Register, bitsize: None = None) -> Union[None, QVarT]: ...
+    def add_register(self, reg: Register, bitsize: None = None) -> None | QVarT: ...
 
     @overload
     def add_register(self, reg: str, bitsize: 'SymbolicInt') -> QVarT: ...
@@ -1185,8 +1183,8 @@ class BloqBuilder:
     def add_register(self, reg: str, bitsize: 'QCDType') -> QVarT: ...
 
     def add_register(
-        self, reg: Union[str, Register], bitsize: Union[None, 'QCDType', 'SymbolicInt'] = None
-    ) -> Union[None, QVarT]:
+        self, reg: str | Register, bitsize: None | 'QCDType' | 'SymbolicInt' = None
+    ) -> None | QVarT:
         """Add a new register to the composite bloq being built.
 
         If this bloq builder was constructed with `add_registers_allowed=False`,
@@ -1225,7 +1223,7 @@ class BloqBuilder:
         signature: Signature,
         add_registers_allowed: bool = False,
         *,
-        bloq_key: Optional[str] = None,
+        bloq_key: str | None = None,
     ) -> tuple['BloqBuilder', dict[str, QVarT]]:
         """Construct a BloqBuilder with a pre-specified signature.
 
@@ -1308,13 +1306,11 @@ class BloqBuilder:
         self._i += 1
         return i
 
-    def _make_qvar(
-        self, binst: Union[BloqInstance, DanglingT], reg: Register, idx: tuple[int, ...] = ()
-    ):
+    def _make_qvar(self, binst: BloqInstance | DanglingT, reg: Register, idx: tuple[int, ...] = ()):
         return _QVar(_Soquet(binst, reg, idx), bb=self)
 
     def _reg_to_qvar(
-        self, binst: Union[BloqInstance, DanglingT], reg: Register, *, track: bool = False
+        self, binst: BloqInstance | DanglingT, reg: Register, *, track: bool = False
     ) -> 'QVarT':
         """Create the soquet or array of soquets for a register.
 
@@ -1346,11 +1342,7 @@ class BloqBuilder:
         return soq
 
     def _add_cxn(
-        self,
-        binst: Union[BloqInstance, DanglingT],
-        idxed_soq: _QVar,
-        reg: Register,
-        idx: tuple[int, ...],
+        self, binst: BloqInstance | DanglingT, idxed_soq: _QVar, reg: Register, idx: tuple[int, ...]
     ) -> None:
         """Helper function to be used as the base for the `func` argument of `_process_soquets`.
 
@@ -1414,7 +1406,7 @@ class BloqBuilder:
     def add_and_partition(
         self,
         bloq: Bloq,
-        partitions: Sequence[tuple[Register, Sequence[Union[str, 'Unused']]]],
+        partitions: Sequence[tuple[Register, Sequence[str | Unused]]],
         left_only: bool = False,
         **in_soqs: SoquetInT,
     ):
@@ -1677,7 +1669,7 @@ class BloqBuilder:
         )
 
     def allocate(
-        self, n: Union[int, sympy.Expr] = 1, dtype: Optional[QDType] = None, dirty: bool = False
+        self, n: int | sympy.Expr = 1, dtype: QDType | None = None, dirty: bool = False
     ) -> 'QVar':
         from qualtran.bloqs.bookkeeping import Allocate
 
@@ -1710,7 +1702,7 @@ class BloqBuilder:
 
         return self.add(Split(dtype=qdtype), reg=soq)
 
-    def join(self, soqs: SoquetInT, dtype: Optional[QDType] = None) -> 'Soquet':
+    def join(self, soqs: SoquetInT, dtype: QDType | None = None) -> 'Soquet':
         from qualtran.bloqs.bookkeeping import Join
 
         try:
@@ -1726,7 +1718,7 @@ class BloqBuilder:
 
         return self.add(Join(dtype=dtype), reg=soqs)
 
-    def in_register(self, name: str, dtype: QCDType, shape=()) -> Union[None, QVarT]:
+    def in_register(self, name: str, dtype: QCDType, shape=()) -> None | QVarT:
         return self.add_register_from_dtype(Register(name=name, dtype=dtype, shape=shape))
 
     def alloc_qint(self, k: int, bitsize: int) -> 'QVar':

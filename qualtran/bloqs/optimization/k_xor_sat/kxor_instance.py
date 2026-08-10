@@ -27,7 +27,7 @@ import itertools
 from collections import defaultdict
 from collections.abc import Sequence
 from functools import cached_property
-from typing import cast, TypeAlias, Union
+from typing import cast, TypeAlias
 
 import numpy as np
 import sympy
@@ -36,7 +36,7 @@ from numpy.typing import NDArray
 
 from qualtran.symbolics import bit_length, ceil, HasLength, is_symbolic, log2, slen, SymbolicInt
 
-Scope: TypeAlias = Union[tuple[int, ...], HasLength]
+Scope: TypeAlias = tuple[int, ...] | HasLength
 """A subset of variables"""
 
 
@@ -113,7 +113,7 @@ class KXorInstance:
 
     n: SymbolicInt
     k: SymbolicInt
-    constraints: Union[tuple[Constraint, ...], HasLength]
+    constraints: tuple[Constraint, ...] | HasLength
     max_rhs: SymbolicInt = field()
 
     @max_rhs.default
@@ -177,7 +177,7 @@ class KXorInstance:
         assert isinstance(self.constraints, tuple)
         return is_symbolic(*self.constraints)
 
-    def subset(self, indices: Union[Sequence[int], HasLength]) -> 'KXorInstance':
+    def subset(self, indices: Sequence[int] | HasLength) -> 'KXorInstance':
         """Pick a subset of clauses defined by the set of indices provided."""
         if self.is_symbolic() or is_symbolic(indices):
             return evolve(self, constraints=HasLength(slen(indices)))
@@ -199,7 +199,7 @@ class KXorInstance:
         return slen(self.batched_scopes)
 
     @cached_property
-    def batched_scopes(self) -> Union[tuple[tuple[Scope, int], ...], HasLength]:
+    def batched_scopes(self) -> tuple[tuple[Scope, int], ...] | HasLength:
         r"""Group all the constraints by Scope, and add up the $b$ values.
 
         A scope is a subset of variables of size $k$.

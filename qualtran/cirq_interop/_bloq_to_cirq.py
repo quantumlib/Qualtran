@@ -15,7 +15,6 @@
 """Qualtran Bloqs to Cirq gates/circuits conversion."""
 
 from collections.abc import Iterable, Sequence
-from typing import Optional
 
 import cirq
 import networkx as nx
@@ -126,7 +125,7 @@ class BloqAsCirqGate(cirq.Gate):
         return self.bloq.signature.n_qubits()
 
     def _decompose_with_context_(
-        self, qubits: Sequence[cirq.Qid], context: Optional[cirq.DecompositionContext] = None
+        self, qubits: Sequence[cirq.Qid], context: cirq.DecompositionContext | None = None
     ) -> cirq.OP_TREE:
         quregs = split_qubits(self.bloq.signature, qubits)
         if context is None:
@@ -200,7 +199,7 @@ def _bloq_to_cirq_op(
     succ_cxns: Iterable[Connection],
     qvar_to_qreg: dict[_Soquet, _QReg],
     qubit_manager: cirq.QubitManager,
-) -> Optional[cirq.Operation]:
+) -> cirq.Operation | None:
     _track_soq_name_changes(pred_cxns, qvar_to_qreg)
     in_quregs: dict[str, CirqQuregT] = {
         reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object)
@@ -246,7 +245,7 @@ def _cbloq_to_cirq_circuit(
         circuit: The cirq.FrozenCircuit version of this composite bloq.
         cirq_quregs: The output mapping from right register names to Cirq qubit arrays.
     """
-    cirq_quregs: dict[str, 'CirqQuregInT'] = {
+    cirq_quregs = {
         k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore
         for k, v in cirq_quregs.items()
     }

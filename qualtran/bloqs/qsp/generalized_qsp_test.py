@@ -13,7 +13,6 @@
 #  limitations under the License.
 from collections.abc import Sequence
 from functools import cached_property
-from typing import Optional
 
 import cirq
 import numpy as np
@@ -77,7 +76,7 @@ def test_real_polynomial_has_real_complementary_polynomial(degree: int):
 def verify_generalized_qsp(
     U: GateWithRegisters,
     P: Sequence[complex],
-    Q: Optional[Sequence[complex]] = None,
+    Q: Sequence[complex] | None = None,
     *,
     negative_power: int = 0,
     tolerance: float = 1e-5,

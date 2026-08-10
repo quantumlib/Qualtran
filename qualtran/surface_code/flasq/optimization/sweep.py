@@ -14,7 +14,6 @@
 
 import itertools
 from collections.abc import Callable, Iterable
-from typing import Union
 
 import attrs
 import numpy as np
@@ -78,12 +77,12 @@ class SweepResult:
 def run_sweep(
     *,
     circuit_builder_func: Callable,
-    circuit_builder_kwargs_list: Union[frozendict, Iterable[frozendict]],
-    core_configs_list: Union[CoreParametersConfig, Iterable[CoreParametersConfig]],
-    total_allowable_rotation_error_list: Union[float, Iterable[float]],
-    reaction_time_in_cycles_list: Union[float, Iterable[float]],
+    circuit_builder_kwargs_list: frozendict | Iterable[frozendict],
+    core_configs_list: CoreParametersConfig | Iterable[CoreParametersConfig],
+    total_allowable_rotation_error_list: float | Iterable[float],
+    reaction_time_in_cycles_list: float | Iterable[float],
     flasq_model_configs: Iterable[tuple[FLASQCostModel, str]],
-    n_phys_qubits_total_list: Union[int, Iterable[int]],
+    n_phys_qubits_total_list: int | Iterable[int],
     print_level: int = 1,
 ) -> list[SweepResult]:
     """

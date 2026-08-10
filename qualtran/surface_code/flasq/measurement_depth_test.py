@@ -98,12 +98,12 @@ def test_measurement_depth_add():
     assert isinstance(md_sum.bloqs_with_unknown_depth, frozendict)
 
     # Test adding zero identity
-    assert md1 + 0 == md1
+    assert md1 + 0 == md1  # type: ignore[operator]
     assert 0 + md1 == md1
 
     # Test type error on invalid addition
     with pytest.raises(TypeError):
-        _ = md1 + "string"
+        _ = md1 + "string"  # type: ignore[operator]
 
 
 def test_measurement_depth_str():

@@ -12,11 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import abc
 from collections import defaultdict
 from collections.abc import Iterable, Iterator, Sequence
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import attrs
 import cirq
@@ -78,7 +80,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text("")
@@ -88,13 +90,13 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
             return TextBox("z∧(x<a)")
         raise ValueError(f'Unknown register name {reg.name}')
 
-    def registers(self) -> Sequence[Union[int, Sequence[int]]]:
+    def registers(self) -> Sequence[int | Sequence[int]]:
         return [2] * int(self.bitsize), int(self.less_than_val), [2]
 
     def with_registers(self, *new_registers) -> "LessThanConstant":
         return LessThanConstant(len(new_registers[0]), new_registers[1])
 
-    def apply(self, *register_vals: int) -> Union[int, Iterable[int]]:
+    def apply(self, *register_vals: int) -> int | Iterable[int]:
         input_val, less_than_val, target_register_val = register_vals
         return input_val, less_than_val, target_register_val ^ (input_val < less_than_val)
 
@@ -370,7 +372,7 @@ class SingleQubitCompare(GateWithRegisters):
     def adjoint(self) -> 'SingleQubitCompare':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
-    def __pow__(self, power: int) -> Union['SingleQubitCompare', cirq.Gate]:
+    def __pow__(self, power: int) -> SingleQubitCompare | cirq.Gate:
         if not isinstance(power, int):
             raise ValueError('SingleQubitCompare is only defined for integer powers.')
         if power % 2 == 0:
@@ -450,7 +452,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
             x=QUInt(self.x_bitsize), y=QUInt(self.y_bitsize), target=QBit()
         )
 
-    def registers(self) -> Sequence[Union[int, Sequence[int]]]:
+    def registers(self) -> Sequence[int | Sequence[int]]:
         if isinstance(self.x_bitsize, sympy.Expr):
             raise ValueError(f'Symbolic x bitsize {self.x_bitsize} not allowed')
         if isinstance(self.y_bitsize, sympy.Expr):
@@ -460,12 +462,12 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
     def with_registers(self, *new_registers) -> "LessThanEqual":
         return LessThanEqual(len(new_registers[0]), len(new_registers[1]))
 
-    def apply(self, *register_vals: int) -> Union[int, int, Iterable[int]]:
+    def apply(self, *register_vals: int) -> int | int | Iterable[int]:
         x_val, y_val, target_val = register_vals
         return x_val, y_val, target_val ^ (x_val <= y_val)
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text('')
@@ -670,7 +672,7 @@ class GreaterThan(Bloq):
             a=QUInt(self.a_bitsize), b=QUInt(self.b_bitsize), target=QBit()
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> WireSymbol:
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("a>b")
         if reg.name == 'a':
@@ -872,7 +874,7 @@ class LinearDepthGreaterThan(Bloq):
         return {'a': a, 'b': b, 'target': target}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text('')
@@ -931,7 +933,7 @@ class GreaterThanConstant(Bloq):
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> WireSymbol:
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("")
         if reg.name == 'x':
@@ -979,7 +981,7 @@ class Equals(Bloq):
     def is_symbolic(self):
         return is_symbolic(self.dtype)
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> WireSymbol:
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("")
         if reg.name == 'x':
@@ -996,7 +998,7 @@ class Equals(Bloq):
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
 
-        cvs: Union[list[int], HasLength]
+        cvs: list[int] | HasLength
         if isinstance(self.bitsize, int):
             cvs = [0] * self.bitsize
         else:
@@ -1011,7 +1013,7 @@ class Equals(Bloq):
         return {'x': x, 'y': y, 'target': target}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        cvs: Union[list[int], HasLength]
+        cvs: list[int] | HasLength
         if isinstance(self.bitsize, int):
             cvs = [0] * self.bitsize
         else:
@@ -1054,7 +1056,7 @@ class EqualsAConstant(Bloq):
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> WireSymbol:
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("")
         if reg.name == 'x':
@@ -1067,7 +1069,7 @@ class EqualsAConstant(Bloq):
         return is_symbolic(self.bitsize, self.val)
 
     @property
-    def bits_k(self) -> Union[tuple[int, ...], HasLength]:
+    def bits_k(self) -> tuple[int, ...] | HasLength:
         if is_symbolic(self.bitsize) or is_symbolic(self.val):
             return HasLength(self.bitsize)
 
@@ -1134,7 +1136,7 @@ class CLinearDepthGreaterThan(Bloq):
             page 7.
     """
 
-    dtype: Union[QInt, QUInt, QMontgomeryUInt]
+    dtype: QInt | QUInt | QMontgomeryUInt
     cv: int = 1
 
     @cached_property
@@ -1142,7 +1144,7 @@ class CLinearDepthGreaterThan(Bloq):
         return Signature.build_from_dtypes(ctrl=QBit(), a=self.dtype, b=self.dtype, target=QBit())
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text('')
@@ -1262,7 +1264,7 @@ class _HalfLinearDepthGreaterThan(Bloq):
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
     """
 
-    dtype: Union[QInt, QUInt, QMontgomeryUInt]
+    dtype: QInt | QUInt | QMontgomeryUInt
     uncompute: bool = False
 
     @cached_property
@@ -1367,8 +1369,8 @@ class _HalfLinearDepthGreaterThan(Bloq):
         bb: 'BloqBuilder',
         a: 'Soquet',
         b: 'Soquet',
-        c: Optional['Soquet'] = None,
-        target: Optional['Soquet'] = None,
+        c: Soquet | None = None,
+        target: Soquet | None = None,
     ) -> dict[str, 'SoquetT']:
         if is_symbolic(self.dtype.bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
@@ -1430,7 +1432,7 @@ class _HalfComparisonBase(Bloq):
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
     """
 
-    dtype: Union[QInt, QUInt, QMontgomeryUInt]
+    dtype: QInt | QUInt | QMontgomeryUInt
     _op_symbol: str = attrs.field(
         default='>', validator=lambda _, __, s: s in ('>', '<', '>=', '<='), repr=False
     )
@@ -1458,7 +1460,7 @@ class _HalfComparisonBase(Bloq):
 
     def _classical_comparison(
         self, a: 'ClassicalValT', b: 'ClassicalValT'
-    ) -> Union[bool, np.bool_, NDArray[np.bool_]]:
+    ) -> bool | np.bool_ | NDArray[np.bool_]:
         if self._op_symbol == '>':
             return a > b
         elif self._op_symbol == '<':
@@ -1472,8 +1474,8 @@ class _HalfComparisonBase(Bloq):
         self,
         a: 'ClassicalValT',
         b: 'ClassicalValT',
-        c: Optional['ClassicalValT'] = None,
-        target: Optional['ClassicalValT'] = None,
+        c: ClassicalValT | None = None,
+        target: ClassicalValT | None = None,
     ) -> dict[str, 'ClassicalValT']:
         if self._op_symbol in ('>', '<='):
             c_val = add_ints(-int(a), int(b), num_bits=self.dtype.bitsize + 1, is_signed=False)
@@ -1516,8 +1518,8 @@ class _HalfComparisonBase(Bloq):
         bb: 'BloqBuilder',
         a: 'Soquet',
         b: 'Soquet',
-        c: Optional['Soquet'] = None,
-        target: Optional['Soquet'] = None,
+        c: Soquet | None = None,
+        target: Soquet | None = None,
     ) -> dict[str, 'SoquetT']:
         if self.uncompute:
             assert c is not None
@@ -1542,7 +1544,7 @@ class _HalfComparisonBase(Bloq):
             adder = adder.adjoint()
         adder_call_graph = adder.build_call_graph(ssa)
         assert isinstance(adder_call_graph, dict)
-        counts: defaultdict['Bloq', Union[int, sympy.Expr]] = defaultdict(lambda: 0)
+        counts: defaultdict['Bloq', int | sympy.Expr] = defaultdict(lambda: 0)
         counts.update(adder_call_graph)
         for k, v in extra_ops.items():
             counts[k] += v

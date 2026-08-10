@@ -18,7 +18,6 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Optional
 
 import attrs
 import filelock
@@ -69,8 +68,8 @@ class _NBInOutPaths:
     """
 
     nb_in: Path
-    md_out: Optional[Path]
-    nb_out: Optional[Path]
+    md_out: Path | None
+    nb_out: Path | None
 
     @classmethod
     def from_nb_rel_path(
@@ -134,7 +133,7 @@ def linkify(nb: NotebookNode):
             cell.source = cell.source.replace(fr_text, to_text)
 
 
-def execute_and_export_notebook(paths: _NBInOutPaths) -> Optional[Exception]:
+def execute_and_export_notebook(paths: _NBInOutPaths) -> Exception | None:
     """Execute the notebook and export it in various forms.
 
     We execute the notebook at `nb_in` and export it as html to `html_out` and as
@@ -203,7 +202,7 @@ def execute_and_export_notebook(paths: _NBInOutPaths) -> Optional[Exception]:
 @attrs.frozen
 class _NotebookRunResult:
     nb_in: Path
-    err: Optional[Exception]
+    err: Exception | None
     duration_s: float
 
 
@@ -241,7 +240,7 @@ def execute_and_export_notebooks(
     output_nbs: bool,
     output_md: bool,
     only_out_of_date: bool = True,
-    n_workers: Optional[int] = None,
+    n_workers: int | None = None,
 ):
     """Find, execute, and export all checked-in ipynbs.
 

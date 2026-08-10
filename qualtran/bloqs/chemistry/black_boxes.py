@@ -17,7 +17,7 @@ These are for temporary convenience to lock-in the quoted literature costs.
 """
 
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -49,7 +49,7 @@ def qroam_cost_dirty(x, data_size: int, bitsize: int, adjoint: bool = False):
 
 
 def get_optimal_log_block_size_clean_ancilla(
-    data_size: int, bitsize: int, adjoint: bool = False, qroam_block_size: Optional[int] = None
+    data_size: int, bitsize: int, adjoint: bool = False, qroam_block_size: int | None = None
 ) -> int:
     if qroam_block_size is None:
         if adjoint:
@@ -65,7 +65,7 @@ def get_optimal_log_block_size_clean_ancilla(
 
 
 def get_qroam_cost_clean_ancilla(
-    data_size: int, bitsize: int, adjoint: bool = False, qroam_block_size: Optional[int] = None
+    data_size: int, bitsize: int, adjoint: bool = False, qroam_block_size: int | None = None
 ) -> int:
     """This gives the optimal k and minimum cost for a QROM over L values of size M.
 
@@ -103,7 +103,7 @@ class QROAM(Bloq):
     data_size: int
     target_bitsize: int
     is_adjoint: bool = False
-    qroam_block_size: Optional[int] = None
+    qroam_block_size: int | None = None
 
     @cached_property
     def signature(self) -> Signature:
@@ -213,7 +213,7 @@ class ApplyControlledZs(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("C" * len(self.cvs) + "Z")
         if reg.name == 'system':

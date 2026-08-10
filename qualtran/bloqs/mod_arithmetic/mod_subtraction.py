@@ -11,8 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import sympy
 from attrs import frozen
@@ -66,7 +68,7 @@ class ModNeg(Bloq):
         Fig 6b
     """
 
-    dtype: Union[QUInt, QMontgomeryUInt]
+    dtype: QUInt | QMontgomeryUInt
     mod: 'SymbolicInt'
 
     @cached_property
@@ -106,7 +108,7 @@ class ModNeg(Bloq):
         }
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text("")
@@ -143,7 +145,7 @@ class CModNeg(Bloq):
         Fig 6b and 8
     """
 
-    dtype: Union[QUInt, QMontgomeryUInt]
+    dtype: QUInt | QMontgomeryUInt
     mod: 'SymbolicInt'
     cv: int = 1
 
@@ -184,7 +186,7 @@ class CModNeg(Bloq):
         return {'ctrl': ctrl, 'x': x}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        cvs: Union[list[int], HasLength]
+        cvs: list[int] | HasLength
         if isinstance(self.dtype.bitsize, int):
             cvs = [0] * self.dtype.bitsize
         else:
@@ -199,7 +201,7 @@ class CModNeg(Bloq):
         }
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text("")
@@ -258,7 +260,7 @@ class ModSub(Bloq):
         Fig 6c and 8
     """
 
-    dtype: Union[QUInt, QMontgomeryUInt]
+    dtype: QUInt | QMontgomeryUInt
     mod: 'SymbolicInt'
 
     @cached_property
@@ -282,7 +284,7 @@ class ModSub(Bloq):
         }
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text("")
@@ -333,7 +335,7 @@ class CModSub(Bloq):
         Fig 6c and 8
     """
 
-    dtype: Union[QUInt, QMontgomeryUInt]
+    dtype: QUInt | QMontgomeryUInt
     mod: 'SymbolicInt'
     cv: int = 1
 
@@ -362,7 +364,7 @@ class CModSub(Bloq):
         }
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text("")

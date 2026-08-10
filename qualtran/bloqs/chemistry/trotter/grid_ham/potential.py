@@ -13,8 +13,9 @@
 #  limitations under the License.
 """Bloqs for the Potential energy of a 3D grid based Hamiltonian."""
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Optional
 
 import numpy as np
 from attrs import field, frozen
@@ -83,7 +84,7 @@ class PairPotential(Bloq):
         )
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text(f'U_{self.label}(dt)_ij')
@@ -219,7 +220,7 @@ class PotentialEnergy(Bloq):
         )
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text(f'U_{self.label}(dt)')

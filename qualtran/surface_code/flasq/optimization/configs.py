@@ -14,7 +14,7 @@
 
 import itertools
 from collections.abc import Iterable
-from typing import Any, NamedTuple, Optional, Union
+from typing import Any, NamedTuple
 
 from frozendict import frozendict
 
@@ -41,8 +41,8 @@ class CoreParametersConfig(NamedTuple):
     phys_error_rate: float
     cultivation_error_rate: float
     vcult_factor: float
-    cultivation_data_source_distance: Optional[int] = None
-    target_t_error: Optional[float] = None
+    cultivation_data_source_distance: int | None = None
+    target_t_error: float | None = None
 
     @classmethod
     def from_cultivation_analysis(
@@ -105,8 +105,8 @@ def _ensure_iterable(value: Any, treat_frozendict_as_single_item: bool = False) 
 
 
 def generate_configs_for_specific_cultivation_assumptions(
-    code_distance_list: Union[int, Iterable[int]],
-    phys_error_rate_list: Union[float, Iterable[float]],
+    code_distance_list: int | Iterable[int],
+    phys_error_rate_list: float | Iterable[float],
     cultivation_error_rate: float,
     vcult_factor: float,
 ) -> list[CoreParametersConfig]:
@@ -141,15 +141,15 @@ def generate_configs_for_specific_cultivation_assumptions(
 
 
 def generate_configs_from_cultivation_data(
-    code_distance_list: Union[int, Iterable[int]],
-    phys_error_rate_list: Union[float, Iterable[float]],
-    cultivation_data_source_distance_list: Union[int, Iterable[int], None] = None,
+    code_distance_list: int | Iterable[int],
+    phys_error_rate_list: float | Iterable[float],
+    cultivation_data_source_distance_list: int | Iterable[int] | None = None,
     cultivation_data_decimal_precision: int = 8,
     cultivation_data_slack_factor: float = 0.995,
-    cultivation_data_uncertainty_cutoff: Optional[
-        float
-    ] = 100,  # Default value from cultivation_analysis
-    cultivation_data_sampling_frequency: Optional[int] = None,
+    cultivation_data_uncertainty_cutoff: (
+        float | None
+    ) = 100,  # Default value from cultivation_analysis
+    cultivation_data_sampling_frequency: int | None = None,
     round_error_rate_up_to_simulated_cultivation_data: bool = True,
 ) -> list[CoreParametersConfig]:
     """

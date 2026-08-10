@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Optional, Union
 
 import attrs
 
@@ -40,7 +39,7 @@ from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.symbolics import SymbolicFloat
 
 
-def _total_bits(registers: Union[tuple[Register, ...], Signature]) -> int:
+def _total_bits(registers: tuple[Register, ...] | Signature) -> int:
     """Get the bitsize of a collection of registers"""
     return sum(r.total_bits() for r in registers)
 
@@ -95,8 +94,8 @@ class SelectBlockEncoding(BlockEncoding):
             Chakraborty et al. 2018. Definition 3 page 8.
     """
 
-    select: Union[BlackBoxSelect, SelectOracle]
-    prepare: Union[BlackBoxPrepare, PrepareOracle]
+    select: BlackBoxSelect | SelectOracle
+    prepare: BlackBoxPrepare | PrepareOracle
 
     @cached_property
     def ancilla_bitsize(self) -> int:
@@ -136,7 +135,7 @@ class SelectBlockEncoding(BlockEncoding):
         return Signature([*self.selection_registers, *self.junk_registers, *self.target_registers])
 
     @cached_property
-    def signal_state(self) -> Union[BlackBoxPrepare, PrepareOracle]:
+    def signal_state(self) -> BlackBoxPrepare | PrepareOracle:
         return self.prepare
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> dict[str, 'SoquetT']:
@@ -144,7 +143,7 @@ class SelectBlockEncoding(BlockEncoding):
         soqs |= bb.add_d(self.select, **select_reg)
         return soqs
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         else:
@@ -200,9 +199,9 @@ class LCUBlockEncoding(BlockEncoding):
             Chakraborty et al. 2018. Definition 3 page 8.
     """
 
-    select: Union[BlackBoxSelect, SelectOracle]
-    prepare: Union[BlackBoxPrepare, PrepareOracle]
-    control_val: Optional[int] = None
+    select: BlackBoxSelect | SelectOracle
+    prepare: BlackBoxPrepare | PrepareOracle
+    control_val: int | None = None
 
     @cached_property
     def control_registers(self) -> tuple[Register, ...]:
@@ -254,7 +253,7 @@ class LCUBlockEncoding(BlockEncoding):
         )
 
     @cached_property
-    def signal_state(self) -> Union[BlackBoxPrepare, PrepareOracle]:
+    def signal_state(self) -> BlackBoxPrepare | PrepareOracle:
         return PrepareIdentity(self.selection_registers)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> dict[str, 'SoquetT']:
@@ -276,7 +275,7 @@ class LCUBlockEncoding(BlockEncoding):
 
         return soqs
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         if reg.name == 'control':

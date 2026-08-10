@@ -12,9 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from collections import Counter
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import frozen
 
@@ -186,7 +188,7 @@ class Adjoint(GateWithRegisters):
         return 'qualtran'
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         # Note: since we pass are passed a soquet which has the 'new' side, we flip it before
         # delegating and then flip back. Subbloqs only have to answer this protocol

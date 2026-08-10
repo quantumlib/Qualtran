@@ -21,7 +21,6 @@ by span_counting.py.
 
 import logging
 from collections.abc import Callable, Mapping
-from typing import Union
 
 import attrs
 import cirq
@@ -183,7 +182,7 @@ class FLASQGateCounts:
             return ", ".join(strs)
         return "-"
 
-    def asdict(self) -> dict[str, Union[SymbolicInt, dict["Bloq", SymbolicInt]]]:
+    def asdict(self) -> dict[str, SymbolicInt | dict["Bloq", SymbolicInt]]:
         # Filter out zero counts and empty dicts
         d = attrs.asdict(
             self, recurse=False, filter=lambda a, v: not is_zero(v) and v != frozendict()

@@ -14,7 +14,7 @@
 
 import os.path
 import re
-from typing import cast, Optional
+from typing import cast
 
 from . import shell_tools
 from .prepared_env import PreparedEnv
@@ -123,7 +123,7 @@ def fix_line_from_coverage_file(line):
 
 
 def get_incremental_uncovered_lines(
-    abs_path: str, base_commit: str, actual_commit: Optional[str]
+    abs_path: str, base_commit: str, actual_commit: str | None
 ) -> list[tuple[int, str, str]]:
     """Find touched but uncovered lines in the given file.
 

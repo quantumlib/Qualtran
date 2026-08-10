@@ -14,7 +14,6 @@
 
 import inspect
 import re
-from typing import Union
 
 from attrs import frozen
 from sphinx.ext.napoleon import Config, GoogleDocstring
@@ -40,7 +39,7 @@ class UnparsedReference:
     text: str
 
 
-ReferenceT = Union[Reference, UnparsedReference]
+ReferenceT = Reference | UnparsedReference
 
 
 def parse_reference(ref_text: str) -> ReferenceT:

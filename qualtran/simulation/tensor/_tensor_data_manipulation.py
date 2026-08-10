@@ -15,7 +15,6 @@
 """Utility methods to generate and manipulate tensor data for Bloqs."""
 
 import itertools
-from typing import Union
 
 import attrs
 import numpy as np
@@ -62,7 +61,7 @@ def tensor_shape_from_signature(signature: Signature) -> tuple[int, ...]:
 
 def active_space_for_ctrl_spec(
     signature: Signature, ctrl_spec: CtrlSpec
-) -> tuple[Union[int, slice], ...]:
+) -> tuple[int | slice, ...]:
     """Returns the "active" subspace corresponding to `signature` and `ctrl_spec`.
 
     Assumes first n-registers for `signature` are control registers corresponding to `ctrl_spec`.
@@ -74,7 +73,7 @@ def active_space_for_ctrl_spec(
 
     out_ind, inp_ind = tensor_out_inp_shape_from_signature(signature)
     data_shape = out_ind + inp_ind
-    active_idx: list[Union[int, slice]] = [slice(x) for x in data_shape]
+    active_idx: list[int | slice] = [slice(x) for x in data_shape]
     ctrl_idx = 0
     for cv in ctrl_spec.cvs:
         assert isinstance(cv, np.ndarray)
@@ -118,7 +117,7 @@ def tensor_data_from_unitary_and_signature(unitary: np.ndarray, signature: Signa
     unitary = unitary.reshape(unitary_shape)
 
     # Find the subspace corresponding to registers with sides.
-    idx: list[Union[int, slice]] = [slice(x) for x in unitary_shape]
+    idx: list[int | slice] = [slice(x) for x in unitary_shape]
     curr_idx = 0
     for reg in signature:
         if reg.side == Side.LEFT:

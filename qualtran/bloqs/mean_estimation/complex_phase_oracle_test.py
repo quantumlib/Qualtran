@@ -14,7 +14,6 @@
 
 import math
 from functools import cached_property
-from typing import Optional
 
 import cirq
 import numpy as np
@@ -31,7 +30,7 @@ from qualtran.testing import assert_valid_bloq_decomposition
 @frozen
 class ExampleSelect(SelectOracle):
     bitsize: int
-    control_val: Optional[int] = None
+    control_val: int | None = None
 
     @cached_property
     def control_registers(self) -> tuple[Register, ...]:

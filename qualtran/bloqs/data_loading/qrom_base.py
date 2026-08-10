@@ -14,10 +14,12 @@
 
 """Base class for Bloqs implementing a QROM (Quantum read-only memory) circuit."""
 
+from __future__ import annotations
+
 import abc
 import numbers
 from functools import cached_property
-from typing import cast, TypeVar, Union
+from typing import cast, TypeVar
 
 import attrs
 import numpy as np
@@ -307,8 +309,8 @@ class QROMBase(metaclass=abc.ABCMeta):
         )
 
     def on_classical_vals(
-        self, **vals: Union['sympy.Symbol', 'ClassicalValT']
-    ) -> dict[str, 'ClassicalValT']:
+        self, **vals: sympy.Symbol | ClassicalValT
+    ) -> dict[str, ClassicalValT]:
         if not self.has_data():
             raise NotImplementedError(f'Symbolic {self} does not support classical simulation')
         vals = cast(dict[str, 'ClassicalValT'], vals)

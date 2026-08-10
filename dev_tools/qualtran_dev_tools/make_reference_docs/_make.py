@@ -18,7 +18,7 @@ import warnings
 from collections import defaultdict
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, cast, Optional, Union
+from typing import Any, cast
 
 import attrs
 import griffe
@@ -87,7 +87,7 @@ DEFINED_IN_CONTAINER_EXCEPTIONS = [
 ]
 
 
-def _get_all_aliases(obj: Union[griffe.Object, griffe.Alias]) -> set[str]:
+def _get_all_aliases(obj: griffe.Object | griffe.Alias) -> set[str]:
     """Get all the valid aliases for `obj`."""
 
     # First, try to use the aliases griffe has found
@@ -158,10 +158,10 @@ class _PackageWalker:
     aliases_d: dict[str, str] = attrs.field(factory=dict, kw_only=True)
     """Mapping from each alias to the preferred dotpath (many-to-one)."""
 
-    link_d: dict[str, tuple[Page, Optional[str]]] = attrs.field(factory=dict, kw_only=True)
+    link_d: dict[str, tuple[Page, str | None]] = attrs.field(factory=dict, kw_only=True)
     """Mapping from preferred dotpath to a doc location."""
 
-    def _walk_table_of_contents(self, obj: Union[griffe.Alias, griffe.Object]):
+    def _walk_table_of_contents(self, obj: griffe.Alias | griffe.Object):
         """DFS through all the objects.
 
         First, we recurse on the objects we care about.
@@ -252,7 +252,7 @@ class _PackageWalker:
 
 def get_pages(
     root_mod: griffe.Module,
-) -> tuple[list[Page], dict[str, str], dict[str, tuple[Page, Optional[str]]]]:
+) -> tuple[list[Page], dict[str, str], dict[str, tuple[Page, str | None]]]:
     """Walk down from `root_mod`."""
     assert root_mod.is_module
     assert root_mod.is_init_module
@@ -322,9 +322,9 @@ class AttrsExtension(griffe.Extension):
     def on_class_members(
         self,
         *,
-        node: Union[ast.AST, griffe.ObjectNode],
+        node: ast.AST | griffe.ObjectNode,
         cls: griffe.Class,
-        agent: Union[griffe.Visitor, griffe.Inspector],
+        agent: griffe.Visitor | griffe.Inspector,
         **kwargs: Any,
     ) -> None:
         if self._is_attrs_class(cls):

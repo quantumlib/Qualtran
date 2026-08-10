@@ -11,9 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import warnings
 from functools import cached_property
-from typing import cast, TYPE_CHECKING, Union
+from typing import cast, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -200,7 +202,7 @@ class GF2Inverse(Bloq):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', set['BloqCountT']]:
+    ) -> BloqCountDictT | set[BloqCountT]:
         if not is_symbolic(self.bitsize) and self.bitsize == 1:
             return {GF2Addition(self.qgf): 1}
         k1 = bit_length(self.bitsize - 1) - 1

@@ -11,8 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import attrs
 
@@ -95,7 +97,7 @@ class GF2PolyAddK(Bloq):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', set['BloqCountT']]:
+    ) -> BloqCountDictT | set[BloqCountT]:
         if self.is_symbolic():
             k = ssa.new_symbol('g_x')
             return {GF2AddK(self.qgf_poly.qgf.bitsize, k): self.qgf_poly.degree + 1}

@@ -11,10 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import enum
 from collections.abc import Callable, Iterable, Sequence
 from functools import cached_property
-from typing import cast, Optional, TYPE_CHECKING
+from typing import cast, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -100,8 +102,8 @@ def _get_ctrl_system_1bit_cv(
     bloq: 'Bloq',
     ctrl_spec: 'CtrlSpec',
     *,
-    current_ctrl_bit: Optional['ControlBit'],
-    get_ctrl_bloq_and_ctrl_reg_name: Callable[['ControlBit'], Optional[tuple['Bloq', str]]],
+    current_ctrl_bit: ControlBit | None,
+    get_ctrl_bloq_and_ctrl_reg_name: Callable[['ControlBit'], tuple['Bloq', str] | None],
 ) -> tuple['Bloq', 'AddControlledT']:
     """Internal method to build the control system for a bloq using single-qubit controlled variants.
 
@@ -194,7 +196,7 @@ def get_ctrl_system_1bit_cv(
     bloq: 'Bloq',
     ctrl_spec: 'CtrlSpec',
     *,
-    current_ctrl_bit: Optional['ControlBit'],
+    current_ctrl_bit: ControlBit | None,
     get_ctrl_bloq_and_ctrl_reg_name: Callable[['ControlBit'], tuple['Bloq', str]],
 ) -> tuple['Bloq', 'AddControlledT']:
     """Build the control system for a bloq with specialized single-qubit controlled variants.
@@ -227,7 +229,7 @@ def get_ctrl_system_1bit_cv_from_bloqs(
     bloq: 'Bloq',
     ctrl_spec: 'CtrlSpec',
     *,
-    current_ctrl_bit: Optional['ControlBit'],
+    current_ctrl_bit: ControlBit | None,
     bloq_with_ctrl: 'Bloq',
     ctrl_reg_name: 'str',
 ) -> tuple['Bloq', 'AddControlledT']:
@@ -248,7 +250,7 @@ def get_ctrl_system_1bit_cv_from_bloqs(
         ctrl_reg_name: The name of the control register for the controlled bloq variant(s).
     """
 
-    def get_ctrl_bloq_and_ctrl_reg_name(cv: 'ControlBit') -> Optional[tuple['Bloq', str]]:
+    def get_ctrl_bloq_and_ctrl_reg_name(cv: 'ControlBit') -> tuple['Bloq', str] | None:
         if cv == 1:
             return bloq_with_ctrl, ctrl_reg_name
         else:

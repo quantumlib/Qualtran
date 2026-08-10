@@ -27,7 +27,6 @@ how they can be combined in `QubitizationWalkOperator`.
 """
 
 from functools import cached_property
-from typing import Union
 
 import attrs
 import cirq
@@ -91,7 +90,7 @@ class QubitizationWalkOperator(GateWithRegisters):
         Babbush et al. (2018). Figure 1.
     """
 
-    block_encoding: Union[SelectBlockEncoding, LCUBlockEncoding]
+    block_encoding: SelectBlockEncoding | LCUBlockEncoding
 
     @cached_property
     def selection_registers(self) -> tuple[Register, ...]:
@@ -151,7 +150,7 @@ class QubitizationWalkOperator(GateWithRegisters):
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     @cached_property
-    def prepare(self) -> Union[PrepareOracle, BlackBoxPrepare]:
+    def prepare(self) -> PrepareOracle | BlackBoxPrepare:
         """Get the Prepare bloq if appropriate from the block encoding."""
         # TODO: This should use self.signal_state
         # https://github.com/quantumlib/Qualtran/issues/1266

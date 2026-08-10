@@ -12,10 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import abc
 from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -101,7 +103,7 @@ class _XVector(Bloq, metaclass=abc.ABCMeta):
         self,
         qubit_manager: 'cirq.QubitManager',
         **cirq_quregs: 'CirqQuregT',  # type: ignore[type-var]
-    ) -> tuple[Optional['cirq.Operation'], dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
+    ) -> tuple[cirq.Operation | None, dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         if not self.state:
             raise ValueError(f"There is no Cirq equivalent for {self}")
 
@@ -121,7 +123,7 @@ class _XVector(Bloq, metaclass=abc.ABCMeta):
         return f'|{s}>' if self.state else f'<{s}|'
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text('')
@@ -346,7 +348,7 @@ class MeasureX(Bloq):
             raise ValueError(f"Invalid classical value encountered in {self}: {q}")
         return {'c': ClassicalValDistribution(2)}
 
-    def basis_state_phase(self, q: int) -> Union[complex, MeasurementPhase]:
+    def basis_state_phase(self, q: int) -> complex | MeasurementPhase:
         if q == 0:
             return 1
         if q == 1:

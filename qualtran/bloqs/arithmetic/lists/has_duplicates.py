@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from collections import Counter
-from typing import Union
 
 import attrs
 import numpy as np
@@ -63,7 +62,7 @@ class HasDuplicates(Bloq):
     """
 
     l: SymbolicInt
-    dtype: Union[QUInt, QInt]
+    dtype: QUInt | QInt
     is_controlled: bool = False
 
     @property

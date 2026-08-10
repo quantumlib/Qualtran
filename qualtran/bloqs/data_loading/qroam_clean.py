@@ -11,10 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import numbers
 from collections import defaultdict
 from functools import cached_property
-from typing import cast, Optional, TYPE_CHECKING, Union
+from typing import cast, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -69,7 +71,7 @@ def get_optimal_log_block_size_clean_ancilla(
     data_size: SymbolicInt,
     bitsize: SymbolicInt,
     adjoint: bool = False,
-    qroam_block_size: Optional[SymbolicInt] = None,
+    qroam_block_size: SymbolicInt | None = None,
 ) -> SymbolicInt:
     if qroam_block_size is None:
         if adjoint:
@@ -202,7 +204,7 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
     def adjoint(self) -> 'QROAMClean':
         return QROAMClean(**attrs.asdict(self))
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('QROAM').adjoint()
         name = reg.name
@@ -292,7 +294,7 @@ class QROAMCleanAdjointWrapper(Bloq):
     ) -> 'QROAMCleanAdjointWrapper':
         return attrs.evolve(self, log_block_sizes=log_block_sizes)
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('QROAM').adjoint()
         name = reg.name
@@ -525,8 +527,8 @@ class QROAMClean(SelectSwapQROM):
         return soqs
 
     def on_classical_vals(
-        self, **vals: Union['sympy.Symbol', 'ClassicalValT']
-    ) -> dict[str, 'ClassicalValT']:
+        self, **vals: sympy.Symbol | ClassicalValT
+    ) -> dict[str, ClassicalValT]:
         vals_without_junk = super().on_classical_vals(**vals)
         selection = cast(tuple[int, ...], tuple(vals[reg.name] for reg in self.selection_registers))
         for d, junk_reg in zip(self.batched_data_permuted, self.junk_registers):
@@ -536,7 +538,7 @@ class QROAMClean(SelectSwapQROM):
     def adjoint(self) -> 'QROAMCleanAdjointWrapper':
         return QROAMCleanAdjointWrapper(self)
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('QROAM')
         name = reg.name

@@ -15,7 +15,7 @@
 
 import abc
 from collections.abc import Sequence
-from typing import Any, Optional, Protocol, TypeAlias, Union
+from typing import Any, Protocol, TypeAlias
 
 import attrs
 
@@ -47,7 +47,7 @@ class CValueNode(L1ASTNode, metaclass=abc.ABCMeta):
 class LiteralNode(CValueNode):
     """A literal classical value."""
 
-    value: Union[int, float, str]
+    value: int | float | str
 
     def canonical_str(self):
         return f'{self.value!r}'
@@ -70,7 +70,7 @@ class TupleNode(CValueNode):
 class CArgNode(L1ASTNode):
     """A classical value optionally associated with a string key."""
 
-    key: Optional[str]
+    key: str | None
     value: CValueNode
 
     def canonical_str(self) -> str:
@@ -103,7 +103,7 @@ class QDTypeNode(L1ASTNode):
     """A quantum data type, optionally with a shape."""
 
     dtype: CObjectNode
-    shape: Optional[Sequence[int]]
+    shape: Sequence[int] | None
 
 
 @attrs.frozen
@@ -111,8 +111,8 @@ class QSignatureEntry(L1ASTNode):
     """A quantum signature entry."""
 
     name: str
-    dtype: Union[QDTypeNode, tuple[Optional[QDTypeNode], Optional[QDTypeNode]]]
-    annotation: Optional[CValueNode] = None
+    dtype: QDTypeNode | tuple[QDTypeNode | None, QDTypeNode | None]
+    annotation: CValueNode | None = None
 
 
 @attrs.frozen
@@ -120,7 +120,7 @@ class LValueNode(L1ASTNode):
     """An l-value with an optional annotation."""
 
     name: str
-    annotation: Optional[CValueNode] = None
+    annotation: CValueNode | None = None
 
     def __str__(self):
         if self.annotation:
@@ -161,7 +161,7 @@ class QArgValueNode(L1ASTNode):
     idx: Sequence[int]
 
 
-NestedQArgValue: TypeAlias = Union[QArgValueNode, Sequence['NestedQArgValue']]
+NestedQArgValue: TypeAlias = QArgValueNode | Sequence['NestedQArgValue']
 
 
 @attrs.frozen
@@ -175,7 +175,7 @@ class QArgNode(L1ASTNode):
 
     key: str
     value: NestedQArgValue  # TODO: turn all to tuple
-    annotation: Optional[CValueNode] = None
+    annotation: CValueNode | None = None
 
 
 @attrs.frozen
@@ -185,7 +185,7 @@ class QCallNode(StatementNode):
     bloq_key: str
     lvalues: Sequence[LValueNode] = attrs.field(converter=tuple[LValueNode])
     qargs: Sequence[QArgNode] = attrs.field(converter=tuple[QArgNode])
-    annotation: Optional[CValueNode] = None
+    annotation: CValueNode | None = None
 
 
 @attrs.frozen
@@ -213,7 +213,7 @@ class QDefNode(L1ASTNode, metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def cobject_from(self) -> Optional[CObjectNode]: ...
+    def cobject_from(self) -> CObjectNode | None: ...
 
 
 @attrs.frozen
@@ -236,7 +236,7 @@ class QDefImplNode(QDefNode):
     bloq_key: str
     qsignature: Sequence[QSignatureEntry] = attrs.field(converter=tuple[QSignatureEntry])
     body: Sequence[StatementNode] = attrs.field(converter=tuple[StatementNode])
-    cobject_from: Optional[CObjectNode]
+    cobject_from: CObjectNode | None
 
 
 @attrs.frozen
@@ -258,7 +258,7 @@ class QDefExternNode(QDefNode):
 
     bloq_key: str
     qsignature: Sequence[QSignatureEntry] = attrs.field(converter=tuple[QSignatureEntry])
-    cobject_from: Optional[CObjectNode]
+    cobject_from: CObjectNode | None
 
 
 @attrs.frozen
@@ -284,7 +284,7 @@ class QCastNode(QDefNode):
     qsignature: Sequence[QSignatureEntry] = attrs.field(converter=tuple[QSignatureEntry])
 
     @property
-    def cobject_from(self) -> Optional[CObjectNode]:
+    def cobject_from(self) -> CObjectNode | None:
         return None
 
 
@@ -312,22 +312,22 @@ class L1Module(L1ASTNode):
 
 
 class L1Nodes(Protocol):
-    def LiteralNode(self, value: Union[int, float, str]) -> Any: ...
+    def LiteralNode(self, value: int | float | str) -> Any: ...
     def TupleNode(self, items: Sequence[Any]) -> Any: ...
-    def CArgNode(self, key: Optional[str], value: Any) -> Any: ...
+    def CArgNode(self, key: str | None, value: Any) -> Any: ...
     def CObjectNode(self, name: str, cargs: Sequence[Any]) -> Any: ...
-    def QDTypeNode(self, dtype: Any, shape: Optional[Sequence[int]]) -> Any: ...
-    def QSignatureEntry(self, name: str, dtype: Any, annotation: Optional[Any] = None) -> Any: ...
-    def LValueNode(self, name: str, annotation: Optional[Any] = None) -> Any: ...
+    def QDTypeNode(self, dtype: Any, shape: Sequence[int] | None) -> Any: ...
+    def QSignatureEntry(self, name: str, dtype: Any, annotation: Any | None = None) -> Any: ...
+    def LValueNode(self, name: str, annotation: Any | None = None) -> Any: ...
     def AliasAssignmentNode(self, alias: str, bloq_key: str) -> Any: ...
     def QArgValueNode(self, name: str, idx: Sequence[int]) -> Any: ...
-    def QArgNode(self, key: str, value: Any, annotation: Optional[Any] = None) -> Any: ...
+    def QArgNode(self, key: str, value: Any, annotation: Any | None = None) -> Any: ...
     def QCallNode(
         self,
         bloq_key: str,
         lvalues: Sequence[Any],
         qargs: Sequence[Any],
-        annotation: Optional[Any] = None,
+        annotation: Any | None = None,
     ) -> Any: ...
     def QReturnNode(self, ret_mapping: Sequence[Any]) -> Any: ...
     def QDefImplNode(
@@ -335,10 +335,10 @@ class L1Nodes(Protocol):
         bloq_key: str,
         qsignature: Sequence[Any],
         body: Sequence[Any],
-        cobject_from: Optional[Any],
+        cobject_from: Any | None,
     ) -> Any: ...
     def QDefExternNode(
-        self, bloq_key: str, qsignature: Sequence[Any], cobject_from: Optional[Any]
+        self, bloq_key: str, qsignature: Sequence[Any], cobject_from: Any | None
     ) -> Any: ...
     def QCastNode(self, bloq_key: str, qsignature: Sequence[Any]) -> Any: ...
     def L1Module(self, qdefs: Sequence[Any]) -> Any: ...

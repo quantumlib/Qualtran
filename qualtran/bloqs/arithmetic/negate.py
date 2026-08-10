@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import sympy
 from attrs import frozen
@@ -67,7 +67,7 @@ class Negate(Bloq):
         Operator "Unary Minus". Last accessed 17 July 2024.
     """
 
-    dtype: Union[QUInt, QInt, QMontgomeryUInt]
+    dtype: QUInt | QInt | QMontgomeryUInt
 
     @cached_property
     def signature(self) -> 'Signature':

@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Union
 
 import numpy as np
 import sympy
@@ -176,7 +177,7 @@ class _ECAddStepOne(Bloq):
         }
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
-        cvs: Union[list[int], HasLength]
+        cvs: list[int] | HasLength
         if isinstance(self.n, int):
             cvs = [0] * 2 * self.n
         else:
@@ -1022,7 +1023,7 @@ class _ECAddStepSix(Bloq):
         return {'a': a, 'b': b, 'x': x, 'y': y}
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
-        cvs2: Union[list[int], HasLength]
+        cvs2: list[int] | HasLength
         if isinstance(self.n, int):
             cvs2 = [0] * 2 * self.n
         else:
@@ -1141,7 +1142,7 @@ class ECAdd(Bloq):
 
         return {'a': a, 'b': b, 'x': x, 'y': y, 'lam_r': lam_r}
 
-    def on_classical_vals(self, a, b, x, y, lam_r) -> dict[str, Union['ClassicalValT', sympy.Expr]]:
+    def on_classical_vals(self, a, b, x, y, lam_r) -> dict[str, ClassicalValT | sympy.Expr]:
         dtype = QMontgomeryUInt(self.n, self.mod)
         curve_a = (
             dtype.montgomery_to_uint(lam_r) * 2 * dtype.montgomery_to_uint(b)

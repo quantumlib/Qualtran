@@ -14,7 +14,7 @@
 
 import math
 from collections.abc import Callable, Iterable, Iterator
-from typing import cast, Optional, TYPE_CHECKING
+from typing import cast, TYPE_CHECKING
 
 from .algorithm_summary import AlgorithmSummary
 from .ccz2t_factory import CCZ2TFactory
@@ -77,8 +77,8 @@ def get_ccz2t_costs_from_error_budget(
     error_budget: float = 1e-2,
     cycle_time_us: float = 1.0,
     routing_overhead: float = 0.5,
-    factory: Optional[MagicStateFactory] = None,
-    data_block: Optional[DataBlock] = None,
+    factory: MagicStateFactory | None = None,
+    data_block: DataBlock | None = None,
 ) -> PhysicalCostsSummary:
     """Physical costs using the model from catalyzed CCZ to 2T paper.
 
@@ -213,8 +213,8 @@ def get_ccz2t_costs_from_grid_search(
         A similar search was conducted manually in https://arxiv.org/abs/2011.03494, using a tweaked
         version of the spreadsheet from https://arxiv.org/abs/1812.01238
     """
-    best_cost: Optional[PhysicalCostsSummary] = None
-    best_params: Optional[tuple[MagicStateFactory, SimpleDataBlock]] = None
+    best_cost: PhysicalCostsSummary | None = None
+    best_params: tuple[MagicStateFactory, SimpleDataBlock] | None = None
     for factory in factory_iter:
         for data_block in data_block_iter:
             cost = get_ccz2t_costs(

@@ -14,9 +14,11 @@
 
 """Quantum read-only memory."""
 
+from __future__ import annotations
+
 import numbers
 from collections.abc import Iterable, Iterator, Sequence
-from typing import cast, Optional, TYPE_CHECKING, Union
+from typing import cast, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -199,7 +201,7 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
     def __str__(self):
         return f'QROM({self.data_shape}, {self.target_shapes}, {self.target_bitsizes})'
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('QROM')
         name = reg.name
@@ -232,7 +234,7 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', set['BloqCountT']]:
+    ) -> BloqCountDictT | set[BloqCountT]:
         if self.has_data():
             return super().build_call_graph(ssa=ssa)
         n_and = prod(self.data_shape) - 2 + self.num_controls

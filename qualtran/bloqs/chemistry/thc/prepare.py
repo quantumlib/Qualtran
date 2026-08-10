@@ -14,7 +14,7 @@
 """PREPARE for the molecular tensor hypercontraction (THC) hamiltonian"""
 
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen
@@ -111,7 +111,7 @@ class UniformSuperpositionTHC(Bloq):
     def __str__(self) -> str:
         return r'$\sum_{\mu < \nu} |\mu\nu\rangle$'
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('Σ |μν>')
         return super().wire_symbol(reg, idx)
@@ -277,7 +277,7 @@ class PrepareTHC(PrepareOracle):
         eta: NDArray[np.float64],
         zeta: NDArray[np.float64],
         num_bits_state_prep: int = 8,
-        log_block_size: Optional[SymbolicInt] = None,
+        log_block_size: SymbolicInt | None = None,
     ) -> 'PrepareTHC':
         """Factory method to build PrepareTHC from Hamiltonian coefficients.
 

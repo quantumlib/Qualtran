@@ -44,7 +44,7 @@ with different costs.
 
 from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import attrs
 import cirq
@@ -166,7 +166,7 @@ class ZPowGate(CirqGateAsBloqBase):
     def adjoint(self) -> 'ZPowGate':
         return attrs.evolve(self, exponent=-self.exponent)
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         return TextBox(f'Z^{self.exponent}')
@@ -302,7 +302,7 @@ class XPowGate(CirqGateAsBloqBase):
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
 
-    exponent: Union[sympy.Expr, float] = 1.0
+    exponent: sympy.Expr | float = 1.0
     global_shift: float = 0.0
     eps: SymbolicFloat = 1e-11
 
@@ -314,7 +314,7 @@ class XPowGate(CirqGateAsBloqBase):
         cls,
         q: 'QVar',
         *,
-        exponent: Union[sympy.Expr, float] = 1.0,
+        exponent: sympy.Expr | float = 1.0,
         global_shift: float = 0.0,
         eps: SymbolicFloat = 1e-11,
     ) -> 'QVar':
@@ -327,7 +327,7 @@ class XPowGate(CirqGateAsBloqBase):
     def adjoint(self) -> 'XPowGate':
         return attrs.evolve(self, exponent=-self.exponent)
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         return TextBox(f'X^{self.exponent}')
@@ -388,7 +388,7 @@ class YPowGate(CirqGateAsBloqBase):
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
 
-    exponent: Union[sympy.Expr, float] = 1.0
+    exponent: sympy.Expr | float = 1.0
     global_shift: float = 0.0
     eps: SymbolicFloat = 1e-11
 
@@ -400,7 +400,7 @@ class YPowGate(CirqGateAsBloqBase):
         cls,
         q: 'QVar',
         *,
-        exponent: Union[sympy.Expr, float] = 1.0,
+        exponent: sympy.Expr | float = 1.0,
         global_shift: float = 0.0,
         eps: SymbolicFloat = 1e-11,
     ) -> 'QVar':
@@ -413,7 +413,7 @@ class YPowGate(CirqGateAsBloqBase):
     def adjoint(self) -> 'YPowGate':
         return attrs.evolve(self, exponent=-self.exponent)
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         return TextBox(f'Y^{self.exponent}')
@@ -511,7 +511,7 @@ class Rz(CirqGateAsBloqBase):
     def adjoint(self) -> 'Rz':
         return attrs.evolve(self, angle=-self.angle)
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         return TextBox(str(self))
@@ -529,7 +529,7 @@ def _rz() -> Rz:
 
 _RZ_DOC = BloqDocSpec(bloq_cls=Rz, examples=[_rz], call_graph_example=None)
 
-_PowClsT = Union[type[XPowGate], type[YPowGate], type[ZPowGate]]
+_PowClsT = type[XPowGate] | type[YPowGate] | type[ZPowGate]
 
 
 def _controlled_rp_circuit(
@@ -657,13 +657,11 @@ class Rx(CirqGateAsBloqBase):
         Nielsen and Chuang. 2010. Chapter 4.2, pp. 174-177.
     """
 
-    angle: Union[sympy.Expr, float]
+    angle: sympy.Expr | float
     eps: SymbolicFloat = 1e-11
 
     @classmethod
-    def qcall(
-        cls, q: 'QVar', angle: Union[sympy.Expr, float], *, eps: SymbolicFloat = 1e-11
-    ) -> 'QVar':
+    def qcall(cls, q: 'QVar', angle: sympy.Expr | float, *, eps: SymbolicFloat = 1e-11) -> 'QVar':
         return q.bb.add(cls(angle=angle, eps=eps), q=q)
 
     def decompose_bloq(self) -> 'CompositeBloq':
@@ -681,7 +679,7 @@ class Rx(CirqGateAsBloqBase):
     def adjoint(self) -> 'Rx':
         return attrs.evolve(self, angle=-self.angle)
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         return TextBox(str(self))
@@ -728,16 +726,14 @@ class Ry(CirqGateAsBloqBase):
         Nielsen and Chuang. 2010. Chapter 4.2, pp. 174-177.
     """
 
-    angle: Union[sympy.Expr, float]
+    angle: sympy.Expr | float
     eps: SymbolicFloat = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
 
     @classmethod
-    def qcall(
-        cls, q: 'QVar', angle: Union[sympy.Expr, float], *, eps: SymbolicFloat = 1e-11
-    ) -> 'QVar':
+    def qcall(cls, q: 'QVar', angle: sympy.Expr | float, *, eps: SymbolicFloat = 1e-11) -> 'QVar':
         return q.bb.add(cls(angle=angle, eps=eps), q=q)
 
     @cached_property
@@ -766,7 +762,7 @@ class Ry(CirqGateAsBloqBase):
             ctrl_reg_name='ctrl',
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         return TextBox(str(self))

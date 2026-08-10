@@ -14,7 +14,6 @@
 
 from collections.abc import Callable, Iterable
 from functools import lru_cache
-from typing import Optional, Union
 
 import sympy
 from frozendict import frozendict
@@ -42,7 +41,7 @@ def analyze_logical_circuit(
     circuit_builder_func: Callable,
     circuit_builder_kwargs: frozendict,
     total_allowable_rotation_error: float,
-) -> Optional[frozendict]:
+) -> frozendict | None:
     """Builds the logical quantum circuit and analyzes its abstract properties.
 
     This function is cached based on its arguments. It calls the provided
@@ -96,7 +95,7 @@ def analyze_logical_circuit(
 
     if flasq_counts.total_rotations == 0:
         ind_rot_err = 1.0
-        rotation_depth_val: Union[float, sympy.Expr] = 0.0
+        rotation_depth_val: float | sympy.Expr = 0.0
     else:
         ind_rot_err = total_allowable_rotation_error / flasq_counts.total_rotations
         rotation_depth_val = get_rotation_depth(rotation_error=ind_rot_err)
@@ -125,7 +124,7 @@ def calculate_single_flasq_summary(
     code_distance: int,
     flasq_model_obj: FLASQCostModel,
     logical_timesteps_per_measurement: float,
-) -> Optional[FLASQSummary]:
+) -> FLASQSummary | None:
     """Applies a FLASQ cost model to logical circuit properties.
 
     Args:
@@ -226,7 +225,7 @@ def generate_configs_for_constrained_qec(
     phys_error_rate_list: Iterable[float],
     code_distance_list: Iterable[int],
     cultivation_data_decimal_precision: int = 8,
-    cultivation_data_uncertainty_cutoff: Optional[float] = 100,
+    cultivation_data_uncertainty_cutoff: float | None = 100,
     round_error_rate_up_to_simulated_cultivation_data: bool = True,
 ) -> list[CoreParametersConfig]:
     """

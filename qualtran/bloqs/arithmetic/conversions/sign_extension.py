@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -47,8 +47,8 @@ class SignExtend(Bloq):
         y (RIGHT): the output register of type `out_dtype`
     """
 
-    inp_dtype: Union[QInt, QIntOnesComp]
-    out_dtype: Union[QInt, QIntOnesComp]
+    inp_dtype: QInt | QIntOnesComp
+    out_dtype: QInt | QIntOnesComp
 
     def __attrs_post_init__(self):
         if not isinstance(self.inp_dtype, type(self.out_dtype)):
@@ -130,8 +130,8 @@ class SignTruncate(Bloq):
         y (RIGHT): the output register of type `out_dtype`
     """
 
-    inp_dtype: Union[QInt, QIntOnesComp]
-    out_dtype: Union[QInt, QIntOnesComp]
+    inp_dtype: QInt | QIntOnesComp
+    out_dtype: QInt | QIntOnesComp
 
     def __attrs_post_init__(self):
         if not isinstance(self.inp_dtype, type(self.out_dtype)):

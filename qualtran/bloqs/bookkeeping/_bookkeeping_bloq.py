@@ -12,9 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import abc
 from collections.abc import Iterable, Sequence
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from qualtran import Bloq, BloqBuilder, SoquetT
 
@@ -31,7 +33,7 @@ class _BookkeepingBloq(Bloq, metaclass=abc.ABCMeta):
     """
 
     def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
+        self, ctrl_spec: CtrlSpec | None = None
     ) -> tuple['Bloq', 'AddControlledT']:
         def add_controlled(
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']

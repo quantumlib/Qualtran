@@ -14,7 +14,7 @@
 
 # pylint: disable=too-many-function-args,missing-kwoa
 
-from typing import Any, Union
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import cirq
@@ -312,7 +312,7 @@ def test_flasq_summary_resolved_hashable():
         total_spacetime_volume=N * 8 + M * 4 + V_CULT_FACTOR + N * (N / 5),
     )
 
-    assumptions: dict[Union[sympy.Symbol, str], Any] = {N: 100, M: 50, V_CULT_FACTOR: 6.0}
+    assumptions: dict[sympy.Symbol | str, Any] = {N: 100, M: 50, V_CULT_FACTOR: 6.0}
 
     resolved_summary = symbolic_summary.resolve_symbols(frozendict(assumptions))
 

@@ -14,7 +14,7 @@
 
 import inspect
 from collections.abc import Callable, Iterable, Sequence
-from typing import Any, Generic, Optional, overload, TypeVar, Union
+from typing import Any, Generic, overload, TypeVar
 
 from attrs import field, frozen
 
@@ -23,7 +23,7 @@ from qualtran.resource_counting import GeneralizerT
 from .bloq import Bloq
 
 _BloqType = TypeVar('_BloqType', bound=Bloq)
-_GeneralizerType = Union[GeneralizerT, Sequence[GeneralizerT]]
+_GeneralizerType = GeneralizerT | Sequence[GeneralizerT]
 
 
 @frozen
@@ -50,7 +50,7 @@ class BloqExample(Generic[_BloqType]):
     generalizer: _GeneralizerType = field(
         converter=lambda x: tuple(x) if isinstance(x, Sequence) else x, default=lambda x: x
     )
-    docstring: Optional[str] = None
+    docstring: str | None = None
 
     def make(self) -> _BloqType:
         """Make the bloq."""
@@ -92,11 +92,11 @@ def bloq_example(
 
 
 def bloq_example(
-    _func: Optional[Callable[[], _BloqType]] = None,
+    _func: Callable[[], _BloqType] | None = None,
     *,
     generalizer: _GeneralizerType = lambda x: x,
     **kwargs: Any,
-) -> Union[Callable[[Callable[[], _BloqType]], BloqExample[_BloqType]], BloqExample[_BloqType]]:
+) -> Callable[[Callable[[], _BloqType]], BloqExample[_BloqType]] | BloqExample[_BloqType]:
     """Decorator to turn a function into a `BloqExample`.
 
     This will set `name` to the name of the function and `bloq_cls` according to the return-type

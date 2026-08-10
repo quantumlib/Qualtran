@@ -14,7 +14,7 @@
 from collections import Counter
 from collections.abc import Iterable, Iterator, Sequence
 from functools import cached_property
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen
@@ -52,7 +52,7 @@ if TYPE_CHECKING:
 
 
 def qsp_complementary_polynomial(
-    P: Union[NDArray[np.number], Sequence[complex]],
+    P: NDArray[np.number] | Sequence[complex],
     *,
     verify: bool = False,
     verify_precision: float = 1e-7,
@@ -165,7 +165,7 @@ def qsp_complementary_polynomial(
 
 
 def qsp_phase_factors(
-    P: Union[NDArray[np.number], Sequence[complex]], Q: Union[NDArray[np.number], Sequence[complex]]
+    P: NDArray[np.number] | Sequence[complex], Q: NDArray[np.number] | Sequence[complex]
 ) -> tuple[NDArray[np.floating], NDArray[np.floating], int]:
     """Computes the QSP signal rotations for a given pair of polynomials.
 
@@ -217,7 +217,7 @@ def qsp_phase_factors(
     return theta, phi, lambd
 
 
-def _to_tuple(x: Union[Iterable[complex], Shaped]) -> Union[tuple[complex, ...], Shaped]:
+def _to_tuple(x: Iterable[complex] | Shaped) -> tuple[complex, ...] | Shaped:
     """mypy-compatible attrs converter for GeneralizedQSP.P and Q"""
     if isinstance(x, Shaped):
         return x
@@ -284,8 +284,8 @@ class GeneralizedQSP(GateWithRegisters):
     """
 
     U: 'Bloq'
-    P: Union[tuple[complex, ...], Shaped] = field(converter=_to_tuple)
-    Q: Union[tuple[complex, ...], Shaped] = field(converter=_to_tuple)
+    P: tuple[complex, ...] | Shaped = field(converter=_to_tuple)
+    Q: tuple[complex, ...] | Shaped = field(converter=_to_tuple)
     negative_power: SymbolicInt = field(default=0, kw_only=True)
     precision: SymbolicFloat = field(default=1e-11, kw_only=True)
 
@@ -304,7 +304,7 @@ class GeneralizedQSP(GateWithRegisters):
     def from_qsp_polynomial(
         cls,
         U: 'Bloq',
-        P: Union[NDArray[np.number], Sequence[complex], Shaped],
+        P: NDArray[np.number] | Sequence[complex] | Shaped,
         *,
         negative_power: SymbolicInt = 0,
         precision: SymbolicFloat = 0,

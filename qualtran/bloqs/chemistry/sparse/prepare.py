@@ -15,7 +15,7 @@
 
 import itertools
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -259,7 +259,7 @@ class PrepareSparse(PrepareOracle):
         num_bits_state_prep: int = 8,
         num_bits_rot_aa: int = 8,
         drop_element_thresh: float = 0.0,
-        log_block_size: Optional[SymbolicInt] = None,
+        log_block_size: SymbolicInt | None = None,
     ) -> 'PrepareSparse':
         r"""Factory method to build PrepareSparse from Hamiltonian coefficients.
 

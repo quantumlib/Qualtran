@@ -12,11 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import abc
 from collections import defaultdict
 from collections.abc import Callable, Iterator, Sequence
 from functools import cached_property
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -275,7 +277,7 @@ def _unary_iteration_callgraph_segtree(
     l_range: int,
     r_range: int,
     break_early: Callable[[int, int], bool],
-    bloq_counts: dict['Bloq', Union[int, 'sympy.Expr']],
+    bloq_counts: dict[Bloq, int | sympy.Expr],
 ) -> list[int]:
     """Iterative segment tree used to construct call graph for Unary iteration.
 
@@ -351,7 +353,7 @@ def _unary_iteration_callgraph(
     selection_bitsize: int,
     control_bitsize: int,
     break_early: Callable[[int, int], bool],
-    bloq_counts: dict['Bloq', Union[int, 'sympy.Expr']],
+    bloq_counts: dict[Bloq, int | sympy.Expr],
 ) -> Sequence[int]:
     """Helper to compute the call graph for unary iteration.
 
@@ -594,13 +596,13 @@ class UnaryIterationGate(GateWithRegisters):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', set['BloqCountT']]:
+    ) -> BloqCountDictT | set[BloqCountT]:
         if total_bits(self.selection_registers) == 0 or self._break_early(
             (), 0, self.selection_registers[0].dtype.iteration_length_or_zero()
         ):
             return self.decompose_bloq().build_call_graph(ssa)
         num_loops = len(self.selection_registers)
-        bloq_counts: dict['Bloq', Union[int, 'sympy.Expr']] = defaultdict(lambda: 0)
+        bloq_counts: dict['Bloq', int | 'sympy.Expr'] = defaultdict(lambda: 0)
 
         def unary_iteration_loops(
             nested_depth: int, selection_reg_name_to_val: dict[str, int], num_controls: int

@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from collections.abc import Sequence
-from typing import Any, Optional
+from typing import Any
 
 import attrs
 import numpy as np
@@ -35,8 +35,8 @@ def _get_pkg(cls) -> str:
 def object_to_object_node(
     o: object,
     *,
-    fieldnames: Optional[Sequence[str]] = None,
-    pkg: Optional[str] = None,
+    fieldnames: Sequence[str] | None = None,
+    pkg: str | None = None,
     nodes: L1Nodes = qualtran_l1_nodes,
 ) -> CObjectNode:
     """Convert an object to a CObjectNode.

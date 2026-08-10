@@ -11,10 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import itertools
 from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -125,7 +127,7 @@ class Toffoli(Bloq):
         qubit_manager: 'cirq.QubitManager',
         ctrl: 'CirqQuregT',
         target: 'CirqQuregT',  # type: ignore[type-var]
-    ) -> tuple[Optional['cirq.Operation'], dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
+    ) -> tuple[cirq.Operation | None, dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         import cirq
 
         (trg,) = target
@@ -136,7 +138,7 @@ class Toffoli(Bloq):
 
         return qml.Toffoli(wires=wires)
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         from qualtran.drawing import Circle, ModPlus, Text
 
         if reg is None:

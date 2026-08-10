@@ -15,7 +15,7 @@
 """SELECT for the molecular tensor hypercontraction (THC) hamiltonian"""
 
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from attrs import evolve, frozen
@@ -161,7 +161,7 @@ class SelectTHC(SelectOracle):
     keep_bitsize: int
     kr1: int = 1
     kr2: int = 1
-    control_val: Optional[int] = None
+    control_val: int | None = None
 
     @cached_property
     def control_registers(self) -> tuple[Register, ...]:

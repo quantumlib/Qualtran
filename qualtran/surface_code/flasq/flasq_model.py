@@ -24,7 +24,6 @@ import typing
 import warnings
 from collections.abc import Mapping
 from functools import lru_cache
-from typing import Optional
 
 import sympy
 from attrs import field, fields, frozen
@@ -111,12 +110,12 @@ class FLASQCostModel:
     extra_cost_per_rotation: SymbolicFloat = 45.0
 
     # --- Derived Parameters (calculated in post_init if not provided) ---
-    toffoli_cultivation_volume: Optional[SymbolicFloat] = field(default=None)
-    and_cultivation_volume: Optional[SymbolicFloat] = field(default=None)
-    rz_clifford_volume: Optional[SymbolicFloat] = field(default=None)
-    rz_cultivation_volume: Optional[SymbolicFloat] = field(default=None)
-    rx_clifford_volume: Optional[SymbolicFloat] = field(default=None)
-    rx_cultivation_volume: Optional[SymbolicFloat] = field(default=None)
+    toffoli_cultivation_volume: SymbolicFloat | None = field(default=None)
+    and_cultivation_volume: SymbolicFloat | None = field(default=None)
+    rz_clifford_volume: SymbolicFloat | None = field(default=None)
+    rz_cultivation_volume: SymbolicFloat | None = field(default=None)
+    rx_clifford_volume: SymbolicFloat | None = field(default=None)
+    rx_cultivation_volume: SymbolicFloat | None = field(default=None)
 
     def __attrs_post_init__(self):
         """Calculate and set default values for derived cost parameters."""
@@ -428,7 +427,7 @@ class FLASQSummary:
 
     @lru_cache(maxsize=65536)
     def resolve_symbols(
-        self, assumptions: frozendict[typing.Union[sympy.Symbol, str], typing.Any]
+        self, assumptions: frozendict[sympy.Symbol | str, typing.Any]
     ) -> "FLASQSummary":
         """Substitutes symbols in the summary fields based on provided assumptions.
 
@@ -457,7 +456,7 @@ def apply_flasq_cost_model(
     span_info: GateSpan,
     measurement_depth: MeasurementDepth,
     logical_timesteps_per_measurement: SymbolicFloat,
-    assumptions: Optional[frozendict] = None,
+    assumptions: frozendict | None = None,
     verbosity: int = 0,
 ) -> FLASQSummary:
     """Calculates key FLASQ resource estimates including volumes and limiting depth.
@@ -585,7 +584,7 @@ def apply_flasq_cost_model(
     return summary
 
 
-def get_rotation_depth(rotation_error: Optional[SymbolicFloat] = None) -> SymbolicFloat:
+def get_rotation_depth(rotation_error: SymbolicFloat | None = None) -> SymbolicFloat:
     """Returns the expected T-count via mixed fallback synthesis.
 
     T gates in rotation synthesis are sequential, so T-count = T-depth.

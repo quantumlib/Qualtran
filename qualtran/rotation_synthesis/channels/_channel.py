@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import abc
 from collections.abc import Sequence
-from typing import Optional, Union
 
 import attrs
 import cirq
@@ -79,7 +78,7 @@ class UnitaryChannel(Channel):
     def to_matrix(self) -> _su2_ct.SU2CliffordT:
         return _su2_ct.SU2CliffordT.from_pair(self.p, self.q, pick_phase=True)
 
-    def expected_num_ts(self, config: Optional[mc.MathConfig] = None) -> rst.Real:
+    def expected_num_ts(self, config: mc.MathConfig | None = None) -> rst.Real:
         return self.n
 
     def rotation_angle(self, config: mc.MathConfig) -> rst.Real:
@@ -115,7 +114,7 @@ class UnitaryChannel(Channel):
         n = sum(g.startswith("T") for g in seq)
         return UnitaryChannel(u.matrix[0, 0], u.matrix[1, 0], n, twirl)
 
-    def to_cirq(self, fmt: str = "xz", qs: Optional[Sequence[cirq.Qid]] = None) -> cirq.Circuit:
+    def to_cirq(self, fmt: str = "xz", qs: Sequence[cirq.Qid] | None = None) -> cirq.Circuit:
         """Retruns a representation of the channel as a cirq circuit.
 
         Args:
@@ -182,9 +181,7 @@ class UnitaryChannel(Channel):
         return config.sqrt(diameter_vec.real**2 + diameter_vec.imag**2)
 
     @classmethod
-    def from_unitaries(
-        cls, *unitaries: Union[UnitaryChannel, _su2_ct.SU2CliffordT]
-    ) -> UnitaryChannel:
+    def from_unitaries(cls, *unitaries: UnitaryChannel | _su2_ct.SU2CliffordT) -> UnitaryChannel:
         if not unitaries:
             raise ValueError('at least one unitary should be provided')
 
@@ -262,7 +259,7 @@ class ProjectiveChannel(Channel):
             theta - self.failure_angle(config), config
         )
 
-    def to_cirq(self, fmt: str = "xz", qs: Optional[Sequence[cirq.Qid]] = None) -> cirq.Circuit:
+    def to_cirq(self, fmt: str = "xz", qs: Sequence[cirq.Qid] | None = None) -> cirq.Circuit:
         """Retruns a representation of the channel as a cirq circuit.
 
         Args:

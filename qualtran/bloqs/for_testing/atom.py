@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -44,7 +44,7 @@ class TestAtom(Bloq):
         q: One bit
     """
 
-    tag: Optional[str] = None
+    tag: str | None = None
 
     @cached_property
     def signature(self) -> Signature:
@@ -127,7 +127,7 @@ class TestGWRAtom(GateWithRegisters):
         q: One bit
     """
 
-    tag: Optional[str] = None
+    tag: str | None = None
     is_adjoint: bool = False
 
     @cached_property

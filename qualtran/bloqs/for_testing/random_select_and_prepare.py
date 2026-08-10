@@ -13,7 +13,6 @@
 #  limitations under the License.
 from collections.abc import Iterator
 from functools import cached_property
-from typing import Optional
 
 import attrs
 import cirq
@@ -111,7 +110,7 @@ class TestPauliSelectOracle(SelectOracle):  # type: ignore[misc]
     select_bitsize: int
     target_bitsize: int
     select_unitaries: tuple[cirq.DensePauliString, ...]
-    control_val: Optional[int] = None
+    control_val: int | None = None
 
     @classmethod
     def random(

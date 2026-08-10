@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Optional
 
 import numpy as np
 import pytest
@@ -67,7 +66,7 @@ def test_decompose_bloq_counts():
     qlt_testing.assert_equivalent_bloq_counts(prep)
 
 
-def build_random_test_integrals(nb: int, seed: Optional[int] = 7):
+def build_random_test_integrals(nb: int, seed: int | None = 7):
     """Build random one- and two-electron integrals of the correct symmetry.
 
     Args:

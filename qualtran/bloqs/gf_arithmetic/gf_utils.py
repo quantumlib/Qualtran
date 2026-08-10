@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from collections.abc import Sequence
-from typing import Union
 
 from galois import Poly
 
@@ -20,7 +19,7 @@ from qualtran import QGF
 from qualtran.symbolics import is_symbolic, SymbolicInt
 
 
-def qgf_converter(x: Union[QGF, int, Poly, SymbolicInt, Sequence[int]]) -> QGF:
+def qgf_converter(x: QGF | int | Poly | SymbolicInt | Sequence[int]) -> QGF:
     if isinstance(x, QGF):
         return x
     if isinstance(x, int):

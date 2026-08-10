@@ -11,11 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import itertools
 from collections import Counter
 from collections.abc import Iterator
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -88,8 +90,8 @@ class Add(Bloq):
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
     """
 
-    a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
-    b_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
+    a_dtype: QInt | QUInt | QMontgomeryUInt = field()
+    b_dtype: QInt | QUInt | QMontgomeryUInt = field()
 
     @b_dtype.default
     def b_dtype_default(self):
@@ -146,7 +148,7 @@ class Add(Bloq):
         wire_symbols += ["In(y)/Out(x+y)"] * int(self.b_dtype.bitsize)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("")
         if reg.name == 'a':
@@ -314,7 +316,7 @@ class OutOfPlaceAdder(GateWithRegisters):
         return evolve(self, is_adjoint=not self.is_adjoint)
 
     def on_classical_vals(
-        self, *, a: 'ClassicalValT', b: 'ClassicalValT', c: Optional['ClassicalValT'] = None
+        self, *, a: 'ClassicalValT', b: 'ClassicalValT', c: ClassicalValT | None = None
     ) -> dict[str, 'ClassicalValT']:
         if is_symbolic(self.bitsize):
             raise ValueError(f'Classical simulation is not supported for symbolic bloq {self}')
@@ -363,7 +365,7 @@ class OutOfPlaceAdder(GateWithRegisters):
             return OutOfPlaceAdder(self.bitsize, is_adjoint=not self.is_adjoint)
         raise NotImplementedError("OutOfPlaceAdder.__pow__ defined only for +1/-1.")
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('c=a+b')
         return super().wire_symbol(reg, idx)
@@ -421,7 +423,7 @@ class AddK(Bloq):
         Haner et al. 2020. Section 3: Components. "Integer addition" and Fig 2a.
     """
 
-    dtype: Union[QInt, QUInt, QMontgomeryUInt]
+    dtype: QInt | QUInt | QMontgomeryUInt
     k: 'SymbolicInt'
 
     def __attrs_post_init__(self):
@@ -491,7 +493,7 @@ class AddK(Bloq):
         return counts
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text('')

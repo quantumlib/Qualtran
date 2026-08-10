@@ -13,7 +13,6 @@
 #  limitations under the License.
 import itertools
 from collections.abc import Sequence
-from typing import Optional
 from unittest.mock import ANY
 
 import attrs
@@ -43,7 +42,7 @@ from qualtran.resource_counting import CostKey, GateCounts, get_cost_value, QECG
 
 @attrs.frozen
 class AtomWithSpecializedControl(Bloq):
-    cv: Optional[int] = None
+    cv: int | None = None
     ctrl_reg_name: str = 'ctrl'
     target_reg_name: str = 'q'
 
@@ -65,7 +64,7 @@ class AtomWithSpecializedControl(Bloq):
         )
 
     @staticmethod
-    def cost_expr_for_cv(cv: Optional[int]):
+    def cost_expr_for_cv(cv: int | None):
         import sympy
 
         c_unctrl = sympy.Symbol("_c_target_")

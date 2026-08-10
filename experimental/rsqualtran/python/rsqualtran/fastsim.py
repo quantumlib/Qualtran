@@ -13,7 +13,7 @@
 #  limitations under the License.
 """Python bindings for qlt_fastsim."""
 
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 
@@ -51,7 +51,7 @@ def compile_l1_to_fastsim(module: _rsqlt.L1Module) -> _rsqlt.CompiledModule:
 
 
 def _convert_output_value(
-    val_str: str, dtype_str: str, name: str, n_bits: int, shape: Optional[list[int]]
+    val_str: str, dtype_str: str, name: str, n_bits: int, shape: list[int] | None
 ) -> ClassicalValT:
     """Convert a string output value to its appropriate Python type.
 
@@ -197,8 +197,8 @@ class QLTFastsim:
         self._sim = _rsqlt.VmSimulator(compiled_module, entrypoint)
 
         self._sig = compiled_module.get_subroutine_signature(entrypoint)
-        self._inputs: dict[str, tuple[int, str, Optional[list[int]]]] = {}
-        self._outputs: dict[str, tuple[int, str, Optional[list[int]]]] = {}
+        self._inputs: dict[str, tuple[int, str, list[int] | None]] = {}
+        self._outputs: dict[str, tuple[int, str, list[int] | None]] = {}
         for name, n_bits, dir_, dtype, shape in self._sig:
             if dir_ in ("Thru", "LeftOnly", "Cast"):
                 self._inputs[name] = (n_bits, dtype, shape)

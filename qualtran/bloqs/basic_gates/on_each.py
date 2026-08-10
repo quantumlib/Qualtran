@@ -15,7 +15,7 @@
 """Classes to apply single qubit bloq to multiple qubits."""
 
 from functools import cached_property
-from typing import cast, Optional, TYPE_CHECKING
+from typing import cast, TYPE_CHECKING
 
 import attrs
 import sympy
@@ -57,7 +57,7 @@ class OnEach(Bloq):
 
     n: SymbolicInt
     gate: Bloq
-    target_dtype: Optional[QDType] = None
+    target_dtype: QDType | None = None
 
     def __attrs_post_init__(self):
         assert len(self.gate.signature) == 1, "Gate must only have a single register."
@@ -105,7 +105,7 @@ class OnEach(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {self.gate: self.n}
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> WireSymbol:
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         one_reg = self.gate.wire_symbol(reg=reg, idx=idx)
         if isinstance(one_reg, TextBox):
             new_text = f'{one_reg.text}⨂{self.n}'

@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 import itertools
-from typing import cast, Optional
+from typing import cast
 
 import attrs
 import mpmath
@@ -39,7 +39,7 @@ def _solve(
     collector: rsp.PointCollector,
     relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
     verbose: bool = False,
-) -> Optional[list[channels.Channel] | tuple[list[channels.Channel], list[channels.Channel]]]:
+) -> list[channels.Channel] | tuple[list[channels.Channel], list[channels.Channel]] | None:
     """Iterates over lattice points that satisify the geometric constraints defined by the protocol.
 
     Each valid point gets added to the collector which decides whether to terminate or not.
@@ -94,7 +94,7 @@ def diagonal_unitary_approx(
     config: mc.MathConfig,
     relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
     verbose: bool = False,
-) -> Optional[channels.UnitaryChannel]:
+) -> channels.UnitaryChannel | None:
     r"""Approximates $e^{i\theta Z} = Rz(-2\theta)$ using the diagonal protocol.
 
     Args:
@@ -134,11 +134,11 @@ def fallback_protocol(
     success_probability: rst.Real,
     max_n: int,
     config: mc.MathConfig,
-    eps_rotation: Optional[rst.Real] = None,
+    eps_rotation: rst.Real | None = None,
     num_valid_points: int = 1,
     relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
     verbose: bool = False,
-) -> Optional[channels.ProjectiveChannel]:
+) -> channels.ProjectiveChannel | None:
     r"""Approximates $e^{i\theta Z} = Rz(-2\theta)$ using the fallback protocol.
 
     Args:
@@ -225,7 +225,7 @@ def mixed_diagonal_protocol(
     search_area_scaler: float = 1,
     relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
     verbose: bool = False,
-) -> Optional[channels.ProbabilisticChannel]:
+) -> channels.ProbabilisticChannel | None:
     r"""Approximates $e^{i\theta Z} = Rz(-2\theta)$ using the mixed diagonal protocol.
 
     Args:
@@ -260,7 +260,7 @@ def mixed_diagonal_protocol(
             verbose=verbose,
         ),
     )
-    best_choice: Optional[channels.ProbabilisticChannel] = None
+    best_choice: channels.ProbabilisticChannel | None = None
     for u1, u2 in itertools.product(under_rotations, over_rotations):
         cand = channels.ProbabilisticChannel.from_unitary_channels(
             attrs.evolve(u1, twirl=True), attrs.evolve(u2, twirl=True), theta, config
@@ -280,14 +280,14 @@ def mixed_fallback_protocol(
     success_probability: rst.Real,
     max_n: int,
     config: mc.MathConfig,
-    eps_under_rotation: Optional[rst.Real] = None,
-    eps_over_rotation: Optional[rst.Real] = None,
+    eps_under_rotation: rst.Real | None = None,
+    eps_over_rotation: rst.Real | None = None,
     num_valid_points: int = 1,
     fallback_max_n: int = 400,
     fallback_min_eps: rst.Real = mpmath.mpf("1e-32"),
     relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
     verbose: bool = False,
-) -> Optional[channels.ProbabilisticChannel]:
+) -> channels.ProbabilisticChannel | None:
     r"""Approximates $e^{i\theta Z} = Rz(-2\theta)$ using the mixed fallback protocol.
 
     Args:
@@ -443,10 +443,10 @@ def magnitude_approx(
     eps: rst.Real,
     max_n: int,
     config: mc.MathConfig,
-    eps_split: Optional[tuple[rst.Real, rst.Real, rst.Real]] = None,
+    eps_split: tuple[rst.Real, rst.Real, rst.Real] | None = None,
     relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
     verbose: bool = False,
-) -> Optional[channels.UnitaryChannel]:
+) -> channels.UnitaryChannel | None:
     r"""Approximates a unitary using the magnitude approximation protocol.
 
     Any $SU(2)$ unitary can be written as a product of 3 rotations ZXZ. This method computes these

@@ -19,7 +19,7 @@
 import math
 import random
 from collections.abc import Iterable, Sequence
-from typing import Any, Union
+from typing import Any
 
 import attrs
 import numpy as np
@@ -326,7 +326,7 @@ def test_single_qubit_consistency():
     assert check_dtypes_consistent(QGF(characteristic=2, degree=1), QBit())
 
 
-def assert_to_and_from_bits_array_consistent(qdtype: QDType, values: Union[Sequence[Any], NDArray]):
+def assert_to_and_from_bits_array_consistent(qdtype: QDType, values: Sequence[Any] | NDArray):
     values = np.asanyarray(values)
     bits_array = qdtype.to_bits_array(values)
 

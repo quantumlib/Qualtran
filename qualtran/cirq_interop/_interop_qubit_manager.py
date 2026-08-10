@@ -15,7 +15,6 @@
 """Qubit Manager to use when converting Cirq gates to/from Bloqs."""
 
 from collections.abc import Iterable
-from typing import Optional
 
 import cirq
 
@@ -23,7 +22,7 @@ import cirq
 class InteropQubitManager(cirq.QubitManager):
     """Qubit Manager to use to facilitate interop of Cirq gates and Bloqs."""
 
-    def __init__(self, qm: Optional[cirq.QubitManager] = None):
+    def __init__(self, qm: cirq.QubitManager | None = None):
         if qm is None:
             qm = cirq.SimpleQubitManager()
         self._qm = qm

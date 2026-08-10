@@ -14,7 +14,7 @@
 r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian."""
 
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -75,7 +75,7 @@ class PrepareTUVSuperpositions(Bloq):
     def signature(self) -> Signature:
         return Signature.build(tuv=1, uv=1)
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("PREP TUV")
         return super().wire_symbol(reg, idx)
@@ -164,7 +164,7 @@ class MultiplexedCSwap3D(Bloq):
         )
         return merged_qubits.reshape(out_shape)
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('MultiSwap')
         if reg.name == 'sel':
@@ -242,7 +242,7 @@ class PrepareFirstQuantization(PrepareOracle):
     num_bits_nuc_pos: int = 16
     num_bits_t: int = 16
     num_bits_rot_aa: int = 8
-    sum_of_l1_coeffs: Optional[SymbolicFloat] = None
+    sum_of_l1_coeffs: SymbolicFloat | None = None
 
     @property
     def selection_registers(self) -> tuple[Register, ...]:
@@ -284,7 +284,7 @@ class PrepareFirstQuantization(PrepareOracle):
             )
         return self.sum_of_l1_coeffs
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("PREP")
         return super().wire_symbol(reg, idx)
@@ -451,7 +451,7 @@ class SelectFirstQuantization(SelectOracle):
             [*self.control_registers, *self.selection_registers, *self.target_registers]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("SELECT")
         return super().wire_symbol(reg, idx)

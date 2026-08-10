@@ -14,7 +14,7 @@
 import multiprocessing.connection
 import time
 from collections.abc import Callable
-from typing import Any, Optional
+from typing import Any
 
 from attrs import define
 
@@ -73,7 +73,7 @@ class ExecuteWithTimeout:
         p.start()
         self.pending.append(_Pending(p=p, recv=recv, start_time=start_time, kwargs=kwargs))
 
-    def _scan_pendings(self) -> Optional[_Pending]:
+    def _scan_pendings(self) -> _Pending | None:
         # helper method that goes through the currently pending tasks, terminates the ones
         # that have been going on too long, and accounts for ones that have finished.
         # Returns the `_Pending` of the killed or completed job or `None` if each pending
@@ -93,7 +93,7 @@ class ExecuteWithTimeout:
 
         return None
 
-    def next_result(self) -> tuple[dict[str, Any], Optional[Any]]:
+    def next_result(self) -> tuple[dict[str, Any], Any | None]:
         """Get the next available result.
 
         This call is blocking, but should never take longer than `self.timeout`. This should

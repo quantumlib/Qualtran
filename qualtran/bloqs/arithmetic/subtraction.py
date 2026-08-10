@@ -12,7 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Optional, TYPE_CHECKING, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -72,8 +74,8 @@ class Subtract(Bloq):
         Page 9.
     """
 
-    a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
-    b_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
+    a_dtype: QInt | QUInt | QMontgomeryUInt = field()
+    b_dtype: QInt | QUInt | QMontgomeryUInt = field()
 
     @b_dtype.default
     def b_dtype_default(self):
@@ -106,9 +108,7 @@ class Subtract(Bloq):
     def signature(self):
         return Signature([Register("a", self.a_dtype), Register("b", self.b_dtype)])
 
-    def _dtype_as_unsigned(
-        self, dtype: Union[QInt, QUInt, QMontgomeryUInt]
-    ) -> Union[QUInt, QMontgomeryUInt]:
+    def _dtype_as_unsigned(self, dtype: QInt | QUInt | QMontgomeryUInt) -> QUInt | QMontgomeryUInt:
         return dtype if not isinstance(dtype, QInt) else QUInt(dtype.bitsize)
 
     @property
@@ -138,7 +138,7 @@ class Subtract(Bloq):
         return {'a': a, 'b': int((a - b + half_n) % N) - half_n}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         from qualtran.drawing import directional_text_box
 
@@ -256,7 +256,7 @@ class SubtractFrom(Bloq):
         b: A dtype.bitsize-sized input/output register (register b above).
     """
 
-    dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
+    dtype: QInt | QUInt | QMontgomeryUInt = field()
 
     @dtype.validator
     def _dtype_validate(self, field, val):
@@ -281,7 +281,7 @@ class SubtractFrom(Bloq):
         }
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         from qualtran.drawing import directional_text_box
 

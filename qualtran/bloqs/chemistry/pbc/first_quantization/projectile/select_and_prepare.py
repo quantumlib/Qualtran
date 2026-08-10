@@ -14,7 +14,7 @@
 r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian with a quantum projectile."""
 
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from attrs import evolve, field, frozen
@@ -105,7 +105,7 @@ class PrepareTUVSuperpositions(Bloq):
     def adjoint(self) -> 'Bloq':
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("PREP TUV")
         return super().wire_symbol(reg, idx)
@@ -142,7 +142,7 @@ class ControlledMultiplexedCSwap3D(MultiplexedCSwap3D):
             ]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('MultiSwap')
         if reg.name == 'sel':
@@ -285,7 +285,7 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
             Register('flags', QBit(), shape=(4,)),
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("PREP")
         return super().wire_symbol(reg, idx)
@@ -465,7 +465,7 @@ class SelectFirstQuantizationWithProj(SelectOracle):
             [*self.control_registers, *self.selection_registers, *self.target_registers]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("SELECT")
         return super().wire_symbol(reg, idx)

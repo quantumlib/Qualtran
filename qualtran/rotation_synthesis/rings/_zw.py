@@ -14,9 +14,10 @@
 
 """The ring Z[w] where w = e^{i pi/4}"""
 
+from __future__ import annotations
+
 import itertools
 from collections.abc import Sequence
-from typing import Union
 
 import attrs
 import numpy as np
@@ -97,7 +98,7 @@ class ZW:
         """
         return self.mag(config.sqrt2), self.arg(config)
 
-    def __mul__(self, other: Union["ZW", rst.Integral]) -> "ZW":
+    def __mul__(self, other: ZW | rst.Integral) -> ZW:
         if isinstance(other, ZW):
             c = [0] * 4
             for i in range(4):

@@ -35,7 +35,6 @@ References:
 from collections import Counter
 from collections.abc import Sequence
 from functools import cached_property
-from typing import Union
 
 import attrs
 import numpy as np
@@ -287,9 +286,7 @@ class PRGAUniqueConstraintRHS(Bloq):
         return QFxp(self.angle_bitsize, self.angle_bitsize)
 
     @cached_property
-    def _qrom_angle_data(
-        self,
-    ) -> tuple[Union[HasLength, Sequence[int]], Union[HasLength, Sequence[int]]]:
+    def _qrom_angle_data(self) -> tuple[HasLength | Sequence[int], HasLength | Sequence[int]]:
         M = self.inst.max_rhs
         scopes = self.inst.batched_scopes
         if is_symbolic(M) or is_symbolic(scopes):

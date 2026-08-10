@@ -14,8 +14,6 @@
 
 """A representation of a State as defined in https://arxiv.org/abs/1403.2975 and its operations."""
 
-from typing import Union
-
 import attrs
 
 import qualtran.rotation_synthesis._math_config as mc
@@ -156,7 +154,7 @@ class SelingerState:
         return GridOperatorAction(g, (name,))
 
     def apply(
-        self, operator_or_action: Union[go.GridOperator, GridOperatorAction], config: mc.MathConfig
+        self, operator_or_action: go.GridOperator | GridOperatorAction, config: mc.MathConfig
     ) -> "SelingerState":
         """Applies the given gridoperator/action on the state.
 

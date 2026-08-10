@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from collections.abc import Sequence
-from typing import Union
 
 import numpy as np
 from numpy.polynomial import Polynomial
@@ -22,8 +21,8 @@ from qualtran.symbolics import Shaped
 
 
 def check_gqsp_polynomial_pair_on_random_points_on_unit_circle(
-    P: Union[Sequence[complex], Polynomial, Shaped],
-    Q: Union[Sequence[complex], Polynomial, Shaped],
+    P: Sequence[complex] | Polynomial | Shaped,
+    Q: Sequence[complex] | Polynomial | Shaped,
     *,
     random_state: np.random.RandomState,
     rtol: float = 1e-7,
@@ -58,7 +57,7 @@ def random_qsp_polynomial(
 
 
 def _polynomial_max_abs_value_on_unit_circle(
-    P: Union[NDArray[np.number], Sequence[complex], Shaped], *, n_points=2**17
+    P: NDArray[np.number] | Sequence[complex] | Shaped, *, n_points=2**17
 ):
     r"""Find the maximum absolute value of $P$ on $N$ uniform points on the complex unit circle.
 
@@ -108,7 +107,7 @@ def scale_down_to_qsp_polynomial(
 
 
 def assert_is_qsp_polynomial(
-    P: Union[NDArray[np.number], Sequence[complex], Shaped], *, n_points: int = 2**17
+    P: NDArray[np.number] | Sequence[complex] | Shaped, *, n_points: int = 2**17
 ):
     r"""Check if the given polynomial is a valid QSP polynomial.
 

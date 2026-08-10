@@ -12,13 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from collections.abc import Sequence
-from typing import Union
 
 import numpy as np
 
 
 def fft_complementary_polynomial(
-    P: Union[Sequence[float], Sequence[complex]], tolerance: float = 1e-4, num_modes: int = 500
+    P: Sequence[float] | Sequence[complex], tolerance: float = 1e-4, num_modes: int = 500
 ):
     """Computes the Q polynomial given P
 

@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Optional
 
 import numpy as np
 import scipy
@@ -230,7 +229,7 @@ class PlantedNoisyKXOR(Bloq):
     inst_solve: KXorInstance
     ell: SymbolicInt
     rho: SymbolicFloat
-    _guiding_state_overlap: Optional[SymbolicFloat] = field(kw_only=True, default=None)
+    _guiding_state_overlap: SymbolicFloat | None = field(kw_only=True, default=None)
 
     def __attrs_post_init__(self):
         k = self.inst_guide.k
@@ -253,8 +252,8 @@ class PlantedNoisyKXOR(Bloq):
         rho: SymbolicFloat,
         *,
         rng: np.random.Generator,
-        zeta: Optional[SymbolicFloat] = None,
-        guiding_state_overlap: Optional[SymbolicFloat] = None,
+        zeta: SymbolicFloat | None = None,
+        guiding_state_overlap: SymbolicFloat | None = None,
     ):
         if zeta is None:
             zeta = 1 / log2(inst.n)

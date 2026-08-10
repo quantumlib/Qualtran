@@ -12,9 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -214,7 +216,7 @@ class TwoBitCSwap(Bloq):
 
         return qml.CSWAP(wires=wires)
 
-    def wire_symbol(self, reg: Optional['Register'], idx: tuple[int, ...] = ()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = ()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         if reg.name == 'ctrl':
@@ -255,7 +257,7 @@ class Swap(Bloq):
         y: the second register
     """
 
-    bitsize: Union[int, sympy.Expr]
+    bitsize: int | sympy.Expr
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -289,7 +291,7 @@ class Swap(Bloq):
     ) -> dict[str, 'ClassicalValT']:
         return {'x': y, 'y': x}
 
-    def wire_symbol(self, reg: Optional['Register'], idx: tuple[int, ...] = ()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = ()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         if reg.name == 'x':
@@ -355,7 +357,7 @@ class CSwap(GateWithRegisters):
         y: the second register
     """
 
-    bitsize: Union[int, sympy.Expr]
+    bitsize: int | sympy.Expr
 
     @cached_property
     def signature(self) -> Signature:
@@ -395,7 +397,7 @@ class CSwap(GateWithRegisters):
 
     @classmethod
     def make_on(
-        cls, **quregs: Union[Sequence['cirq.Qid'], NDArray['cirq.Qid']]  # type: ignore[type-var]
+        cls, **quregs: Sequence['cirq.Qid'] | NDArray['cirq.Qid']  # type: ignore[type-var]
     ) -> 'cirq.Operation':
         """Helper constructor to automatically deduce bitsize attributes."""
         return cls(bitsize=len(quregs['x'])).on_registers(**quregs)
@@ -411,7 +413,7 @@ class CSwap(GateWithRegisters):
             )
         return cirq.CircuitDiagramInfo(("@",) + ("×(x)",) * self.bitsize + ("×(y)",) * self.bitsize)
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         if reg.name == 'x':

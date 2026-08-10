@@ -14,9 +14,11 @@
 
 """Plumbing for bloq-to-bloq `Connection`s."""
 
+from __future__ import annotations
+
 import warnings
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -45,7 +47,7 @@ class BloqInstance:
 
     def bloq_is(self, t) -> bool:
         """Helper method that does `isinstance(self.bloq, t)`, but works safely on
-        `Union[BloqInstance, DanglingT]`"""
+        `BloqInstance | DanglingT`"""
         return isinstance(self.bloq, t)
 
     def __hash__(self):
@@ -68,12 +70,12 @@ class DanglingT:
 
     def bloq_is(self, t) -> bool:
         """`DanglingT.bloq_is(...)` is always False, but works safely on
-        `Union[BloqInstance, DanglingT]`.
+        `BloqInstance | DanglingT`.
         """
         return False
 
 
-def _to_tuple(x: Union[int, tuple[int, ...]]) -> tuple[int, ...]:
+def _to_tuple(x: int | tuple[int, ...]) -> tuple[int, ...]:
     if isinstance(x, int):
         return (x,)
     return x
@@ -100,7 +102,7 @@ class _Soquet:
             register.
     """
 
-    binst: Union[BloqInstance, DanglingT]
+    binst: BloqInstance | DanglingT
     reg: 'Register'
     idx: tuple[int, ...] = field(converter=_to_tuple, default=tuple())
 
@@ -146,8 +148,8 @@ class _QVar:
 
     soquet: _Soquet
     bb: 'BloqBuilder' = field(kw_only=True)
-    _split_components: Optional['QVarT'] = field(default=None)
-    ssa_name: Optional[str] = field(default=None, kw_only=True)
+    _split_components: QVarT | None = field(default=None)
+    ssa_name: str | None = field(default=None, kw_only=True)
 
     @property
     def dtype(self) -> 'QCDType':

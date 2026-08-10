@@ -13,8 +13,6 @@
 #  limitations under the License.
 """Some utility functions for chemistry tutorials"""
 
-from typing import Optional
-
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.optimize
@@ -77,7 +75,7 @@ def plot_linear_log_log(
     ax: plt.Axes,
     xs: NDArray[np.float64],
     ys: NDArray[np.float64],
-    label: Optional[str] = None,
+    label: str | None = None,
     color: str = 'C0',
 ):
     """Fit a power law to the input data set and plot on existing axis.

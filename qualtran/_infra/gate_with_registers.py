@@ -12,9 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import abc
 from collections.abc import Collection, Iterable, Sequence
-from typing import cast, Optional, overload, TYPE_CHECKING, Union
+from typing import cast, overload, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -54,7 +56,7 @@ def split_qubits(
 
 def merge_qubits(
     registers: Iterable[Register],
-    **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid'], NDArray['cirq.Qid']],  # type: ignore[type-var]
+    **qubit_regs: cirq.Qid | Sequence[cirq.Qid] | NDArray[cirq.Qid],  # type: ignore[type-var]
 ) -> list['cirq.Qid']:
     """Merges the dictionary of appropriately shaped qubit arrays into a flat list of qubits."""
 
@@ -157,9 +159,9 @@ def _get_all_and_output_quregs_from_input(
 
 
 def _get_cirq_cv(
-    num_controls: Optional[int] = None,
+    num_controls: int | None = None,
     control_values=None,
-    control_qid_shape: Optional[tuple[int, ...]] = None,
+    control_qid_shape: tuple[int, ...] | None = None,
 ) -> 'cirq.ops.AbstractControlValues':
     """Logic copied from `cirq.ControlledGate` to help convert cirq-style spec to `CtrlSpec`"""
     if isinstance(control_values, cirq.SumOfProducts) and len(control_values._conjunctions) == 1:
@@ -285,7 +287,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **in_quregs: 'CirqQuregT'
-    ) -> tuple[Optional['cirq.Operation'], dict[str, 'CirqQuregT']]:
+    ) -> tuple[cirq.Operation | None, dict[str, 'CirqQuregT']]:
         """Allocates/Deallocates qubits for RIGHT/LEFT only registers to construct a Cirq operation
 
         Args:
@@ -301,7 +303,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         )
         return self.on_registers(**all_quregs), out_quregs
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         from qualtran.cirq_interop._cirq_to_bloq import _wire_symbol_from_gate
         from qualtran.drawing import Text
 
@@ -324,7 +326,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         raise DecomposeNotImplementedError(f"{self} does not declare a decomposition.")
 
     def _decompose_with_context_(
-        self, qubits: Sequence['cirq.Qid'], context: Optional['cirq.DecompositionContext'] = None
+        self, qubits: Sequence['cirq.Qid'], context: cirq.DecompositionContext | None = None
     ) -> 'cirq.OP_TREE':
         from qualtran.cirq_interop._bloq_to_cirq import _cirq_style_decompose_from_decompose_bloq
 
@@ -354,7 +356,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
 
     def on_registers(
         self,
-        **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid'], NDArray['cirq.Qid']],  # type: ignore[type-var]
+        **qubit_regs: cirq.Qid | Sequence[cirq.Qid] | NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> 'cirq.Operation':
         return self.on(*merge_qubits(self.signature, **qubit_regs))
 
@@ -371,11 +373,11 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
     @classmethod
     def _get_ctrl_spec(
         cls,
-        num_controls: Union[Optional[int], 'CtrlSpec'] = None,
+        num_controls: int | CtrlSpec | None = None,
         control_values=None,
-        control_qid_shape: Optional[tuple[int, ...]] = None,
+        control_qid_shape: tuple[int, ...] | None = None,
         *,
-        ctrl_spec: Optional['CtrlSpec'] = None,
+        ctrl_spec: CtrlSpec | None = None,
     ) -> 'CtrlSpec':
         """Helper method to support Cirq & Bloq style APIs for constructing controlled Bloqs.
 
@@ -434,28 +436,28 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
     @overload
     def controlled(
         self,
-        num_controls: Optional[int] = None,
-        control_values: Optional[
-            Union['cirq.ops.AbstractControlValues', Sequence[Union[int, Collection[int]]]]
-        ] = None,
-        control_qid_shape: Optional[tuple[int, ...]] = None,
+        num_controls: int | None = None,
+        control_values: (
+            cirq.ops.AbstractControlValues | Sequence[int | Collection[int]] | None
+        ) = None,
+        control_qid_shape: tuple[int, ...] | None = None,
     ) -> 'GateWithRegisters':
         """Cirq-style API to construct a controlled gate. See `cirq.Gate.controlled()`"""
 
     # pylint: disable=signature-differs
     @overload
-    def controlled(self, *, ctrl_spec: Optional['CtrlSpec'] = None) -> 'GateWithRegisters':
+    def controlled(self, *, ctrl_spec: CtrlSpec | None = None) -> 'GateWithRegisters':
         """Bloq-style API to construct a controlled Bloq. See `Bloq.controlled()`."""
 
     def controlled(
         self,
-        num_controls: Union[Optional[int], 'CtrlSpec'] = None,
-        control_values: Optional[
-            Union['cirq.ops.AbstractControlValues', Sequence[Union[int, Collection[int]]]]
-        ] = None,
-        control_qid_shape: Optional[tuple[int, ...]] = None,
+        num_controls: int | CtrlSpec | None = None,
+        control_values: (
+            cirq.ops.AbstractControlValues | Sequence[int | Collection[int]] | None
+        ) = None,
+        control_qid_shape: tuple[int, ...] | None = None,
         *,
-        ctrl_spec: Optional['CtrlSpec'] = None,
+        ctrl_spec: CtrlSpec | None = None,
     ) -> 'Bloq':
         """Return a controlled version of self. Controls can be specified via Cirq/Bloq-style APIs.
 

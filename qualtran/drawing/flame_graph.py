@@ -19,7 +19,7 @@ import pathlib
 import subprocess
 import tempfile
 from collections.abc import Callable
-from typing import Any, Optional, Union
+from typing import Any
 
 import networkx as nx
 import numpy as np
@@ -59,7 +59,7 @@ def _pretty_name(bloq: Bloq) -> str:
 
 
 @functools.lru_cache(maxsize=1024)
-def _t_counts_for_bloq(bloq: Bloq, graph: nx.DiGraph) -> Union[int, sympy.Expr]:
+def _t_counts_for_bloq(bloq: Bloq, graph: nx.DiGraph) -> int | sympy.Expr:
     sigma = _compute_sigma(bloq, graph)
     return t_counts_from_sigma(sigma)
 
@@ -127,8 +127,8 @@ def _populate_flame_graph_data(
 
 def get_flame_graph_data(
     *bloqs: Bloq,
-    file_path: Union[None, pathlib.Path, str] = None,
-    keep: Optional[Callable[['Bloq'], bool]] = _keep_if_small,
+    file_path: None | pathlib.Path | str = None,
+    keep: Callable[['Bloq'], bool] | None = _keep_if_small,
     **kwargs,
 ) -> list[str]:
     """Get the flame graph data for visualizing T-costs distribution of a sequence of bloqs.
@@ -167,8 +167,8 @@ def get_flame_graph_data(
 
 
 def get_flame_graph_svg_data(
-    *bloqs: Bloq, file_path: Union[None, pathlib.Path, str] = None, **kwargs
-) -> Optional[str]:
+    *bloqs: Bloq, file_path: None | pathlib.Path | str = None, **kwargs
+) -> str | None:
     """Invokes the `third_party/flamegraph/flamegraph.pl` using data from `get_flame_graph_data`."""
 
     data = get_flame_graph_data(*bloqs, **kwargs)

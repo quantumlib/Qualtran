@@ -12,11 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import math
 import numbers
 from collections.abc import Sequence
 from functools import cached_property
-from typing import cast, Optional, TYPE_CHECKING, Union
+from typing import cast, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -74,7 +76,7 @@ class ModDbl(Bloq):
         Fig 6d and 8
     """
 
-    dtype: Union[QUInt, QMontgomeryUInt]
+    dtype: QUInt | QMontgomeryUInt
     mod: 'SymbolicInt' = attrs.field()
 
     @mod.validator
@@ -141,7 +143,7 @@ class ModDbl(Bloq):
         return {'x': x}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text(f'x = 2 * x mod {self.mod}')
@@ -188,9 +190,9 @@ class CModMulK(Bloq):
         x: The integer being multiplied
     """
 
-    dtype: Union[QUInt, QMontgomeryUInt]
-    k: Union[int, sympy.Expr]
-    mod: Union[int, sympy.Expr]
+    dtype: QUInt | QMontgomeryUInt
+    k: int | sympy.Expr
+    mod: int | sympy.Expr
 
     def __attrs_post_init__(self):
         if is_symbolic(self.k, self.mod):
@@ -202,7 +204,7 @@ class CModMulK(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('ctrl', QBit()), Register('x', self.dtype)])
 
-    def _Add(self, k: Union[int, sympy.Expr]):
+    def _Add(self, k: int | sympy.Expr):
         """Helper method to forward attributes to `CtrlScaleModAdd`."""
         return CtrlScaleModAdd(k=k, bitsize=self.dtype.bitsize, mod=self.mod)
 
@@ -241,7 +243,7 @@ class CModMulK(Bloq):
             return {'ctrl': ctrl, 'x': (x * self.k) % self.mod}
         return {'ctrl': ctrl, 'x': x}
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text(f'x *= {self.k} % {self.mod}')
         if reg.name == 'ctrl':
@@ -254,7 +256,7 @@ class CModMulK(Bloq):
 _K = sympy.Symbol('k_mul')
 
 
-def _generalize_k(b: Bloq) -> Optional[Bloq]:
+def _generalize_k(b: Bloq) -> Bloq | None:
     if isinstance(b, CtrlScaleModAdd):
         return attrs.evolve(b, k=_K)
 
@@ -653,9 +655,9 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
         self,
         x: 'ClassicalValT',
         y: 'ClassicalValT',
-        target: Optional['ClassicalValT'] = None,
-        qrom_indices: Optional['ClassicalValT'] = None,
-        reduced: Optional['ClassicalValT'] = None,
+        target: ClassicalValT | None = None,
+        qrom_indices: ClassicalValT | None = None,
+        reduced: ClassicalValT | None = None,
     ) -> dict[str, ClassicalValT]:
         if is_symbolic(self.bitsize) or is_symbolic(self.window_size) or is_symbolic(self.mod):
             raise ValueError(f'classical action is not supported for {self}')
@@ -700,9 +702,9 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
         bb: 'BloqBuilder',
         x: Soquet,
         y: Soquet,
-        target: Optional[Soquet] = None,
-        qrom_indices: Optional[Soquet] = None,
-        reduced: Optional[Soquet] = None,
+        target: Soquet | None = None,
+        qrom_indices: Soquet | None = None,
+        reduced: Soquet | None = None,
     ) -> dict[str, 'SoquetT']:
         if self.uncompute:
             assert target is not None
@@ -735,9 +737,7 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
         )
         return {'x': x, 'y': y, 'target': target, 'qrom_indices': qrom_indices, 'reduced': reduced}
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> Union[set['BloqCountT'], BloqCountDictT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT'] | BloqCountDictT:
         return self._mod_mul_impl.build_call_graph(ssa)
 
 

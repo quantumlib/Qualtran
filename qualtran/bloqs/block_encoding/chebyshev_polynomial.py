@@ -13,7 +13,7 @@
 #  limitations under the License.
 from collections import Counter
 from functools import cached_property
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -249,7 +249,7 @@ class ScaledChebyshevPolynomial(BlockEncoding):
         return BlackBoxPrepare(PrepareIdentity.from_bitsizes([self.ancilla_bitsize]))
 
     @cached_property
-    def linear_combination(self) -> Union[LinearCombination, ChebyshevPolynomial]:
+    def linear_combination(self) -> LinearCombination | ChebyshevPolynomial:
         if self.order <= 1:
             return ChebyshevPolynomial(self.block_encoding, self.order)
 

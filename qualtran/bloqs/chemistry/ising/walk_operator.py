@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Optional
 
 import cirq
 import numpy as np
@@ -103,7 +102,7 @@ def upper_bound_norm_for_pauli_hamiltonian(ham: cirq.PauliSum) -> float:
 
 
 def walk_operator_for_pauli_hamiltonian(
-    ham: cirq.PauliSum, eps: SymbolicFloat, *, ham_norm_upper_bound: Optional[SymbolicFloat] = None
+    ham: cirq.PauliSum, eps: SymbolicFloat, *, ham_norm_upper_bound: SymbolicFloat | None = None
 ) -> QubitizationWalkOperator:
     r"""Get the QubitizationWalkOperator for a Hamiltonian with Pauli terms.
 

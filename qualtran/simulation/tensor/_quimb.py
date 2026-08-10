@@ -13,7 +13,7 @@
 #  limitations under the License.
 import logging
 from collections.abc import Iterable
-from typing import Any, cast, TypeAlias, Union
+from typing import Any, cast, TypeAlias
 
 import attrs
 import numpy as np
@@ -117,7 +117,7 @@ _OuterIndT = tuple[str, tuple[int, ...], int, str]
 
 def _get_outer_indices(
     tn: 'qtn.TensorNetwork', friendly_indices: bool = False
-) -> dict[_IndT, Union[str, _OuterIndT]]:
+) -> dict[_IndT, str | _OuterIndT]:
     """Provide a mapping for a tensor network's outer indices.
 
     Internal indices effectively use `qualtran.Connection` objects as their indices. The
@@ -132,7 +132,7 @@ def _get_outer_indices(
 
     This function is called at the end of `cbloq_to_quimb` as part of a `tn.reindex(...) operation.
     """
-    ind_name_map: dict[_IndT, Union[str, _OuterIndT]] = {}
+    ind_name_map: dict[_IndT, str | _OuterIndT] = {}
 
     # Each index is a (cxn: Connection, j: int) tuple.
     cxn: Connection
@@ -272,7 +272,7 @@ _SuperOuterIndT = tuple[str, tuple[int, ...], int, str]
 
 def _get_outer_superindices(
     tn: 'qtn.TensorNetwork', friendly_indices: bool = False
-) -> dict[_IndT, Union[str, _SuperOuterIndT]]:
+) -> dict[_IndT, str | _SuperOuterIndT]:
     """Provide a mapping for a super-tensor network's outer indices.
 
     Internal indices effectively use `qualtran.Connection` objects as their indices. The
@@ -294,7 +294,7 @@ def _get_outer_superindices(
     j: int
     forward: bool
 
-    ind_name_map: dict[_IndT, Union[str, _SuperOuterIndT]] = {}
+    ind_name_map: dict[_IndT, str | _SuperOuterIndT] = {}
     for ind in tn.outer_inds():
         cxn, j, forward = ind
         if cxn.left.binst is LeftDangle:

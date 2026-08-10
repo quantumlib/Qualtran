@@ -12,7 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Optional, TYPE_CHECKING, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -72,8 +74,8 @@ class CAdd(Bloq):
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
     """
 
-    a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
-    b_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
+    a_dtype: QInt | QUInt | QMontgomeryUInt = field()
+    b_dtype: QInt | QUInt | QMontgomeryUInt = field()
     cv: int = field(default=1)
 
     @b_dtype.default
@@ -124,7 +126,7 @@ class CAdd(Bloq):
         return "a+b"
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         from qualtran.drawing import directional_text_box
 

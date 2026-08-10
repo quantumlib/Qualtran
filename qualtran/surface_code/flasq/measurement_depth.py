@@ -22,7 +22,6 @@ Also called 'reaction depth' in the paper.
 
 import logging
 from collections.abc import Callable, Mapping
-from typing import Optional, Union
 
 import attrs
 import networkx as nx
@@ -127,7 +126,7 @@ class MeasurementDepth:
 
         return f"MeasurementDepth({', '.join(sorted(str_items))})"
 
-    def asdict(self) -> dict[str, Union[SymbolicFloat, Mapping[Bloq, SymbolicInt]]]:
+    def asdict(self) -> dict[str, SymbolicFloat | Mapping[Bloq, SymbolicInt]]:
         """Returns a dictionary representation, filtering zero depth and empty unknowns."""
         # Use attrs.asdict, filtering out fields that are zero/empty
         d = attrs.asdict(
@@ -255,7 +254,7 @@ class TotalMeasurementDepth(CostKey[MeasurementDepth]):
             bloqs are flagged as unknown.
     """
 
-    rotation_depth: Optional[SymbolicFloat] = None
+    rotation_depth: SymbolicFloat | None = None
 
     def compute(
         self, bloq: Bloq, get_callee_cost: Callable[[Bloq], MeasurementDepth]
@@ -283,7 +282,7 @@ class TotalMeasurementDepth(CostKey[MeasurementDepth]):
                 return MeasurementDepth(depth=self.rotation_depth)
 
         # --- Recursive Case ---
-        cbloq: Optional[CompositeBloq] = None
+        cbloq: CompositeBloq | None = None
         if isinstance(bloq, CompositeBloq):
             # If it's already a CompositeBloq, analyze its graph directly
             logger.debug("Computing %s using provided CompositeBloq graph for %s", self, bloq)

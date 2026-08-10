@@ -27,7 +27,7 @@ from __future__ import annotations
 import itertools
 from collections.abc import Iterable, Iterator, Sequence
 from functools import cached_property
-from typing import cast, Optional, TYPE_CHECKING, Union
+from typing import cast, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -82,8 +82,8 @@ class And(GateWithRegisters):
         [Verifying Measurement Based Uncomputation](https://algassert.com/post/1903). Gidney, C. 2019.
     """
 
-    cv1: Union[int, sympy.Expr] = 1
-    cv2: Union[int, sympy.Expr] = 1
+    cv1: int | sympy.Expr = 1
+    cv2: int | sympy.Expr = 1
     uncompute: bool = False
 
     @cached_property
@@ -120,7 +120,7 @@ class And(GateWithRegisters):
         raise DecomposeTypeError(f"{self} is atomic.")
 
     def on_classical_vals(
-        self, *, ctrl: NDArray[np.uint8], target: Optional[int] = None
+        self, *, ctrl: NDArray[np.uint8], target: int | None = None
     ) -> dict[str, ClassicalValT]:
         out = 1 if tuple(ctrl) == (self.cv1, self.cv2) else 0
         if not self.uncompute:
@@ -165,7 +165,7 @@ class And(GateWithRegisters):
             )
         ]
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         if reg.name == 'target':
@@ -267,8 +267,8 @@ _AND_DOC = BloqDocSpec(bloq_cls=And, examples=(_and_bloq,))
 
 
 def _to_tuple_or_has_length(
-    x: Union[HasLength, Iterable[SymbolicInt]],
-) -> Union[HasLength, tuple[SymbolicInt, ...]]:
+    x: HasLength | Iterable[SymbolicInt],
+) -> HasLength | tuple[SymbolicInt, ...]:
     if isinstance(x, HasLength):
         if is_symbolic(x.n):
             return x
@@ -293,7 +293,7 @@ class MultiAnd(Bloq):
         target [right]: The output bit.
     """
 
-    cvs: Union[HasLength, tuple[SymbolicInt, ...]] = field(converter=_to_tuple_or_has_length)
+    cvs: HasLength | tuple[SymbolicInt, ...] = field(converter=_to_tuple_or_has_length)
 
     @cvs.validator
     def _validate_cvs(self, field, val):
@@ -366,7 +366,7 @@ class MultiAnd(Bloq):
     def decompose_bloq(self) -> 'CompositeBloq':
         return decompose_from_cirq_style_method(self)
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         if reg.name == 'ctrl':

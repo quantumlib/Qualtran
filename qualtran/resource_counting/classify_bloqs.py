@@ -17,9 +17,11 @@ Common categories relevant for resource esimtation include classifications
 like whether the bloq is a Clifford operation, whether it's a rotation, etc.
 """
 
+from __future__ import annotations
+
 from collections import abc, defaultdict
 from collections.abc import Sequence
-from typing import cast, Optional, TYPE_CHECKING, Union
+from typing import cast, TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -77,9 +79,9 @@ def classify_bloq(bloq: Bloq, bloq_classification: dict[str, str]) -> str:
 
 def classify_t_count_by_bloq_type(
     bloq: Bloq,
-    bloq_classification: Optional[dict[str, str]] = None,
-    generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
-) -> dict[str, Union[int, sympy.Expr]]:
+    bloq_classification: dict[str, str] | None = None,
+    generalizer: GeneralizerT | Sequence[GeneralizerT] | None = None,
+) -> dict[str, int | sympy.Expr]:
     """Classify (bin) the T count of a bloq's call graph by type of operation.
 
     Args:
@@ -109,7 +111,7 @@ def classify_t_count_by_bloq_type(
         else:
             basic_generalizer.append(generalizer)
     _, sigma = bloq.call_graph(generalizer=basic_generalizer, keep=keeper)
-    classified_bloqs: dict[str, Union[int, sympy.Expr]] = defaultdict(int)
+    classified_bloqs: dict[str, int | sympy.Expr] = defaultdict(int)
     for k, v in sigma.items():
         classification = classify_bloq(k, bloq_classification)
         t_counts = get_cost_value(k, QECGatesCost()).total_t_count()

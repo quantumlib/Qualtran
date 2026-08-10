@@ -14,7 +14,7 @@
 """SELECT for the sparse chemistry Hamiltonian in second quantization."""
 
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import attrs
 import cirq
@@ -68,7 +68,7 @@ class SelectSparse(SelectOracle):
     """
 
     num_spin_orb: int
-    control_val: Optional[int] = None
+    control_val: int | None = None
 
     @cached_property
     def control_registers(self) -> tuple[Register, ...]:

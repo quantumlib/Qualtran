@@ -19,7 +19,7 @@ import logging
 import uuid
 import warnings
 from collections.abc import Callable, Container, Sequence
-from typing import cast, Optional, TYPE_CHECKING, TypeAlias, Union
+from typing import cast, TYPE_CHECKING, TypeAlias
 
 import attrs
 import numpy as np
@@ -55,7 +55,7 @@ class QDefWithContext:
     qdef: QDefNode
     bloq: qlt.Bloq
     implemented: bool
-    extern_reason: Optional[str] = None
+    extern_reason: str | None = None
 
     @property
     def bloq_key(self) -> BloqKey:
@@ -164,7 +164,7 @@ class QDefBuilder:
         if self.qlocals.nodes is qualtran_l1_nodes and self.nodes is not qualtran_l1_nodes:
             self.qlocals.nodes = self.nodes
 
-    def _get_sig_entry_annotation(self, reg: 'qlt.Register') -> Optional[CObjectNode]:
+    def _get_sig_entry_annotation(self, reg: 'qlt.Register') -> CObjectNode | None:
         """Determine annotation based on wire symbol."""
         from qualtran.drawing import Circle, ModPlus
 
@@ -172,7 +172,7 @@ class QDefBuilder:
             # TODO: Support for shaped registers.
             return None
 
-        annotation: Optional[CObjectNode] = None
+        annotation: CObjectNode | None = None
         symbol = self.bloq.wire_symbol(reg)
         if isinstance(symbol, Circle):
             if symbol.filled:
@@ -504,7 +504,7 @@ class L1ModuleBuilder:
     def finalize(self) -> L1Module:
         return self.nodes.L1Module(qdefs=tuple(qdef_with_ctx.qdef for qdef_with_ctx in self.qdefs))
 
-    def pretty_print_qdef(self, bloq_or_bloq_key: Union[qlt.Bloq, BloqKey], f=None) -> None:
+    def pretty_print_qdef(self, bloq_or_bloq_key: qlt.Bloq | BloqKey, f=None) -> None:
         from qualtran.l1 import L1ASTPrinter
 
         bloq_key: BloqKey
@@ -532,13 +532,13 @@ class L1ModuleBuilder:
 
 def dump_l1(
     bloq: qlt.Bloq,
-    f: Optional[io.IOBase] = None,
+    f: io.IOBase | None = None,
     *,
     annotate_costs: bool = False,
     extern_only_from: bool = False,
     force_extern_pred: Callable[['qlt.Bloq'], bool] = lambda b: False,
     nodes: L1Nodes = qualtran_l1_nodes,
-) -> Optional[str]:
+) -> str | None:
     from qualtran.l1 import L1ASTPrinter
 
     l1_mb = L1ModuleBuilder(nodes=nodes)

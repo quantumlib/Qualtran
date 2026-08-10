@@ -13,8 +13,10 @@
 #  limitations under the License.
 r"""Bloqs for PREPARE T for the first quantized chemistry Hamiltonian."""
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import frozen
 
@@ -62,7 +64,7 @@ class PreparePowerTwoState(Bloq):
         return {Toffoli(): (self.bitsize - 2)}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text(r'PREP 2^(r/2) |r⟩')
@@ -125,7 +127,7 @@ class PrepareTFirstQuantization(Bloq):
         return {Toffoli(): 13, PreparePowerTwoState(bitsize=self.num_bits_p): 2}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text(r'PREP T')

@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -137,7 +137,7 @@ class SU2RotationGate(GateWithRegisters):
         z_2: SymbolicFloat,
         *,
         global_shift: SymbolicFloat = 0,
-        eps: Optional[SymbolicFloat],
+        eps: SymbolicFloat | None,
     ) -> 'SU2RotationGate':
         r"""SU(2) rotation from Z-X-Z Euler angles.
 
@@ -232,7 +232,7 @@ class SU2RotationGate(GateWithRegisters):
             return f'SU_2({self.theta},{self.phi},{self.lambd},{self.global_shift})'
         return f'SU_2({self.theta:.2f},{self.phi:.2f},{self.lambd:.2f},{self.global_shift:.2f})'
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             if self.is_symbolic():
                 return Text(f'({self.theta},{self.phi},{self.lambd},{self.global_shift})')

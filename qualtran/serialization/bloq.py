@@ -15,7 +15,7 @@
 import dataclasses
 import inspect
 from collections.abc import Callable
-from typing import Any, Optional, Union
+from typing import Any
 
 import attrs
 import cirq
@@ -157,7 +157,7 @@ class _BloqLibDeserializer:
         )
 
     def _soquet_from_proto(self, soq: bloq_pb2.Soquet) -> _Soquet:
-        binst: Union[BloqInstance, DanglingT] = (
+        binst: BloqInstance | DanglingT = (
             self.dangling_to_singleton[soq.dangling_t]
             if soq.HasField('dangling_t')
             else BloqInstance(
@@ -394,7 +394,7 @@ def _bloq_to_proto(
 
 def _bloq_args_to_proto(
     bloq: Bloq, *, bloq_to_id: dict[Bloq, int]
-) -> Optional[list[bloq_pb2.BloqArg]]:
+) -> list[bloq_pb2.BloqArg] | None:
     if isinstance(bloq, CompositeBloq):
         return None
 

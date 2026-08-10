@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Optional
 
 import networkx as nx
 import numpy as np
@@ -41,7 +40,7 @@ def test_thc_prepare(bloq_autotester):
     bloq_autotester(_thc_prep)
 
 
-def build_random_test_integrals(num_mu: int, num_spat: int, seed: Optional[int] = None):
+def build_random_test_integrals(num_mu: int, num_spat: int, seed: int | None = None):
     """Build random THC integrals for testing / demonstration purposes.
 
     Args:

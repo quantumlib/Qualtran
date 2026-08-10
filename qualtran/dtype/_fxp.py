@@ -12,8 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Iterable, Sequence
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import attrs
 
@@ -89,7 +91,7 @@ class _Fxp(BitEncoding[int]):
 
     def to_fixed_width_int(
         self,
-        x: Union[float, 'fxpmath.Fxp'],
+        x: float | fxpmath.Fxp,
         *,
         require_exact: bool = False,
         complement: bool = True,
@@ -170,7 +172,7 @@ class _Fxp(BitEncoding[int]):
             yield fxpmath.Fxp(x / 2**self.num_frac, like=self.fxp_dtype_template())
 
     def _fxp_to_bits(
-        self, x: Union[float, 'fxpmath.Fxp'], require_exact: bool = True, complement: bool = True
+        self, x: float | fxpmath.Fxp, require_exact: bool = True, complement: bool = True
     ) -> list[int]:
         """Yields individual bits corresponding to binary representation of `x`.
 
@@ -206,7 +208,7 @@ class _Fxp(BitEncoding[int]):
         fxp_bin = "0b" + bits_bin[: -int(self.num_frac)] + "." + bits_bin[-int(self.num_frac) :]
         return fxpmath.Fxp(fxp_bin, like=self.fxp_dtype_template())
 
-    def _assert_valid_val(self, val: Union[float, 'fxpmath.Fxp'], debug_str: str = 'val'):
+    def _assert_valid_val(self, val: float | fxpmath.Fxp, debug_str: str = 'val'):
         import fxpmath
 
         fxp_val = val if isinstance(val, fxpmath.Fxp) else fxpmath.Fxp(val)
@@ -281,7 +283,7 @@ class QFxp(QDType[int]):
 
     def to_fixed_width_int(
         self,
-        x: Union[float, 'fxpmath.Fxp'],
+        x: float | fxpmath.Fxp,
         *,
         require_exact: bool = False,
         complement: bool = True,

@@ -14,12 +14,14 @@
 
 """Cirq gates/circuits to Qualtran Bloqs conversion."""
 
+from __future__ import annotations
+
 import abc
 import itertools
 import warnings
 from collections.abc import Callable, Sequence
 from functools import cached_property
-from typing import Any, Optional, TYPE_CHECKING, TypeVar
+from typing import Any, TYPE_CHECKING, TypeVar
 
 import cirq
 import numpy as np
@@ -134,7 +136,7 @@ class CirqGateAsBloqBase(Bloq, metaclass=abc.ABCMeta):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **in_quregs: 'CirqQuregT'
-    ) -> tuple[Optional['cirq.Operation'], dict[str, 'CirqQuregT']]:
+    ) -> tuple[cirq.Operation | None, dict[str, 'CirqQuregT']]:
         qubits = in_quregs.get('q', np.array([])).flatten()
         return self.cirq_gate.on(*qubits), in_quregs
 
@@ -465,10 +467,10 @@ def _extract_bloq_from_op(op: 'cirq.Operation') -> Bloq:
 def cirq_optree_to_cbloq(
     optree: cirq.OP_TREE,
     *,
-    signature: Optional[Signature] = None,
-    in_quregs: Optional[dict[str, 'CirqQuregT']] = None,
-    out_quregs: Optional[dict[str, 'CirqQuregT']] = None,
-    op_conversion_method: Optional[Callable[[cirq.Operation], Bloq]] = None,
+    signature: Signature | None = None,
+    in_quregs: dict[str, 'CirqQuregT'] | None = None,
+    out_quregs: dict[str, 'CirqQuregT'] | None = None,
+    op_conversion_method: Callable[[cirq.Operation], Bloq] | None = None,
 ) -> CompositeBloq:
     """Convert a Cirq OP-TREE into a `CompositeBloq` with signature `signature`.
 
@@ -521,11 +523,11 @@ def cirq_optree_to_cbloq(
     elif in_quregs is None or out_quregs is None:
         raise ValueError("`signature` requires specifying both `in_quregs` and `out_quregs`.")
 
-    in_quregs: dict[str, NDArray] = {
+    in_quregs = {
         k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore
         for k, v in in_quregs.items()
     }
-    out_quregs: dict[str, NDArray] = {
+    out_quregs = {
         k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype))  # type: ignore
         for k, v in out_quregs.items()
     }

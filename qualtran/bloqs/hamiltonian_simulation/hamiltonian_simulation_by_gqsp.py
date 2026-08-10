@@ -13,7 +13,7 @@
 #  limitations under the License.
 from collections import Counter
 from functools import cached_property
-from typing import cast, TYPE_CHECKING, Union
+from typing import cast, TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen
@@ -115,7 +115,7 @@ class HamiltonianSimulationByGQSP(Bloq):
         return degree_jacobi_anger_approximation(self.t * self.alpha, precision=self.precision / 2)
 
     @cached_property
-    def approx_cos(self) -> Union[NDArray[np.complex128], Shaped]:
+    def approx_cos(self) -> NDArray[np.complex128] | Shaped:
         r"""polynomial approximation for $$e^{i\theta} \mapsto e^{it\cos(\theta)}$$"""
         if self.is_symbolic():
             return Shaped((2 * self.degree + 1,))

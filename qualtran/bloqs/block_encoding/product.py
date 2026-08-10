@@ -15,7 +15,7 @@
 from collections import Counter
 from collections.abc import Sequence
 from functools import cached_property
-from typing import cast, Union
+from typing import cast
 
 from attrs import field, frozen, validators
 from numpy.typing import NDArray
@@ -152,11 +152,11 @@ class Product(BlockEncoding):
         anc_bits = self.ancilla_bitsize - (n - 1)
         ret = []
         for u in reversed(self.block_encodings):
-            partition: list[tuple[Register, list[Union[str, Unused]]]] = [
+            partition: list[tuple[Register, list[str | Unused]]] = [
                 (Register("system", dtype=QAny(u.system_bitsize)), ["system"])
             ]
             if is_symbolic(u.ancilla_bitsize) or u.ancilla_bitsize > 0:
-                regs: list[Union[str, Unused]] = ["ancilla"]
+                regs: list[str | Unused] = ["ancilla"]
                 if (
                     is_symbolic(anc_bits)
                     or is_symbolic(u.ancilla_bitsize)

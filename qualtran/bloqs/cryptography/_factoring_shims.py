@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Optional
 
 import numpy as np
 import sympy
@@ -63,7 +64,7 @@ class MeasureQFT(Bloq):
         return {QFTTextBook(self.n): 1, MeasureZ(): self.n}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text('MeasureQFT')

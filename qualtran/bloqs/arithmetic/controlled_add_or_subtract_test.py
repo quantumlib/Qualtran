@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Union
 
 import numpy as np
 import pytest
@@ -98,8 +97,8 @@ class TestNaiveControlledAddOrSubtract(Bloq):
     This should have the same action as `ControlledAddOrSubtract`, but twice the T-cost.
     """
 
-    a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
-    b_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
+    a_dtype: QInt | QUInt | QMontgomeryUInt = field()
+    b_dtype: QInt | QUInt | QMontgomeryUInt = field()
 
     @property
     def signature(self) -> 'Signature':

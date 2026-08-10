@@ -11,8 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -85,7 +87,7 @@ class Allocate(_BookkeepingBloq):
             for i in range(self.dtype.num_qubits)
         ]
 
-    def wire_symbol(self, reg: Register, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         assert reg.name == 'reg'
@@ -93,7 +95,7 @@ class Allocate(_BookkeepingBloq):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager'
-    ) -> tuple[Optional['cirq.Operation'], dict[str, 'CirqQuregT']]:
+    ) -> tuple[cirq.Operation | None, dict[str, 'CirqQuregT']]:
         shape = (*self.signature[0].shape, self.signature[0].bitsize)
         qubits = (
             qubit_manager.qborrow(self.signature.n_qubits())

@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import random
-from typing import Union
 
 import cirq
 import numpy as np
@@ -59,8 +58,8 @@ def test_approx_cswap_t_count(n):
 
 
 def get_t_count_and_clifford(
-    bc: dict[Bloq, Union[int, sympy.Expr]],
-) -> tuple[Union[int, sympy.Expr], Union[int, sympy.Expr]]:
+    bc: dict[Bloq, int | sympy.Expr],
+) -> tuple[int | sympy.Expr, int | sympy.Expr]:
     """Get the t count and clifford cost from bloq count."""
     cliff_cost = sum([v for k, v in bc.items() if isinstance(k, ArbitraryClifford)])
     t_cost = sum([v for k, v in bc.items() if isinstance(k, TGate)])

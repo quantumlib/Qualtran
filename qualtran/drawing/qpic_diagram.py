@@ -25,7 +25,7 @@ import shutil
 import subprocess
 import tempfile
 from collections import defaultdict
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from qualtran import DanglingT, LeftDangle, QBit, RightDangle, Side
 from qualtran._infra.quantum_graph import _Soquet
@@ -174,7 +174,7 @@ class QpicCircuit:
     def data(self) -> list[str]:
         return self.wires + self.gates
 
-    def _add_soq(self, soq: _Soquet) -> tuple[str, Optional[str]]:
+    def _add_soq(self, soq: _Soquet) -> tuple[str, str | None]:
         symbol = _soq_to_symb(soq)
         suffix = ''
         wire = self.wire_manager.soq_to_wirename(self.soq_map[soq])
@@ -272,7 +272,7 @@ class QpicCircuit:
         self.gates += wire_dtype_labels
 
 
-def get_qpic_data(bloq: 'Bloq', file_path: Union[None, pathlib.Path, str] = None) -> list[str]:
+def get_qpic_data(bloq: 'Bloq', file_path: None | pathlib.Path | str = None) -> list[str]:
     """Get the input data that can be used to draw a latex diagram for `bloq` using `qpic`.
 
     Args:
@@ -304,8 +304,8 @@ def _to_snake_case(name):
 
 
 def qpic_input_to_diagram(
-    qpic_file: Union[pathlib.Path, str],
-    output_file: Union[None, pathlib.Path, str] = None,
+    qpic_file: pathlib.Path | str,
+    output_file: None | pathlib.Path | str = None,
     output_type: str = 'pdf',
 ) -> str:
     r"""Invoke `qpic` script to generate output diagram of type qpic/tex/pdf/png.
@@ -381,7 +381,7 @@ def qpic_input_to_diagram(
 
 
 def qpic_diagram_for_bloq(
-    bloq: 'Bloq', base_file_path: Union[None, pathlib.Path, str] = None, output_type: str = 'pdf'
+    bloq: 'Bloq', base_file_path: None | pathlib.Path | str = None, output_type: str = 'pdf'
 ) -> str:
     r"""Generate latex diagram for `bloq` by invoking `qpic`. Assumes qpic is already installed.
 

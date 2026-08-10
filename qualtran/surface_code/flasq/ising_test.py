@@ -15,7 +15,7 @@
 # test_ising_example.py
 # Tests for the ising_example.py script.
 
-from typing import cast, Optional, Union
+from typing import cast
 
 import cirq
 import numpy as np
@@ -489,7 +489,7 @@ def _find_min_time_config_and_summary(
     phys_error_rate: float,
     n_total_physical_qubits_available: int,
     time_per_surface_code_cycle: float,
-) -> tuple[Union[float, sympy.Expr], FLASQSummary]:
+) -> tuple[float | sympy.Expr, FLASQSummary]:
     """
     Helper function to find the configuration (code_distance) that yields the
     minimum effective_time_per_noiseless_sample for an Ising model simulation.
@@ -514,7 +514,7 @@ def _find_min_time_config_and_summary(
         # Avoid division by zero if there are no rotations
         individual_allowable_rotation_error = total_allowable_rotation_error
         # If no rotations, rotation_depth doesn't strictly matter but set to 0 for clarity
-        rotation_depth_val: Union[float, sympy.Expr] = 0.0
+        rotation_depth_val: float | sympy.Expr = 0.0
     else:
         individual_allowable_rotation_error = (
             total_allowable_rotation_error / flasq_counts.total_rotations
@@ -525,10 +525,10 @@ def _find_min_time_config_and_summary(
         cbloq, TotalMeasurementDepth(rotation_depth=rotation_depth_val)
     )
 
-    min_effective_time: Union[float, sympy.Expr] = np.inf
+    min_effective_time: float | sympy.Expr = np.inf
     lambda_val = 1e-2 / phys_error_rate
 
-    summary_for_min_time: Optional[FLASQSummary] = None
+    summary_for_min_time: FLASQSummary | None = None
 
     for code_distance in range(5, 50, 2):
         logical_timestep_per_measurement = 10 / code_distance

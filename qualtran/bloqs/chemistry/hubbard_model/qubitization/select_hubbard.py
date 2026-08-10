@@ -38,9 +38,10 @@ considered in both the PREPARE and SELECT operations corresponding to the terms 
  - $p>q$, YZY term.
 """
 
+from __future__ import annotations
+
 from collections.abc import Iterator
 from functools import cached_property
-from typing import Optional, Union
 
 import attrs
 import cirq
@@ -123,7 +124,7 @@ class SelectHubbard(SelectOracle):
 
     x_dim: int
     y_dim: int
-    control_val: Optional[int] = attrs.field(default=None, kw_only=True)
+    control_val: int | None = attrs.field(default=None, kw_only=True)
 
     def __attrs_post_init__(self):
         if self.x_dim != self.y_dim:
@@ -270,7 +271,7 @@ class HubbardMajorannaOperator(Bloq):
     x_dim: SymbolicInt
     y_dim: SymbolicInt
     gate: str = 'Y'
-    control_val: Optional[int] = attrs.field(default=None, kw_only=True)
+    control_val: int | None = attrs.field(default=None, kw_only=True)
 
     @cached_property
     def log_m(self) -> SymbolicInt:
@@ -339,7 +340,7 @@ class HubbardMajorannaOperator(Bloq):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', set['BloqCountT']]:
+    ) -> BloqCountDictT | set[BloqCountT]:
 
         count = self.N - 1
         if self.control_val is None:
@@ -347,7 +348,7 @@ class HubbardMajorannaOperator(Bloq):
         return {And(): count, And().adjoint(): count}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return TextBox("")
@@ -412,7 +413,7 @@ class HubbardSpinUpZ(Bloq):
 
     x_dim: SymbolicInt
     y_dim: SymbolicInt
-    control_val: Optional[int] = attrs.field(default=None, kw_only=True)
+    control_val: int | None = attrs.field(default=None, kw_only=True)
 
     @cached_property
     def log_m(self) -> SymbolicInt:
@@ -491,7 +492,7 @@ class HubbardSpinUpZ(Bloq):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', set['BloqCountT']]:
+    ) -> BloqCountDictT | set[BloqCountT]:
         half_N = self.x_dim * self.y_dim
         count = half_N
         if self.control_val is None:
@@ -499,7 +500,7 @@ class HubbardSpinUpZ(Bloq):
         return {And(): count, And().adjoint(): count, CNOT(): half_N - 1, CZ(): half_N}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return TextBox('')

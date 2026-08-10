@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Union
 
 import pytest
 import sympy
@@ -33,7 +32,7 @@ def test_qbit():
 
 
 @pytest.mark.parametrize("num_qbits", [10, 1000, sympy.Symbol("a") * sympy.Symbol("b")])
-def test_basic_data_types(num_qbits: Union[int, sympy.Expr]):
+def test_basic_data_types(num_qbits: int | sympy.Expr):
     round_trip_qdt(QInt(num_qbits))
     round_trip_qdt(QAny(num_qbits))
     round_trip_qdt(QIntOnesComp(num_qbits))

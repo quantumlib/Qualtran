@@ -12,9 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import math
 from functools import cached_property
-from typing import Optional
 
 import attrs
 import numpy as np
@@ -69,8 +70,8 @@ class RSAPhaseEstimate(Bloq):
     def make_for_shor(
         cls,
         big_n: 'SymbolicInt',
-        g: Optional['SymbolicInt'] = None,
-        rs: Optional[np.random.RandomState] = None,
+        g: SymbolicInt | None = None,
+        rs: np.random.RandomState | None = None,
     ):
         """Factory method that sets up the modular exponentiation for a factoring run.
 
@@ -127,7 +128,7 @@ class RSAPhaseEstimate(Bloq):
 _K = sympy.Symbol('k_exp')
 
 
-def _generalize_k(b: Bloq) -> Optional[Bloq]:
+def _generalize_k(b: Bloq) -> Bloq | None:
     if isinstance(b, CModMulK):
         return attrs.evolve(b, k=_K)
 

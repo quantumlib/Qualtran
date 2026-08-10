@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Optional
 
 from qualtran import Bloq
 from qualtran.bloqs.for_testing import TestAtom
@@ -19,12 +18,12 @@ from qualtran.resource_counting._generalization import _make_composite_generaliz
 
 
 def test_make_composite_generalizer():
-    def func1(b: Bloq) -> Optional[Bloq]:
+    def func1(b: Bloq) -> Bloq | None:
         if isinstance(b, TestAtom):
             return TestAtom()
         return b
 
-    def func2(b: Bloq) -> Optional[Bloq]:
+    def func2(b: Bloq) -> Bloq | None:
         if isinstance(b, TestAtom):
             return None
         return b

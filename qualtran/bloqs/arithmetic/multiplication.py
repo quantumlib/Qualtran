@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from collections.abc import Iterable, Sequence
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -74,7 +74,7 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
                 f"bitsizes {self.a_bitsize} + {self.b_bitsize}"
             )
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("result -= a*b") if self.is_adjoint else Text("result += a*b")
         return super().wire_symbol(reg, idx)
@@ -95,7 +95,7 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     def result_dtype(self):
         return QUInt(self.result_bitsize)
 
-    def registers(self) -> Sequence[Union[int, Sequence[int]]]:
+    def registers(self) -> Sequence[int | Sequence[int]]:
         if is_symbolic(self.a_bitsize):
             raise ValueError(f'Symbolic bitsize {self.a_bitsize} not supported')
         if is_symbolic(self.b_bitsize):
@@ -107,10 +107,10 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     def adjoint(self) -> 'PlusEqualProduct':
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def apply(self, a: int, b: int, result: int) -> Union[int, Iterable[int]]:
+    def apply(self, a: int, b: int, result: int) -> int | Iterable[int]:
         return a, b, (result + a * b * ((-1) ** self.is_adjoint)) % (2**self.result_bitsize)
 
-    def with_registers(self, *new_registers: Union[int, Sequence[int]]):
+    def with_registers(self, *new_registers: int | Sequence[int]):
         raise NotImplementedError("Not needed.")
 
     def on_classical_vals(self, a: int, b: int, result: int) -> dict[str, 'ClassicalValT']:
@@ -190,7 +190,7 @@ class Square(Bloq):
         a = vals["a"]
         return {'a': a, 'result': a**2}
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("a^2")
         return super().wire_symbol(reg, idx)
@@ -278,7 +278,7 @@ class SumOfSquares(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('SOS')
         return super().wire_symbol(reg, idx)
@@ -333,7 +333,7 @@ class Product(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('a*b')
         return super().wire_symbol(reg, idx)
@@ -396,7 +396,7 @@ class ScaleIntByReal(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('r*i')
         return super().wire_symbol(reg, idx)
@@ -455,7 +455,7 @@ class MultiplyTwoReals(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('a*b')
         return super().wire_symbol(reg, idx)
@@ -516,7 +516,7 @@ class SquareRealNumber(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('a^2')
         return super().wire_symbol(reg, idx)
@@ -574,7 +574,7 @@ class InvertRealNumber(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('1/a')
         return super().wire_symbol(reg, idx)

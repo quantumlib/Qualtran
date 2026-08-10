@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Optional
 
 import attrs
 from sympy import ntheory
@@ -60,7 +59,7 @@ class CliffordTRelativeNormSolver:
     $O_L = \mathbb{Z}[e^{i pi/4}]$.
     """
 
-    def _get_root(self, chi: _zw.ZW) -> Optional[_zw.ZW]:
+    def _get_root(self, chi: _zw.ZW) -> _zw.ZW | None:
         r"""Returns a power of $\omega = \zeta_8$ such that makes $\chi$ a prime ideal or None.
 
         This function finds if there is a a unit $v$ in the quotient group of units of
@@ -78,7 +77,7 @@ class CliffordTRelativeNormSolver:
                 return v
         return None
 
-    def compute_w(self, unit: _zsqrt2.ZSqrt2) -> Optional[_zw.ZW]:
+    def compute_w(self, unit: _zsqrt2.ZSqrt2) -> _zw.ZW | None:
         r"""Finds a unit in $\mathbb{Z}[e^{i pi/4}]$ such that $ww^*$ equals the given unit.
 
 
@@ -112,7 +111,7 @@ class CliffordTRelativeNormSolver:
             return (-_zw.One + _zw.SQRT_2) ** n
         return (_zw.One + _zw.SQRT_2) ** n
 
-    def solve(self, r: _zsqrt2.ZSqrt2) -> Optional[_zw.ZW]:
+    def solve(self, r: _zsqrt2.ZSqrt2) -> _zw.ZW | None:
         r"""Returns a solution if it exists or None.
 
         Args:

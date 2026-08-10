@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Optional
 
 from attrs import frozen
 from numpy.typing import NDArray
@@ -66,7 +65,7 @@ class KineticEnergy(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("U_T(dt)")
         return super().wire_symbol(reg, idx)

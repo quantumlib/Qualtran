@@ -11,8 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -57,8 +59,8 @@ class SparseStatePreparationViaRotations(Bloq):
         Ramacciotti et al. Section 4 "Permutation Grover-Rudolph".
     """
 
-    sparse_indices: Union[tuple[int, ...], HasLength] = field(converter=_to_tuple_or_has_length)
-    nonzero_coeffs: Union[tuple[complex, ...], HasLength] = field(converter=_to_tuple_or_has_length)
+    sparse_indices: tuple[int, ...] | HasLength = field(converter=_to_tuple_or_has_length)
+    nonzero_coeffs: tuple[complex, ...] | HasLength = field(converter=_to_tuple_or_has_length)
     N: SymbolicInt
     phase_bitsize: SymbolicInt
     target_bitsize: SymbolicInt = field()
@@ -104,7 +106,7 @@ class SparseStatePreparationViaRotations(Bloq):
     @classmethod
     def from_sparse_array(
         cls,
-        coeffs: Union[Sequence[complex], NDArray[np.complex128], 'scipy.sparse.sparray'],
+        coeffs: Sequence[complex] | NDArray[np.complex128] | scipy.sparse.sparray,
         phase_bitsize: SymbolicInt,
     ):
         """Factory to construct sparse state given the coefficients.

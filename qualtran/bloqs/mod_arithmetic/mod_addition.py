@@ -12,8 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -224,9 +226,7 @@ class ModAddK(GateWithRegisters):
             return (target_val + self.add_val) % self.mod
         return target_val
 
-    def on_classical_vals(
-        self, *, x: int, ctrl: Optional[int] = None
-    ) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, *, x: int, ctrl: int | None = None) -> dict[str, 'ClassicalValT']:
         out = self._classical_unctrled(x)
         if self.cvs:
             assert ctrl is not None
@@ -296,9 +296,9 @@ class CModAddK(Bloq):
         above. Because of this we choose to use this CModAdd bloq instead.
     """
 
-    k: Union[int, sympy.Expr]
-    mod: Union[int, sympy.Expr]
-    bitsize: Union[int, sympy.Expr]
+    k: int | sympy.Expr
+    mod: int | sympy.Expr
+    bitsize: int | sympy.Expr
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -332,7 +332,7 @@ class CModAddK(Bloq):
         return {CModAdd(QUInt(self.bitsize), mod=self.mod): 1}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text(f"mod {self.mod}")
@@ -380,9 +380,9 @@ class CtrlScaleModAdd(Bloq):
         controlled on the qubits comprising register x.
     """
 
-    k: Union[int, sympy.Expr]
-    mod: Union[int, sympy.Expr]
-    bitsize: Union[int, sympy.Expr]
+    k: int | sympy.Expr
+    mod: int | sympy.Expr
+    bitsize: int | sympy.Expr
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -438,7 +438,7 @@ class CtrlScaleModAdd(Bloq):
         return {'ctrl': ctrl, 'x': x, 'y': y_out}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text(f"mod {self.mod}")
@@ -494,7 +494,7 @@ class CModAdd(Bloq):
         Construction from Figure 6a and cost summary in Figure 8.
     """
 
-    dtype: Union[QUInt, QMontgomeryUInt]
+    dtype: QUInt | QMontgomeryUInt
     mod: 'SymbolicInt'
     cv: int = 1
 

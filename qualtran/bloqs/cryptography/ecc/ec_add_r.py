@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Optional, Union
 
 import numpy as np
 import sympy
@@ -83,7 +84,7 @@ class ECAddR(Bloq):
             [Register('ctrl', QBit()), Register('x', QUInt(self.n)), Register('y', QUInt(self.n))]
         )
 
-    def on_classical_vals(self, ctrl, x, y) -> dict[str, Union['ClassicalValT', sympy.Expr]]:
+    def on_classical_vals(self, ctrl, x, y) -> dict[str, ClassicalValT | sympy.Expr]:
         if ctrl == 0:
             return {'ctrl': ctrl, 'x': x, 'y': y}
 
@@ -241,7 +242,7 @@ class ECWindowAddR(Bloq):
             self.qrom.adjoint(): 1,
         }
 
-    def on_classical_vals(self, ctrl, x, y) -> dict[str, Union['ClassicalValT', sympy.Expr]]:
+    def on_classical_vals(self, ctrl, x, y) -> dict[str, ClassicalValT | sympy.Expr]:
         # TODO(https://github.com/quantumlib/Qualtran/issues/1476): make ECAdd accept SymbolicInt.
         dtype = QMontgomeryUInt(self.n, self.R.mod)
         A = ECPoint(
@@ -259,7 +260,7 @@ class ECWindowAddR(Bloq):
         }
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text(f'ECWindowAddR({self.n=})')

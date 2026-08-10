@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 import re
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from griffe import Function, Object, Parameter, ParameterKind
 
@@ -75,11 +75,7 @@ def write_property_method_signature(f, obj, obj2: Function) -> None:
 
 
 def write_generic_method_signature(
-    f,
-    obj,
-    obj2: Function,
-    first_arg_name: Optional[str] = 'self',
-    caller_name=get_obj_instance_name,
+    f, obj, obj2: Function, first_arg_name: str | None = 'self', caller_name=get_obj_instance_name
 ) -> None:
     parameters = list(obj2.parameters)
     if first_arg_name is not None:

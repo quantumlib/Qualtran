@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Optional
 
 import attrs
 import numpy as np
@@ -49,7 +48,7 @@ def get_prepared_state_vector(bloq: SparseStatePreparationViaRotations) -> NDArr
 
 @pytest.mark.slow
 @pytest.mark.parametrize("target_bitsize", [None, 4, 6])
-def test_prepared_state(target_bitsize: Optional[int]):
+def test_prepared_state(target_bitsize: int | None):
     expected_state = np.array(
         [
             (-0.42677669529663675 - 0.1767766952966366j),

@@ -40,7 +40,7 @@ from __future__ import annotations
 
 import os
 import pathlib
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import attrs
 import networkx as nx
@@ -279,7 +279,7 @@ def assert_bloq_roundtrips(bloq: 'qlt.Bloq', *, extern_only_from: bool = False) 
 
 def save_bloq_qlt(
     bloq: 'qlt.Bloq',
-    path: Union[str, 'os.PathLike[str]'],
+    path: str | 'os.PathLike[str]',
     *,
     extern_only_from: bool = False,
     validate: bool = True,

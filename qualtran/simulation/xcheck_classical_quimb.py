@@ -15,7 +15,7 @@
 """Tools to cross-check classical and quimb tensor network simulations of bloqs."""
 
 from collections.abc import Iterable
-from typing import cast, Optional, TYPE_CHECKING
+from typing import cast, TYPE_CHECKING
 
 import numpy as np
 
@@ -71,7 +71,7 @@ def _add_classical_bras(
 def flank_with_classical_vectors(
     bloq: 'Bloq',
     in_vals: dict[str, 'ClassicalValT'],
-    out_vals: Optional[dict[str, 'ClassicalValT']] = None,
+    out_vals: dict[str, 'ClassicalValT'] | None = None,
 ) -> 'CompositeBloq':
     """Surround `bloq` with computational basis vectors according to the provided values.
 

@@ -22,7 +22,7 @@ largest absolute error that one can tolerate in the prepared amplitudes.
 
 from collections.abc import Sequence
 from functools import cached_property
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -53,7 +53,7 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
-def _data_or_shape_to_tuple(data_or_shape: Union[NDArray, Shaped]) -> tuple:
+def _data_or_shape_to_tuple(data_or_shape: NDArray | Shaped) -> tuple:
     return (
         tuple(data_or_shape.flatten())
         if isinstance(data_or_shape, np.ndarray)
@@ -118,8 +118,8 @@ class StatePreparationAliasSampling(PrepareOracle):
     selection_registers: tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )
-    alt: Union[Shaped, NDArray[np.int_]] = attrs.field(eq=_data_or_shape_to_tuple)
-    keep: Union[Shaped, NDArray[np.int_]] = attrs.field(eq=_data_or_shape_to_tuple)
+    alt: Shaped | NDArray[np.int_] = attrs.field(eq=_data_or_shape_to_tuple)
+    keep: Shaped | NDArray[np.int_] = attrs.field(eq=_data_or_shape_to_tuple)
     mu: SymbolicInt
     sum_of_unnormalized_probabilities: SymbolicFloat
 
@@ -360,9 +360,9 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
     selection_registers: tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )
-    index: Union[Shaped, NDArray[np.int_]] = attrs.field(eq=_data_or_shape_to_tuple)
-    alt: Union[Shaped, NDArray[np.int_]] = attrs.field(eq=_data_or_shape_to_tuple)
-    keep: Union[Shaped, NDArray[np.int_]] = attrs.field(eq=_data_or_shape_to_tuple)
+    index: Shaped | NDArray[np.int_] = attrs.field(eq=_data_or_shape_to_tuple)
+    alt: Shaped | NDArray[np.int_] = attrs.field(eq=_data_or_shape_to_tuple)
+    keep: Shaped | NDArray[np.int_] = attrs.field(eq=_data_or_shape_to_tuple)
     mu: SymbolicInt
     sum_of_unnormalized_probabilities: SymbolicFloat
 

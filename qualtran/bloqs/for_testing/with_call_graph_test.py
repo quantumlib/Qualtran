@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Optional
 
 import attrs
 import pytest
@@ -23,7 +22,7 @@ from qualtran.bloqs.for_testing import TestAtom, TestBloqWithCallGraph
 def test_test_bloq_with_call_graph():
     bwcg = TestBloqWithCallGraph()
 
-    def all_atoms_the_same(b: Bloq) -> Optional[Bloq]:
+    def all_atoms_the_same(b: Bloq) -> Bloq | None:
         if isinstance(b, TestAtom):
             return attrs.evolve(b, tag=None)
         return b

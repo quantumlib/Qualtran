@@ -14,7 +14,6 @@
 
 from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Optional
 
 import attrs
 import numpy as np
@@ -36,7 +35,7 @@ class _MontgomeryUInt(BitEncoding[int]):
     """
 
     bitsize: SymbolicInt
-    modulus: Optional[SymbolicInt] = None
+    modulus: SymbolicInt | None = None
 
     def get_domain(self) -> Iterable[int]:
         if self.modulus is None or is_symbolic(self.modulus):
@@ -140,7 +139,7 @@ class QMontgomeryUInt(QDType[int]):
     """
 
     bitsize: SymbolicInt
-    modulus: Optional[SymbolicInt] = None
+    modulus: SymbolicInt | None = None
 
     @cached_property
     def _bit_encoding(self) -> _MontgomeryUInt:
@@ -196,7 +195,7 @@ class CMontgomeryUInt(CDType[int]):
     """
 
     bitsize: SymbolicInt
-    modulus: Optional[SymbolicInt] = None
+    modulus: SymbolicInt | None = None
 
     @cached_property
     def _bit_encoding(self) -> _MontgomeryUInt:

@@ -14,7 +14,7 @@
 
 """Cirq-to-Qualtran circuit conversion for FLASQ analysis."""
 
-from typing import cast, Optional, TYPE_CHECKING
+from typing import cast, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
@@ -153,9 +153,9 @@ def flasq_decompose_keep(op: cirq.Operation) -> bool:
 
 def convert_circuit_for_flasq_analysis(
     circuit: cirq.Circuit,
-    signature: Optional[Signature] = None,
-    in_quregs: Optional[dict[str, "CirqQuregT"]] = None,
-    out_quregs: Optional[dict[str, "CirqQuregT"]] = None,
+    signature: Signature | None = None,
+    in_quregs: dict[str, "CirqQuregT"] | None = None,
+    out_quregs: dict[str, "CirqQuregT"] | None = None,
     qubit_manager=None,
 ) -> tuple[CompositeBloq, cirq.Circuit]:
     """Uses a special set of decomposition rules for FLASQ analysis."""

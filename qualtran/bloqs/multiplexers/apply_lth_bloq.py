@@ -14,7 +14,7 @@
 
 from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import cast, Optional, Union
+from typing import cast
 
 import cirq
 import numpy as np
@@ -70,8 +70,8 @@ class ApplyLthBloq(UnaryIterationGate, SelectOracle):  # type: ignore[misc]
         converter=lambda x: np.array(x) if isinstance(x, Iterable) else x,
         eq=lambda d: tuple(d.flat),
     )
-    selection_regs: Optional[tuple[Register, ...]] = None
-    control_val: Optional[int] = None
+    selection_regs: tuple[Register, ...] | None = None
+    control_val: int | None = None
 
     def __attrs_post_init__(self):
         if np.prod(self.ops.shape) <= 1:
@@ -108,7 +108,7 @@ class ApplyLthBloq(UnaryIterationGate, SelectOracle):  # type: ignore[misc]
         self,
         context: cirq.DecompositionContext,
         control: cirq.Qid,
-        **kwargs: Union[int, Sequence[cirq.Qid]],
+        **kwargs: int | Sequence[cirq.Qid],
     ) -> cirq.OP_TREE:
         selection_indices = list(cast(int, kwargs[reg.name]) for reg in self.selection_registers)
         targets = {

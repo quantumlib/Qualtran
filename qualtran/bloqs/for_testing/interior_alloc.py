@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Union
 
 import sympy
 from attrs import frozen
@@ -28,7 +27,7 @@ class InteriorAlloc(Bloq):
     This means the maximum number of qubits used is larger than the sum of the register bitsizes.
     """
 
-    n: Union[int, sympy.Symbol]
+    n: int | sympy.Symbol
 
     @cached_property
     def signature(self) -> 'Signature':

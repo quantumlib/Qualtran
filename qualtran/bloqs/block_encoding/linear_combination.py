@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import cast, Optional, Union
+from typing import cast
 
 import numpy as np
 from attrs import evolve, field, frozen, validators
@@ -89,8 +89,8 @@ class LinearCombination(BlockEncoding):
     _lambd: tuple[float, ...] = field(converter=lambda x: x if isinstance(x, tuple) else tuple(x))
     lambd_bits: SymbolicInt
 
-    _prepare: Optional[BlackBoxPrepare] = None
-    _select: Optional[BlackBoxSelect] = None
+    _prepare: BlackBoxPrepare | None = None
+    _select: BlackBoxSelect | None = None
 
     is_controlled: bool = False
 
@@ -237,11 +237,11 @@ class LinearCombination(BlockEncoding):
             assert not is_symbolic(be.ancilla_bitsize)
             assert not is_symbolic(be.resource_bitsize)
 
-            partitions: list[tuple[Register, list[Union[str, Unused]]]] = [
+            partitions: list[tuple[Register, list[str | Unused]]] = [
                 (Register("system", QAny(self.system_bitsize)), ["system"])
             ]
             if self.be_ancilla_bitsize > 0:
-                regs: list[Union[str, Unused]] = []
+                regs: list[str | Unused] = []
                 if be.ancilla_bitsize > 0:
                     regs.append("ancilla")
                 if self.be_ancilla_bitsize > be.ancilla_bitsize:

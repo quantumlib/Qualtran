@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import frozen
 
@@ -42,7 +42,7 @@ class AlgorithmSummary:
 
     n_algo_qubits: int
     n_logical_gates: GateCounts
-    n_rotation_layers: Optional[int] = None
+    n_rotation_layers: int | None = None
 
     @staticmethod
     def from_bloq(bloq: 'Bloq') -> 'AlgorithmSummary':

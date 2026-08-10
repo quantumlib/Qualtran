@@ -19,7 +19,7 @@ from __future__ import annotations
 import json
 import logging
 import re
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import attrs
 
@@ -169,7 +169,7 @@ class QualtranL1Parser:
             return True
         return False
 
-    def parse_annotation(self) -> Optional[CValueNode]:
+    def parse_annotation(self) -> CValueNode | None:
         if self.check('AT'):
             self.advance()
             return self.parse_cvalue()

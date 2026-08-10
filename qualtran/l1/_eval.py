@@ -11,12 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import importlib
 import logging
 import warnings
 from collections.abc import Mapping, Sequence
 from functools import lru_cache
-from typing import Any, cast, Optional, Protocol, TYPE_CHECKING, TypeAlias, Union
+from typing import Any, cast, Protocol, TYPE_CHECKING, TypeAlias
 
 import attrs
 import numpy as np
@@ -181,9 +183,7 @@ _CVALUE_EVALUATORS: dict[str, _EvalProtocol] = {
 @attrs.frozen
 class UnevaluatedCValue:
     name: str
-    cargs: Sequence[tuple[Optional[str], Any]] = attrs.field(
-        converter=tuple[tuple[Optional[str], Any]]
-    )
+    cargs: Sequence[tuple[str | None, Any]] = attrs.field(converter=tuple[tuple[str | None, Any]])
 
 
 def _eval_imported(name: str, args: Sequence[Any], kwargs: dict[str, Any]):
@@ -235,7 +235,7 @@ def eval_cvalue_node(node: CValueNode, *, safe: bool = True) -> Any:
 
         # This is where our safe journey ends; anything left is returned unevaluated (no import).
         if safe:
-            uneval_cargs: list[tuple[Optional[str], Any]] = [(None, arg) for arg in args]
+            uneval_cargs: list[tuple[str | None, Any]] = [(None, arg) for arg in args]
             uneval_cargs.extend((k, v) for k, v in kwargs.items())
             return UnevaluatedCValue(name=node.name, cargs=uneval_cargs)
 
@@ -371,7 +371,7 @@ def eval_qcast_node(qdef: QCastNode, *, safe: bool = True) -> 'qualtran.Bloq':
 def eval_bloq_maybe_aliased(
     key: BloqKey,
     qdefs: dict[BloqKey, QDefNode],
-    qlocals: Mapping[BloqKey, Union[BloqKey, 'SoquetT']],
+    qlocals: Mapping[BloqKey, BloqKey | SoquetT],
     bloqs: dict[BloqKey, Bloq],
     safe: bool = True,
 ) -> 'qualtran.Bloq':
@@ -457,13 +457,13 @@ def _eval_qdef_impl_node(
     logger.info("Evaluating qdef impl %s", qdef.bloq_key)
 
     signature: Signature = eval_qsignature(qdef.qsignature, safe=safe)
-    qlocals: dict[str, Union['SoquetT', BloqKey]] = {}
+    qlocals: dict[str, 'SoquetT' | BloqKey] = {}
     bb, initial_qlocals = BloqBuilder.from_signature(signature)
     qlocals.update(initial_qlocals)
     subbloq_aliases: dict[Bloq, str] = {}
 
     stmt: StatementNode
-    cbloq: Optional[CompositeBloq] = None  # filled in on QReturnNode
+    cbloq: CompositeBloq | None = None  # filled in on QReturnNode
     for stmt in qdef.body:
         logger.debug("STMT: %s", stmt)
 

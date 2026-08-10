@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from attrs import evolve, field, frozen
 
@@ -71,8 +71,8 @@ class ControlledAddOrSubtract(Bloq):
         Sanders et al. Section II-A-1, Algorithm 1.
     """
 
-    a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
-    b_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
+    a_dtype: QInt | QUInt | QMontgomeryUInt = field()
+    b_dtype: QInt | QUInt | QMontgomeryUInt = field()
     add_when_ctrl_is_on: bool = True
 
     @b_dtype.default

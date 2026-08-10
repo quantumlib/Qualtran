@@ -11,8 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from collections.abc import Iterable, Mapping, Sequence
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT
@@ -77,11 +79,11 @@ class Always(Bloq):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', set['BloqCountT']]:
+    ) -> BloqCountDictT | set[BloqCountT]:
         return self.subbloq.build_call_graph(ssa)
 
     def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
+        self, ctrl_spec: CtrlSpec | None = None
     ) -> tuple['Bloq', 'AddControlledT']:
         """Pass-through the control registers as-is"""
 

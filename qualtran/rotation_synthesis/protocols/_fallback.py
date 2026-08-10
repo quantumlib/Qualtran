@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import functools
 from collections.abc import Callable, Iterator
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import matplotlib.pyplot as plt
@@ -213,12 +213,7 @@ class Fallback(_protocol.ApproxProblem):
                 break
 
     def plot(
-        self,
-        n: int,
-        ax: Optional[plt.Axes] = None,
-        *,
-        offset: bool = False,
-        show_legend: bool = True,
+        self, n: int, ax: plt.Axes | None = None, *, offset: bool = False, show_legend: bool = True
     ) -> plt.Axes:
         import matplotlib.pyplot as plt
         from matplotlib import patches

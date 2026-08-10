@@ -13,7 +13,6 @@
 #  limitations under the License.
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Union
 
 import attrs
 import griffe
@@ -27,9 +26,9 @@ class MajorClassPage:
     a minor class is briefly documented on its module's page.
     """
 
-    obj: Optional[griffe.Class] = None
-    section: Optional[str] = None
-    pref_path: Optional[str] = None
+    obj: griffe.Class | None = None
+    section: str | None = None
+    pref_path: str | None = None
 
     @property
     def section_not_none(self) -> str:
@@ -60,9 +59,9 @@ class ModulePageMember:
 class ModulePage:
     """A doc page for a module."""
 
-    obj: Optional[griffe.Module] = None
-    section: Optional[str] = None
-    pref_path: Optional[str] = None
+    obj: griffe.Module | None = None
+    section: str | None = None
+    pref_path: str | None = None
     members: list[ModulePageMember] = attrs.field(factory=list)
 
     @property
@@ -77,4 +76,4 @@ class ModulePage:
         return out_dir / '/'.join(segments[:-1]) / f'{segments[-1]}.md'
 
 
-Page = Union[ModulePage, MajorClassPage]
+Page = ModulePage | MajorClassPage

@@ -14,7 +14,6 @@
 from collections.abc import Sequence
 from functools import cached_property
 from itertools import chain
-from typing import Union
 
 from attrs import evolve, field, frozen
 
@@ -71,7 +70,7 @@ class AutoPartition(Bloq):
     """
 
     bloq: Bloq
-    partitions: Sequence[tuple[Register, Sequence[Union[str, Unused]]]] = field(
+    partitions: Sequence[tuple[Register, Sequence[str | Unused]]] = field(
         converter=lambda s: tuple((r, tuple(rs)) for r, rs in s)
     )
     left_only: bool = False

@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -93,7 +93,7 @@ class HammingWeightPhasing(GateWithRegisters):
         )
         return soqs
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text(f'HWP_{self.bitsize}(Z^{self.exponent})')
         return super().wire_symbol(reg, idx)
@@ -192,7 +192,7 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
         x = bb.add(HammingWeightCompute(self.bitsize).adjoint(), x=x, junk=junk, out=out)
         return {'x': x, 'phase_grad': phase_grad}
 
-    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text(f'HWPG_{self.bitsize}(Z^{self.exponent})')
         return super().wire_symbol(reg, idx)

@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 import itertools
-from typing import Union
 
 import attrs
 import networkx as nx
@@ -328,7 +327,7 @@ class ClassicalDistributionTest(Bloq):
 class ClassicalDistributionWithPhaseTest(ClassicalDistributionTest):
     """Bloq that outputs a random bit with phase for testing."""
 
-    def basis_state_phase(self, q: int) -> Union[complex, MeasurementPhase]:
+    def basis_state_phase(self, q: int) -> complex | MeasurementPhase:
         if q == 0:
             return 1
         return MeasurementPhase(reg_name='c')

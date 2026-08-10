@@ -14,7 +14,7 @@
 import time
 import warnings
 from collections.abc import Iterable
-from typing import Any, Optional
+from typing import Any
 
 import pandas as pd
 import pandas.io.formats.style
@@ -102,8 +102,8 @@ def show_bloq_report_card(df: pd.DataFrame) -> pandas.io.formats.style.Styler:
 
 
 def get_bloq_report_card(
-    bclasses: Optional[Iterable[type[Bloq]]] = None,
-    bexamples: Optional[Iterable[BloqExample]] = None,
+    bclasses: Iterable[type[Bloq]] | None = None,
+    bexamples: Iterable[BloqExample] | None = None,
     package_prefix: str = 'qualtran.bloqs.',
 ) -> pd.DataFrame:
 

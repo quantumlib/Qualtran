@@ -16,7 +16,6 @@
 
 from collections.abc import Iterable, Iterator, Sequence
 from functools import cached_property
-from typing import Optional
 
 import attrs
 import cirq
@@ -73,7 +72,7 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):  # type: ignore[misc]
     selection_bitsize: int
     target_bitsize: int
     select_unitaries: tuple[cirq.DensePauliString, ...] = attrs.field(converter=_to_tuple)
-    control_val: Optional[int] = None
+    control_val: int | None = None
 
     def __attrs_post_init__(self):
         if any(len(dps) != self.target_bitsize for dps in self.select_unitaries):

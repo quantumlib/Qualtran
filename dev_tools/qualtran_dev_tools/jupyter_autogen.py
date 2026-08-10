@@ -20,7 +20,6 @@ import re
 import textwrap
 from pathlib import Path
 from types import ModuleType
-from typing import Optional
 
 import nbformat
 from attrs import field, frozen
@@ -68,7 +67,7 @@ class NotebookSpecV2:
     module: ModuleType
     bloq_specs: list[BloqDocSpec]
     directory: str = field()
-    _path_stem: Optional[str] = None
+    _path_stem: str | None = None
 
     @directory.default
     def _default_directory(self) -> str:

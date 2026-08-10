@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import matplotlib.pyplot as plt
@@ -64,7 +64,7 @@ def find_optimal_heatmap_configs(
     x_axis_col: str,
     y_axis_col: str,
     value_col_to_optimize: str,
-    regularization_col: Optional[str] = None,
+    regularization_col: str | None = None,
     regularization_strength: float = 0.01,
 ) -> pd.DataFrame:
     """Finds the best configuration for each point on a heatmap grid.
@@ -111,15 +111,15 @@ def plot_flasq_heatmap(
     title: str,
     log_scale: bool = True,
     tick_frequency: int = 1,
-    x_formatter: Optional[Callable] = _k_formatter,
-    y_formatter: Optional[Callable] = _scientific_formatter,
+    x_formatter: Callable | None = _k_formatter,
+    y_formatter: Callable | None = _scientific_formatter,
     cmap: str = "viridis",
     figsize: tuple[float, float] = (7.5, 4.0),
-    ax: Optional[plt.Axes] = None,
-    cbar_label: Optional[str] = None,
-    vmin: Optional[float] = None,
-    vmax: Optional[float] = None,
-    center: Optional[float] = None,
+    ax: plt.Axes | None = None,
+    cbar_label: str | None = None,
+    vmin: float | None = None,
+    vmax: float | None = None,
+    center: float | None = None,
     skip_decimal_formatting: bool = False,
     invert_yaxis: bool = False,
 ) -> tuple[plt.Figure, plt.Axes]:

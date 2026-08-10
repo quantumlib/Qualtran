@@ -12,9 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Iterator
 from functools import cached_property
-from typing import cast, Optional, TYPE_CHECKING, Union
+from typing import cast, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -65,7 +67,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
     """
 
     n: SymbolicInt
-    cvs: Union[HasLength, tuple[SymbolicInt, ...]] = attrs.field(
+    cvs: HasLength | tuple[SymbolicInt, ...] = attrs.field(
         converter=_to_tuple_or_has_length, default=()
     )
 
@@ -74,7 +76,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
         return Signature.build(ctrl=slen(self.cvs), target=bit_length(self.n - 1))
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text('Σ |l>')
@@ -151,7 +153,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', set['BloqCountT']]:
+    ) -> BloqCountDictT | set[BloqCountT]:
         if not is_symbolic(self.n, self.cvs):
             # build from decomposition
             return super().build_call_graph(ssa)

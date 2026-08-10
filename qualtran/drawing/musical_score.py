@@ -23,7 +23,7 @@ import heapq
 import json
 from collections.abc import Callable, Iterable
 from enum import Enum
-from typing import Any, cast, Optional, Union
+from typing import Any, cast
 
 import attrs
 import networkx as nx
@@ -102,7 +102,7 @@ class HLine:
 
     y: int
     seq_x_start: int
-    seq_x_end: Optional[int] = None
+    seq_x_end: int | None = None
     flavor: HLineFlavor = HLineFlavor.QUANTUM
 
     def json_dict(self) -> dict[str, Any]:
@@ -147,9 +147,7 @@ class LineManager:
                 kept.append((ys, until))
         self._reserved = kept
 
-    def maybe_reserve(
-        self, binst: Union[DanglingT, BloqInstance], reg: Register, idx: tuple[int, ...]
-    ):
+    def maybe_reserve(self, binst: DanglingT | BloqInstance, reg: Register, idx: tuple[int, ...]):
         """Override this method to provide custom control over line allocation.
 
         After a new y position is allocated and after a y position is freed, this method
@@ -165,7 +163,7 @@ class LineManager:
 
     def new(
         self, binst: BloqInstance, reg: Register, seq_x: int, topo_gen: int
-    ) -> Union[RegPosition, NDArray[RegPosition]]:  # type: ignore[type-var]
+    ) -> RegPosition | NDArray[RegPosition]:  # type: ignore[type-var]
         """Allocate a position or positions for `reg`.
 
         `binst` and `reg` can optionally modify the allocation strategy.
@@ -195,9 +193,9 @@ class LineManager:
 
     def free(
         self,
-        binst: Union[DanglingT, BloqInstance],
+        binst: DanglingT | BloqInstance,
         reg: Register,
-        arr: Union[RegPosition, NDArray[RegPosition]],  # type: ignore[type-var]
+        arr: RegPosition | NDArray[RegPosition],  # type: ignore[type-var]
     ):
         """De-allocate a position or positions for `reg`.
 
@@ -221,8 +219,8 @@ class LineManager:
 
 
 def _get_in_vals(
-    binst: Union[DanglingT, BloqInstance], reg: Register, soq_assign: dict[_Soquet, RegPosition]
-) -> Union[RegPosition, NDArray[RegPosition]]:  # type: ignore[type-var]
+    binst: DanglingT | BloqInstance, reg: Register, soq_assign: dict[_Soquet, RegPosition]
+) -> RegPosition | NDArray[RegPosition]:  # type: ignore[type-var]
     """Pluck out the correct values from `soq_assign` for `reg` on `binst`."""
     if not reg.shape:
         return soq_assign[_Soquet(binst, reg)]
@@ -237,7 +235,7 @@ def _get_in_vals(
 
 def _update_assign_from_vals(
     regs: Iterable[Register],
-    binst: Union[DanglingT, BloqInstance],
+    binst: DanglingT | BloqInstance,
     vals: dict[str, RegPosition],
     soq_assign: dict[_Soquet, RegPosition],
     seq_x: int,
@@ -251,7 +249,7 @@ def _update_assign_from_vals(
     """
     for reg in regs:
         try:
-            arr: Union[RegPosition, NDArray[RegPosition]] = vals[reg.name]  # type: ignore[type-var]
+            arr: RegPosition | NDArray[RegPosition] = vals[reg.name]  # type: ignore[type-var]
         except KeyError:
             arr = manager.new(
                 binst=cast(BloqInstance, binst), reg=reg, seq_x=seq_x, topo_gen=topo_gen
@@ -326,7 +324,7 @@ def _binst_assign_line(
 
 
 def _cbloq_musical_score(
-    signature: Signature, binst_graph: nx.DiGraph, manager: Optional[LineManager] = None
+    signature: Signature, binst_graph: nx.DiGraph, manager: LineManager | None = None
 ) -> tuple[dict[str, RegPosition], dict[_Soquet, RegPosition], LineManager]:
     """Assign musical score positions through a composite bloq's contents.
 
@@ -593,7 +591,7 @@ def _make_ident(binst: BloqInstance, me: _Soquet):
     return f'{binst.i},{soqi}'
 
 
-def get_musical_score_data(bloq: Bloq, manager: Optional[LineManager] = None) -> MusicalScoreData:
+def get_musical_score_data(bloq: Bloq, manager: LineManager | None = None) -> MusicalScoreData:
     """Get the musical score data for a (composite) bloq.
 
     This will first walk through the compute graph to assign each soquet

@@ -16,7 +16,7 @@
 
 import math
 from collections.abc import Sequence
-from typing import Optional, overload
+from typing import overload
 
 from qualtran.symbolics import ceil, is_symbolic, log2, SymbolicFloat, SymbolicInt
 
@@ -192,8 +192,8 @@ def sub_bit_prec_from_epsilon(
 
 def preprocess_probabilities_for_reversible_sampling(
     unnormalized_probabilities: Sequence[float],
-    epsilon: Optional[float] = None,
-    sub_bit_precision: Optional[int] = None,
+    epsilon: float | None = None,
+    sub_bit_precision: int | None = None,
 ) -> tuple[list[int], list[int], int]:
     r"""Prepares data used to perform efficient reversible roulette selection.
 

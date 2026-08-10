@@ -99,10 +99,9 @@ def to_qdtype_node(dtype: 'qlt.QCDType', *, nodes: L1Nodes = qualtran_l1_nodes) 
         )
 
     else:
-        from ._to_cobject_node import to_cobject_node
+        from ._to_cobject_node import object_to_object_node
 
-        cval_node = to_cobject_node(dtype, nodes=nodes)
-        dtype_node = cval_node
+        dtype_node = object_to_object_node(dtype, pkg='', nodes=nodes)
 
     return dtype_node
 

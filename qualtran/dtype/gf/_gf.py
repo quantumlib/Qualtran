@@ -12,9 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -28,7 +30,7 @@ if TYPE_CHECKING:
     import galois
 
 
-def _poly_converter(p) -> Optional['galois.Poly']:
+def _poly_converter(p) -> galois.Poly | None:
     import galois
 
     if p is None:
@@ -44,7 +46,7 @@ class _GF(BitEncoding['galois.FieldArray']):
 
     characteristic: SymbolicInt
     degree: SymbolicInt
-    irreducible_poly: Optional['galois.Poly'] = attrs.field(converter=_poly_converter)
+    irreducible_poly: galois.Poly | None = attrs.field(converter=_poly_converter)
 
     @irreducible_poly.default
     def _irreducible_poly_default(self):
@@ -149,7 +151,7 @@ class QGF(QDType['galois.FieldArray']):
 
     characteristic: SymbolicInt
     degree: SymbolicInt
-    irreducible_poly: Optional['galois.Poly'] = attrs.field(converter=_poly_converter)
+    irreducible_poly: galois.Poly | None = attrs.field(converter=_poly_converter)
 
     @irreducible_poly.default
     def _irreducible_poly_default(self):
@@ -202,7 +204,7 @@ class CGF(CDType['galois.FieldArray']):
 
     characteristic: SymbolicInt
     degree: SymbolicInt
-    irreducible_poly: Optional['galois.Poly'] = attrs.field(converter=_poly_converter)
+    irreducible_poly: galois.Poly | None = attrs.field(converter=_poly_converter)
 
     @irreducible_poly.default
     def _irreducible_poly_default(self):

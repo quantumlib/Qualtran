@@ -14,7 +14,6 @@
 
 from collections.abc import Iterator, Sequence
 from functools import cached_property
-from typing import Optional
 
 import cirq
 import numpy as np
@@ -59,7 +58,7 @@ class BernoulliEncoder(SelectOracle):
     y: tuple[int, int]
     selection_bitsize: int
     target_bitsize: int
-    control_val: Optional[int] = None
+    control_val: int | None = None
 
     @cached_property
     def control_registers(self) -> tuple[Register, ...]:

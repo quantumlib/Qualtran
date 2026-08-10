@@ -14,7 +14,6 @@
 
 import functools
 from functools import cached_property
-from typing import Union
 
 import numpy as np
 import sympy
@@ -69,7 +68,7 @@ class ECPhaseEstimateR(Bloq):
         return Signature([Register('x', QUInt(self.n)), Register('y', QUInt(self.n))])
 
     @property
-    def ec_add(self) -> Union[functools.partial[ECAddR], functools.partial[ECWindowAddR]]:
+    def ec_add(self) -> functools.partial[ECAddR] | functools.partial[ECWindowAddR]:
         if self.add_window_size == 1:
             return functools.partial(ECAddR, n=self.n)
         return functools.partial(

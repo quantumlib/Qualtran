@@ -11,9 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import math
 from functools import cached_property
-from typing import cast, Optional, Union
+from typing import cast
 
 import attrs
 import numpy as np
@@ -90,8 +92,8 @@ class ModExp(Bloq):
     def make_for_shor(
         cls,
         big_n: 'SymbolicInt',
-        g: Optional['SymbolicInt'] = None,
-        rs: Optional[np.random.RandomState] = None,
+        g: SymbolicInt | None = None,
+        rs: np.random.RandomState | None = None,
     ):
         """Factory method that sets up the modular exponentiation for a factoring run.
 
@@ -139,11 +141,11 @@ class ModExp(Bloq):
         k = ssa.new_symbol('k')
         return {self._CtrlModMul(k=k): self.exp_bitsize, IntState(val=1, bitsize=self.x_bitsize): 1}
 
-    def on_classical_vals(self, exponent) -> dict[str, Union['ClassicalValT', sympy.Expr]]:
+    def on_classical_vals(self, exponent) -> dict[str, ClassicalValT | sympy.Expr]:
         return {'exponent': exponent, 'x': (self.base**exponent) % self.mod}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+        self, reg: Register | None, idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text(f'{self.base}^e % {self.mod}')
@@ -153,7 +155,7 @@ class ModExp(Bloq):
 _K = sympy.Symbol('k_exp')
 
 
-def _generalize_k(b: Bloq) -> Optional[Bloq]:
+def _generalize_k(b: Bloq) -> Bloq | None:
     if isinstance(b, CModMulK):
         return attrs.evolve(b, k=_K)
 
