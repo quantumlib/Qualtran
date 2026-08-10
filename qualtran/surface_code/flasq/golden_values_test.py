@@ -106,7 +106,7 @@ def _run_hwp_pipeline(n_qubits_data, angle=0.123, n_fluid_ancilla=20):
     span_info = get_cost_value(cbloq, TotalSpanCost())
     qubit_counts = get_cost_value(cbloq, QubitCount())
 
-    dummy_measurement_depth = MeasurementDepth(depth=0)
+    placeholder_measurement_depth = MeasurementDepth(depth=0)
     n_total_logical_qubits = qubit_counts + n_fluid_ancilla
 
     summary = apply_flasq_cost_model(
@@ -115,7 +115,7 @@ def _run_hwp_pipeline(n_qubits_data, angle=0.123, n_fluid_ancilla=20):
         qubit_counts=qubit_counts,
         counts=flasq_counts,
         span_info=span_info,
-        measurement_depth=dummy_measurement_depth,
+        measurement_depth=placeholder_measurement_depth,
         logical_timesteps_per_measurement=1.0,
     )
     resolved = summary.resolve_symbols(STANDARD_ASSUMPTIONS)
