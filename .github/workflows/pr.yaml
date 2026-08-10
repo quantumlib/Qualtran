@@ -177,7 +177,7 @@ jobs:
               fi
             done
 
-  action-lint:
+  workflow-lint:
     runs-on: ubuntu-slim
     permissions:
       contents: read
