@@ -30,7 +30,6 @@ from typing import Dict, List, Optional, Set, Tuple, TYPE_CHECKING, Union
 from qualtran import DanglingT, LeftDangle, QBit, RightDangle, Side
 from qualtran._infra.quantum_graph import _Soquet
 from qualtran.drawing.musical_score import (
-    _soq_to_symb,
     Circle,
     LarrowTextBox,
     ModPlus,
@@ -132,6 +131,17 @@ class QpicWireManager:
 
     def soq_to_wirelabel(self, soq) -> str:
         return _format_label_text(self.soq_to_wirename(soq))
+
+
+def _soq_to_symb(soq: _Soquet) -> WireSymbol:
+    """Return a pleasing symbol for the given soquet."""
+
+    # Use text (with no box) for dangling register identifiers.
+    if isinstance(soq.binst, DanglingT):
+        return Text(soq.pretty() + f'/{soq.reg.dtype}', fontsize=8)
+
+    # Otherwise, use `Bloq.wire_symbol`.
+    return soq.binst.bloq.wire_symbol(soq.reg, soq.idx)
 
 
 class QpicCircuit:
