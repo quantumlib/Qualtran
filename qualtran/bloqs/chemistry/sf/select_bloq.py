@@ -41,7 +41,7 @@ class SelectSingleFactorization(Bloq):
         succ_pq: flag for success of this state preparation.
         succ_l: flag for success of l state preparation.
 
-    Refererences:
+    References:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             Hypercontraction](https://arxiv.org/abs/2011.03494) Appendix B, page 44, listing 4.
     """

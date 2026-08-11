@@ -134,7 +134,7 @@ def show_counts_sigma(sigma: Dict['Bloq', Union[int, 'sympy.Expr']]):
 
 
 def show_flame_graph(*bloqs: 'Bloq', **kwargs):
-    """Display hiearchical decomposition and T-complexity costs as a Flame Graph."""
+    """Display hierarchical decomposition and T-complexity costs as a Flame Graph."""
     from .flame_graph import get_flame_graph_svg_data
 
     svg_data = get_flame_graph_svg_data(*bloqs, **kwargs)
