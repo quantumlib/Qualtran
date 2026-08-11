@@ -54,7 +54,7 @@ class TrotterizedUnitary(Bloq):
     where the coefficients $c_k$ are real numbers and $l_k$ is an integer
     indexing which term of the Hamiltonian to apply.
 
-    For example, the second order Suzuki splitting would have indicies $(l)$ = (0, 1, 0)
+    For example, the second order Suzuki splitting would have indices $(l)$ = (0, 1, 0)
     and coeffs = $(c)$ = (0.5, 1, 0.5), which would build
 
     $$

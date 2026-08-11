@@ -43,7 +43,7 @@ in this fork to do your work, and when ready, create a pull request from this
 branch to the main Qualtran repository. The subsections below describe the
 process in more detail.
 
-Pleae make sure to follow the [Google Style
+Please make sure to follow the [Google Style
 Guides](https://google.github.io/styleguide/) in your code, particularly the
 [style guide for Python](https://google.github.io/styleguide/pyguide.html).
 

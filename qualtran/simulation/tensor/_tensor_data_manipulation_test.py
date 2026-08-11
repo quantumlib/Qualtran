@@ -36,7 +36,7 @@ def test_tensor_shape_from_signature():
     assert tensor_shape_from_signature(Signature([right_register])) == (4, 4)
     assert tensor_shape_from_signature(Signature([thru_register])) == (8, 8, 8, 8) * 2
 
-    # Test all 3 and asser that ordering is preserved
+    # Test all 3 and assert that ordering is preserved
     signature = Signature([left_register, right_register, thru_register])
     inp_shape = (2,) + (8, 8, 8, 8)
     out_shape = (4, 4) + (8, 8, 8, 8)

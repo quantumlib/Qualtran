@@ -33,7 +33,7 @@ class ClassicalSimGraphDrawer(PrettyGraphDrawer):
 
     Args:
         bloq: The (composite) bloq to draw.
-        vals: Input classical values to propogate through the composite bloq.
+        vals: Input classical values to propagate through the composite bloq.
     """
 
     def __init__(self, bloq: Bloq, vals: Dict[str, 'ClassicalValT']):

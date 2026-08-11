@@ -220,16 +220,16 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
         j: A register for selecting electronic registers.
         w: A register for selecting x, y and z components of the momentum register.
         r: A register for controlling elements of the momentum register. Used
-            for block encodiding kinetic energy operator.
+            for block encoding kinetic energy operator.
         s: A register for controlling elements of the momentum register. Used
-            for block encodiding kinetic energy operator.
+            for block encoding kinetic energy operator.
         mu: A register used for implementing nested boxes for the momentum state preparation.
         nu_x: x component of the momentum register for Coulomb potential.
         nu_y: y component of the momentum register for Coulomb potential.
         nu_z: z component of the momentum register for Coulomb potential.
         m: an ancilla register in a uniform superposition.
         l: The register for selecting the nuclei.
-        succ_nu: A flag to indiciate the success of the $\nu$ state preparation.
+        succ_nu: A flag to indicate the success of the $\nu$ state preparation.
         plus_t: A flag qubit prepared in the $|+\rangle$ state.
         flags: A 4 qubit flag register indicating which component of the Hamiltonian to apply.
 
