@@ -133,7 +133,7 @@ class NaiveGridQubitManager(QubitManager):
         num_new = n - num_reuse
         for _ in range(num_new):
             new_qubit = self._get_next_new_qubit()
-            # Sanity check: ensure we don't generate a qubit that's somehow already allocated
+            # Consistency check: ensure we don't generate a qubit that's somehow already allocated
             # This shouldn't happen with correct logic but is a useful safeguard.
             if new_qubit in self._allocated_qubits:
                 raise RuntimeError(

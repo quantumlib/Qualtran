@@ -345,7 +345,7 @@ def test_flasq_summary_resolved_hashable():
 
 
 def test_frozendict_hashable():
-    """Sanity check that frozendict is hashable."""
+    """Validate that frozendict is hashable."""
     d1 = frozendict({"a": 1, "b": 2})
     d2 = frozendict({"b": 2, "a": 1})  # Order shouldn't matter
     d3 = frozendict({"a": 1, "b": 3})
@@ -554,7 +554,7 @@ class OptimizationFunctionsTestSuite:
         )
 
         # This part of the test now implicitly tests `post_process_for_pec_runtime`
-        # by creating a dummy SweepResult and processing it.
+        # by creating a placeholder SweepResult and processing it.
         sweep_result = SweepResult(
             circuit_builder_kwargs=ising_params,
             core_config=CoreParametersConfig(
@@ -919,7 +919,7 @@ class ConstrainedQECOptimizationTestSuite:
         mock_best_params = pd.Series(
             {
                 "t_gate_cultivation_error_rate": 9e-5,
-                "expected_volume": 30000.0,  # Dummy volume
+                "expected_volume": 30000.0,  # Placeholder volume
                 "cultivation_distance": 5,
             }
         )
@@ -929,7 +929,7 @@ class ConstrainedQECOptimizationTestSuite:
 
         # Action
         configs = generate_configs_for_constrained_qec(
-            circuit_builder_func=_simple_circuit_builder,  # Dummy func from the file
+            circuit_builder_func=_simple_circuit_builder,  # Placeholder func from the file
             circuit_builder_kwargs=frozendict({"num_qubits": 2, "add_rotation": False}),
             error_budget=budget,
             phys_error_rate_list=[p_phys],
