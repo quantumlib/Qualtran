@@ -70,7 +70,7 @@ def test_state_prep_alias_sampling_symb():
 
     # Compare bloq counts via expression to actual bloq counts and make sure they
     # are "close enough".
-    # The discrepency here comes from the fact that symbolic counts of
+    # The discrepancy here comes from the fact that symbolic counts of
     # `PrepareUniformSuperposition` assume worst case and cannot compute the remainder
     # of dividing `n` by the highest power of `2` at resolution time.
     N, epsilon = 2**16 - 1, 1e-4

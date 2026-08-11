@@ -206,7 +206,7 @@ def cbloq_to_superquimb(cbloq: CompositeBloq, friendly_indices: bool = False) ->
     This simulation strategy can handle non-unitary dynamics, but is more costly.
 
     This function will call `Bloq.my_tensors` on each subbloq in the composite bloq to add
-    tensors to a quimb tensor network. This uses ths system+environment strategy for modeling
+    tensors to a quimb tensor network. This uses the system+environment strategy for modeling
     open system dynamics. In contrast to `cbloq_to_quimb`, each bloq will have
     its tensors added twice: once to the part of the network representing the "forward"
     wavefunction, and its conjugate added to the part of the network representing the "backward"

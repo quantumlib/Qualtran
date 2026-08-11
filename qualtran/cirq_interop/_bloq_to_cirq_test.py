@@ -173,13 +173,13 @@ def test_flat_cbloq_to_cirq_circuit_minimizes_qubit_allocation():
     # `cbloq.flatten()` preserves this now because cbloq.iter_bloqnections is also
     #  updated to use `greedy_topological_sort` instead of `nx.topological_sort`.
     #  In general, we should have a more stable way to preserve this property,
-    #  potentially by maintaing a sorted order in `binst.i`;
+    #  potentially by maintaining a sorted order in `binst.i`;
     #  xref: https://github.com/quantumlib/Qualtran/issues/1098
     cbloq = bloq.decompose_bloq().flatten()
     assert len(cbloq.to_cirq_circuit(qubit_manager=qm).all_qubits()) == 7
 
 
-def test_contruct_op_from_gate():
+def test_construct_op_from_gate():
     and_gate = And()
     in_quregs = {'ctrl': np.array([*cirq.LineQubit.range(2)]).reshape(2, 1)}
     qm = cirq.ops.SimpleQubitManager()

@@ -133,7 +133,7 @@ class Subtract(Bloq):
         # the bloq should be a permutation matrix.
         # If we hold `a` constant then the valid range of values of `b` [-N/2, N/2) gets shifted forward or backwards
         # by `a`. to keep the operation unitary overflowing values wrap around. this is the same as moving the range [0, N)
-        # by the same amount modulu $N$. that is add N/2 before subtraction and then remove it.
+        # by the same amount modulo $N$. that is add N/2 before subtraction and then remove it.
         half_n = N >> 1
         return {'a': a, 'b': int((a - b + half_n) % N) - half_n}
 
