@@ -120,7 +120,7 @@ class KXorInstance:
     def _default_max_rhs(self):
         """With very high probability, the max entry will be quite small.
 
-        This is a classical preprocesing step. Time $m$.
+        This is a classical preprocessing step. Time $m$.
         """
         if is_symbolic(self.constraints) or is_symbolic(*self.constraints):
             # user did not provide a value, assume some small constant

@@ -249,7 +249,7 @@ def execute_and_export_notebooks(
         output_md: Whether to save the executed notebooks as markdown
         only_out_of_date: Only re-execute and re-export notebooks whose output files
             are out of date.
-        n_workers: If set to 1, do not use parallelization. If set to `None` (the detault),
+        n_workers: If set to 1, do not use parallelization. If set to `None` (the default),
             `multiprocessing.Pool()` will be used, which uses the number of processors as
             a default. Otherwise, this argument is passed to
             `multiprocessing.Pool(n_workers)` to execute notebooks in parallel on this many

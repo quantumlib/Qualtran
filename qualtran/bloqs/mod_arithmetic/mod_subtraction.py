@@ -61,7 +61,7 @@ class ModNeg(Bloq):
         p: The modulus for the negation.
 
     Registers:
-        x: The register contraining the integer we negate.
+        x: The register containing the integer we negate.
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
@@ -136,7 +136,7 @@ class CModNeg(Bloq):
 
     Registers:
         ctrl: Control bit.
-        x: The register contraining the integer we negate.
+        x: The register containing the integer we negate.
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
@@ -248,8 +248,8 @@ class ModSub(Bloq):
         p: The modulus for the negation.
 
     Registers:
-        x: The register contraining the first integer.
-        y: The register contraining the second integer.
+        x: The register containing the first integer.
+        y: The register containing the second integer.
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
@@ -321,8 +321,8 @@ class CModSub(Bloq):
 
     Registers:
         ctrl: control register.
-        x: The register contraining the first integer.
-        y: The register contraining the second integer.
+        x: The register containing the first integer.
+        y: The register containing the second integer.
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)

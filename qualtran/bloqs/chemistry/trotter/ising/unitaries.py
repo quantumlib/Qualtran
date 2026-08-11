@@ -22,7 +22,7 @@ from qualtran.drawing import Text, WireSymbol
 
 @attrs.frozen
 class IsingXUnitary(Bloq):
-    r"""Implents the unitary $e^{-i \alpha H_X}$.
+    r"""Implements the unitary $e^{-i \alpha H_X}$.
 
     Args:
         nsites: The number of lattice sites.
@@ -55,7 +55,7 @@ class IsingXUnitary(Bloq):
 
 @attrs.frozen
 class IsingZZUnitary(Bloq):
-    r"""Implents the unitary $e^{-i \alpha H_{ZZ}}$.
+    r"""Implements the unitary $e^{-i \alpha H_{ZZ}}$.
 
     Args:
         nsites: The number of lattice sites.

@@ -366,7 +366,7 @@ class _KaliskiIterationStep6(Bloq):
         m, b = bb.add(CNOT(), ctrl=m, target=b)
         a, b = bb.add(CNOT(), ctrl=a, target=b)
 
-        # Controlled Divison by 2. The control bit is set only iff the number is even so the divison becomes equivalent to a cyclic right shift.
+        # Controlled Division by 2. The control bit is set only iff the number is even so the division becomes equivalent to a cyclic right shift.
         v_arr = bb.split(v)
         for i in reversed(range(self.bitsize - 1)):
             f, v_arr[i], v_arr[i + 1] = bb.add(TwoBitCSwap(), ctrl=f, x=v_arr[i], y=v_arr[i + 1])

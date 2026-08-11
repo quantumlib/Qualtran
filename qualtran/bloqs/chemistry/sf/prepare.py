@@ -56,7 +56,7 @@ class InnerPrepareSingleFactorization(Bloq):
         q: spatial orbital index. range(0, num_spin_orb // 2)
         succ_pq: flag for success of this state preparation.
 
-    Refererences:
+    References:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             Hypercontraction](https://arxiv.org/abs/2011.03494) Appendix B. Listing 2, page 44.
         [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity
@@ -126,7 +126,7 @@ class OuterPrepareSingleFactorization(Bloq):
         l_ne_zero: flag for preparation of one-body term too.
         rot_aa: The qubit that is rotated for amplitude amplification.
 
-    Refererences:
+    References:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             Hypercontraction](https://arxiv.org/abs/2011.03494)
             Appendix B, page 43. Step 1.

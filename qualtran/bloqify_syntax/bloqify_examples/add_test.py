@@ -73,11 +73,11 @@ ck  ik  tk  |  ck  ik  tk  ckp1
 def un_maj(bb: 'BloqBuilder', ck, ik, tk, ckp1):
     """Uncompute the carry bits.
 
-    This is most of the right part of the building block in Figure 2. We ommit the final
+    This is most of the right part of the building block in Figure 2. We omit the final
     CNOT(ik, tk), leaving that responsibility to the outer circuit. This is in the spirit of
     Figure 1, which shows the CNOT(ik, tk) gates distinct from the recursive structure.
     By factoring it in this way, `maj` and `un_maj` only concern themselves with
-    propogating the carry bits.
+    propagating the carry bits.
     """
     ck, ckp1 = bb.CNOT(ck, ckp1)
     [ik, tk] = bb.UnAnd([ik, tk], ckp1)

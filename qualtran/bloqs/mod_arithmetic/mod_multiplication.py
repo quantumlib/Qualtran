@@ -424,7 +424,7 @@ class SingleWindowModMul(Bloq):
 class _DirtyOutOfPlaceMontgomeryModMulImpl(Bloq):
     r"""Perform windowed montgomery modular multiplication.
 
-    Applies the trasformation
+    Applies the transformation
     $$
         \ket{x}\ket{y}\ket{0}\ket{0}\ket{0} \rightarrow \ket{x}\ket{y}\ket{xy2^{-n}}\ket{h}\ket{c}
     $$
@@ -448,7 +448,7 @@ class _DirtyOutOfPlaceMontgomeryModMulImpl(Bloq):
         x: The first integer
         y: The second integer
         target: product in montgomery form $xy 2^{-n}$
-        qrom_indices: concatination of the indicies used to query QROM.
+        qrom_indices: concatenation of the indices used to query QROM.
         reduced: whether a final modular reduction was applied.
 
     References:
@@ -549,7 +549,7 @@ class _DirtyOutOfPlaceMontgomeryModMulImpl(Bloq):
 class DirtyOutOfPlaceMontgomeryModMul(Bloq):
     r"""Perform windowed montgomery modular multiplication.
 
-    Applies the trasformation
+    Applies the transformation
     $$
         \ket{x}\ket{y}\ket{0}\ket{0}\ket{0} \rightarrow \ket{x}\ket{y}\ket{xy2^{-n}}\ket{h}\ket{c}
     $$
@@ -558,7 +558,7 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
 
     - $n$ is the bitsize.
     - $x, y$ are in montgomery form
-    - $h$ is an ancilla register that represents intermidate values.
+    - $h$ is an ancilla register that represents intermediate values.
     - $c$ is whether a final modular reduction was applied or not.
 
     Args:
@@ -571,7 +571,7 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
         x: The first integer
         y: The second integer
         target: product in montgomery form $xy 2^{-n}$
-        qrom_indices: concatination of the indicies used to query QROM.
+        qrom_indices: concatenation of the indices used to query QROM.
         reduced: whether a final modular reduction was applied.
 
     References:
@@ -636,7 +636,7 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
         qrom_indices: 'ClassicalValT',
     ):
         # This method implements same logic as SingleWindowModMul.on_classical_vals except that it works on integers rather than bit arrays.
-        # Calls to this function are equivalent to calls to self._window.call_classically given the appropiate conversion int <-> bitarray.
+        # Calls to this function are equivalent to calls to self._window.call_classically given the appropriate conversion int <-> bitarray.
         if is_symbolic(self.bitsize) or is_symbolic(self.window_size) or is_symbolic(self.mod):
             raise ValueError(f'classical action is not supported for {self}')
         for i in range(self.window_size):

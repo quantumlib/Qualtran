@@ -90,7 +90,7 @@ def _get_sympy_function_from_enum(enum: int) -> Any:
 def _get_sympy_const_from_enum(enum: int) -> Any:
     """Helper function for deserializing a sympy symbolic constant.
 
-    Symbolic constants are serialzed as an enum of type sympy_pb2.ConstSymbol. This method converts the
+    Symbolic constants are serialized as an enum of type sympy_pb2.ConstSymbol. This method converts the
     enum representation back to its original sympy representation.
     """
     enum_to_sympy: dict[int, Any] = {
@@ -181,7 +181,7 @@ def _get_parameter(
     Deserializes a parameter.
 
     Deserializes a parameter or operand into either its sympy representation or its
-    python primative numeric representation.
+    python primitive numeric representation.
     """
     if isinstance(serialized_input, sympy_pb2.Operand):
         serialized_parameter = serialized_input.parameter

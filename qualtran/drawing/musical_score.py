@@ -73,7 +73,7 @@ class RegPosition:
 
 
 class HLineFlavor(Enum):
-    """Horizonal lines can represent quantum or classical data."""
+    """Horizontal lines can represent quantum or classical data."""
 
     QUANTUM = 1
     CLASSICAL = 2
@@ -305,7 +305,7 @@ def _binst_assign_line(
         reg.name: in_vals[reg.name] for reg in bloq.signature if reg.side is Side.THRU
     }
 
-    # The following will use `partial_out_vals` to re-use existing THRU lines; otherwise
+    # The following will use `partial_out_vals` to reuse existing THRU lines; otherwise
     # the following will allocate new lines.
     _update_assign_from_vals(
         bloq.signature.rights(),

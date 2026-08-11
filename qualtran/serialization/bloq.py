@@ -122,7 +122,7 @@ class _BloqLibDeserializer:
     def bloq_id_to_bloq(self, bloq_id: int):
         """Constructs a Bloq corresponding to a `bloq_id` given an `id_to_proto` mapping.
 
-        The `id_to_proto` mappping is constructed using a `BloqLibrary`.
+        The `id_to_proto` mapping is constructed using a `BloqLibrary`.
         The `id_to_bloq` mapping acts as a cache to avoid redundant deserialization of Bloqs.
         """
         if bloq_id in self.id_to_bloq:

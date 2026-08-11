@@ -111,7 +111,7 @@ class ParallelComparators(Bloq):
     $$
 
     totals comparisons. The above expression is at most $k / 2$. Each comparison generates one ancilla qubit
-    which stores the result of comparsion, and these qubits are aggregated into the `junk` register.
+    which stores the result of comparison, and these qubits are aggregated into the `junk` register.
 
     This is used by `BitonicMerge` to apply parallel merges with offsets 1, 2, 4 and so on.
 
@@ -202,7 +202,7 @@ class BitonicMerge(Bloq):
 
     If each half has length $k$, then the merge network uses $k (1+\log{k})$ comparisons
     when $k$ is a power of 2. Each comparison generates one ancilla qubit which stores
-    the result of comparsion, and these qubits are aggregated into the `junk` register.
+    the result of comparison, and these qubits are aggregated into the `junk` register.
 
     Args:
         half_length: Number of integers in each half

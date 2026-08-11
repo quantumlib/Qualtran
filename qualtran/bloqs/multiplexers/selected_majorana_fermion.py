@@ -173,14 +173,14 @@ class SelectedMajoranaFermion(UnaryIterationGate):
             max_selection = self.selection_registers[0].dtype.iteration_length_or_zero() - 1
             # This gate applies Z in positions 0 through (selection - 1). The effect is
             # a phase of plus or minus 1 depending on the parity of the number of ones
-            # in those positions. For an N-bit big endien integer, the first j bits can
+            # in those positions. For an N-bit big endian integer, the first j bits can
             # be isolated by shifting right by N - j.
             #
             # The target gate X has no additional phase, so calculate as in the
             # previous paragraph.
             if self.target_gate == cirq.X:
                 num_phases = (target >> (max_selection - selection + 1)).bit_count()
-            # The taget gate Z is applied in position selection, so consider the full
+            # The target gate Z is applied in position selection, so consider the full
             # range 0 through selection.
             else:
                 num_phases = (target >> (max_selection - selection)).bit_count()

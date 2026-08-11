@@ -234,7 +234,7 @@ class Product(BlockEncoding):
                 anc_soq = anc_part_soqs.pop("ancilla")
         if self.resource_bitsize > 0:
             # Currently, we assume that block encodings restore their resource register to zero.
-            # If so, the resource register can be reused among all the consistuents.
+            # If so, the resource register can be reused among all the constituents.
             # See https://github.com/quantumlib/Qualtran/issues/1138
             # which tracks necessary changes if this assumption becomes false.
             res_soq = soqs.pop("resource")

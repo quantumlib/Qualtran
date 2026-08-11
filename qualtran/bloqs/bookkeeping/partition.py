@@ -48,7 +48,7 @@ if TYPE_CHECKING:
 
 
 class _PartitionBase(_BookkeepingBloq, metaclass=abc.ABCMeta):
-    """Generalized paritioning functionality."""
+    """Generalized partitioning functionality."""
 
     @property
     @abc.abstractmethod

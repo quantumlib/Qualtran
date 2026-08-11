@@ -92,7 +92,7 @@ class HoppingTile(Bloq):
     $$
     e^{i H_h^{x}} = \prod_{k\sigma} e^{i t H_h^{x(k,\sigma)}}
     $$
-    for a particular choise of of plaquette hamiltonian $H_h^x$, where $x$ = pink or gold.
+    for a particular choice of plaquette hamiltonian $H_h^x$, where $x$ = pink or gold.
 
     Args:
         length: Lattice side length L.
@@ -145,13 +145,13 @@ class HoppingTileHWP(HoppingTile):
     $$
     e^{i H_h^{x}} = \prod_{k\sigma} e^{i t H_h^{x(k,\sigma)}}
     $$
-    for a particular choise of of plaquette hamiltonian $H_h^x$, where $x$ = pink or gold.
+    for a particular choice of plaquette hamiltonian $H_h^x$, where $x$ = pink or gold.
 
     Each plaquette Hamiltonian can be split into $L^2/4$ commuting terms. Each
     term can be implemented using the 4-qubit HoppingPlaquette above. The
     HoppingPlaquette bloq contains 2 arbitrary rotations which are flanked by Clifford operations.
     All of the rotations within a HoppingTile have the same angle so we can use
-    HammingWeightPhaseing to reduce the number of T gates that need to be
+    HammingWeightPhasing to reduce the number of T gates that need to be
     synthesized. Accounting for spin there are then $2 \times 2 \times L^2/4$
     arbitrary rotations in each Tile, but only  $L^2/2$ of them can be applied
     at the same time due to the $e^{iXX} e^{iYY}$ circuit not permitting parallel $R_z$ gates.

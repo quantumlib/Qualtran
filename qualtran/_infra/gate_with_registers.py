@@ -241,7 +241,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         y1: ─────y──────────────────
     """
 
-    # Part-1: Bloq interface is automatically available for users, via default convertors.
+    # Part-1: Bloq interface is automatically available for users, via default converters.
 
     def decompose_bloq(self) -> 'CompositeBloq':
         """Decompose this Bloq into its constituent parts contained in a CompositeBloq.

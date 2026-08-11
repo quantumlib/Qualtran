@@ -35,7 +35,7 @@ from qualtran.rotation_synthesis.rings import _zsqrt2
 def make_ellipse_for_circular_segment(
     chord_length: rst.Real, radius: rst.Real, theta: rst.Real, config: mc.MathConfig
 ) -> lattice.Ellipse:
-    r"""Constructs the smallest ellipse that contains the given circular segement.
+    r"""Constructs the smallest ellipse that contains the given circular segment.
 
     Given a circular segment on one side of the chord $\overset{\huge\frown}{AB}$ with point $p$
     at the center of $\overline{AB}$, the smallest ellipse that contains it has center $p$ and axes
@@ -43,7 +43,7 @@ def make_ellipse_for_circular_segment(
     intersection of the circle perimeter with the line and $\overline{Cp} = \overline{pD}$
 
     Args:
-        chord_length: The length of the chord bounding the segement.
+        chord_length: The length of the chord bounding the segment.
         radius: The radius of the circle.
         theta: The angle that the point $p$ makes with the x-axis.
         config: A math config.

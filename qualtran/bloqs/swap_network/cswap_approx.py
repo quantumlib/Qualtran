@@ -115,7 +115,7 @@ class CSwapApprox(GateWithRegisters):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         n = self.bitsize
-        # 4 * n: G gates, each wth 1 T and 4 single qubit cliffords
+        # 4 * n: G gates, each with 1 T and 4 single qubit cliffords
         # 4 * n: CNOTs
         # 2 * n - 1: CNOTs from 1 MultiTargetCNOT
         return {TGate(): 4 * n, ArbitraryClifford(n=1): 16 * n, ArbitraryClifford(n=2): 6 * n - 1}

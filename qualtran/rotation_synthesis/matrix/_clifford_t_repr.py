@@ -218,7 +218,7 @@ def _to_quirk_name(name: str, allow_global_phase: bool = False) -> str:
 def to_cirq(
     matrix: _su2_ct.SU2CliffordT, fmt: str, q: cirq.Qid | None = None
 ) -> tuple[cirq.Operation]:
-    """Retruns a representation of the matrix as a sequence of Cirq operations.
+    """Returns a representation of the matrix as a sequence of Cirq operations.
 
     Args:
         matrix: The matrix to represent.
@@ -234,7 +234,7 @@ def to_cirq(
 def to_quirk(
     matrix: _su2_ct.SU2CliffordT, fmt: str, allow_global_phase: bool = False
 ) -> tuple[str, ...]:
-    """Retruns a representation of the matrix as a sequence of quirk symbols.
+    """Returns a representation of the matrix as a sequence of quirk symbols.
 
     Args:
         matrix: The matrix to represent.

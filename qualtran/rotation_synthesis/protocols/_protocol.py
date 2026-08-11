@@ -61,7 +61,7 @@ class PointCollector(abc.ABC):
 
     @abc.abstractmethod
     def is_done(self) -> bool:
-        """Determines if the collector has recieved points that satisfy its objective."""
+        """Determines if the collector has received points that satisfy its objective."""
 
     @abc.abstractmethod
     def result(self):
@@ -69,7 +69,7 @@ class PointCollector(abc.ABC):
 
     @abc.abstractmethod
     def status(self) -> str:
-        """Returns a human readable string represnting the current state of the collector"""
+        """Returns a human readable string representing the current state of the collector"""
 
 
 class SimplePointCollector(PointCollector):
@@ -94,11 +94,11 @@ class SimplePointCollector(PointCollector):
 
 
 class SplitRegionCollector(PointCollector):
-    """splits recieved into the two spaces on either side of a line.
+    """Splits received points into the two spaces on either side of a line.
 
-    A SplitRegionCollector terminates when at least `k` points are recieved for each side
+    A SplitRegionCollector terminates when at least `k` points are received for each side
     of the splitting line. where the splitting regions are determined by the sign of
-    $ax+by-c$ where $x, y$ are the cooredinates of the point and $a,b,c$ are the parameters
+    $ax+by-c$ where $x, y$ are the coordinates of the point and $a,b,c$ are the parameters
     of the line.
     """
 

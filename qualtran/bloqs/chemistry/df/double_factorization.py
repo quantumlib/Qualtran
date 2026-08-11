@@ -101,7 +101,7 @@ class DoubleFactorizationOneBody(BlockEncoding):
         rotations: Rotations for basis rotations.
         sys: The system register.
 
-    Refererences:
+    References:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             Hypercontraction](https://arxiv.org/abs/2011.03494)
     """
@@ -327,7 +327,7 @@ class DoubleFactorizationBlockEncoding(BlockEncoding):
         rotations: Rotations for basis rotations.
         sys: The system register.
 
-    Refererences:
+    References:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             hypercontraction](https://arxiv.org/abs/2011.03494)
     """
@@ -353,7 +353,7 @@ class DoubleFactorizationBlockEncoding(BlockEncoding):
         Returns:
             Double factorized bloq with alt/keep values appropriately constructed.
 
-        Refererences:
+        References:
             [Even More Efficient Quantum Computations of Chemistry Through Tensor
                 hypercontraction]
                 (https://arxiv.org/abs/2011.03494). Eq. B7 pg 43.

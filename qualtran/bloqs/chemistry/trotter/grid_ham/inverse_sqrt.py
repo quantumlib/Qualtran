@@ -62,7 +62,7 @@ def get_inverse_square_root_poly_coeffs() -> tuple[NDArray, NDArray]:
 def build_qrom_data_for_poly_fit(
     selection_bitsize: int, target_bitsize: int, poly_coeffs: tuple[NDArray, NDArray]
 ) -> NDArray:
-    """Build QROM data from polynomial coefficients from the referenence.
+    """Build QROM data from polynomial coefficients from the reference.
 
     Args:
         selection_bitsize: Number of bits for QROM selection register. This is

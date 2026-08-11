@@ -154,7 +154,7 @@ class UniformSuperpositionTHC(Bloq):
         )
         # 7. Control off of 5 and 6 to not prepare if these conditions are met
         (nu_eq_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[nu_eq_mp1, gt_mu_n], target=junk)
-        # 6. Reflect on comparitors, rotated qubit and |+>.
+        # 6. Reflect on comparators, rotated qubit and |+>.
         rot, lte_nu_mp1, lte_mu_nu, junk = bb.add(
             ReflectionUsingPrepare.reflection_around_zero(bitsizes=(1, 1, 1, 1), global_phase=1),
             reg0_=rot,
@@ -162,7 +162,7 @@ class UniformSuperpositionTHC(Bloq):
             reg2_=lte_mu_nu,
             reg3_=junk,
         )
-        # We now undo comparitors and rotations and repeat the steps
+        # We now undo comparators and rotations and repeat the steps
         nu, lte_nu_mp1 = bb.add(lt_gate, x=nu, target=lte_nu_mp1)
         mu, nu, lte_mu_nu = bb.add(lte_gate, x=mu, y=nu, target=lte_mu_nu)
         nu, nu_eq_mp1 = bb.add(

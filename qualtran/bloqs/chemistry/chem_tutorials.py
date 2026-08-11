@@ -92,7 +92,7 @@ def plot_linear_log_log(
         ax: The matplotlib axis.
         xs: The x-values for the fit.
         ys: The y-values for the fit.
-        label: An optioanl text label for the data set. In None the legend reads $N^b$.
+        label: An optional text label for the data set. If None the legend reads $N^b$.
         color: The color for the data set.
     """
     slope, intr = fit_linear(np.log(xs), np.log(ys))

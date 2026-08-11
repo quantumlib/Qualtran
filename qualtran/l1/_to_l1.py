@@ -83,7 +83,7 @@ class Locals:
             candidate = f'{prefix}{i}'
 
     def register_name(self, name: str):
-        """Register a specific name, so we don't accidentally re-use it."""
+        """Register a specific name, so we don't accidentally reuse it."""
         if name in self.varnames:
             raise ValueError(f"Cannot register {name}, it already exists!")
         self.varnames.add(name)

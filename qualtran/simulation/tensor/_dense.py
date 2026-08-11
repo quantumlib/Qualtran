@@ -72,7 +72,7 @@ def _group_outer_inds(
 
     This is used by 'bloq_to_dense` and `quimb_to_dense` to return a 1-, 2-, or 4-dimensional
     array depending on the quantity and type of outer indices in the tensor network. See
-    the docstring for `Bloq.tensor_contract()` for more informaiton.
+    the docstring for `Bloq.tensor_contract()` for more information.
 
     Args:
         tn: The tensor network to fetch the outer indices, which won't necessarily be ordered.

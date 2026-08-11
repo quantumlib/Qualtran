@@ -482,7 +482,7 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
     # which isn't much of a check at all.
     #
     # To determine whether we have an independent source of bloq counts, we test whether
-    # the `build_call_graph` method was overriden or not. This is not foolproof! The override
+    # the `build_call_graph` method was overridden or not. This is not foolproof! The override
     # could itself rely on the decomposition, and we wouldn't actually have two independent sources
     # of data to compare against each other.
     if bloq.build_call_graph.__qualname__.startswith('Bloq.'):

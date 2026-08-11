@@ -18,7 +18,7 @@ from qualtran import Bloq, CompositeBloq
 def bloq_has_custom_tensors(bloq: Bloq) -> bool:
     """Whether this bloq declares custom tensors by overriding `.my_tensors(...)`.
 
-    This is a heuristic that checks that the method is overriden. This is used as
+    This is a heuristic that checks that the method is overridden. This is used as
     an optional predicate in `flatten_for_tensor_contraction`.
     """
     return not bloq.my_tensors.__qualname__.startswith(

@@ -88,7 +88,7 @@ class SynthesizeLRCircuit(Bloq):
 
         If m_x is irreducible, then the operation y := (y*f_x)%m_x can be represented
         by a full rank matrix that can be decomposed into PLU where L and U are lower
-        and upper traingular matricies and P is a permutation matrix.
+        and upper triangular matrices and P is a permutation matrix.
         """
         assert isinstance(self.matrix, np.ndarray)
         P, L, U = GF(2)(self.matrix).plu_decompose()
@@ -390,7 +390,7 @@ class GF2MulK(Bloq):
 
     Args:
         const: The multiplication constant which is an element of the given field.
-        galois_field: The galois field that defines the arithmetics.
+        galois_field: The galois field that defines the arithmetic.
 
     Registers:
         g: The polynomial coefficients (in GF(2)).
@@ -509,11 +509,11 @@ class MultiplyPolyByOnePlusXk(Bloq):
 
     Args:
         n: The degree of the polynomial ($2^n$ is the size of the galois field).
-        k: An integer specifing the shift $1 + x^k$ (or $1 + 2^k$ for galois fields.)
+        k: An integer specifying the shift $1 + x^k$ (or $1 + 2^k$ for galois fields.)
 
     Registers:
         f: The first polynomial.
-        g: The second polyonmial.
+        g: The second polynomial.
         h: The target polynomial.
 
     References:

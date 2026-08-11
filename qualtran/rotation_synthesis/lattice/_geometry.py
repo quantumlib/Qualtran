@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-"""A module containing geomtry objects used in enumeration."""
+"""A module containing geometry objects used in enumeration."""
 
 from __future__ import annotations
 
@@ -263,7 +263,7 @@ class Ellipse:
         Args:
             x_axis: the maximum value in the x direction.
             y_axis: the maximum value in the y direction.
-            theta: the angle to rotat
+            theta: the angle to rotate.
             center: the center of the ellipse.
             config: The MathConfig to use.
         """
@@ -275,7 +275,7 @@ class Ellipse:
         )
 
     def as_formula(self, fmt: str = "") -> str:
-        """Retruns the algebraic form of the ellipse's equation as a string."""
+        """Returns the algebraic form of the ellipse's equation as a string."""
         a = format(self.D[0, 0], fmt)
         b = format(2 * self.D[0, 1], fmt)
         c = format(self.D[1, 1], fmt)

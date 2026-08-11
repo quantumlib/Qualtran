@@ -47,9 +47,9 @@ def build_random_test_integrals(num_mu: int, num_spat: int, seed: int | None = N
         num_mu: The THC auxiliary dimension.
         num_spat: The number of spatial orbitals.
         seed: If not None then seed the rng with this value. Otherwise seed is
-            not set explcitly in this function.
+            not set explicitly in this function.
 
-    Retuns:
+    Returns:
         t_l: The eigenvalues of the one-body Hamiltonian.
         eta: The THC leaf tensors (matrix) of size num_mu x num_spat.
         zeta: The central tensor (matrix) of size num_mu x num_mu.
@@ -84,7 +84,7 @@ def test_prepare_alt_keep_vals(num_mu, num_spat, mu):
     keep_denom = 2**mu
     data_len = len(flat_data)
     num_ut = len(triu_indices[0])
-    # Test alt_mu / alt_nu vales
+    # Test alt_mu / alt_nu values
     # stolen from openfermion unit test
     out_distribution = [1 / data_len * numer / keep_denom for numer in keep_numers]
     unraveled_dist = np.zeros_like(enlarged_matrix)

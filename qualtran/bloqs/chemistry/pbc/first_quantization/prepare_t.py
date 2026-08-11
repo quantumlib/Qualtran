@@ -81,7 +81,7 @@ class PrepareTFirstQuantization(Bloq):
         \sum_{s=0}^{n_{p}-2}2^{s/2}|s\rangle
     $$
 
-    We assume that the uniform superposition over ($i$ and) $j$ has already occured via
+    We assume that the uniform superposition over ($i$ and) $j$ has already occurred via
     UniformSuperPositionIJFirstQuantization.
 
     Args:

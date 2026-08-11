@@ -66,7 +66,7 @@ def qsp_complementary_polynomial(
     for every $\theta \in \mathbb{R}$.
 
     The exact method for computing $Q$ is described in the proof of Theorem 4.
-    The method computes an auxillary polynomial R, whose roots are computed
+    The method computes an auxiliary polynomial R, whose roots are computed
     and re-interpolated to obtain the required polynomial Q.
 
     Args:

@@ -24,7 +24,7 @@ class RenderContext:
     """Context required to make links.
 
 
-    # Walk the tree into our weird internal data structurs.
+    # Walk the tree into our weird internal data structures.
     pages, aliases_d, link_d = get_pages(root_mod=root_mod)
 
     # Merge user-provided and auto-found section titles.
