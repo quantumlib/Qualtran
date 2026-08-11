@@ -983,8 +983,8 @@ def test_end_to_end_summary_from_hwp_circuit_repr():
     # 3. Set parameters for the cost model application.
     n_algorithmic_qubits = len(circuit.all_qubits())
     n_total_logical_qubits = n_algorithmic_qubits + 20
-    # In this example, we ignore the measurement-limited depth by passing a dummy value.
-    dummy_measurement_depth = MeasurementDepth(depth=0)
+    # In this example, we ignore the measurement-limited depth by passing a placeholder value.
+    placeholder_measurement_depth = MeasurementDepth(depth=0)
 
     # 4. Run the analysis pipeline.
     cbloq, flasqified_circuit = convert_circuit_for_flasq_analysis(circuit)
@@ -1000,7 +1000,7 @@ def test_end_to_end_summary_from_hwp_circuit_repr():
         qubit_counts=qubit_counts,
         counts=flasq_counts,
         span_info=span_info,
-        measurement_depth=dummy_measurement_depth,
+        measurement_depth=placeholder_measurement_depth,
         logical_timesteps_per_measurement=1.0,
         verbosity=2,
     )

@@ -87,7 +87,7 @@ def test_flasq_count_composite():
 
 
 def test_flasq_count_unknown():
-    # Create a dummy bloq with no decomposition or base case for FLASQ counting
+    # Create a placeholder bloq with no decomposition or base case for FLASQ counting
     @frozen(kw_only=True)
     class UnknownBloq(Bloq):
         @property
