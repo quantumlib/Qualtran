@@ -35,7 +35,7 @@ n_workers=()
 if (( mypy_major_version >= 2 )); then
     # Mypy 2.x doesn't support a value of 'auto' like pytest does. We have to
     # come up with a number. This uses (#cpus - 1) or 16, whichever is smallest.
-    num_workers=$(python -c 'import os; print(min(16, os.cpu_count() - 1))')
+    num_workers=$(python -c 'import os; c = os.cpu_count() or 1; print(min(16, max(1, c - 1)))')
     n_workers=("-n" "${num_workers}")
 fi
 
