@@ -133,7 +133,7 @@ def get_markdown_docstring_lines(cls: type) -> list[str]:
     # 1. Get documentation lines
     lines = get_markdown_docstring(cls)
 
-    # 2. Pre-pend a header.
+    # 2. Prepend a header.
     lines = [f'## `{cls.__name__}`'] + lines
 
     return lines

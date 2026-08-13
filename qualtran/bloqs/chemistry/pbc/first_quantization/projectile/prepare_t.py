@@ -92,7 +92,7 @@ class PrepareTFirstQuantizationWithProj(Bloq):
         \sum_{s=0}^{n_{p}-2}2^{s/2}|s\rangle
     $$
 
-    The case assumes a quantum projectile whose state is descirbed by num_bits_n bits.
+    The case assumes a quantum projectile whose state is described by num_bits_n bits.
 
     Args:
         num_bits_p: The number of bits to represent each dimension of the momentum register.

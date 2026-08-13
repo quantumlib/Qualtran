@@ -68,7 +68,7 @@ def test_parameter(expr: sympy.Expr):
 
 def test_float_fraction():
     """
-    Test that floats and fractions can be properly combined and serialzed.
+    Test that floats and fractions can be properly combined and serialized.
     """
     float_const = sympy.parse_expr("1.4")
     fraction = sympy.parse_expr("1/2")

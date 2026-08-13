@@ -59,10 +59,10 @@ class SelectSparse(SelectOracle):
         swap_pqrs: a |+> state to restore the symmetries of between (pq) and (rs).
         theta: sign qubit.
         pqrs: the register to store the spatial orbital index.
-        alpha: spin for (pq) indicies.
-        beta: spin for (rs) indicies.
+        alpha: spin for (pq) indices.
+        beta: spin for (rs) indices.
 
-    Refererences:
+    References:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             hypercontraction](https://arxiv.org/abs/2011.03494) Fig 13.
     """

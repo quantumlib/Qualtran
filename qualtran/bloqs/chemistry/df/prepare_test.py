@@ -116,7 +116,7 @@ def test_inner_prepare_t_counts():
     ).adjoint()
     toff += get_cost_value(in_prep, QECGatesCost()).total_t_and_ccz_count()['n_ccz']
     toff *= 2  # cost is for the two applications of the in-prep, in-prep^
-    # application of ciruit.
+    # application of circuit.
     # captured from cost3 in openfermion df.compute_cost
     nxi = (num_spin_orb // 2 - 1).bit_length()
     nlxi = (num_eig + num_spin_orb // 2 - 1).bit_length()

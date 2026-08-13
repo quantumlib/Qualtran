@@ -128,7 +128,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         2. update `are_equal`: `are_equal := are_equal and (ith bit == ith qubit).`
 
         This logic is implemented using $n$ `And` & `And†` operations and n+1 clean ancilla where
-            - one ancilla `are_equal` contains the equality informaiton
+            - one ancilla `are_equal` contains the equality information
             - ancilla[i] contain whether the qubits[:i+1] != (i+1)th prefix of `_val`
         """
         qubits, (target,) = quregs['x'], quregs['target']
@@ -1407,8 +1407,8 @@ class _HalfComparisonBase(Bloq):
     The four comparison operations can be implemented by implementing only one of them
     and computing the others either by reversing the input order, flipping the result or both.
 
-    The choice made is to build the four opertions around greater than. Namely the greater than
-    bloq returned by `._half_greater_than_bloq`; By changing this property we can change
+    The choice made is to build the four operations around greater than. Namely the greater than
+    bloq returned by `._half_greater_than_bloq`; By changing this property we can
     change the properties of the constructed circuit (e.g. complexity, depth, ..etc).
 
     For example _LinearDepthHalfComparisonBase sets the property to a linear depth construction,

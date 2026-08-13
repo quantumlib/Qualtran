@@ -49,12 +49,12 @@ class CostKey(Generic[CostValT], metaclass=abc.ABCMeta):
     we will generally use the catch-all term "costs".
 
     There are a variety of different types or flavors of costs. Each is represented by an
-    instance of a sublcass of `CostKey`. For example, gate counts (including T-gate counts),
+    instance of a subclass of `CostKey`. For example, gate counts (including T-gate counts),
     qubit requirements, and circuit depth are all cost metrics that may be of interest.
 
     Each `CostKey` primarily encodes the behavior required to compute a cost value from a
     bloq. Often, these costs are defined recursively: a bloq's costs is some combination
-    of the costs of the bloqs in its decomposition (i.e. the bloq 'callees'). Implementors
+    of the costs of the bloqs in its decomposition (i.e. the bloq 'callees'). Implementers
     must override the `compute` method to define the cost computation.
 
     Each cost key has an associated CostValT. For example, the CostValT of a "t count"
