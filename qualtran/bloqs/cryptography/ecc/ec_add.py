@@ -280,7 +280,7 @@ class _ECAddStepTwo(Bloq):
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
 
-        # Initalize lambda to 0.
+        # Initialize lambda to 0.
         lam = bb.add(IntState(bitsize=self.n, val=0))
 
         # Perform modular subtraction so that x = (x - a) % p.
@@ -665,7 +665,7 @@ class _ECAddStepFive(Bloq):
     Includes a bugfix for the scenario where (a, b) = (x, y) and a - x_r = 0. In this situation,
     f_1 is set and f_2 - f_4 is cleared (which means that the ctrl qubit is set). Because a - x_r
     is 0, the computed λ is undefined (and with this construction the computed λ will be set to 0),
-    however the λ is non-zero and should be cleared with λ_r. We accomplish this with a controled
+    however the λ is non-zero and should be cleared with λ_r. We accomplish this with a controlled
     Xor bloq controlled on the ctrl qubit and the condition that the x register (a - x_r) = 0. In
     this case we clear the λ register with λ_r.
 

@@ -62,7 +62,7 @@ def test_phase_oracle(bitsize: int, arctan_bitsize: int):
     circuit = cirq.Circuit(cirq.H.on_each(*g.quregs['selection']))
     circuit += cirq.Circuit(cirq.decompose_once(g.operation))
 
-    # Simulate the circut and test output.
+    # Simulate the circuit and test output.
     qubit_order = cirq.QubitOrder.explicit(g.quregs['selection'], fallback=cirq.QubitOrder.DEFAULT)
     result = cirq.Simulator(dtype=np.complex128).simulate(circuit, qubit_order=qubit_order)
     state_vector = result.final_state_vector

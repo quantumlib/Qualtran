@@ -66,7 +66,7 @@ class ZW:
         return real + 1j * imag
 
     def arg(self, config: rc.MathConfig) -> rst.Real:
-        """Retruns the angle of the complex number representing the element.
+        """Returns the angle of the complex number representing the element.
 
         Note: The precision of the result depends on the provided config.
 
@@ -77,7 +77,7 @@ class ZW:
         return config.arctan2(v.imag, v.real)
 
     def mag(self, sqrt2: rst.Real) -> rst.Real:
-        """Retruns the magnitude of the complex number representing the element.
+        """Returns the magnitude of the complex number representing the element.
 
         Note: The precision of the result depends on the precision of the provided `sqrt2`.
 
@@ -158,21 +158,21 @@ class ZW:
         return self.coords == other.coords
 
     def conjugate(self) -> "ZW":
-        """Retruns the complex-conjugate of the element."""
+        """Returns the complex-conjugate of the element."""
         a, b, c, d = self.coords
         return ZW([a, -d, -c, -b])
 
     def conj(self) -> "ZW":
-        """Retruns the complex-conjugate of the element."""
+        """Returns the complex-conjugate of the element."""
         return self.conjugate()
 
     def sqrt2_conjugate(self) -> "ZW":
-        """Retruns the sqrt2-conjugate of the element."""
+        """Returns the sqrt2-conjugate of the element."""
         a, b, c, d = self.coords
         return ZW([a, -b, c, -d])
 
     def sqrt2_conj(self) -> "ZW":
-        """Retruns the sqrt2-conjugate of the element."""
+        """Returns the sqrt2-conjugate of the element."""
         return self.sqrt2_conjugate()
 
     @staticmethod

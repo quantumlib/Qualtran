@@ -24,6 +24,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import os
+
 import pytest
 
 import qualtran
@@ -225,3 +227,108 @@ def bloq_autotester(request):
 def add_qlt(doctest_namespace):
     # Make qualtran available (without explicit import) in doctests
     doctest_namespace['qualtran'] = qualtran
+
+
+def get_available_cpu_count() -> int:
+    """Returns the number of CPU cores available to the current process.
+
+    This function respects active CPU limits such as process affinity and
+    container limits.
+    """
+    if hasattr(os, "process_cpu_count"):  # Python 3.13+
+        cpus = os.process_cpu_count() or 1
+    elif hasattr(os, "sched_getaffinity"):  # Unix/Linux
+        try:
+            cpus = len(os.sched_getaffinity(0))
+        except OSError:
+            cpus = os.cpu_count() or 1
+    else:  # Fallback for older Python on Windows/macOS
+        cpus = os.cpu_count() or 1
+    return cpus
+
+
+def _config_set_xdist_worksteal(config) -> None:
+    """Sets `--dist worksteal` as the default distribution mode if not
+    explicitly overridden by the user."""
+    num_workers = config.getoption("numprocesses")
+    if num_workers in (None, 0, 1, "0", "1"):
+        return
+
+    if (
+        hasattr(config, "option")
+        and hasattr(config.option, "dist")
+        and config.getoption("dist") in (None, "no", "load")
+    ):
+        # Check if the user explicitly provided a distribution option. If they
+        # did, we shouldn't overwrite it. Since dist defaults to "load" when
+        # -n is set, we check if --dist is explicitly passed.
+        args = []
+        if hasattr(config, "invocation_params") and config.invocation_params is not None:
+            args.extend(config.invocation_params.args)
+        try:
+            addopts = config.getini("addopts")
+            if isinstance(addopts, list):
+                args.extend(addopts)
+        except (ValueError, AttributeError):
+            pass
+
+        for arg in args:
+            if arg.startswith("--dist") or arg == "-d":
+                break
+        else:
+            # Checked all args and didn't find --dist or -d.
+            config.option.dist = "worksteal"
+
+
+def _config_set_thread_limits(config) -> None:
+    """Limit number of threads to prevent oversubscription with pytest-xdist.
+
+    This only influences parallelism in some core numerical libraries used in
+    packages such as NumPy by setting certain environment variables. When
+    pytest runs as many workers as CPUs, limiting the number of threads used by
+    the libraries greatly improves overall test performance. Without the limit,
+    numerical operations in some tests spawn as many parallel threads as CPUs,
+    overwhelming host resources when pytest runs the tests in parallel.
+    """
+    num_workers = config.getoption("numprocesses")
+    if num_workers is None or not isinstance(num_workers, (int, str)):
+        num_workers = 1
+
+    num_cpus = get_available_cpu_count()
+    if isinstance(num_workers, str):
+        if num_workers in ("auto", "logical"):
+            num_workers = num_cpus
+        else:
+            try:
+                num_workers = int(num_workers)
+            except ValueError:
+                num_workers = 1
+
+    # Cap the number of threads when using multiple workers.
+    if num_workers > 1 and num_cpus > 0:
+        limit = max(1, num_cpus // num_workers)
+        env_vars = [
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "OPENBLAS_NUM_THREADS",
+            "NUMEXPR_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+        ]
+        for var in env_vars:
+            os.environ[var] = str(limit)
+
+
+def pytest_configure(config):
+    """Configure pytest environment settings, especially for pytest-xdist."""
+
+    # Only run in the controlling process, before workers are started.
+    if hasattr(config, "workerinput"):
+        return
+    try:
+        config.getoption("numprocesses")
+    except ValueError:
+        # pytest-xdist is not being used.
+        return
+
+    _config_set_thread_limits(config)
+    _config_set_xdist_worksteal(config)

@@ -27,7 +27,7 @@ from qualtran.rotation_synthesis.rings import _zsqrt2, _zw
 class SU2CliffordT:
     r"""A scaled $SU(2)$ unitary exactly synthesizable with Clifford+T gateset.
 
-    An $SU(2)$ matrix that can be synthetized exactly with Clifford+T gates can be written as
+    An $SU(2)$ matrix that can be synthesized exactly with Clifford+T gates can be written as
     $$
         \frac{1}{\sqrt{2(2+\sqrt{2})^n}} \begin{bmatrix}
         u & -v^*\\
@@ -144,7 +144,7 @@ class SU2CliffordT:
 
     @staticmethod
     def from_parametric_form(
-        pf: tuple[_zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2]
+        pf: tuple[_zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2],
     ) -> "SU2CliffordT":
         res = np.array([_zw.Zero] * 4).reshape((2, 2))
         for a, m in zip(pf, PARAMETRIC_FORM_BASES):
