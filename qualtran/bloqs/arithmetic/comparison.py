@@ -69,7 +69,7 @@ if TYPE_CHECKING:
 
 
 @frozen
-class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
+class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
     r"""Applies $U_a\ket{x}\ket{z} \rightarrow \ket{x} \ket{z \oplus (x < a)}$"""
 
     bitsize: SymbolicInt
@@ -409,7 +409,7 @@ def _equality_with_zero(
 
 
 @frozen
-class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
+class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
     r"""Applies $U\ket{x}\ket{y}\ket{z} \rightarrow \ket{x} \ket{y} \ket{z \oplus (x \leq y)}$
 
     Decomposes the gate in a T-complexity optimal way.

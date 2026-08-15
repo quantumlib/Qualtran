@@ -530,13 +530,13 @@ def test_apply_flasq_cost_model_basic():
     # 1. Define a concrete FLASQCostModel
     model = FLASQCostModel(  # All values as floats
         t_clifford_volume=2.0,
-        t_cultivation_volume=8.0,  # type: ignore[misc]
+        t_cultivation_volume=8.0,
         toffoli_clifford_volume=10.0,
-        toffoli_cultivation_volume=32.0,  # type: ignore[misc]
+        toffoli_cultivation_volume=32.0,
         and_clifford_volume=5.0,
-        and_cultivation_volume=10.0,  # type: ignore[misc]
+        and_cultivation_volume=10.0,
         rz_clifford_volume=5.0,
-        rz_cultivation_volume=15.0,  # type: ignore[misc]
+        rz_cultivation_volume=15.0,
         rx_clifford_volume=5.0,
         rx_cultivation_volume=15.0,
         h_volume=1.0,
@@ -660,13 +660,13 @@ def test_apply_flasq_cost_model_invariants():
     # 1. Define a concrete FLASQCostModel with non-zero values
     model = FLASQCostModel(  # All values as floats
         t_clifford_volume=2.0,
-        t_cultivation_volume=8.0,  # type: ignore[misc]
+        t_cultivation_volume=8.0,
         toffoli_clifford_volume=10.0,
-        toffoli_cultivation_volume=32.0,  # type: ignore[misc]
+        toffoli_cultivation_volume=32.0,
         and_clifford_volume=5.0,
-        and_cultivation_volume=10.0,  # type: ignore[misc]
+        and_cultivation_volume=10.0,
         rz_clifford_volume=5.0,
-        rz_cultivation_volume=15.0,  # type: ignore[misc]
+        rz_cultivation_volume=15.0,
         rx_clifford_volume=5.0,
         rx_cultivation_volume=15.0,
         h_volume=1.0,
@@ -712,7 +712,7 @@ def test_apply_flasq_cost_model_invariants():
     )
 
     # Invariant 3: Total Depth
-    assert summary.total_depth == sympy.Max(  # type: ignore[comparison-fn]
+    assert summary.total_depth == sympy.Max(
         summary.measurement_depth_val, summary.volume_limited_depth
     )
 

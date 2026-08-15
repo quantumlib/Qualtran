@@ -18,7 +18,7 @@ import numpy as np
 
 def fft_complementary_polynomial(
     P: Sequence[float] | Sequence[complex], tolerance: float = 1e-4, num_modes: int = 500
-):
+) -> np.ndarray:
     """Computes the Q polynomial given P
 
     Computes polynomial $Q$ of degree at-most that of $P$, satisfying

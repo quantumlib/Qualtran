@@ -104,7 +104,7 @@ class ApplyGateToLthQubit(UnaryIterationGate):
             wire_symbols += [str(self.nth_gate(*it))]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def nth_operation(  # type: ignore[override]
+    def nth_operation(
         self,
         context: cirq.DecompositionContext,
         control: cirq.Qid,

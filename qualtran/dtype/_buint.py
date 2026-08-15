@@ -70,7 +70,9 @@ class _BUInt(BitEncoding[int]):
         self.assert_valid_val(val)
         return val
 
-    def assert_valid_val_array(self, val_array: NDArray[np.integer], debug_str: str = 'val'):
+    def assert_valid_val_array(
+        self, val_array: NDArray[np.integer], debug_str: str = 'val'
+    ) -> None:
         if np.any(val_array < 0):
             raise ValueError(f"Negative classical values encountered in {debug_str}")
         if np.any(val_array >= self.bound):

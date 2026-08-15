@@ -42,9 +42,7 @@ class BernoulliSynthesizer(PrepareOracle):
     def selection_registers(self) -> tuple[Register, ...]:
         return (Register('q', BQUInt(self.nqubits, 2)),)
 
-    def decompose_from_registers(  # type: ignore[override]
-        self, context, q: Sequence[cirq.Qid]
-    ) -> Iterator[cirq.OP_TREE]:
+    def decompose_from_registers(self, context, q: Sequence[cirq.Qid]) -> Iterator[cirq.OP_TREE]:
         theta = np.arccos(np.sqrt(1 - self.p))
         yield cirq.ry(2 * theta).on(q[0])
         yield [cirq.CNOT(q[0], q[i]) for i in range(1, len(q))]
@@ -72,7 +70,7 @@ class BernoulliEncoder(SelectOracle):
     def target_registers(self) -> tuple[Register, ...]:
         return (Register('t', QAny(self.target_bitsize)),)
 
-    def decompose_from_registers(  # type: ignore[override]
+    def decompose_from_registers(
         self, context, q: Sequence[cirq.Qid], t: Sequence[cirq.Qid]
     ) -> Iterator[cirq.OP_TREE]:
         y0_bin = QUInt(self.target_bitsize).to_bits(self.y[0])
@@ -182,7 +180,7 @@ class GroverSynthesizer(PrepareOracle):
     def selection_registers(self) -> tuple[Register, ...]:
         return (Register('selection', QAny(self.n)),)
 
-    def decompose_from_registers(  # type: ignore[override]
+    def decompose_from_registers(
         self, *, context, selection: Sequence[cirq.Qid]
     ) -> Iterator[cirq.OP_TREE]:
         yield cirq.H.on_each(*selection)
@@ -213,7 +211,7 @@ class GroverEncoder(SelectOracle):
     def target_registers(self) -> tuple[Register, ...]:
         return (Register('target', QAny(self.marked_val.bit_length())),)
 
-    def decompose_from_registers(  # type: ignore[override]
+    def decompose_from_registers(
         self, context, *, selection: Sequence[cirq.Qid], target: Sequence[cirq.Qid]
     ) -> Iterator[cirq.OP_TREE]:
         selection_cv = QUInt(total_bits(self.selection_registers)).to_bits(self.marked_item)

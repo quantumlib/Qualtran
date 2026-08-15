@@ -108,8 +108,8 @@ class Hadamard(Bloq):
         return bloq, _add_ctrled
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'  # type: ignore[type-var]
-    ) -> tuple['cirq.Operation', dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
+        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
+    ) -> tuple['cirq.Operation', dict[str, 'CirqQuregT']]:
         import cirq
 
         (q,) = q

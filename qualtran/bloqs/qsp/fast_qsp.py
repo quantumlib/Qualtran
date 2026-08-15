@@ -37,7 +37,7 @@ class FastComplementaryQSPHelper:
             self.conv_p_negative = self.complex_conv_by_flip_conj(poly.real, poly.imag) * -1
         self.conv_p_negative[poly.shape[0] - 1] = 1 - np.linalg.norm(poly) ** 2
 
-    def loss_function(self, x: NDArray):
+    def loss_function(self, x: NDArray) -> float:
         if self.only_reals:
             conv_result = self.conv_by_flip_conj(x)
         else:
@@ -47,7 +47,7 @@ class FastComplementaryQSPHelper:
 
         # Compute loss using squared distance function
         loss = np.linalg.norm(self.conv_p_negative - conv_result) ** 2
-        return loss
+        return float(loss)
 
     @staticmethod
     def array_to_complex(x: NDArray) -> NDArray:
@@ -71,7 +71,7 @@ class FastComplementaryQSPHelper:
         return np.convolve(poly, np.flip(poly, axis=0), mode="full")
 
     @staticmethod
-    def complex_conv_by_flip_conj(real_part: NDArray, imag_part: NDArray):
+    def complex_conv_by_flip_conj(real_part: NDArray, imag_part: NDArray) -> NDArray:
         """
         Performs the flip convolution.
 
@@ -101,7 +101,7 @@ def fast_complementary_polynomial(
     random_state: np.random.RandomState,
     only_reals: bool = False,
     tolerance: float = 1e-10,
-):
+) -> NDArray:
     """
     Computes the Q polynomial given P
 

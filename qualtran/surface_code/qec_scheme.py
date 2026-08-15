@@ -119,7 +119,7 @@ class LogicalErrorModel:
     physical_error: float
     _qec_scheme: 'QECScheme'
 
-    def __call__(self, code_distance: int):
+    def __call__(self, code_distance: int) -> float:
         return self._qec_scheme.logical_error_rate(
             code_distance=code_distance, physical_error=self.physical_error
         )

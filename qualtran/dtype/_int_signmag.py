@@ -55,7 +55,7 @@ class _IntSignMag(BitEncoding[int]):
             magnitude = (magnitude << 1) | b
         return -magnitude if sign else magnitude
 
-    def assert_valid_val(self, val: int, debug_str: str = 'val'):
+    def assert_valid_val(self, val: int, debug_str: str = 'val') -> None:
         if not isinstance(val, (int, np.integer)):
             raise ValueError(f"{debug_str} should be an integer, not {val!r}")
         max_val = 1 << (self.bitsize - 1)
@@ -64,7 +64,9 @@ class _IntSignMag(BitEncoding[int]):
         if val >= max_val:
             raise ValueError(f"Too-large classical {self}: {val} encountered in {debug_str}")
 
-    def assert_valid_val_array(self, val_array: NDArray[np.integer], debug_str: str = 'val'):
+    def assert_valid_val_array(
+        self, val_array: NDArray[np.integer], debug_str: str = 'val'
+    ) -> None:
         max_val = 1 << (self.bitsize - 1)
         if np.any(val_array <= -max_val):
             raise ValueError(f"Too-small classical {self}s encountered in {debug_str}")

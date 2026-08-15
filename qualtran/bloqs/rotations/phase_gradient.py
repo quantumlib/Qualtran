@@ -233,7 +233,7 @@ _PHASE_GRADIENT_STATE_DOC = BloqDocSpec(
 
 
 @attrs.frozen
-class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
+class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
     r"""Quantum-quantum addition into a phase gradient register using $b_{phase} - 2$ Toffolis
 
     $$
@@ -398,7 +398,7 @@ def _mul_via_repeated_add(x_fxp: 'Fxp', gamma_fxp: 'Fxp', out: int) -> 'Fxp':
 
 
 @attrs.frozen
-class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
+class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
     r"""Optimized quantum-quantum addition into a phase gradient register scaled by a constant $\gamma$.
 
     $$

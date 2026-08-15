@@ -21,8 +21,8 @@ from qualtran.symbolics import Shaped
 
 
 def check_gqsp_polynomial_pair_on_random_points_on_unit_circle(
-    P: Sequence[complex] | Polynomial | Shaped,
-    Q: Sequence[complex] | Polynomial | Shaped,
+    P: NDArray[np.number] | Sequence[complex] | Polynomial | Shaped,
+    Q: NDArray[np.number] | Sequence[complex] | Polynomial | Shaped,
     *,
     random_state: np.random.RandomState,
     rtol: float = 1e-7,

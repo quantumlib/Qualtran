@@ -40,7 +40,7 @@ from qualtran.symbolics import ceil, log2
 
 
 @frozen
-class ApplyLthBloq(UnaryIterationGate, SelectOracle):  # type: ignore[misc]
+class ApplyLthBloq(UnaryIterationGate, SelectOracle):
     r"""A SELECT operation that executes one of a list of bloqs $U_l$ based on a quantum index:
 
     $$

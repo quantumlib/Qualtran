@@ -1693,7 +1693,7 @@ class BloqBuilder:
         """Add a Split bloq to split up a register."""
         from qualtran.bloqs.bookkeeping import Split
 
-        if not BloqBuilder.is_single(soq):  # type: ignore[arg-type]
+        if not BloqBuilder.is_single(soq):
             raise ValueError("`split` expects a single Soquet to split.")
 
         qdtype = soq.dtype

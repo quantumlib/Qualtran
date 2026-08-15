@@ -51,14 +51,14 @@ class TestMultiRegister(Bloq):
         )
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', xx: 'SoquetT', yy: 'SoquetT', zz: Soquet  # type: ignore[type-var]
+        self, bb: 'BloqBuilder', xx: 'SoquetT', yy: 'SoquetT', zz: Soquet
     ) -> dict[str, 'SoquetT']:
         xx = bb.add(TestAtom(), q=xx)
         for i in range(2):
             for j in range(2):
-                a, b = bb.split(yy[i, j])  # type: ignore[index]
+                a, b = bb.split(yy[i, j])
                 a, b = bb.add(TestTwoBitOp(), ctrl=a, target=b)
-                yy[i, j] = bb.join(np.array([a, b]))  # type: ignore[index]
+                yy[i, j] = bb.join(np.array([a, b]))
         a, b, c = bb.split(zz)
         zz = bb.join(np.array([a, b, c]))
         return {'xx': xx, 'yy': yy, 'zz': zz}

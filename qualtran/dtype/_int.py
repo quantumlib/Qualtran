@@ -58,7 +58,7 @@ class _Int(BitEncoding[int]):
         )
         return ~x if sign else x
 
-    def assert_valid_val(self, val: int, debug_str: str = 'val'):
+    def assert_valid_val(self, val: int, debug_str: str = 'val') -> None:
         if not isinstance(val, (int, np.integer)):
             raise ValueError(f"{debug_str} should be an integer, not {val!r}")
         if val < -(2 ** (self.bitsize - 1)):
@@ -66,7 +66,9 @@ class _Int(BitEncoding[int]):
         if val >= 2 ** (self.bitsize - 1):
             raise ValueError(f"Too-large classical {self}: {val} encountered in {debug_str}")
 
-    def assert_valid_val_array(self, val_array: NDArray[np.integer], debug_str: str = 'val'):
+    def assert_valid_val_array(
+        self, val_array: NDArray[np.integer], debug_str: str = 'val'
+    ) -> None:
         if np.any(val_array < -(2 ** (self.bitsize - 1))):
             raise ValueError(f"Too-small classical {self}s encountered in {debug_str}")
         if np.any(val_array >= 2 ** (self.bitsize - 1)):

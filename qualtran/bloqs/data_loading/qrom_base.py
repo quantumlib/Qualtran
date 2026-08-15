@@ -330,7 +330,7 @@ class QROMBase(metaclass=abc.ABCMeta):
         else:
             # Multidimensional
             idx = tuple(int(vals[f'selection{i}']) for i in range(n_dim))
-            selections = {f'selection{i}': idx[i] for i in range(n_dim)}  # type: ignore[index]
+            selections = {f'selection{i}': idx[i] for i in range(n_dim)}
 
         # Retrieve the data; bitwise add them in to the input target values
         targets = {f'target{d_i}_': d[idx] for d_i, d in enumerate(self.data)}

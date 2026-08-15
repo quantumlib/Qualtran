@@ -52,7 +52,7 @@ def custom_qroam_repr(self) -> str:
 
 
 # TODO: better way of customizing label
-SelectSwapQROM.__repr__ = custom_qroam_repr  # type: ignore[assignment]
+SelectSwapQROM.__repr__ = custom_qroam_repr  # type: ignore[method-assign]
 
 
 def custom_qrom_repr(self) -> str:
@@ -62,7 +62,7 @@ def custom_qrom_repr(self) -> str:
 
 
 # TODO: better way of customizing label
-QROM.__repr__ = custom_qrom_repr  # type: ignore[assignment]
+QROM.__repr__ = custom_qrom_repr  # type: ignore[method-assign]
 
 
 def custom_generalizations(bloq: Bloq) -> Bloq | None:

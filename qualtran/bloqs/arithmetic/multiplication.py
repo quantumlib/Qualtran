@@ -46,7 +46,7 @@ if TYPE_CHECKING:
 
 
 @frozen
-class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
+class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):
     """Performs result += a * b.
 
     Args:

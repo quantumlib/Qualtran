@@ -25,7 +25,7 @@ from qualtran.symbolics import is_symbolic, SymbolicInt
 
 
 @attrs.frozen
-class ArcTan(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
+class ArcTan(GateWithRegisters, cirq.ArithmeticGate):
     r"""Applies U|x>|0>|0000...0> = |x>|sign>|abs(-2 arctan(x) / pi)>.
 
     This is computed by a series of fused-multiply-add (`PlusEqualProduct`) instructions.

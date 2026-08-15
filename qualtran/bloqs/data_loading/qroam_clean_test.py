@@ -188,7 +188,7 @@ def test_qroam_clean_classical_sim_multi_dataset():
         ) == (x,)
 
     # 2D data, 2 datasets
-    N, M, max_N, log_block_sizes = 7, 11, 2**5, np.array([2, 3])  # type: ignore[misc]
+    N, M, max_N, log_block_sizes = 7, 11, 2**5, np.array([2, 3])
     data = [
         rng.integers(max_N, size=N * M).reshape(N, M),
         rng.integers(max_N, size=N * M).reshape(N, M),

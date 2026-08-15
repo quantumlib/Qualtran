@@ -85,7 +85,7 @@ class _Fxp(BitEncoding[int]):
         # Use the underlying raw integer encoding.
         return self._int_encoding.from_bits(bits)
 
-    def assert_valid_val(self, val: int, debug_str: str = 'val'):
+    def assert_valid_val(self, val: int, debug_str: str = 'val') -> None:
         # Verify using the underlying raw integer encoding.
         self._int_encoding.assert_valid_val(val, debug_str)
 
@@ -204,7 +204,7 @@ class _Fxp(BitEncoding[int]):
         fxp_bin = "0b" + bits_bin[: -int(self.num_frac)] + "." + bits_bin[-int(self.num_frac) :]
         return fxpmath.Fxp(fxp_bin, like=self.fxp_dtype_template())
 
-    def _assert_valid_val(self, val: float | fxpmath.Fxp, debug_str: str = 'val'):
+    def _assert_valid_val(self, val: float | fxpmath.Fxp, debug_str: str = 'val') -> None:
         import fxpmath
 
         fxp_val = val if isinstance(val, fxpmath.Fxp) else fxpmath.Fxp(val)

@@ -89,7 +89,7 @@ def get_optimal_log_block_size_clean_ancilla(
 
 
 @attrs.frozen
-class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
+class QROAMCleanAdjoint(QROMBase, GateWithRegisters):
     r"""Measurement based uncomputation of a table lookup. Assumes target is left in |0> state.
 
     Measurement based uncomputation of a table, as described in Ref[1]. Follows the usual API
@@ -506,7 +506,7 @@ class QROAMClean(SelectSwapQROM):
             qrom_target = _alloc_anc_for_reg_except_first(
                 bb, QAny(reg.dtype.num_qubits), block_sizes, self.use_dirty_ancilla
             )
-            qrom_target[np.unravel_index(0, block_sizes)] = _alloc_anc_for_reg(  # type: ignore[index]
+            qrom_target[np.unravel_index(0, block_sizes)] = _alloc_anc_for_reg(
                 bb, QAny(reg.dtype.num_qubits), reg.shape, dirty=False
             )
             qrom_targets.append(qrom_target)

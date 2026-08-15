@@ -36,7 +36,7 @@ class _Bit(BitEncoding[int]):
     def get_domain(self) -> Iterable[int]:
         yield from (0, 1)
 
-    def assert_valid_val(self, val: int, debug_str: str = 'val'):
+    def assert_valid_val(self, val: int, debug_str: str = 'val') -> None:
         if not (val == 0 or val == 1):
             raise ValueError(f"Bad bit value: {val} in {debug_str}")
 

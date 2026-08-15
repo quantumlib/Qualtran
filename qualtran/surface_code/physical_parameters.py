@@ -31,7 +31,7 @@ class PhysicalParameters:
     @classmethod
     def make_beverland_et_al(
         cls, qubit_modality: str = 'superconducting', optimistic_err_rate: bool = False
-    ):
+    ) -> 'PhysicalParameters':
         """The physical parameters considered in the Beverland et al. reference.
 
         Args:
@@ -76,7 +76,7 @@ class PhysicalParameters:
         )
 
     @classmethod
-    def make_gidney_fowler(cls, optimistic_err_rate: bool = False):
+    def make_gidney_fowler(cls, optimistic_err_rate: bool = False) -> 'PhysicalParameters':
         """The physical parameters considered in the Gidney and Fowler reference.
 
         References:

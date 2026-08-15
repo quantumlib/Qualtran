@@ -192,7 +192,7 @@ def post_process_for_pec_runtime(
     import pandas as pd
 
     try:
-        from joblib import delayed, Parallel  # type: ignore[import-untyped]
+        from joblib import delayed, Parallel
     except ImportError:
         Parallel, delayed = None, None
 

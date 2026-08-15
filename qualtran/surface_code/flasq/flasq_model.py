@@ -20,10 +20,10 @@ depth, and qubit counts), and the main analysis function apply_flasq_cost_model.
 """
 
 import logging
-import typing
 import warnings
 from collections.abc import Mapping
 from functools import lru_cache
+from typing import Any
 
 import sympy
 from attrs import field, fields, frozen
@@ -426,9 +426,7 @@ class FLASQSummary:
         return self.total_spacetime_volume - self.cultivation_volume
 
     @lru_cache(maxsize=65536)
-    def resolve_symbols(
-        self, assumptions: frozendict[sympy.Symbol | str, typing.Any]
-    ) -> "FLASQSummary":
+    def resolve_symbols(self, assumptions: frozendict[sympy.Symbol | str, Any]) -> "FLASQSummary":
         """Substitutes symbols in the summary fields based on provided assumptions.
 
         Args:
@@ -527,7 +525,7 @@ def apply_flasq_cost_model(
     if not is_symbolic(n_fluid_ancilla) and n_fluid_ancilla <= 0:
         volume_limited_depth = sympy.oo
     else:
-        volume_limited_depth = total_computational_volume / n_fluid_ancilla  # type: ignore[operator]
+        volume_limited_depth = total_computational_volume / n_fluid_ancilla
     total_depth = sympy.Max(scaled_measurement_depth, volume_limited_depth)
 
     # Calculate total Clifford volume including idling

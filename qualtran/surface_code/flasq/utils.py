@@ -22,7 +22,7 @@ from typing import Any, TYPE_CHECKING
 
 import numpy as np
 import sympy
-from frozendict import frozendict  # type: ignore[import-untyped]
+from frozendict import frozendict
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 def _to_frozendict(val: Mapping[Any, Any]) -> frozendict:
     """Helper to convert mappings to frozendict while satisfying mypy."""
-    return frozendict(val)  # type: ignore[arg-type]
+    return frozendict(val)
 
 
 @lru_cache(maxsize=None)

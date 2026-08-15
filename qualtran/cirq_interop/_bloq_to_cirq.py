@@ -95,11 +95,8 @@ class BloqAsCirqGate(cirq.Gate):
 
     @classmethod
     def bloq_on(
-        cls,
-        bloq: Bloq,
-        cirq_quregs: dict[str, 'CirqQuregT'],
-        qubit_manager: cirq.QubitManager,  # type: ignore[type-var]
-    ) -> tuple['cirq.Operation', dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
+        cls, bloq: Bloq, cirq_quregs: dict[str, 'CirqQuregT'], qubit_manager: cirq.QubitManager
+    ) -> tuple['cirq.Operation', dict[str, 'CirqQuregT']]:
         """Shim `bloq` into a cirq gate and call it on `cirq_quregs`.
 
         This is used as a default implementation for `Bloq.as_cirq_op` if a native

@@ -55,7 +55,7 @@ class _GF(BitEncoding['galois.FieldArray']):
 
         from galois import GF
 
-        return GF(  # type: ignore[call-overload]
+        return GF(
             int(self.characteristic), int(self.degree), compile='python-calculate'
         ).irreducible_poly
 
@@ -83,7 +83,7 @@ class _GF(BitEncoding['galois.FieldArray']):
 
         poly = self.irreducible_poly if self.degree > 1 else None
 
-        return GF(  # type: ignore[call-overload]
+        return GF(
             int(self.characteristic),
             int(self.degree),
             irreducible_poly=poly,
@@ -160,7 +160,7 @@ class QGF(QDType['galois.FieldArray']):
 
         from galois import GF
 
-        return GF(  # type: ignore[call-overload]
+        return GF(
             int(self.characteristic), int(self.degree), compile='python-calculate'
         ).irreducible_poly
 
@@ -213,7 +213,7 @@ class CGF(CDType['galois.FieldArray']):
 
         from galois import GF
 
-        return GF(  # type: ignore[call-overload]
+        return GF(
             int(self.characteristic), int(self.degree), compile='python-calculate'
         ).irreducible_poly
 

@@ -363,7 +363,7 @@ class GraphDrawer:
 
     def get_svg_bytes(self) -> bytes:
         """Get the SVG code (as bytes) for drawing the graph."""
-        return self.get_graph().create(prog='dot', format='svg', encoding='utf-8')  # type: ignore[attr-defined,return-value]
+        return self.get_graph().create(prog='dot', format='svg', encoding='utf-8')  # type: ignore[attr-defined]
 
     def get_svg(self) -> IPython.display.SVG:
         """Get an IPython SVG object displaying the graph."""

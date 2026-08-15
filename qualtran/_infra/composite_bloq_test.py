@@ -427,11 +427,11 @@ def test_util_convenience_methods_errors():
 
     qs = np.asarray([bb.allocate(5), bb.allocate(5)])
     with pytest.raises(ValueError, match='.*expects a single Soquet'):
-        qs = bb.split(qs)  # type: ignore[arg-type]
+        qs = bb.split(qs)
 
     qs = bb.allocate(5)
     with pytest.raises(ValueError, match='.*expects a 1-d array'):
-        qs = bb.join(qs)  # type: ignore[arg-type]
+        qs = bb.join(qs)
 
     # but this works:
     qs = np.asarray([bb.allocate(), bb.allocate()])
@@ -439,7 +439,7 @@ def test_util_convenience_methods_errors():
 
     arr = np.asarray([bb.allocate(5), bb.allocate(5)])
     with pytest.raises(ValueError, match='.*expects a single Soquet'):
-        bb.free(arr)  # type: ignore[arg-type]
+        bb.free(arr)
 
 
 def test_test_serial_combo_decomp():

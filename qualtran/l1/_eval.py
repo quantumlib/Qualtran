@@ -468,7 +468,7 @@ def _eval_qdef_impl_node(
         logger.debug("STMT: %s", stmt)
 
         if isinstance(stmt, AliasAssignmentNode):
-            qlocals[stmt.alias] = stmt.bloq_key  # type: ignore[assignment]
+            qlocals[stmt.alias] = stmt.bloq_key
             bloq = eval_bloq_maybe_aliased(stmt.bloq_key, qdefs, qlocals, bloqs, safe=safe)
             subbloq_aliases[bloq] = stmt.alias
 

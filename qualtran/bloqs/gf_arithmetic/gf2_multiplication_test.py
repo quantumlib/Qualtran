@@ -394,7 +394,7 @@ def test_gf2mulmod_classical_complexity(m_x):
 
 def test_gf2mul_invalid_input_raises():
     with pytest.raises(ValueError):
-        _ = GF2MulViaKaratsuba([0, 1])  # type: ignore[arg-type]
+        _ = GF2MulViaKaratsuba([0, 1])
 
 
 def test_gf2_mul_mbuc_quick():

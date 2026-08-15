@@ -356,7 +356,7 @@ class QDefBuilder:
         elif isinstance(self.bloq, qlt.CompositeBloq):
             cobject_from = None
         else:
-            cobject_from = to_cobject_node(self.bloq, nodes=self.nodes)  # type: ignore[assignment]
+            cobject_from = to_cobject_node(self.bloq, nodes=self.nodes)
 
         return QDefWithContext(
             qdef=self.nodes.QDefImplNode(

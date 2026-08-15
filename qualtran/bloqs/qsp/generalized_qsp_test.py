@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 import sympy
 from attrs import define
+from numpy.typing import NDArray
 
 from qualtran import Bloq, bloq_example, Controlled, CtrlSpec, GateWithRegisters
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
@@ -75,8 +76,8 @@ def test_real_polynomial_has_real_complementary_polynomial(degree: int):
 
 def verify_generalized_qsp(
     U: GateWithRegisters,
-    P: Sequence[complex],
-    Q: Sequence[complex] | None = None,
+    P: NDArray[np.number] | Sequence[complex],
+    Q: NDArray[np.number] | Sequence[complex] | None = None,
     *,
     negative_power: int = 0,
     tolerance: float = 1e-5,

@@ -88,11 +88,8 @@ class TwoBitSwap(Bloq):
         return x.bb.add(cls(), x=x, y=y)
 
     def as_cirq_op(
-        self,
-        qubit_manager: 'cirq.QubitManager',
-        x: 'CirqQuregT',
-        y: 'CirqQuregT',  # type: ignore[type-var]
-    ) -> tuple['cirq.Operation', dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
+        self, qubit_manager: 'cirq.QubitManager', x: 'CirqQuregT', y: 'CirqQuregT'
+    ) -> tuple['cirq.Operation', dict[str, 'CirqQuregT']]:
         (x,) = x
         (y,) = y
         import cirq

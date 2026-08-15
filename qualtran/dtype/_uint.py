@@ -73,7 +73,7 @@ class _UInt(BitEncoding[int]):
             return np.vectorize(self.from_bits, signature='(n)->()')(bits_array)
 
         basis = 2 ** np.arange(self.bitsize - 1, 0 - 1, -1, dtype=np.uint64)
-        return np.sum(basis * bitstrings, axis=1, dtype=np.uint64)  # type: ignore[return-value]
+        return np.sum(basis * bitstrings, axis=1, dtype=np.uint64)
 
     def assert_valid_val(self, val: int, debug_str: str = 'val') -> None:
         if not isinstance(val, (int, np.integer)):

@@ -698,7 +698,7 @@ class BinaryPolynomialMultiplication(Bloq):
             h = np.concatenate([h, aux])
             assert isinstance(h, np.ndarray)
 
-        f[k:n], g[k:n], h[k : k + w] = bb.add(  # type: ignore[index]
+        f[k:n], g[k:n], h[k : k + w] = bb.add(
             MultiplyPolyByOnePlusXk(n - k, k), f=f[k:n], g=g[k:n], h=h[k : k + w]
         )
         if delta > 0:
@@ -711,7 +711,7 @@ class BinaryPolynomialMultiplication(Bloq):
         for i in range(n - k):
             g[k + i], g[i] = bb.add(CNOT(), ctrl=g[k + i], target=g[i])
 
-        f[:k], g[:k], h[k : 3 * k - 1] = bb.add(  # type: ignore[index]
+        f[:k], g[:k], h[k : 3 * k - 1] = bb.add(
             BinaryPolynomialMultiplication(k), f=f[:k], g=g[:k], h=h[k : 3 * k - 1]
         )
 

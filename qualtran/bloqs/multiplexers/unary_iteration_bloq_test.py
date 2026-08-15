@@ -54,7 +54,7 @@ class ApplyXToLthQubit(UnaryIterationGate):
     def target_registers(self) -> tuple[Register, ...]:
         return (Register('target', QAny(self._target_bitsize)),)
 
-    def nth_operation(  # type: ignore[override]
+    def nth_operation(
         self,
         context: cirq.DecompositionContext,
         control: cirq.Qid,
@@ -116,7 +116,7 @@ class ApplyXToIJKthQubit(UnaryIterationGate):
             )
         )
 
-    def nth_operation(  # type: ignore[override]
+    def nth_operation(
         self,
         context: cirq.DecompositionContext,
         control: cirq.Qid,

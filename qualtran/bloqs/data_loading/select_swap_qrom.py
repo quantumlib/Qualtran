@@ -95,7 +95,7 @@ def _alloc_anc_for_reg(
 
 
 @attrs.frozen
-class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
+class SelectSwapQROM(QROMBase, GateWithRegisters):
     """Gate to load data[l] in the target register when the selection register stores integer l.
 
     Let
@@ -252,7 +252,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         for i, data in enumerate(self.padded_data):
             for batch_idx in np.ndindex(cast(tuple[int, ...], self.batched_qrom_shape)):
                 data_idx = [slice(x * k, (x + 1) * k) for x, k in zip(batch_idx, self.block_sizes)]
-                batched_data[i][(*batch_idx, *block_slices)] = data[tuple(data_idx)]  # type: ignore[index]
+                batched_data[i][(*batch_idx, *block_slices)] = data[tuple(data_idx)]
         return batched_data
 
     @cached_property

@@ -46,7 +46,7 @@ def _to_tuple(x: Iterable[NDArray]) -> Sequence[NDArray]:
 
 
 @attrs.frozen
-class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
+class QROM(QROMBase, UnaryIterationGate):
     r"""Bloq to load `data[l]` in the target register when the selection stores an index `l`.
 
     See docstrings of `QROMBase` for an overview of the QROM primitive and the various attributes.

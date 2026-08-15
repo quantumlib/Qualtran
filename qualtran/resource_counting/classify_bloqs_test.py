@@ -68,7 +68,7 @@ class TestBundleOfBloqs(Bloq):
         (((QROM.build_from_data([4, 10, 11, 34]), 8),), 'data_loading'),
         (((And(), 4),), 'multi_control_pauli'),
         # https://github.com/python/mypy/issues/5313
-        (((ReflectionUsingPrepare(PrepareIdentity.from_bitsizes((3, 3, 2))), 100),), 'reflection'),  # type: ignore[arg-type]
+        (((ReflectionUsingPrepare(PrepareIdentity.from_bitsizes((3, 3, 2))), 100),), 'reflection'),
         (((LessThanConstant(8, 3), 10),), 'arithmetic'),
     ),
 )
@@ -96,7 +96,7 @@ def test_dont_return_zeros():
         (QROM.build_from_data([4, 10, 11, 34]), 'data_loading'),
         (And(), 'multi_control_pauli'),
         # https://github.com/python/mypy/issues/5313
-        (ReflectionUsingPrepare(PrepareIdentity.from_bitsizes((3, 3, 2))), 'reflection'),  # type: ignore[arg-type]
+        (ReflectionUsingPrepare(PrepareIdentity.from_bitsizes((3, 3, 2))), 'reflection'),
         (LessThanConstant(8, 3).adjoint(), 'arithmetic'),
     ),
 )

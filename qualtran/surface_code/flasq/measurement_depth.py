@@ -120,7 +120,7 @@ class MeasurementDepth:
                     sorted_unknown = sorted(unknown_dict.items(), key=lambda item: str(item[0]))
                 except TypeError:  # pragma: no cover
                     # Fallback if keys somehow aren't comparable via string
-                    sorted_unknown = list(unknown_dict.items())  # type: ignore[assignment]
+                    sorted_unknown = list(unknown_dict.items())
                 unknown_str = "{" + ", ".join(f"{k!s}: {v!s}" for k, v in sorted_unknown) + "}"
                 str_items.append(f"bloqs_with_unknown_depth: {unknown_str}")
 

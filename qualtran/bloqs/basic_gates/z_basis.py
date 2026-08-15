@@ -112,10 +112,8 @@ class _ZVector(Bloq, metaclass=abc.ABCMeta):
         return {}
 
     def as_cirq_op(
-        self,
-        qubit_manager: 'cirq.QubitManager',
-        **cirq_quregs: 'CirqQuregT',  # type: ignore[type-var]
-    ) -> tuple[cirq.Operation | None, dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
+        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
+    ) -> tuple[cirq.Operation | None, dict[str, 'CirqQuregT']]:
         if not self.state:
             raise ValueError(f"There is no Cirq equivalent for {self}")
 
@@ -464,8 +462,8 @@ class MeasureZ(Bloq):
         return [t, DiscardInd((meas_result, 0))]
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'  # type: ignore[type-var]
-    ) -> tuple[cirq.Operation | None, dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
+        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
+    ) -> tuple[cirq.Operation | None, dict[str, 'CirqQuregT']]:
 
         import cirq
 

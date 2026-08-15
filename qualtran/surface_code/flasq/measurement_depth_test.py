@@ -239,7 +239,7 @@ def test_total_measurement_depth_with_rotation_depth():
     cost_key = TotalMeasurementDepth(rotation_depth=custom_rotation_depth)
 
     # Test individual rotation gates
-    from qualtran.bloqs.basic_gates import Rx, Rz, XPowGate, ZPowGate  # type: ignore[attr-defined]
+    from qualtran.bloqs.basic_gates import Rx, Rz, XPowGate, ZPowGate
 
     rx_bloq = Rx(angle=sympy.Symbol("theta_rx"))
     rz_bloq = Rz(angle=sympy.Symbol("theta_rz"))

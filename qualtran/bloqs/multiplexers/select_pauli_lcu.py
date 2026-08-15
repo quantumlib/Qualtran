@@ -48,7 +48,7 @@ def _to_tuple(x: Iterable[cirq.DensePauliString]) -> Sequence[cirq.DensePauliStr
 
 
 @attrs.frozen
-class SelectPauliLCU(SelectOracle, UnaryIterationGate):  # type: ignore[misc]
+class SelectPauliLCU(SelectOracle, UnaryIterationGate):
     r"""A SELECT bloq for selecting and applying operators from an array of `PauliString`s.
 
     $$
@@ -107,7 +107,7 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):  # type: ignore[misc]
         if self.control_val == 0:
             yield cirq.X(*quregs['control'])
 
-    def nth_operation(  # type: ignore[override]
+    def nth_operation(
         self,
         context: cirq.DecompositionContext,
         selection: int,
