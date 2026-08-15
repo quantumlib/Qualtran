@@ -13,6 +13,8 @@
 #  limitations under the License.
 r"""Bloqs for the applying number operators to system for the DF Hamiltonian."""
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -70,7 +72,7 @@ class ProgRotGateArray(Bloq):
             ]
         )
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # Step 4 in the reference.
         nlxi = (self.num_eig + self.num_spin_orb // 2 - 1).bit_length()
         cost_a = nlxi - 1  # contiguous register

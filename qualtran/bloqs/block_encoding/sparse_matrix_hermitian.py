@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import abc
 from collections import Counter
 from functools import cached_property
@@ -227,7 +229,7 @@ class SparseMatrixHermitian(BlockEncoding):
 
         return {"system": system, "ancilla": ancilla}
 
-    def adjoint(self) -> 'SparseMatrixHermitian':
+    def adjoint(self) -> SparseMatrixHermitian:
         return self
 
 

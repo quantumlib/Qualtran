@@ -57,7 +57,7 @@ class SU2CliffordT:
         assert not isinstance(other, SU2CliffordT)
         return SU2CliffordT(self.matrix * other, self.gates)
 
-    def __matmul__(self, other: "SU2CliffordT") -> "SU2CliffordT":
+    def __matmul__(self, other: SU2CliffordT) -> SU2CliffordT:
         res = self.matrix @ other.matrix
         for v in res.flat:
             assert v.is_divisible_by(_zw.SQRT_2)
@@ -103,7 +103,7 @@ class SU2CliffordT:
         result = result / sqrt_det
         return result
 
-    def adjoint(self) -> "SU2CliffordT":
+    def adjoint(self) -> SU2CliffordT:
         return SU2CliffordT(self.matrix.T.conj())
 
     def scale_down(self) -> SU2CliffordT | None:
@@ -123,7 +123,7 @@ class SU2CliffordT:
         return real
 
     @staticmethod
-    def from_sequence(seq: Sequence[str]) -> "SU2CliffordT":
+    def from_sequence(seq: Sequence[str]) -> SU2CliffordT:
         """Creates an SU2CliffordT from a Clifford+T gate sequence."""
         u = ISqrt2
         for g in seq:
@@ -148,7 +148,7 @@ class SU2CliffordT:
     @staticmethod
     def from_parametric_form(
         pf: tuple[_zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2],
-    ) -> "SU2CliffordT":
+    ) -> SU2CliffordT:
         res = np.array([_zw.Zero] * 4).reshape((2, 2))
         for a, m in zip(pf, PARAMETRIC_FORM_BASES):
             res += m * _zw.ZW.from_pair(a, _zsqrt2.Zero, False)
@@ -164,8 +164,8 @@ class SU2CliffordT:
 
     @classmethod
     def from_pair(
-        cls: type["SU2CliffordT"], p: _zw.ZW, q: _zw.ZW, pick_phase: bool = False
-    ) -> "SU2CliffordT":
+        cls: type[SU2CliffordT], p: _zw.ZW, q: _zw.ZW, pick_phase: bool = False
+    ) -> SU2CliffordT:
         """Creates an SU2CliffordT instance from a pair of ZW rst.
 
         The matrix is constructed as [[p, -q.conj()], [q, p.conj()]].
@@ -215,7 +215,7 @@ class SU2CliffordT:
         _, _, n1 = self.matrix[1, 0].to_zsqrt2()
         return n0 == n1
 
-    def rescale(self) -> 'SU2CliffordT':
+    def rescale(self) -> SU2CliffordT:
         r"""Rescales the matrix such that its determinant is minimized.
 
         The determinant of the unitary can be written as $2\lambda^n$ where $\lambda=2+\sqrt{l}$

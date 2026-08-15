@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import itertools
 from collections.abc import Iterator, Sequence
 from functools import cached_property
@@ -63,7 +65,7 @@ class ApplyXToLthQubit(UnaryIterationGate):
     ) -> cirq.OP_TREE:
         return cirq.CNOT(control, target[-(selection + 1)])
 
-    def nth_operation_callgraph(self, **selection_regs_name_to_val) -> set['BloqCountT']:
+    def nth_operation_callgraph(self, **selection_regs_name_to_val) -> set[BloqCountT]:
         return {(CNOT(), 1)}
 
 
@@ -129,7 +131,7 @@ class ApplyXToIJKthQubit(UnaryIterationGate):
     ) -> Iterator[cirq.OP_TREE]:
         yield [cirq.CNOT(control, t1[i]), cirq.CNOT(control, t2[j]), cirq.CNOT(control, t3[k])]
 
-    def nth_operation_callgraph(self, **selection_regs_name_to_val) -> set['BloqCountT']:
+    def nth_operation_callgraph(self, **selection_regs_name_to_val) -> set[BloqCountT]:
         return {(CNOT(), 3)}
 
 
@@ -204,7 +206,7 @@ def test_unary_iteration_loop_empty_range():
     assert list(unary_iteration(4, 3, [], [], [cirq.q('s')], qm)) == []
 
 
-def verify_bloq_has_consistent_build_callgraph(bloq: 'Bloq'):
+def verify_bloq_has_consistent_build_callgraph(bloq: Bloq):
     _, sigma_call = bloq.call_graph()
     _, sigma_decomp_call = bloq.decompose_bloq().call_graph(generalizer=cirq_to_bloqs)
     for key in sigma_decomp_call.keys():

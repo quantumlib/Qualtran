@@ -19,6 +19,8 @@ models), FLASQSummary (computed resource estimates including spacetime volume,
 depth, and qubit counts), and the main analysis function apply_flasq_cost_model.
 """
 
+from __future__ import annotations
+
 import logging
 import warnings
 from collections.abc import Mapping
@@ -426,7 +428,7 @@ class FLASQSummary:
         return self.total_spacetime_volume - self.cultivation_volume
 
     @lru_cache(maxsize=65536)
-    def resolve_symbols(self, assumptions: frozendict[sympy.Symbol | str, Any]) -> "FLASQSummary":
+    def resolve_symbols(self, assumptions: frozendict[sympy.Symbol | str, Any]) -> FLASQSummary:
         """Substitutes symbols in the summary fields based on provided assumptions.
 
         Args:

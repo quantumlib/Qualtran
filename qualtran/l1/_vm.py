@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import abc
 from collections import Counter
 from collections.abc import Iterable
@@ -52,7 +54,7 @@ class Problem(metaclass=abc.ABCMeta):
 
 @attrs.frozen
 class UnsupportedAtomicBloqProblem(Problem):
-    bloq: 'Bloq'
+    bloq: Bloq
 
     def get_summary(self) -> str:
         return f' {self.bloq!r} is not a supported atomic bloq.'
@@ -65,7 +67,7 @@ class StandardQualtranArchitectureAgnosticVirtualMachine:
     n_calls: int = 0
     n_atoms: int = 0
 
-    def qcall(self, cbloq: 'CompositeBloq', **soqs):
+    def qcall(self, cbloq: CompositeBloq, **soqs):
         self.frames.append(StackFrame(bloq_str=str(cbloq)))
         self.n_calls += 1
         qlt_testing.assert_valid_cbloq(cbloq)
@@ -73,10 +75,10 @@ class StandardQualtranArchitectureAgnosticVirtualMachine:
             self.execute(binst.bloq, **in_soqs)
         self.frames.pop(-1)
 
-    def qatom(self, bloq: 'Bloq', **soqs):
+    def qatom(self, bloq: Bloq, **soqs):
         self.n_atoms += 1
 
-    def execute(self, bloq: 'Bloq', **soqs):
+    def execute(self, bloq: Bloq, **soqs):
         if isinstance(bloq, CompositeBloq):
             return self.qcall(bloq, **soqs)
 
@@ -89,7 +91,7 @@ class StandardQualtranArchitectureAgnosticVirtualMachine:
 
         raise TypeError(f"Unexpected `execute` type: {bloq}.")
 
-    def bloq_in_isa(self, bloq: 'Bloq'):
+    def bloq_in_isa(self, bloq: Bloq):
         import qualtran.bloqs.basic_gates as bg
         from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
         from qualtran.bloqs.mcmt.and_bloq import And

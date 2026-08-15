@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from collections.abc import Iterator
 from functools import cached_property
 
@@ -115,7 +117,7 @@ class TestPauliSelectOracle(SelectOracle):
     @classmethod
     def random(
         cls, select_bitsize: int, target_bitsize: int, *, random_state: np.random.RandomState
-    ) -> 'TestPauliSelectOracle':
+    ) -> TestPauliSelectOracle:
         dps = tuple(
             cirq.DensePauliString(random_state.randint(0, 4, size=target_bitsize))
             for _ in range(2**select_bitsize)
@@ -149,7 +151,7 @@ class TestPauliSelectOracle(SelectOracle):
                 op = op.controlled_by(*quregs['control'], control_values=[self.control_val])
             yield op
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 
         return get_ctrl_system_1bit_cv(

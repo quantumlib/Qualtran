@@ -108,8 +108,8 @@ class CAdd(Bloq):
         )
 
     def on_classical_vals(
-        self, ctrl: 'ClassicalValT', a: 'ClassicalValT', b: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+        self, ctrl: ClassicalValT, a: ClassicalValT, b: ClassicalValT
+    ) -> dict[str, ClassicalValT]:
         if ctrl != self.cv:
             return {'ctrl': ctrl, 'a': a, 'b': b}
         if not isinstance(self.b_dtype.bitsize, int):
@@ -125,7 +125,7 @@ class CAdd(Bloq):
     def short_name(self) -> str:
         return "a+b"
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         from qualtran.drawing import directional_text_box
 
         if reg is None:
@@ -140,8 +140,8 @@ class CAdd(Bloq):
             raise ValueError()
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', ctrl: 'Soquet', a: 'Soquet', b: 'Soquet'
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, ctrl: Soquet, a: Soquet, b: Soquet
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.a_dtype.bitsize, self.b_dtype.bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
 
@@ -166,14 +166,14 @@ class CAdd(Bloq):
         ctrl = bb.join(np.array([ctrl_q]))
         return {'ctrl': ctrl, 'a': a, 'b': b}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             And(self.cv, 1): self.a_dtype.bitsize,
             Add(self.a_dtype, self.b_dtype): 1,
             And(self.cv, 1).adjoint(): self.a_dtype.bitsize,
         }
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 
         return get_ctrl_system_1bit_cv(
@@ -202,7 +202,7 @@ def _cadd_large() -> CAdd:
 _CADD_DOC = BloqDocSpec(bloq_cls=CAdd, examples=[_cadd_small, _cadd_large])
 
 
-def _get_cadd_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+def _get_cadd_classical_sim_test_cases() -> list[ClassicalSimTestCase]:
     """Test cases for the `CAdd` bloq.
 
     These specify concrete (non-symbolic) bloq instances with specific

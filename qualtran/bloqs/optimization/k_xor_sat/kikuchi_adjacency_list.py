@@ -23,6 +23,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from collections import Counter
 
 import numpy as np
@@ -89,7 +91,7 @@ class ColumnOfKthNonZeroEntry(Bloq):
     ell: SymbolicInt
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('S', self.index_dtype, shape=(self.ell,)),
@@ -103,10 +105,10 @@ class ColumnOfKthNonZeroEntry(Bloq):
     def index_dtype(self) -> QUInt:
         return QUInt(self.inst.index_bitsize)
 
-    def adjoint(self) -> 'ColumnOfKthNonZeroEntry':
+    def adjoint(self) -> ColumnOfKthNonZeroEntry:
         return self
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         m = self.inst.num_unique_constraints
         ell, k = self.ell, self.inst.k
 
@@ -202,7 +204,7 @@ class IndexOfNonZeroColumn(Bloq):
     ell: SymbolicInt
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('S', self.index_dtype, shape=(self.ell,)),
@@ -216,10 +218,10 @@ class IndexOfNonZeroColumn(Bloq):
     def index_dtype(self) -> QUInt:
         return QUInt(self.inst.index_bitsize)
 
-    def adjoint(self) -> 'IndexOfNonZeroColumn':
+    def adjoint(self) -> IndexOfNonZeroColumn:
         return self
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         m = self.inst.num_unique_constraints
         ell, k = self.ell, self.inst.k
 
@@ -306,7 +308,7 @@ class KikuchiNonZeroIndex(Bloq):
     s: SymbolicInt
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('S', self.index_dtype, shape=(self.ell,)),
@@ -318,9 +320,7 @@ class KikuchiNonZeroIndex(Bloq):
     def index_dtype(self) -> QUInt:
         return QUInt(self.inst.index_bitsize)
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', S: 'Soquet', k: 'Soquet'
-    ) -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, S: Soquet, k: Soquet) -> dict[str, SoquetT]:
         T = np.array([bb.allocate(dtype=self.index_dtype) for _ in range(int(self.ell))])
         flag = bb.add(ZeroState())
         S, k, T, flag = bb.add(
@@ -332,7 +332,7 @@ class KikuchiNonZeroIndex(Bloq):
         bb.add(ZeroEffect(), q=flag)
         return dict(S=S, k=T)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             ColumnOfKthNonZeroEntry(self.inst, self.ell): 1,
             IndexOfNonZeroColumn(self.inst, self.ell): 1,

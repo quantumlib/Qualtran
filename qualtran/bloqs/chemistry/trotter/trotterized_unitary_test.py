@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import attrs
 import numpy as np
 import pytest
@@ -31,7 +33,7 @@ def test_construction_checks(bloq_autotester):
             self.b = b
 
         @property
-        def signature(self) -> 'Signature':
+        def signature(self) -> Signature:
             return Signature.build(a=1, b=1)
 
     with pytest.raises(ValueError, match=r'Bloq must be an attrs.*'):
@@ -49,7 +51,7 @@ def test_construction_checks(bloq_autotester):
         bitsize_b: int
 
         @property
-        def signature(self) -> 'Signature':
+        def signature(self) -> Signature:
             return Signature.build(a=self.bitsize_a, b=self.bitsize_b)
 
     with pytest.raises(ValueError, match=r'Bloqs must have the same.*'):
@@ -69,7 +71,7 @@ def test_construction_checks(bloq_autotester):
         bitsize_b: int
 
         @property
-        def signature(self) -> 'Signature':
+        def signature(self) -> Signature:
             return Signature.build(a=self.bitsize_a, b=self.bitsize_b)
 
     with pytest.raises(ValueError, match=r'Bloq must have a parameter named.*'):

@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import numpy as np
 
 from qualtran import BloqBuilder, QVar
@@ -95,8 +97,8 @@ def test_templated_and_parameterized_qcalls():
     bb = BloqBuilder()
 
     # Allocate multi-qubit registers
-    qvar_x: 'QVar' = bb.add_register("x", bitsize=4)  # type: ignore[assignment]
-    qvar_y: 'QVar' = bb.add_register("y", bitsize=4)  # type: ignore[assignment]
+    qvar_x: QVar = bb.add_register("x", bitsize=4)  # type: ignore[assignment]
+    qvar_y: QVar = bb.add_register("y", bitsize=4)  # type: ignore[assignment]
 
     # 1. Identity
     qvar_x = Identity.qcall(qvar_x)
@@ -144,8 +146,8 @@ def test_bloq_builder_qcall_helpers():
     q2 = bb.y_pow(q2, exponent=0.0625)
 
     # 4. Multi-qubit Register Swaps
-    qvar_x: 'QVar' = bb.add_register("x", bitsize=4)  # type: ignore[assignment]
-    qvar_y: 'QVar' = bb.add_register("y", bitsize=4)  # type: ignore[assignment]
+    qvar_x: QVar = bb.add_register("x", bitsize=4)  # type: ignore[assignment]
+    qvar_y: QVar = bb.add_register("y", bitsize=4)  # type: ignore[assignment]
     qvar_x, qvar_y = bb.swap(qvar_x, qvar_y)
     qvar_x = bb.identity(qvar_x)
 

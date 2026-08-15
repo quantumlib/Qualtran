@@ -20,6 +20,8 @@ database) with a number of T gates scaling as 4L + O(log(1/eps)) where eps is th
 largest absolute error that one can tolerate in the prepared amplitudes.
 """
 
+from __future__ import annotations
+
 from collections.abc import Sequence
 from functools import cached_property
 from typing import TYPE_CHECKING
@@ -134,7 +136,7 @@ class StatePreparationAliasSampling(PrepareOracle):
     @classmethod
     def from_probabilities(
         cls, unnormalized_probabilities: Sequence[float], *, precision: float = 1.0e-5
-    ) -> 'StatePreparationAliasSampling':
+    ) -> StatePreparationAliasSampling:
         r"""Factory to construct the state preparation gate for a given set of unnormalized probabilities.
 
         Given input `unnormalized_probabilities` $w_l$, with sum $\lambda = \sum_l w_l$, this prepares
@@ -176,7 +178,7 @@ class StatePreparationAliasSampling(PrepareOracle):
         sum_of_unnormalized_probabilites: SymbolicFloat,
         *,
         precision: SymbolicFloat = 1.0e-5,
-    ) -> 'StatePreparationAliasSampling':
+    ) -> StatePreparationAliasSampling:
         r"""Factory to construct the state preparation gate for symbolic number of unnormalized probabilities.
 
         See docstring for :meth:`StatePreparationAliasSampling.from_probabilities` for details
@@ -205,7 +207,7 @@ class StatePreparationAliasSampling(PrepareOracle):
         return self.selection_registers[0].dtype.iteration_length_or_zero()
 
     @cached_property
-    def l1_norm_of_coeffs(self) -> 'SymbolicFloat':
+    def l1_norm_of_coeffs(self) -> SymbolicFloat:
         return self.sum_of_unnormalized_probabilities
 
     @cached_property
@@ -245,11 +247,11 @@ class StatePreparationAliasSampling(PrepareOracle):
 
     def build_composite_bloq(
         self,
-        bb: 'BloqBuilder',
-        sigma_mu: 'SoquetT',
-        alt: 'SoquetT',
-        keep: 'SoquetT',
-        less_than_equal: 'Soquet',
+        bb: BloqBuilder,
+        sigma_mu: SoquetT,
+        alt: SoquetT,
+        keep: SoquetT,
+        less_than_equal: Soquet,
         **soqs: 'SoquetT',
     ):
         selection = soqs.pop(self.selection_registers[0].name)
@@ -273,7 +275,7 @@ class StatePreparationAliasSampling(PrepareOracle):
             'keep': keep,
         }
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             PrepareUniformSuperposition(self.n_coeff): 1,
             self.qrom_bloq: 1,
@@ -385,7 +387,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
     @classmethod
     def from_sparse_dict(
         cls, unnormalized_probabilities: dict[int, float], N: int, *, precision: float = 1.0e-5
-    ) -> 'SparseStatePreparationAliasSampling':
+    ) -> SparseStatePreparationAliasSampling:
         """Construct the state preparation gate for a given dictionary of non-zero probabilities.
 
         Args:
@@ -426,7 +428,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
         *,
         precision: float = 1.0e-5,
         nonzero_threshold: float = 1e-6,
-    ) -> 'SparseStatePreparationAliasSampling':
+    ) -> SparseStatePreparationAliasSampling:
         """Factory to construct the state preparation gate for a given set of probability coefficients.
 
         Args:
@@ -452,7 +454,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
         sum_of_terms: SymbolicFloat,
         *,
         precision: SymbolicFloat = 1.0e-5,
-    ) -> 'SparseStatePreparationAliasSampling':
+    ) -> SparseStatePreparationAliasSampling:
         """Factory to construct sparse state preparation for symbolic number of input probabilities.
 
         Args:
@@ -484,7 +486,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
         return slen(self.index)
 
     @cached_property
-    def l1_norm_of_coeffs(self) -> 'SymbolicFloat':
+    def l1_norm_of_coeffs(self) -> SymbolicFloat:
         return self.sum_of_unnormalized_probabilities
 
     @cached_property
@@ -503,7 +505,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
             (self.selection_bitsize, self.selection_bitsize, self.mu),
         )
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         soqs['sparse_index'] = bb.add(
             PrepareUniformSuperposition(self.n_nonzero_coeff), target=soqs['sparse_index']
         )

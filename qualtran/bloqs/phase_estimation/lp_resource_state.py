@@ -14,6 +14,8 @@
 
 """Resource states proposed by A. Luis and J. Peřina (1996) for optimal phase measurements"""
 
+from __future__ import annotations
+
 from collections import Counter
 from functools import cached_property
 from typing import TYPE_CHECKING
@@ -54,17 +56,17 @@ class LPRSInterimPrep(GateWithRegisters):
     eps: float = 1e-11
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(m=self.bitsize, anc=1)
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('LPRS')
         return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', *, m: 'SoquetT', anc: 'Soquet'
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, *, m: SoquetT, anc: Soquet
+    ) -> dict[str, SoquetT]:
         if isinstance(self.bitsize, sympy.Expr):
             raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
         m = bb.add(OnEach(self.bitsize, Hadamard()), q=m)
@@ -77,9 +79,9 @@ class LPRSInterimPrep(GateWithRegisters):
         anc = bb.add(Hadamard(), q=anc)
         return {'m': bb.join(q[::-1]), 'anc': anc}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         rz_angle = -2 * pi(self.bitsize) / (2**self.bitsize + 1)
-        ret: Counter['Bloq'] = Counter()
+        ret: Counter[Bloq] = Counter()
         ret[Rz(angle=rz_angle)] += 1
         ret[OnEach(self.bitsize, Hadamard())] += 1
         ret[Hadamard()] += 2
@@ -116,11 +118,11 @@ class LPResourceState(QPEWindowStateBase):
     bitsize: SymbolicInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([self.m_register])
 
     @classmethod
-    def from_standard_deviation_eps(cls, eps: SymbolicFloat) -> 'LPResourceState':
+    def from_standard_deviation_eps(cls, eps: SymbolicFloat) -> LPResourceState:
         r"""Estimate the phase $\phi$ with uncertainty in standard deviation bounded by $\epsilon$.
 
         The standard deviation of phase estimation using optimal resource states scales as the
@@ -141,7 +143,7 @@ class LPResourceState(QPEWindowStateBase):
     def m_bits(self) -> SymbolicInt:
         return self.bitsize
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         qpe_reg = bb.allocate(dtype=self.m_qdtype)
         anc, flag = bb.allocate(dtype=QBit()), bb.allocate(dtype=QBit())
 
@@ -175,9 +177,9 @@ class LPResourceState(QPEWindowStateBase):
         bb.free(anc)
         return {'qpe_reg': qpe_reg}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         flag_angle = acos(1 / (1 + 2**self.bitsize))
-        reflection_bloq: 'Bloq' = ReflectionUsingPrepare.reflection_around_zero(
+        reflection_bloq: Bloq = ReflectionUsingPrepare.reflection_around_zero(
             [1, 1, self.bitsize], global_phase=1j
         )
         return {

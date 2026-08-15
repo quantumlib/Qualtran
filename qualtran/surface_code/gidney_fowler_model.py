@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import math
 from collections.abc import Callable, Iterable, Iterator
 from typing import cast, TYPE_CHECKING
@@ -32,7 +34,7 @@ if TYPE_CHECKING:
 
 def get_ccz2t_costs(
     *,
-    n_logical_gates: 'GateCounts',
+    n_logical_gates: GateCounts,
     n_algo_qubits: int,
     phys_err: float,
     cycle_time_us: float,
@@ -71,7 +73,7 @@ def get_ccz2t_costs(
 
 def get_ccz2t_costs_from_error_budget(
     *,
-    n_logical_gates: 'GateCounts',
+    n_logical_gates: GateCounts,
     n_algo_qubits: int,
     phys_err: float = 1e-3,
     error_budget: float = 1e-2,
@@ -182,7 +184,7 @@ def iter_simple_data_blocks(d_start: int = 7, d_stop: int = 35):
 
 def get_ccz2t_costs_from_grid_search(
     *,
-    n_logical_gates: 'GateCounts',
+    n_logical_gates: GateCounts,
     n_algo_qubits: int,
     phys_err: float = 1e-3,
     error_budget: float = 1e-2,

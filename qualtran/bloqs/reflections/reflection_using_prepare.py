@@ -114,7 +114,7 @@ class ReflectionUsingPrepare(GateWithRegisters):
         control_val: int | None = None,
         global_phase: complex = 1,
         eps: float = 1e-11,
-    ) -> 'ReflectionUsingPrepare':
+    ) -> ReflectionUsingPrepare:
         """Build a reflection around zero bloq.
 
         Args:
@@ -177,10 +177,10 @@ class ReflectionUsingPrepare(GateWithRegisters):
         wire_symbols += ['R_L'] * total_bits(self.selection_registers)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         n_phase_control = sum(reg.total_bits() for reg in self.selection_registers)
         cvs = HasLength(n_phase_control) if is_symbolic(n_phase_control) else [0] * n_phase_control
-        costs: 'MutableBloqCountDictT' = {
+        costs: MutableBloqCountDictT = {
             self.prepare_gate: 1,
             self.prepare_gate.adjoint(): 1,
             MultiControlZ(cvs): 1,
@@ -196,10 +196,10 @@ class ReflectionUsingPrepare(GateWithRegisters):
             costs[phase_op] = 1
         return costs
 
-    def adjoint(self) -> 'ReflectionUsingPrepare':
+    def adjoint(self) -> ReflectionUsingPrepare:
         return self
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 
         return get_ctrl_system_1bit_cv(

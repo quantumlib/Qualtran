@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import abc
 import warnings
 from collections.abc import Iterable, Sequence
@@ -106,7 +108,7 @@ class _BitEncodingShim(BitEncoding[T]):
 
     """
 
-    qdtype: 'QDType[T]'
+    qdtype: QDType[T]
 
     @property
     def bitsize(self) -> SymbolicInt:
@@ -139,7 +141,7 @@ class _BitEncodingShim(BitEncoding[T]):
 
 @attrs.frozen
 class ShapedQCDType:
-    qcdtype: 'QCDType'
+    qcdtype: QCDType
     shape: tuple[int, ...] = attrs.field(
         default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
     )

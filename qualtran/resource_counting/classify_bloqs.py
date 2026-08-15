@@ -100,11 +100,7 @@ def classify_t_count_by_bloq_type(
     if bloq_classification is None:
         bloq_classification = _get_basic_bloq_classification()
     keeper = lambda bloq: classify_bloq(bloq, bloq_classification) != 'other'
-    basic_generalizer: list['GeneralizerT'] = [
-        ignore_split_join,
-        ignore_alloc_free,
-        ignore_cliffords,
-    ]
+    basic_generalizer: list[GeneralizerT] = [ignore_split_join, ignore_alloc_free, ignore_cliffords]
     if generalizer is not None:
         if isinstance(generalizer, abc.Sequence):
             basic_generalizer.extend(generalizer)

@@ -14,6 +14,8 @@
 
 """Classes for drawing bloqs with FlameGraph. This relies on third party flamegraph.pl"""
 
+from __future__ import annotations
+
 import functools
 import pathlib
 import subprocess
@@ -128,7 +130,7 @@ def _populate_flame_graph_data(
 def get_flame_graph_data(
     *bloqs: Bloq,
     file_path: None | pathlib.Path | str = None,
-    keep: Callable[['Bloq'], bool] | None = _keep_if_small,
+    keep: Callable[[Bloq], bool] | None = _keep_if_small,
     **kwargs,
 ) -> list[str]:
     """Get the flame graph data for visualizing T-costs distribution of a sequence of bloqs.

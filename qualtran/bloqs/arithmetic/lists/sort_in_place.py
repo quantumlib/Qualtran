@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from collections import Counter
 
 from attrs import frozen
@@ -69,7 +71,7 @@ class SortInPlace(Bloq):
     dtype: QDType
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('xs', self.dtype, shape=(self.l,)),
@@ -83,7 +85,7 @@ class SortInPlace(Bloq):
         bitsize = ceil(log2(self.l))
         return BQUInt(bitsize, self.l)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         compare = Comparator(self.dtype.num_qubits)
         n_ops = 3 * self.l**2
 

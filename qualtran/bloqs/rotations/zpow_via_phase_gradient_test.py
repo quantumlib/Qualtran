@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import pytest
 from attrs import frozen
 
@@ -70,10 +72,10 @@ class TestZPowUsingPhaseGradient(Bloq):
     phase_grad_bitsize: int
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(q=1)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', q: 'Soquet') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, q: Soquet) -> dict[str, SoquetT]:
         phase_grad = bb.add(PhaseGradientState(self.phase_grad_bitsize))
         q, phase_grad = bb.add(
             ZPowConstViaPhaseGradient(self.exponent, self.phase_grad_bitsize),

@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from collections.abc import Sequence
 from functools import cached_property
 from typing import TYPE_CHECKING
@@ -53,7 +55,7 @@ class GF2AddK(Bloq):
     k: SymbolicInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('x', dtype=self.qgf)])
 
     @cached_property
@@ -67,7 +69,7 @@ class GF2AddK(Bloq):
     def is_symbolic(self):
         return is_symbolic(self.k, self.bitsize)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'Soquet') -> dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: BloqBuilder, *, x: Soquet) -> dict[str, Soquet]:
         if self.is_symbolic():
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
         xs = bb.split(x)
@@ -80,11 +82,11 @@ class GF2AddK(Bloq):
 
         return {'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         num_flips = self.bitsize if self.is_symbolic() else sum(self._bits_k)
         return {XGate(): num_flips}
 
-    def on_classical_vals(self, *, x) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, *, x) -> dict[str, ClassicalValT]:
         assert isinstance(x, self.qgf.gf_type)
         return {'x': x + self.qgf.gf_type(self.k)}
 

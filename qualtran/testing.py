@@ -352,22 +352,22 @@ class BloqCheckException(AssertionError):
         return self._msg
 
     @classmethod
-    def fail(cls, msg: str) -> 'BloqCheckException':
+    def fail(cls, msg: str) -> BloqCheckException:
         """Create an exception with a FAIL check result."""
         return cls(BloqCheckResult.FAIL, msg=msg)
 
     @classmethod
-    def missing(cls, msg: str) -> 'BloqCheckException':
+    def missing(cls, msg: str) -> BloqCheckException:
         """Create an exception with a MISSING check result."""
         return cls(BloqCheckResult.MISSING, msg=msg)
 
     @classmethod
-    def na(cls, msg: str) -> 'BloqCheckException':
+    def na(cls, msg: str) -> BloqCheckException:
         """Create an exception with a NA check result."""
         return cls(BloqCheckResult.NA, msg=msg)
 
     @classmethod
-    def unverified(cls, msg: str) -> 'BloqCheckException':
+    def unverified(cls, msg: str) -> BloqCheckException:
         """Create an exception with an UNVERIFIED check result."""
         return cls(BloqCheckResult.UNVERIFIED, msg=msg)
 
@@ -474,8 +474,8 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
 
     has_manual_counts: bool
     has_decomp_counts: bool
-    manual_counts: dict['Bloq', int | 'sympy.Expr'] = {}
-    decomp_counts: dict['Bloq', int | 'sympy.Expr'] = {}
+    manual_counts: dict[Bloq, int | sympy.Expr] = {}
+    decomp_counts: dict[Bloq, int | sympy.Expr] = {}
 
     # Notable implementation detail: since `bloq.build_call_graph` has a default fallback
     # that uses the decomposition, we could accidentally be comparing two identical code paths

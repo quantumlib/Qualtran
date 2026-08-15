@@ -45,10 +45,10 @@ class BigBloq(Bloq):
     bitsize: int
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(x=self.bitsize)
 
-    def build_call_graph(self, ssa: SympySymbolAllocator | None) -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator | None) -> BloqCountDictT:
         return {SubBloq(unrelated_param=0.5): sympy.log(self.bitsize)}
 
 
@@ -57,10 +57,10 @@ class DecompBloq(Bloq):
     bitsize: int
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(x=self.bitsize)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet) -> dict[str, SoquetT]:
         qs = bb.split(x)
         for i in range(self.bitsize):
             qs[i] = bb.add(SubBloq(unrelated_param=i / 12), q=qs[i])
@@ -73,10 +73,10 @@ class SubBloq(Bloq):
     unrelated_param: float
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(q=1)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {TGate(): 3}
 
 
@@ -150,11 +150,11 @@ class OnlyCallGraphBloqShim(Bloq):
     callees: Sequence[BloqCountT] = field(converter=_to_tuple, factory=tuple)
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([])
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        counts: 'MutableBloqCountDictT' = defaultdict(int)
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        counts: MutableBloqCountDictT = defaultdict(int)
         for bloq, count in self.callees:
             counts[bloq] += count
         return counts

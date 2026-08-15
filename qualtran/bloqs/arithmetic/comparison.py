@@ -79,7 +79,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("")
         if reg.name == 'x':
@@ -91,14 +91,14 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
     def registers(self) -> Sequence[int | Sequence[int]]:
         return [2] * int(self.bitsize), int(self.less_than_val), [2]
 
-    def with_registers(self, *new_registers) -> "LessThanConstant":
+    def with_registers(self, *new_registers) -> LessThanConstant:
         return LessThanConstant(len(new_registers[0]), new_registers[1])
 
     def apply(self, *register_vals: int) -> int | Iterable[int]:
         input_val, less_than_val, target_register_val = register_vals
         return input_val, less_than_val, target_register_val ^ (input_val < less_than_val)
 
-    def on_classical_vals(self, *, x: int, target: int) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, *, x: int, target: int) -> dict[str, ClassicalValT]:
         return {'x': x, 'target': target ^ (x < self.less_than_val)}
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
@@ -183,7 +183,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
     def _has_unitary_(self):
         return True
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         if (
             not is_symbolic(self.less_than_val, self.bitsize)
             and self.less_than_val >= 2**self.bitsize
@@ -297,17 +297,17 @@ class BiQubitsMixer(GateWithRegisters):
         else:
             yield from _decomposition()
 
-    def adjoint(self) -> 'BiQubitsMixer':
+    def adjoint(self) -> BiQubitsMixer:
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
-    def __pow__(self, power: int) -> 'BiQubitsMixer':
+    def __pow__(self, power: int) -> BiQubitsMixer:
         if power == 1:
             return self
         if power == -1:
             return self.adjoint()
         return NotImplemented  # pragma: no cover
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {XGate(): 1, CNOT(): 9, And(uncompute=self.is_adjoint): 2}
 
     def _has_unitary_(self):
@@ -367,7 +367,7 @@ class SingleQubitCompare(GateWithRegisters):
         else:
             yield from _decomposition()
 
-    def adjoint(self) -> 'SingleQubitCompare':
+    def adjoint(self) -> SingleQubitCompare:
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
     def __pow__(self, power: int) -> SingleQubitCompare | cirq.Gate:
@@ -379,7 +379,7 @@ class SingleQubitCompare(GateWithRegisters):
             return self.adjoint()
         return self
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {XGate(): 1, CNOT(): 4, And(uncompute=self.is_adjoint): 1}
 
 
@@ -441,11 +441,11 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
         Berry et al. 2017. Appendix B.
     """
 
-    x_bitsize: 'SymbolicInt'
-    y_bitsize: 'SymbolicInt'
+    x_bitsize: SymbolicInt
+    y_bitsize: SymbolicInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(
             x=QUInt(self.x_bitsize), y=QUInt(self.y_bitsize), target=QBit()
         )
@@ -457,14 +457,14 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
             raise ValueError(f'Symbolic y bitsize {self.y_bitsize} not allowed')
         return [2] * self.x_bitsize, [2] * self.y_bitsize, [2]
 
-    def with_registers(self, *new_registers) -> "LessThanEqual":
+    def with_registers(self, *new_registers) -> LessThanEqual:
         return LessThanEqual(len(new_registers[0]), len(new_registers[1]))
 
     def apply(self, *register_vals: int) -> int | int | Iterable[int]:
         x_val, y_val, target_val = register_vals
         return x_val, y_val, target_val ^ (x_val <= y_val)
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         if reg.name == "x":
@@ -475,7 +475,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
             return TextBox('z∧(x<=y)')
         raise ValueError(f'Unknown register name {reg.name}')
 
-    def on_classical_vals(self, *, x: int, y: int, target: int) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, *, x: int, y: int, target: int) -> dict[str, ClassicalValT]:
         return {'x': x, 'y': y, 'target': target ^ (x <= y)}
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
@@ -572,7 +572,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
         all_ancilla = set([q for op in adjoint for q in op.qubits if q not in input_qubits])
         context.qubit_manager.qfree(all_ancilla)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         if is_symbolic(self.x_bitsize, self.y_bitsize):
             return {
                 BiQubitsMixer(): self.x_bitsize,
@@ -584,7 +584,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
         n = min(self.x_bitsize, self.y_bitsize)
         d = max(self.x_bitsize, self.y_bitsize) - n
         is_second_longer = self.y_bitsize > self.x_bitsize
-        ret: dict['Bloq', int] = defaultdict(lambda: 0)
+        ret: dict[Bloq, int] = defaultdict(lambda: 0)
         if d > 0:
             if d == 1:
                 ret[CNOT()] += 2
@@ -615,7 +615,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
     def _has_unitary_(self):
         return True
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return self
 
 
@@ -659,8 +659,8 @@ class GreaterThan(Bloq):
         target: A single bit output register to store the result of A > B.
     """
 
-    a_bitsize: 'SymbolicInt'
-    b_bitsize: 'SymbolicInt'
+    a_bitsize: SymbolicInt
+    b_bitsize: SymbolicInt
 
     @property
     def signature(self):
@@ -680,15 +680,15 @@ class GreaterThan(Bloq):
         raise ValueError(f'Unknown register name {reg.name}')
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', a: 'Soquet', b: 'Soquet', target: 'Soquet'
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, a: Soquet, b: Soquet, target: Soquet
+    ) -> dict[str, SoquetT]:
         a, b, target = bb.add(
             LessThanEqual(self.a_bitsize, self.b_bitsize), x=a, y=b, target=target
         )
         target = bb.add(XGate(), q=target)
         return {'a': a, 'b': b, 'target': target}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {LessThanEqual(self.a_bitsize, self.b_bitsize): 1, XGate(): 1}
 
 
@@ -730,7 +730,7 @@ class LinearDepthGreaterThan(Bloq):
         [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2306.08585).
     """
 
-    bitsize: 'SymbolicInt'
+    bitsize: SymbolicInt
     signed: bool = False
 
     @property
@@ -740,8 +740,8 @@ class LinearDepthGreaterThan(Bloq):
         )
 
     def on_classical_vals(
-        self, a: 'ClassicalValT', b: 'ClassicalValT', target: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+        self, a: ClassicalValT, b: ClassicalValT, target: ClassicalValT
+    ) -> dict[str, ClassicalValT]:
         # target is a 1-bit register so we assert that it's classical value is binary.
         assert target == (target % 2)
 
@@ -751,8 +751,8 @@ class LinearDepthGreaterThan(Bloq):
         return {'a': a, 'b': b, 'target': target}
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', a: Soquet, b: Soquet, target: SoquetT
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, a: Soquet, b: Soquet, target: SoquetT
+    ) -> dict[str, SoquetT]:
         if isinstance(self.bitsize, sympy.Expr):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}.")
 
@@ -869,7 +869,7 @@ class LinearDepthGreaterThan(Bloq):
         # Return the output registers.
         return {'a': a, 'b': b, 'target': target}
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         if reg.name == "a":
@@ -880,7 +880,7 @@ class LinearDepthGreaterThan(Bloq):
             return TextBox('t⨁(a>b)')
         raise ValueError(f'Unknown register name {reg.name}')
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         if self.bitsize == 1:
             return {MultiControlX(cvs=(1, 0)): 1}
 
@@ -936,7 +936,7 @@ class GreaterThanConstant(Bloq):
             return TextBox(f"⨁(x > {self.val})")
         raise ValueError(f'Unknown register symbol {reg.name}')
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {LessThanConstant(self.bitsize, less_than_val=self.val): 1}
 
 
@@ -987,8 +987,8 @@ class Equals(Bloq):
         raise ValueError(f'Unknown register symbol {reg.name}')
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: 'Soquet', y: 'Soquet', target: 'Soquet'
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, x: Soquet, y: Soquet, target: Soquet
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
 
@@ -1006,7 +1006,7 @@ class Equals(Bloq):
 
         return {'x': x, 'y': y, 'target': target}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         cvs: list[int] | HasLength
         if isinstance(self.bitsize, int):
             cvs = [0] * self.bitsize
@@ -1014,7 +1014,7 @@ class Equals(Bloq):
             cvs = HasLength(self.bitsize)
         return {Xor(self.dtype): 2, MultiControlX(cvs=cvs): 1}
 
-    def on_classical_vals(self, x: int, y: int, target: int) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, x: int, y: int, target: int) -> dict[str, ClassicalValT]:
         return {'x': x, 'y': y, 'target': target ^ (x == y)}
 
 
@@ -1070,8 +1070,8 @@ class EqualsAConstant(Bloq):
         return tuple(QUInt(self.bitsize).to_bits(self.val))
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: 'Soquet', target: 'Soquet'
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, x: Soquet, target: Soquet
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic {self.bitsize=}")
 
@@ -1080,7 +1080,7 @@ class EqualsAConstant(Bloq):
         x = bb.join(xs)
         return {'x': x, 'target': target}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {MultiControlX(self.bits_k): 1}
 
 
@@ -1137,7 +1137,7 @@ class CLinearDepthGreaterThan(Bloq):
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(ctrl=QBit(), a=self.dtype, b=self.dtype, target=QBit())
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         if reg.name == 'ctrl':
@@ -1151,8 +1151,8 @@ class CLinearDepthGreaterThan(Bloq):
         raise ValueError(f'Unknown register name {reg.name}')
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', ctrl: 'Soquet', a: 'Soquet', b: 'Soquet', target: 'Soquet'
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, ctrl: Soquet, a: Soquet, b: Soquet, target: Soquet
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.dtype.bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
 
@@ -1200,15 +1200,13 @@ class CLinearDepthGreaterThan(Bloq):
             bb.free(b_arr[0])
         return {'ctrl': ctrl, 'a': a, 'b': b, 'target': target}
 
-    def on_classical_vals(
-        self, ctrl: int, a: int, b: int, target: int
-    ) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, ctrl: int, a: int, b: int, target: int) -> dict[str, ClassicalValT]:
         if ctrl == self.cv:
             return {'ctrl': ctrl, 'a': a, 'b': b, 'target': target ^ (a > b)}
         return {'ctrl': ctrl, 'a': a, 'b': b, 'target': target}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        signed_ops: 'MutableBloqCountDictT' = {}
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        signed_ops: MutableBloqCountDictT = {}
         if isinstance(self.dtype, QInt):
             signed_ops = {
                 SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)): 2,
@@ -1271,10 +1269,10 @@ class _HalfLinearDepthGreaterThan(Bloq):
             ]
         )
 
-    def adjoint(self) -> '_HalfLinearDepthGreaterThan':
+    def adjoint(self) -> _HalfLinearDepthGreaterThan:
         return attrs.evolve(self, uncompute=self.uncompute ^ True)
 
-    def _compute(self, bb: 'BloqBuilder', a: 'Soquet', b: 'Soquet') -> dict[str, 'SoquetT']:
+    def _compute(self, bb: BloqBuilder, a: Soquet, b: Soquet) -> dict[str, SoquetT]:
         if isinstance(self.dtype, QInt):
             a = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)), x=a)
             b = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)), x=b)
@@ -1314,8 +1312,8 @@ class _HalfLinearDepthGreaterThan(Bloq):
         return {'a': a, 'b': b, 'c': c, 'target': target}
 
     def _uncompute(
-        self, bb: 'BloqBuilder', a: 'Soquet', b: 'Soquet', c: 'Soquet', target: 'Soquet'
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, a: Soquet, b: Soquet, c: Soquet, target: Soquet
+    ) -> dict[str, SoquetT]:
         if isinstance(self.dtype, QInt):
             a = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)), x=a)
             b = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)), x=b)
@@ -1358,12 +1356,12 @@ class _HalfLinearDepthGreaterThan(Bloq):
 
     def build_composite_bloq(
         self,
-        bb: 'BloqBuilder',
-        a: 'Soquet',
-        b: 'Soquet',
+        bb: BloqBuilder,
+        a: Soquet,
+        b: Soquet,
         c: Soquet | None = None,
         target: Soquet | None = None,
-    ) -> dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.dtype.bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
 
@@ -1377,9 +1375,9 @@ class _HalfLinearDepthGreaterThan(Bloq):
             assert target is None
             return self._compute(bb, a, b)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         dtype = attrs.evolve(self.dtype, bitsize=self.dtype.bitsize + 1)
-        counts: 'BloqCountDictT'
+        counts: BloqCountDictT
         if isinstance(self.dtype, QUInt):
             counts = {BitwiseNot(dtype): 3}
         else:
@@ -1442,7 +1440,7 @@ class _HalfComparisonBase(Bloq):
             ]
         )
 
-    def adjoint(self) -> '_HalfComparisonBase':
+    def adjoint(self) -> _HalfComparisonBase:
         return attrs.evolve(self, uncompute=self.uncompute ^ True)
 
     @cached_property
@@ -1451,7 +1449,7 @@ class _HalfComparisonBase(Bloq):
         raise NotImplementedError()
 
     def _classical_comparison(
-        self, a: 'ClassicalValT', b: 'ClassicalValT'
+        self, a: ClassicalValT, b: ClassicalValT
     ) -> bool | np.bool_ | NDArray[np.bool_]:
         if self._op_symbol == '>':
             return a > b
@@ -1464,11 +1462,11 @@ class _HalfComparisonBase(Bloq):
 
     def on_classical_vals(
         self,
-        a: 'ClassicalValT',
-        b: 'ClassicalValT',
+        a: ClassicalValT,
+        b: ClassicalValT,
         c: ClassicalValT | None = None,
         target: ClassicalValT | None = None,
-    ) -> dict[str, 'ClassicalValT']:
+    ) -> dict[str, ClassicalValT]:
         if self._op_symbol in ('>', '<='):
             c_val = add_ints(-int(a), int(b), num_bits=self.dtype.bitsize + 1, is_signed=False)
         else:
@@ -1481,7 +1479,7 @@ class _HalfComparisonBase(Bloq):
         assert target is None
         return {'a': a, 'b': b, 'c': c_val, 'target': int(self._classical_comparison(a, b))}
 
-    def _compute(self, bb: 'BloqBuilder', a: 'Soquet', b: 'Soquet') -> dict[str, 'SoquetT']:
+    def _compute(self, bb: BloqBuilder, a: Soquet, b: Soquet) -> dict[str, SoquetT]:
         if self._op_symbol in ('>', '<='):
             a, b, c, target = bb.add_from(self._half_greater_than_bloq, a=a, b=b)
         else:
@@ -1493,8 +1491,8 @@ class _HalfComparisonBase(Bloq):
         return {'a': a, 'b': b, 'c': c, 'target': target}
 
     def _uncompute(
-        self, bb: 'BloqBuilder', a: 'Soquet', b: 'Soquet', c: 'Soquet', target: 'Soquet'
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, a: Soquet, b: Soquet, c: Soquet, target: Soquet
+    ) -> dict[str, SoquetT]:
         if self._op_symbol in ('<=', '>='):
             target = bb.add(XGate(), q=target)
 
@@ -1507,12 +1505,12 @@ class _HalfComparisonBase(Bloq):
 
     def build_composite_bloq(
         self,
-        bb: 'BloqBuilder',
-        a: 'Soquet',
-        b: 'Soquet',
+        bb: BloqBuilder,
+        a: Soquet,
+        b: Soquet,
         c: Soquet | None = None,
         target: Soquet | None = None,
-    ) -> dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         if self.uncompute:
             assert c is not None
             assert target is not None
@@ -1522,7 +1520,7 @@ class _HalfComparisonBase(Bloq):
             assert target is None
             return self._compute(bb, a, b)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         extra_ops = {}
         if isinstance(self.dtype, QInt):
             extra_ops = {
@@ -1536,7 +1534,7 @@ class _HalfComparisonBase(Bloq):
             adder = adder.adjoint()
         adder_call_graph = adder.build_call_graph(ssa)
         assert isinstance(adder_call_graph, dict)
-        counts: defaultdict['Bloq', int | sympy.Expr] = defaultdict(lambda: 0)
+        counts: defaultdict[Bloq, int | sympy.Expr] = defaultdict(lambda: 0)
         counts.update(adder_call_graph)
         for k, v in extra_ops.items():
             counts[k] += v

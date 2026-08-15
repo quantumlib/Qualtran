@@ -107,11 +107,11 @@ class PermutationCycle(Bloq):
     def _default_bitsize(self):
         return bit_length(self.N - 1)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: SoquetT) -> dict[str, SoquetT]:
         if is_symbolic(self.cycle):
             raise DecomposeTypeError(f"cannot decompose symbolic {self}")
 
-        a: 'SoquetT' = bb.allocate(dtype=QBit())
+        a: SoquetT = bb.allocate(dtype=QBit())
 
         for k, x_k in enumerate(self.cycle):
             x, a = bb.add_t(EqualsAConstant(self.bitsize, x_k), x=x, target=a)
@@ -125,7 +125,7 @@ class PermutationCycle(Bloq):
 
         return {'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         if is_symbolic(self.cycle):
             x = ssa.new_symbol('x')
             cycle_len = slen(self.cycle)
@@ -268,7 +268,7 @@ class Permutation(Bloq):
         )
         return cls(N, cycles)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet) -> dict[str, SoquetT]:
         if is_symbolic(self.cycles):
             raise DecomposeTypeError(f"cannot decompose symbolic {self}")
 
@@ -277,7 +277,7 @@ class Permutation(Bloq):
 
         return {'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         if is_symbolic(self.cycles):
             # worst case cost: single cycle of length N
             cycle = Shaped((self.N,))

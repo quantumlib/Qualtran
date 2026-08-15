@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Iterable, Iterator
 from functools import cached_property
 from typing import cast, TYPE_CHECKING
@@ -155,7 +157,7 @@ class SwapWithZero(GateWithRegisters):
         return Signature([*self.selection_registers, *self.target_registers])
 
     @cached_property
-    def cswap_n(self) -> 'CSwapApprox':
+    def cswap_n(self) -> CSwapApprox:
         return CSwapApprox(self.target_bitsize)
 
     @cached_property
@@ -168,11 +170,8 @@ class SwapWithZero(GateWithRegisters):
         return tuple(ret[::-1] if self.uncompute else ret)
 
     def build_composite_bloq(
-        self,
-        bb: 'BloqBuilder',
-        targets: NDArray['Soquet'],  # type: ignore[type-var]
-        **sel: 'Soquet',
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, targets: NDArray[Soquet], **sel: 'Soquet'  # type: ignore[type-var]
+    ) -> dict[str, SoquetT]:
         sel_soqs = [bb.split(sel[reg.name]) for reg in self.selection_registers]
         for i, sel_idx_small, idx_one, idx_two in self._swap_sequence:
             sel_idx_big = self.selection_bitsizes[i] - sel_idx_small - 1
@@ -184,7 +183,7 @@ class SwapWithZero(GateWithRegisters):
         }
         return sel | {'targets': targets}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         num_swaps = prod(x for x in self.n_target_registers) - 1
         return {self.cswap_n: num_swaps}
 
@@ -193,7 +192,7 @@ class SwapWithZero(GateWithRegisters):
 
         return _wire_symbol_to_cirq_diagram_info(self, args)
 
-    def wire_symbol(self, reg: Register, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return super().wire_symbol(reg, idx)
         name = reg.name
@@ -205,8 +204,8 @@ class SwapWithZero(GateWithRegisters):
         raise ValueError(f'Unrecognized register name {name}')
 
     def on_classical_vals(
-        self, *, targets: 'ClassicalValT', **selection: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+        self, *, targets: ClassicalValT, **selection: 'ClassicalValT'
+    ) -> dict[str, ClassicalValT]:
         assert isinstance(targets, np.ndarray)
         selection_idx = tuple(selection.values())
         for i, sel_idx_small, idx_one, idx_two in self._swap_sequence:
@@ -214,7 +213,7 @@ class SwapWithZero(GateWithRegisters):
                 targets[idx_one], targets[idx_two] = targets[idx_two], targets[idx_one]
         return selection | {'targets': targets}
 
-    def adjoint(self) -> 'SwapWithZero':
+    def adjoint(self) -> SwapWithZero:
         return attrs.evolve(self, uncompute=not self.uncompute)
 
     def __str__(self) -> str:

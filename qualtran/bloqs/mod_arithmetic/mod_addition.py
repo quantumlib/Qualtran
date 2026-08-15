@@ -74,11 +74,11 @@ class ModAdd(Bloq):
         Construction from Figure 6a and cost summary in Figure 8.
     """
 
-    bitsize: 'SymbolicInt'
-    mod: 'SymbolicInt'
+    bitsize: SymbolicInt
+    mod: SymbolicInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('x', QMontgomeryUInt(self.bitsize, self.mod)),
@@ -86,9 +86,7 @@ class ModAdd(Bloq):
             ]
         )
 
-    def on_classical_vals(
-        self, x: 'ClassicalValT', y: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, x: ClassicalValT, y: ClassicalValT) -> dict[str, ClassicalValT]:
         # The construction still works when at most one of inputs equals `mod`.
         special_case = (x == self.mod) ^ (y == self.mod)
         if not (0 <= x < self.mod or special_case):
@@ -103,7 +101,7 @@ class ModAdd(Bloq):
         y = (x + y) % self.mod
         return {'x': x, 'y': y}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet, y: Soquet) -> dict[str, SoquetT]:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
         # Allocate ancilla bits for use in addition.
@@ -157,7 +155,7 @@ class ModAdd(Bloq):
         # Return the output registers.
         return {'x': x, 'y': y}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             Add(QUInt(self.bitsize + 1)): 1,
             AddK(QUInt(self.bitsize + 1), k=-self.mod): 1,
@@ -226,7 +224,7 @@ class ModAddK(GateWithRegisters):
             return (target_val + self.add_val) % self.mod
         return target_val
 
-    def on_classical_vals(self, *, x: int, ctrl: int | None = None) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, *, x: int, ctrl: int | None = None) -> dict[str, ClassicalValT]:
         out = self._classical_unctrled(x)
         if self.cvs:
             assert ctrl is not None
@@ -238,10 +236,10 @@ class ModAddK(GateWithRegisters):
         assert ctrl is None
         return {'x': out}
 
-    def __pow__(self, power: int) -> 'ModAddK':
+    def __pow__(self, power: int) -> ModAddK:
         return ModAddK(self.bitsize, self.mod, add_val=self.add_val * power, cvs=self.cvs)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {Add(QUInt(self.bitsize), QUInt(self.bitsize)): 5}
 
 
@@ -301,20 +299,16 @@ class CModAddK(Bloq):
     bitsize: int | sympy.Expr
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('ctrl', QBit()), Register('x', QUInt(self.bitsize))])
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', ctrl: 'Soquet', x: 'Soquet'
-    ) -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, ctrl: Soquet, x: Soquet) -> dict[str, SoquetT]:
         k = bb.add(IntState(bitsize=self.bitsize, val=self.k))
         ctrl, k, x = bb.add(CModAdd(QUInt(self.bitsize), mod=self.mod), ctrl=ctrl, x=k, y=x)
         bb.add(IntEffect(bitsize=self.bitsize, val=self.k), val=k)
         return {'ctrl': ctrl, 'x': x}
 
-    def on_classical_vals(
-        self, ctrl: 'ClassicalValT', x: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, ctrl: ClassicalValT, x: ClassicalValT) -> dict[str, ClassicalValT]:
         if ctrl == 0:
             return {'ctrl': 0, 'x': x}
 
@@ -328,10 +322,10 @@ class CModAddK(Bloq):
         x = (x + self.k) % self.mod
         return {'ctrl': ctrl, 'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {CModAdd(QUInt(self.bitsize), mod=self.mod): 1}
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text(f"mod {self.mod}")
         if reg.name == 'ctrl':
@@ -383,7 +377,7 @@ class CtrlScaleModAdd(Bloq):
     bitsize: int | sympy.Expr
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('ctrl', QBit()),
@@ -393,8 +387,8 @@ class CtrlScaleModAdd(Bloq):
         )
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', ctrl: 'Soquet', x: 'Soquet', y: 'Soquet'
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, ctrl: Soquet, x: Soquet, y: Soquet
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
         x_split = bb.split(x)
@@ -417,7 +411,7 @@ class CtrlScaleModAdd(Bloq):
 
         return {'ctrl': ctrl, 'x': x, 'y': y}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         k = ssa.new_symbol('k')
         return {
             CModAddK(k=k, bitsize=self.bitsize, mod=self.mod): self.bitsize,
@@ -426,8 +420,8 @@ class CtrlScaleModAdd(Bloq):
         }
 
     def on_classical_vals(
-        self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+        self, ctrl: ClassicalValT, x: ClassicalValT, y: ClassicalValT
+    ) -> dict[str, ClassicalValT]:
         if ctrl == 0:
             return {'ctrl': 0, 'x': x, 'y': y}
 
@@ -435,7 +429,7 @@ class CtrlScaleModAdd(Bloq):
         y_out = (y + x * self.k) % self.mod
         return {'ctrl': ctrl, 'x': x, 'y': y_out}
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text(f"mod {self.mod}")
         if reg.name == 'ctrl':
@@ -491,18 +485,18 @@ class CModAdd(Bloq):
     """
 
     dtype: QUInt | QMontgomeryUInt
-    mod: 'SymbolicInt'
+    mod: SymbolicInt
     cv: int = 1
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [Register('ctrl', QBit()), Register('x', self.dtype), Register('y', self.dtype)]
         )
 
     def on_classical_vals(
-        self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+        self, ctrl: ClassicalValT, x: ClassicalValT, y: ClassicalValT
+    ) -> dict[str, ClassicalValT]:
         if ctrl != self.cv:
             return {'ctrl': ctrl, 'x': x, 'y': y}
 
@@ -521,8 +515,8 @@ class CModAdd(Bloq):
         return {'ctrl': ctrl, 'x': x, 'y': y}
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', ctrl, x: Soquet, y: Soquet
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, ctrl, x: Soquet, y: Soquet
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.dtype.bitsize):
             raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
         y_arr = bb.split(y)
@@ -559,7 +553,7 @@ class CModAdd(Bloq):
 
         return {'ctrl': ctrl, 'x': x, 'y': y}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             CAdd(QUInt(self.dtype.bitsize), QUInt(self.dtype.bitsize + 1), cv=self.cv): 1,
             AddK(QUInt(self.dtype.bitsize + 1), -self.mod): 1,

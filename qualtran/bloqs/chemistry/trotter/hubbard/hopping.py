@@ -13,6 +13,8 @@
 #  limitations under the License.
 """Bloqs implementing unitary evolution under the one-body hopping Hamiltonian in 2D."""
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -76,7 +78,7 @@ class HoppingPlaquette(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('qubits', QBit(), shape=(4,))])
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # The TwoBitFFFT in the reference is F(k=0, n=arbitrary)
         # page 14, discussion after E13
         # There are 4 flanking f-gates and a e^{iXX}e^{iYY} rotation, which can
@@ -122,7 +124,7 @@ class HoppingTile(Bloq):
         if isinstance(self.length, int) and self.length % 2 != 0:
             raise ValueError('Only even length lattices are supported')
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             l = 'p' if self.pink else 'g'
             return Text(f'H_h^{l}')
@@ -132,7 +134,7 @@ class HoppingTile(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('system', QAny(self.length), shape=(2,))])
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # Page 5, text after Eq. 22. There are L^2 / 4 plaquettes of a given colour and x2 for spin.
         return {HoppingPlaquette(kappa=self.tau * self.angle, eps=self.eps): self.length**2 // 2}
 
@@ -183,7 +185,7 @@ class HoppingTileHWP(HoppingTile):
         l = 'p' if self.pink else 'g'
         return f'H_h^{l}(HWP)'
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # Page 5, text after Eq. 22. There are L^2 / 4 plaquettes of a given colour and x2 for spin.
         # Each plaquette contributes 4 TwoBitFFFT gates and two arbitrary rotations.
         # We use Hamming weight phasing to apply all 2 * L^2/4 (two for spin

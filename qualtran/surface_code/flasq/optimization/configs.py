@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import itertools
 from collections.abc import Iterable
 from typing import Any, NamedTuple
@@ -50,7 +52,7 @@ class CoreParametersConfig(NamedTuple):
         physical_error_rate: float,
         target_individual_t_gate_error: float,
         reference_code_distance: int,
-    ) -> "CoreParametersConfig":
+    ) -> CoreParametersConfig:
         """Creates a config from cultivation simulation data.
 
         Looks up the cultivation row that minimises expected volume while

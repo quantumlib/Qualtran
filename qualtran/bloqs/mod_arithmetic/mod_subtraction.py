@@ -69,13 +69,13 @@ class ModNeg(Bloq):
     """
 
     dtype: QUInt | QMontgomeryUInt
-    mod: 'SymbolicInt'
+    mod: SymbolicInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('x', self.dtype)])
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet) -> dict[str, SoquetT]:
         if not isinstance(self.dtype.bitsize, int):
             raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
 
@@ -99,7 +99,7 @@ class ModNeg(Bloq):
         bb.free(ancilla)
         return {'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             XGate().controlled(CtrlSpec(qdtypes=self.dtype, cvs=0)): 2,
             MultiTargetCNOT(self.dtype.bitsize): 1,
@@ -107,14 +107,14 @@ class ModNeg(Bloq):
             XGate(): 2,
         }
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("")
         if reg.name == 'x':
             return TextBox('$-x$')
         raise ValueError(f'Unrecognized register name {reg.name}')
 
-    def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, x: ClassicalValT) -> dict[str, ClassicalValT]:
         if 0 < x < self.mod:
             x = self.mod - x
         return {'x': x}
@@ -144,16 +144,14 @@ class CModNeg(Bloq):
     """
 
     dtype: QUInt | QMontgomeryUInt
-    mod: 'SymbolicInt'
+    mod: SymbolicInt
     cv: int = 1
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('ctrl', QBit()), Register('x', self.dtype)])
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', ctrl: Soquet, x: Soquet
-    ) -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, ctrl: Soquet, x: Soquet) -> dict[str, SoquetT]:
         if not isinstance(self.dtype.bitsize, int):
             raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
 
@@ -183,7 +181,7 @@ class CModNeg(Bloq):
         bb.free(ancilla)
         return {'ctrl': ctrl, 'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         cvs: list[int] | HasLength
         if isinstance(self.dtype.bitsize, int):
             cvs = [0] * self.dtype.bitsize
@@ -198,7 +196,7 @@ class CModNeg(Bloq):
             XGate(): 2,
         }
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("")
         if reg.name == 'ctrl':
@@ -207,9 +205,7 @@ class CModNeg(Bloq):
             return TextBox('$-x$')
         raise ValueError(f'Unrecognized register name {reg.name}')
 
-    def on_classical_vals(
-        self, ctrl: 'ClassicalValT', x: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, ctrl: ClassicalValT, x: ClassicalValT) -> dict[str, ClassicalValT]:
         if ctrl == self.cv and 0 < x < self.mod:
             x = self.mod - x
         return {'ctrl': ctrl, 'x': x}
@@ -257,13 +253,13 @@ class ModSub(Bloq):
     """
 
     dtype: QUInt | QMontgomeryUInt
-    mod: 'SymbolicInt'
+    mod: SymbolicInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('x', self.dtype), Register('y', self.dtype)])
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet, y: Soquet) -> dict[str, SoquetT]:
         x = bb.add(BitwiseNot(self.dtype), x=x)
         x = bb.add(AddK(self.dtype, self.mod + 1), x=x)
         x, y = bb.add(ModAdd(self.dtype.bitsize, self.mod), x=x, y=y)
@@ -271,7 +267,7 @@ class ModSub(Bloq):
         x = bb.add(BitwiseNot(self.dtype), x=x)
         return {'x': x, 'y': y}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             BitwiseNot(self.dtype): 2,
             AddK(self.dtype, self.mod + 1): 1,
@@ -279,7 +275,7 @@ class ModSub(Bloq):
             ModAdd(self.dtype.bitsize, self.mod): 1,
         }
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("")
         if reg.name == 'x':
@@ -288,9 +284,7 @@ class ModSub(Bloq):
             return TextBox('$y-x$')
         raise ValueError(f'Unrecognized register name {reg.name}')
 
-    def on_classical_vals(
-        self, x: 'ClassicalValT', y: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, x: ClassicalValT, y: ClassicalValT) -> dict[str, ClassicalValT]:
         if 0 <= x < self.mod and 0 <= y < self.mod:
             y -= x
             if y < 0:
@@ -330,18 +324,18 @@ class CModSub(Bloq):
     """
 
     dtype: QUInt | QMontgomeryUInt
-    mod: 'SymbolicInt'
+    mod: SymbolicInt
     cv: int = 1
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [Register('ctrl', QBit()), Register('x', self.dtype), Register('y', self.dtype)]
         )
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', ctrl: Soquet, x: Soquet, y: Soquet
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, ctrl: Soquet, x: Soquet, y: Soquet
+    ) -> dict[str, SoquetT]:
         x = bb.add(BitwiseNot(self.dtype), x=x)
         x = bb.add(AddK(self.dtype, self.mod + 1), x=x)
         ctrl, x, y = bb.add(CModAdd(self.dtype, self.mod, self.cv), ctrl=ctrl, x=x, y=y)
@@ -349,7 +343,7 @@ class CModSub(Bloq):
         x = bb.add(BitwiseNot(self.dtype), x=x)
         return {'ctrl': ctrl, 'x': x, 'y': y}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             BitwiseNot(self.dtype): 2,
             AddK(self.dtype, self.mod + 1): 1,
@@ -357,7 +351,7 @@ class CModSub(Bloq):
             CModAdd(self.dtype, self.mod, self.cv): 1,
         }
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("")
         if reg.name == 'ctrl':
@@ -369,8 +363,8 @@ class CModSub(Bloq):
         raise ValueError(f'Unrecognized register name {reg.name}')
 
     def on_classical_vals(
-        self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+        self, ctrl: ClassicalValT, x: ClassicalValT, y: ClassicalValT
+    ) -> dict[str, ClassicalValT]:
         if ctrl == self.cv and 0 <= x < self.mod and 0 <= y < self.mod:
             y -= x
             if y < 0:

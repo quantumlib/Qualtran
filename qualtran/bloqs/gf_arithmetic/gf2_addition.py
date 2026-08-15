@@ -67,16 +67,14 @@ class GF2Addition(Bloq):
         object.__setattr__(self, 'qgf', qgf)
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('x', dtype=self.qgf), Register('y', dtype=self.qgf)])
 
     @cached_property
     def bitsize(self) -> SymbolicInt:
         return self.qgf.degree
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', *, x: 'Soquet', y: 'Soquet'
-    ) -> dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: BloqBuilder, *, x: Soquet, y: Soquet) -> dict[str, Soquet]:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
         x, y = bb.split(x), bb.split(y)
@@ -86,14 +84,14 @@ class GF2Addition(Bloq):
         x, y = (bb.join(x, dtype=self.qgf), bb.join(y, dtype=self.qgf))
         return {'x': x, 'y': y}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         return {CNOT(): self.bitsize}
 
-    def on_classical_vals(self, *, x, y) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, *, x, y) -> dict[str, ClassicalValT]:
         assert isinstance(x, self.qgf.gf_type) and isinstance(y, self.qgf.gf_type)
         return {'x': x, 'y': x + y}
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return self
 
 

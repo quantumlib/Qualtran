@@ -13,6 +13,8 @@
 #  limitations under the License.
 r"""PREPARE the superposition over nuclear weights for the first quantized chemistry Hamiltonian."""
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -54,10 +56,10 @@ class PrepareZetaState(Bloq):
     def signature(self) -> Signature:
         return Signature([Register("l", QAny(bitsize=(self.num_atoms - 1).bit_length()))])
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         if self.is_adjoint:
             # Really Er(x), eq 91. In practice we will replace this with the
             # appropriate qrom call down the line.

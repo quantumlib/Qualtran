@@ -75,7 +75,7 @@ class SynthesizeLRCircuit(Bloq):
         assert is_symbolic(n, m) or n == m
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('q', QBit(), shape=(self.n,))])
 
     @cached_property
@@ -94,7 +94,7 @@ class SynthesizeLRCircuit(Bloq):
         P, L, U = GF(2)(self.matrix).plu_decompose()
         return np.asarray(L, dtype=int), np.asarray(U, dtype=int), np.asarray(P, dtype=int)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', *, q: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, *, q: SoquetT) -> dict[str, SoquetT]:
         assert isinstance(q, np.ndarray)  # make mypy happy
         L, U, P = self.lup
         if is_symbolic(self.n):
@@ -118,7 +118,7 @@ class SynthesizeLRCircuit(Bloq):
                     column[i], column[j] = column[j], column[i]
         return {'q': q}
 
-    def on_classical_vals(self, *, q: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, *, q: ClassicalValT) -> dict[str, ClassicalValT]:
         if is_symbolic(self.matrix):
             raise ValueError(f"Cannot do classical simulation on symbolic {self}")
         matrix = GF(2)(self.matrix.astype(int))
@@ -131,7 +131,7 @@ class SynthesizeLRCircuit(Bloq):
         assert isinstance(q, np.ndarray)
         return {'q': np.array(matrix @ q)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         n = self.matrix.shape[0]
         if isinstance(self.matrix, Shaped):
             return {CNOT(): n**2 - n}
@@ -142,7 +142,7 @@ class SynthesizeLRCircuit(Bloq):
             return {CNOT(): cnots}
         return {}
 
-    def adjoint(self) -> 'SynthesizeLRCircuit':
+    def adjoint(self) -> SynthesizeLRCircuit:
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
     def __str__(self):
@@ -196,7 +196,7 @@ class GF2Multiplication(Bloq):
     plus_equal_prod: bool = False
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         result_side = Side.THRU if self.plus_equal_prod else Side.RIGHT
         return Signature(
             [
@@ -210,7 +210,7 @@ class GF2Multiplication(Bloq):
     def bitsize(self) -> SymbolicInt:
         return self.qgf.bitsize
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'Soquet') -> dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'Soquet') -> dict[str, Soquet]:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
         x, y = soqs['x'], soqs['y']
@@ -250,12 +250,12 @@ class GF2Multiplication(Bloq):
         )
         return {'x': x, 'y': y, 'result': result}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         m = self.bitsize
         plus_equal_prod = {GF2ShiftRight(self.qgf, m).adjoint(): 1} if self.plus_equal_prod else {}
         return {Toffoli(): m**2, GF2ShiftRight(self.qgf, m): 1} | plus_equal_prod
 
-    def on_classical_vals(self, **vals) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, **vals) -> dict[str, ClassicalValT]:
         assert all(isinstance(val, self.qgf.gf_type) for val in vals.values())
         x, y = vals['x'], vals['y']
         result = vals['result'] if self.plus_equal_prod else self.qgf.gf_type(0)
@@ -287,7 +287,7 @@ class Parity(Bloq):
     n: int
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('x', dtype=CBit(), shape=(self.n,)),
@@ -297,7 +297,7 @@ class Parity(Bloq):
 
     def on_classical_vals(
         self, *, x: sympy.Symbol | ClassicalValT
-    ) -> Mapping[str, 'ClassicalValRetT']:
+    ) -> Mapping[str, ClassicalValRetT]:
         assert isinstance(x, np.ndarray)
         return {'x': x, 'parity': np.sum(x, dtype=int) & 1}
 
@@ -319,7 +319,7 @@ class GF2MulMBUC(Bloq):
     qgf: QGF = attrs.field(converter=gf_utils.qgf_converter)
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('x', dtype=self.qgf),
@@ -346,7 +346,7 @@ class GF2MulMBUC(Bloq):
             alpha += [0]
         return np.transpose(M)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'Soquet') -> dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'Soquet') -> dict[str, Soquet]:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
         x, y, result = soqs['x'], soqs['y'], soqs['result']
@@ -376,11 +376,11 @@ class GF2MulMBUC(Bloq):
             bb.add(Discard(), c=c)
         return {'x': bb.join(x[::-1], dtype=self.qgf), 'y': bb.join(y[::-1], dtype=self.qgf)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         m = self.bitsize
         return {CZ(): m**2}
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return GF2MulViaKaratsuba(self.qgf)
 
 
@@ -401,7 +401,7 @@ class GF2MulK(Bloq):
     """
 
     dtype: QGF
-    const: 'SymbolicInt'
+    const: SymbolicInt
 
     @cached_property
     def galois_field(self):
@@ -411,7 +411,7 @@ class GF2MulK(Bloq):
         assert is_symbolic(self.const) or isinstance(self.const, int)
 
     @cached_property
-    def m_x(self) -> 'galois.Poly':
+    def m_x(self) -> galois.Poly:
         return self.dtype.gf_type.irreducible_poly
 
     @cached_property
@@ -425,7 +425,7 @@ class GF2MulK(Bloq):
     @staticmethod
     def from_polynomials(
         f_x: galois.Poly | Sequence[int], m_x: galois.Poly | Sequence[int]
-    ) -> 'GF2MulK':
+    ) -> GF2MulK:
         if not isinstance(m_x, Poly):
             m_x = Poly.Degrees(m_x)
         if not isinstance(f_x, Poly):
@@ -445,17 +445,17 @@ class GF2MulK(Bloq):
         return matrix
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('g', self.qgf)])
 
     @cached_property
-    def _const(self) -> 'galois.FieldArray':
+    def _const(self) -> galois.FieldArray:
         return self.galois_field(self.const)
 
-    def on_classical_vals(self, g) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, g) -> dict[str, ClassicalValT]:
         return {'g': g * self._const}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', g: 'Soquet') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, g: Soquet) -> dict[str, SoquetT]:
         g_arr = bb.split(g)
         g_arr = g_arr[::-1]
         g_arr = bb.add(SynthesizeLRCircuit(self.reduction_matrix_q), q=g_arr)
@@ -463,7 +463,7 @@ class GF2MulK(Bloq):
         g = bb.join(g_arr, dtype=self.qgf)
         return {'g': g}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         return {SynthesizeLRCircuit(self.reduction_matrix_q): 1}
 
 
@@ -534,7 +534,7 @@ class MultiplyPolyByOnePlusXk(Bloq):
         return max(0, 2 * self.n - self.k - 1)
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('f', dtype=QBit(), shape=(self.n,)),
@@ -544,8 +544,8 @@ class MultiplyPolyByOnePlusXk(Bloq):
         )
 
     def on_classical_vals(
-        self, f: 'ClassicalValT', g: 'ClassicalValT', h: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+        self, f: ClassicalValT, g: ClassicalValT, h: ClassicalValT
+    ) -> dict[str, ClassicalValT]:
         if is_symbolic(self.k):
             raise TypeError(f'classical action is not supported for {self=}')
         assert isinstance(f, np.ndarray)
@@ -562,8 +562,8 @@ class MultiplyPolyByOnePlusXk(Bloq):
         return {'f': f, 'g': g, 'h': res}
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', f: 'SoquetT', g: 'SoquetT', h: 'SoquetT'
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, f: SoquetT, g: SoquetT, h: SoquetT
+    ) -> dict[str, SoquetT]:
         n = self.n
         k = self.k
         l = self.l
@@ -596,7 +596,7 @@ class MultiplyPolyByOnePlusXk(Bloq):
         assert len(h) == original, f'{original=} {len(h)}'
         return {'f': f, 'g': g, 'h': h}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         if not is_symbolic(self.n) and self.n == 1:
             return {CNOT(): 2, Toffoli(): 1}
         return {CNOT(): 2 * (self.l + self.k), BinaryPolynomialMultiplication(self.n): 1}
@@ -643,7 +643,7 @@ class BinaryPolynomialMultiplication(Bloq):
     n: SymbolicInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('f', dtype=QBit(), shape=(self.n,)),
@@ -653,8 +653,8 @@ class BinaryPolynomialMultiplication(Bloq):
         )
 
     def on_classical_vals(
-        self, f: 'ClassicalValT', g: 'ClassicalValT', h: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+        self, f: ClassicalValT, g: ClassicalValT, h: ClassicalValT
+    ) -> dict[str, ClassicalValT]:
         assert isinstance(f, np.ndarray)
         assert isinstance(g, np.ndarray)
         assert isinstance(h, np.ndarray)
@@ -668,14 +668,14 @@ class BinaryPolynomialMultiplication(Bloq):
         return {'f': f, 'g': g, 'h': res}
 
     @property
-    def k(self) -> 'SymbolicInt':
+    def k(self) -> SymbolicInt:
         if isinstance(self.n, int):
             return (self.n + 1) >> 1
         return sympy.ceiling(self.n / 2)
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', f: 'SoquetT', g: 'SoquetT', h: 'SoquetT'
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, f: SoquetT, g: SoquetT, h: SoquetT
+    ) -> dict[str, SoquetT]:
         k, n = self.k, self.n
         if is_symbolic(n) or is_symbolic(k):
             raise DecomposeTypeError(f"symbolic decomposition is not supported for {self}")
@@ -723,7 +723,7 @@ class BinaryPolynomialMultiplication(Bloq):
 
         return {'f': f, 'g': g, 'h': h}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         if not is_symbolic(self.n) and self.n == 1:
             return {Toffoli(): 1}
         if not is_symbolic(self.n) and 2 * self.k == self.n:
@@ -779,7 +779,7 @@ class GF2ShiftLeft(Bloq):
         return self.qgf.degree
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('f', dtype=self.qgf)])
 
     @cached_property
@@ -794,7 +794,7 @@ class GF2ShiftLeft(Bloq):
     def _power_2(self):
         return self.gf(2) ** (-self.k)
 
-    def on_classical_vals(self, f: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, f: ClassicalValT) -> dict[str, ClassicalValT]:
         k = self.k
         if is_symbolic(k):
             raise TypeError(f'classical action is not supported for {self}')
@@ -803,7 +803,7 @@ class GF2ShiftLeft(Bloq):
             return {'f': f}
         return {'f': f * self._power_2}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', f: 'Soquet') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, f: Soquet) -> dict[str, SoquetT]:
         if is_symbolic(self.k):
             raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
         f_arr = bb.split(f)[::-1]
@@ -816,7 +816,7 @@ class GF2ShiftLeft(Bloq):
         f = bb.join(f_arr)
         return {'f': f}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         if is_symbolic(self.n):
             w = 5  # Assume a pentanomial is used.
             return {CNOT(): (w - 2) * self.k}
@@ -825,7 +825,7 @@ class GF2ShiftLeft(Bloq):
 
         return {CNOT(): max(len(self.degrees) - 2, 0) * self.k}
 
-    def adjoint(self) -> 'GF2ShiftRight':
+    def adjoint(self) -> GF2ShiftRight:
         return GF2ShiftRight(self.qgf, self.k)
 
 
@@ -870,7 +870,7 @@ class GF2ShiftRight(Bloq):
         return self.qgf.degree
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('f', dtype=self.qgf)])
 
     @cached_property
@@ -885,7 +885,7 @@ class GF2ShiftRight(Bloq):
     def _power_2(self):
         return self.gf(2) ** self.k
 
-    def on_classical_vals(self, f: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, f: ClassicalValT) -> dict[str, ClassicalValT]:
         k = self.k
         if is_symbolic(k):
             raise TypeError(f'classical action is not supported for {self}')
@@ -894,7 +894,7 @@ class GF2ShiftRight(Bloq):
             return {'f': f}
         return {'f': f * self._power_2}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', f: 'Soquet') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, f: Soquet) -> dict[str, SoquetT]:
         if is_symbolic(self.k):
             raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
         f_arr = bb.split(f)[::-1]
@@ -907,7 +907,7 @@ class GF2ShiftRight(Bloq):
         f = bb.join(f_arr)
         return {'f': f}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         if is_symbolic(self.n):
             w = 5  # Assume a pentanomial is used.
             return {CNOT(): (w - 2) * self.k}
@@ -940,7 +940,7 @@ class _GF2MulViaKaratsubaImpl(Bloq):
         return int(self.qgf.degree)
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('f', dtype=self.qgf),
@@ -961,8 +961,8 @@ class _GF2MulViaKaratsubaImpl(Bloq):
         return self.qgf.gf_type.irreducible_poly
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', f: 'Soquet', g: 'Soquet', h: 'Soquet'
-    ) -> dict[str, 'Soquet']:
+        self, bb: BloqBuilder, f: Soquet, g: Soquet, h: Soquet
+    ) -> dict[str, Soquet]:
         if is_symbolic(self.k, self.n):
             raise DecomposeTypeError(f"Symbolic Decomposition is not supported for {self}")
 
@@ -1073,7 +1073,7 @@ class GF2MulViaKaratsuba(Bloq):
         return f'{self.__class__.__name__}'
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('x', dtype=self.qgf),
@@ -1095,8 +1095,8 @@ class GF2MulViaKaratsuba(Bloq):
         return impl
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: 'Soquet', y: 'Soquet', **soqs: 'SoquetT'
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, x: Soquet, y: Soquet, **soqs: 'SoquetT'
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.k, self.n):
             raise DecomposeTypeError(f"Symbolic Decomposition is not supported for {self}")
 
@@ -1106,7 +1106,7 @@ class GF2MulViaKaratsuba(Bloq):
 
         return {'x': x, 'y': y, 'result': result}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         if is_symbolic(self.n):
             return {Toffoli(): self.n ** (log2(3)), CNOT(): self.n**2}
 
@@ -1130,13 +1130,13 @@ class GF2MulViaKaratsuba(Bloq):
         }
 
     def on_classical_vals(
-        self, x: 'SymbolicInt', y: 'SymbolicInt', result: SymbolicInt | None = None
-    ) -> dict[str, 'ClassicalValT']:
+        self, x: SymbolicInt, y: SymbolicInt, result: SymbolicInt | None = None
+    ) -> dict[str, ClassicalValT]:
         assert isinstance(x, self.gf)
         assert isinstance(y, self.gf)
         return {'x': x, 'y': y, 'result': x * y}
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return GF2MulMBUC(self.qgf)
 
 

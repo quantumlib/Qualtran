@@ -13,6 +13,8 @@
 #  limitations under the License.
 r"""Bloqs for PREPARE T for the first quantized chemistry Hamiltonian with a quantum projectile."""
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -63,14 +65,14 @@ class PreparePowerTwoStateWithProj(Bloq):
         if self.bitsize_n < self.bitsize_p:
             raise ValueError(f"bitsize_n < bitsize_p : {self.bitsize_n} < {self.bitsize_p}.")
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return evolve(self, is_adjoint=not self.is_adjoint)
 
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(r=self.bitsize_n)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         if self.is_adjoint:
             return {Toffoli(): (self.bitsize_n - 2)}
         else:
@@ -128,10 +130,10 @@ class PrepareTFirstQuantizationWithProj(Bloq):
     def signature(self) -> Signature:
         return Signature.build(w=2, w_mean=2, r=self.num_bits_n, s=self.num_bits_n)
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # there is a cost for the uniform state preparation for the $w$
         # register. Adding a bloq is sort of overkill, should just tag the
         # correct cost on UniformSuperPosition bloq

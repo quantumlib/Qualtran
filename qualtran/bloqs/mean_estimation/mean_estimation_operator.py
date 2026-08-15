@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Iterator
 from functools import cached_property
 from typing import TYPE_CHECKING
@@ -106,17 +108,15 @@ class MeanEstimationOperator(GateWithRegisters):
     def decompose_from_registers(
         self,
         *,
-        context: 'cirq.DecompositionContext',
+        context: cirq.DecompositionContext,
         **quregs: NDArray['cirq.Qid'],  # type: ignore[type-var]
-    ) -> Iterator['cirq.OP_TREE']:
+    ) -> Iterator[cirq.OP_TREE]:
         select_reg = {reg.name: quregs[reg.name] for reg in self.select.signature}
         reflect_reg = {reg.name: quregs[reg.name] for reg in self.reflect.signature}
         yield self.select.on_registers(**select_reg)
         yield self.reflect.on_registers(**reflect_reg)
 
-    def _circuit_diagram_info_(
-        self, args: 'cirq.CircuitDiagramInfoArgs'
-    ) -> 'cirq.CircuitDiagramInfo':
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         import cirq
 
         wire_symbols = ['U_ko'] * self.signature.n_qubits()

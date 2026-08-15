@@ -76,7 +76,7 @@ class _QConst(Bloq):
         return Signature([Register('val', self.qdtype, side=side)])
 
     @staticmethod
-    def _build_composite_state(bb: 'BloqBuilder', bits: NDArray[np.uint8]) -> dict[str, 'SoquetT']:
+    def _build_composite_state(bb: BloqBuilder, bits: NDArray[np.uint8]) -> dict[str, SoquetT]:
         from qualtran.bloqs.basic_gates.z_basis import OneState, ZeroState
 
         states = [ZeroState(), OneState()]
@@ -90,8 +90,8 @@ class _QConst(Bloq):
 
     @staticmethod
     def _build_composite_effect(
-        bb: 'BloqBuilder', val: 'Soquet', bits: NDArray[np.uint8]
-    ) -> dict[str, 'SoquetT']:
+        bb: BloqBuilder, val: Soquet, bits: NDArray[np.uint8]
+    ) -> dict[str, SoquetT]:
         from qualtran.bloqs.basic_gates.z_basis import OneEffect, ZeroEffect
 
         xs = bb.split(val)
@@ -100,7 +100,7 @@ class _QConst(Bloq):
             bb.add(effects[bit], q=xs[i])
         return {}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **val: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **val: 'SoquetT') -> dict[str, SoquetT]:
         if is_symbolic(self.qdtype) or is_symbolic(self.val):
             raise DecomposeTypeError(
                 f'Symbolic qdtype {self.qdtype} or val {self.val} not supported'
@@ -120,17 +120,17 @@ class _QConst(Bloq):
         assert val == self.val, val
         return {}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {ArbitraryClifford(self.qdtype.num_bits): 1}
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return _QConst(val=self.val, qdtype=self.qdtype, state=not self.state)
 
     def __str__(self) -> str:
         s = f'{self.val}'
         return f'QConst({s})'
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
 
@@ -162,24 +162,24 @@ class QIntState(Bloq):
         return _QConst(val=self.val, qdtype=QInt(self.bitsize), state=True)
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return self._impl.signature
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         return self._impl.build_composite_bloq(bb, **soqs)
 
     def on_classical_vals(
         self, **vals: sympy.Symbol | ClassicalValT
-    ) -> Mapping[str, 'ClassicalValRetT']:
+    ) -> Mapping[str, ClassicalValRetT]:
         return self._impl.on_classical_vals(**vals)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         return self._impl.build_call_graph(ssa)
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         return self._impl.wire_symbol(reg, idx)
 
-    def adjoint(self) -> 'QIntEffect':
+    def adjoint(self) -> QIntEffect:
         return QIntEffect(val=self.val, bitsize=self.bitsize)
 
     def __str__(self):
@@ -220,24 +220,24 @@ class QIntEffect(Bloq):
         return _QConst(val=self.val, qdtype=QInt(self.bitsize), state=False)
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return self._impl.signature
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         return self._impl.build_composite_bloq(bb, **soqs)
 
     def on_classical_vals(
         self, **vals: sympy.Symbol | ClassicalValT
-    ) -> Mapping[str, 'ClassicalValRetT']:
+    ) -> Mapping[str, ClassicalValRetT]:
         return self._impl.on_classical_vals(**vals)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         return self._impl.build_call_graph(ssa)
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         return self._impl.wire_symbol(reg, idx)
 
-    def adjoint(self) -> 'QIntState':
+    def adjoint(self) -> QIntState:
         return QIntState(val=self.val, bitsize=self.bitsize)
 
     def __str__(self):
@@ -278,24 +278,24 @@ class QUIntState(Bloq):
         return _QConst(val=self.val, qdtype=QUInt(self.bitsize), state=True)
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return self._impl.signature
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         return self._impl.build_composite_bloq(bb, **soqs)
 
     def on_classical_vals(
         self, **vals: sympy.Symbol | ClassicalValT
-    ) -> Mapping[str, 'ClassicalValRetT']:
+    ) -> Mapping[str, ClassicalValRetT]:
         return self._impl.on_classical_vals(**vals)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         return self._impl.build_call_graph(ssa)
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         return self._impl.wire_symbol(reg, idx)
 
-    def adjoint(self) -> 'QUIntEffect':
+    def adjoint(self) -> QUIntEffect:
         return QUIntEffect(val=self.val, bitsize=self.bitsize)
 
     def __str__(self):
@@ -336,24 +336,24 @@ class QUIntEffect(Bloq):
         return _QConst(val=self.val, qdtype=QUInt(self.bitsize), state=False)
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return self._impl.signature
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         return self._impl.build_composite_bloq(bb, **soqs)
 
     def on_classical_vals(
         self, **vals: sympy.Symbol | ClassicalValT
-    ) -> Mapping[str, 'ClassicalValRetT']:
+    ) -> Mapping[str, ClassicalValRetT]:
         return self._impl.on_classical_vals(**vals)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         return self._impl.build_call_graph(ssa)
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         return self._impl.wire_symbol(reg, idx)
 
-    def adjoint(self) -> 'QUIntState':
+    def adjoint(self) -> QUIntState:
         return QUIntState(val=self.val, bitsize=self.bitsize)
 
     def __str__(self):

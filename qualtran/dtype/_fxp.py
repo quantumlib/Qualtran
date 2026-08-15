@@ -121,7 +121,7 @@ class _Fxp(BitEncoding[int]):
         else:
             return f'_Fxp({self.bitsize}, {self.num_frac})'
 
-    def fxp_dtype_template(self) -> 'fxpmath.Fxp':
+    def fxp_dtype_template(self) -> fxpmath.Fxp:
         """A template of the `fxpmath.Fxp` data type for classical values.
 
         To construct an `fxpmath.Fxp` with this config, one can use:
@@ -161,7 +161,7 @@ class _Fxp(BitEncoding[int]):
             overflow='wrap',
         )
 
-    def _get_domain_fxp(self) -> Iterable['fxpmath.Fxp']:
+    def _get_domain_fxp(self) -> Iterable[fxpmath.Fxp]:
         import fxpmath
 
         for x in self._int_encoding.get_domain():
@@ -195,7 +195,7 @@ class _Fxp(BitEncoding[int]):
             bits[0] = sign
         return bits
 
-    def _from_bits_to_fxp(self, bits: Sequence[int]) -> 'fxpmath.Fxp':
+    def _from_bits_to_fxp(self, bits: Sequence[int]) -> fxpmath.Fxp:
         import fxpmath
 
         if is_symbolic(self.num_frac):
@@ -323,7 +323,7 @@ class QFxp(QDType[int]):
         else:
             return f'QFxp({self.bitsize}, {self.num_frac})'
 
-    def fxp_dtype_template(self) -> 'fxpmath.Fxp':
+    def fxp_dtype_template(self) -> fxpmath.Fxp:
         """A template of the `Fxp` data type for classical values.
 
         To construct an `Fxp` with this config, one can use:

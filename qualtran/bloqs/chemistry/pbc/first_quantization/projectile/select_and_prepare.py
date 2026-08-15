@@ -13,6 +13,8 @@
 #  limitations under the License.
 r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian with a quantum projectile."""
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -102,15 +104,15 @@ class PrepareTUVSuperpositions(Bloq):
             ]
         )
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("PREP TUV")
         return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         if self.is_adjoint:
             # inverting inequality tests at zero Toffoli.
             return {}
@@ -142,7 +144,7 @@ class ControlledMultiplexedCSwap3D(MultiplexedCSwap3D):
             ]
         )
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('MultiSwap')
         if reg.name == 'sel':
@@ -159,7 +161,7 @@ class ControlledMultiplexedCSwap3D(MultiplexedCSwap3D):
 
     def build_composite_bloq(
         self, bb: BloqBuilder, ctrl: SoquetT, sel: SoquetT, targets: SoquetT, junk: SoquetT
-    ) -> dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         flat_sys = self._reshape_reg(bb, targets, (self.eta,), bitsize=3 * self.num_bits_p)
         # we need to extract first n_p bits of each n_n sized ancilla register (i.e. pad with zeros).
         # This is not a contiguous chunk of qubits so we need to first flatten,
@@ -285,7 +287,7 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
             Register('flags', QBit(), shape=(4,)),
         )
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("PREP")
         return super().wire_symbol(reg, idx)
@@ -311,7 +313,7 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
         succ_nu: SoquetT,
         l: SoquetT,
         flags: SoquetT,
-    ) -> dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         prep_tuv = PrepareTUVSuperpositions(
             self.num_bits_t, self.eta, self.lambda_zeta, self.num_bits_rot_aa
         )
@@ -465,7 +467,7 @@ class SelectFirstQuantizationWithProj(SelectOracle):
             [*self.control_registers, *self.selection_registers, *self.target_registers]
         )
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("SELECT")
         return super().wire_symbol(reg, idx)
@@ -490,7 +492,7 @@ class SelectFirstQuantizationWithProj(SelectOracle):
         l: SoquetT,
         sys: SoquetT,
         proj: NDArray[Soquet],  # type: ignore[type-var]
-    ) -> dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         # ancilla for swaps from electronic and projectile system registers.
         # we assume these are left in a clean state after SELECT operations
         # We only need one of the ancilla registers to be of the size of the projectile's register.

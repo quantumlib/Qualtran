@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import Any, cast
 
@@ -80,9 +82,7 @@ class TestTwoCNOT(Bloq):
     def signature(self) -> Signature:
         return Signature.build(q1=1, q2=1)
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', q1: 'Soquet', q2: 'Soquet'
-    ) -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, q1: Soquet, q2: Soquet) -> dict[str, SoquetT]:
         q1, q2 = bb.add(CNOT(), ctrl=q1, target=q2)
         q1, q2 = bb.add(CNOT(), ctrl=q2, target=q1)
         return {'q1': q1, 'q2': q2}
@@ -362,10 +362,7 @@ class TestMultiCNOT(Bloq):
         return Signature([Register('control', QBit()), Register('target', QBit(), shape=(2, 3))])
 
     def build_composite_bloq(
-        self,
-        bb: 'BloqBuilder',
-        control: 'Soquet',
-        target: NDArray['Soquet'],  # type: ignore[type-var]
+        self, bb: BloqBuilder, control: Soquet, target: NDArray[Soquet]  # type: ignore[type-var]
     ) -> dict[str, SoquetT]:
         for i in range(2):
             for j in range(3):
@@ -651,10 +648,10 @@ def test_add_and_partition():
 
 @attrs.frozen
 class TestSymbolicRegisterShape(Bloq):
-    n: 'SymbolicInt'
+    n: SymbolicInt
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('q', QBit(), shape=(self.n,))])
 
 
@@ -669,7 +666,7 @@ class LeftRightSoquets(Bloq):
     """Bloq that outputs a random bit for testing."""
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [Register('in', QBit(), side=Side.LEFT), Register('out', QBit(), side=Side.RIGHT)]
         )

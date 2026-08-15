@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from collections import Counter
 from collections.abc import Iterable, Iterator, Sequence
 from functools import cached_property
@@ -283,7 +285,7 @@ class GeneralizedQSP(GateWithRegisters):
         Motlagh and Wiebe. (2023). Theorem 3; Figure 2; Theorem 6.
     """
 
-    U: 'Bloq'
+    U: Bloq
     P: tuple[complex, ...] | Shaped = field(converter=_to_tuple)
     Q: tuple[complex, ...] | Shaped = field(converter=_to_tuple)
     negative_power: SymbolicInt = field(default=0, kw_only=True)
@@ -303,14 +305,14 @@ class GeneralizedQSP(GateWithRegisters):
     @classmethod
     def from_qsp_polynomial(
         cls,
-        U: 'Bloq',
+        U: Bloq,
         P: NDArray[np.number] | Sequence[complex] | Shaped,
         *,
         negative_power: SymbolicInt = 0,
         precision: SymbolicFloat = 0,
         verify: bool = False,
         verify_precision=1e-7,
-    ) -> 'GeneralizedQSP':
+    ) -> GeneralizedQSP:
         if isinstance(P, Shaped) or is_symbolic(P):
             return GeneralizedQSP(U, P, P, negative_power=negative_power)
 
@@ -346,10 +348,10 @@ class GeneralizedQSP(GateWithRegisters):
     def decompose_from_registers(
         self,
         *,
-        context: 'cirq.DecompositionContext',
+        context: cirq.DecompositionContext,
         signal,
         **quregs: NDArray['cirq.Qid'],  # type: ignore[type-var]
-    ) -> Iterator['cirq.OP_TREE']:
+    ) -> Iterator[cirq.OP_TREE]:
         if self.is_symbolic():
             raise DecomposeTypeError(f'Cannot decompose symbolic {self=}')
 
@@ -374,7 +376,7 @@ class GeneralizedQSP(GateWithRegisters):
     def is_symbolic(self) -> bool:
         return is_symbolic(self.P, self.Q, self.negative_power)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         counts = Counter[Bloq]()
 
         degree = slen(self.P) - 1

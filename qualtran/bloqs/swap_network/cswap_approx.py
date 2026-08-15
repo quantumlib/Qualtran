@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Iterator
 from functools import cached_property
 from typing import TYPE_CHECKING
@@ -91,15 +93,15 @@ class CSwapApprox(GateWithRegisters):
         yield [g_on_y, cnot_x_to_y, g_on_y, cnot_y_to_x]
 
     def on_classical_vals(
-        self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+        self, ctrl: ClassicalValT, x: ClassicalValT, y: ClassicalValT
+    ) -> dict[str, ClassicalValT]:
         if ctrl == 0:
             return {'ctrl': 0, 'x': x, 'y': y}
         if ctrl == 1:
             return {'ctrl': 1, 'x': y, 'y': x}
         raise ValueError("Bad control value for CSwap classical simulation.")
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('~swap')
         return super().wire_symbol(reg, idx)
@@ -113,7 +115,7 @@ class CSwapApprox(GateWithRegisters):
             ("@(approx)",) + ("×(x)",) * self.bitsize + ("×(y)",) * self.bitsize
         )
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         n = self.bitsize
         # 4 * n: G gates, each with 1 T and 4 single qubit cliffords
         # 4 * n: CNOTs

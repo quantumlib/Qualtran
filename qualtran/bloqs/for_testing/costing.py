@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from collections.abc import Sequence
 from typing import Any
 
@@ -44,13 +46,13 @@ class CostingBloq(Bloq):
     )
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(register=self.num_qubits)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return dict(self.callees)
 
-    def my_static_costs(self, cost_key: 'CostKey'):
+    def my_static_costs(self, cost_key: CostKey):
         return dict(self.static_costs).get(cost_key, NotImplemented)
 
     def __str__(self):

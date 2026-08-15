@@ -18,6 +18,8 @@ A musical score is one where time proceeds from left to right and each horizonta
 represents a qubit or register of qubits.
 """
 
+from __future__ import annotations
+
 import abc
 import heapq
 import json
@@ -79,7 +81,7 @@ class HLineFlavor(Enum):
     CLASSICAL = 2
 
     @classmethod
-    def from_qcdtype(cls, qcdtype: QCDType) -> 'HLineFlavor':
+    def from_qcdtype(cls, qcdtype: QCDType) -> HLineFlavor:
         if isinstance(qcdtype, QDType):
             return cls.QUANTUM
         if isinstance(qcdtype, CDType):
@@ -389,7 +391,7 @@ class WireSymbol(metaclass=abc.ABCMeta):
     def draw(self, ax, x, y) -> None:
         """Draw this symbol using matplotlib."""
 
-    def adjoint(self) -> 'WireSymbol':
+    def adjoint(self) -> WireSymbol:
         """Return a symbol that is the adjoint of this."""
         return self
 
@@ -418,7 +420,7 @@ class TextBox(WireSymbol):
             bbox={'boxstyle': 'round', 'fc': 'white'},
         )
 
-    def adjoint(self) -> 'TextBox':
+    def adjoint(self) -> TextBox:
         return TextBox(_text_adjoint(self.text))
 
 
@@ -439,7 +441,7 @@ class Text(WireSymbol):
             bbox={'lw': 0, 'fc': 'white'},
         )
 
-    def adjoint(self) -> 'Text':
+    def adjoint(self) -> Text:
         return Text(_text_adjoint(self.text), self.fontsize)
 
 
@@ -479,7 +481,7 @@ class LarrowTextBox(WireSymbol):
             bbox={'boxstyle': 'larrow', 'fc': 'white'},
         )
 
-    def adjoint(self) -> 'WireSymbol':
+    def adjoint(self) -> WireSymbol:
         return RarrowTextBox(text=self.text)
 
 

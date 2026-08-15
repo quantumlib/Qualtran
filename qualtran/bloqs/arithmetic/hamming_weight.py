@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Iterator
 from functools import cached_property
 from typing import TYPE_CHECKING
@@ -118,7 +120,7 @@ class HammingWeightCompute(GateWithRegisters):
         out: list[cirq.Qid] = [*quregs['out'][::-1]]
         yield self._decompose_using_three_to_two_adders(x, junk, out)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         num_and = self.junk_bitsize
         num_cnot = num_and * 5 + self.bit_count_of_bitsize
         return {And(): num_and, CNOT(): num_cnot}

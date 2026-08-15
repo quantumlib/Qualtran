@@ -482,7 +482,7 @@ class UnaryIterationGate(GateWithRegisters):
         raise NotImplementedError("Selection register must not be empty.")
 
     def _break_early(
-        self, selection_index_prefix: tuple[int, ...], l: 'SymbolicInt', r: 'SymbolicInt'
+        self, selection_index_prefix: tuple[int, ...], l: SymbolicInt, r: SymbolicInt
     ) -> bool:
         """Derived classes should override this method to specify an early termination condition.
 
@@ -589,18 +589,18 @@ class UnaryIterationGate(GateWithRegisters):
         wire_symbols += [self.__class__.__name__] * total_bits(self.target_registers)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def nth_operation_callgraph(self, **selection_regs_name_to_val) -> set['BloqCountT']:
+    def nth_operation_callgraph(self, **selection_regs_name_to_val) -> set[BloqCountT]:
         raise NotImplementedError(
             f"Derived class {type(self)} does not implement `nth_operation_callgraph`."
         )
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         if total_bits(self.selection_registers) == 0 or self._break_early(
             (), 0, self.selection_registers[0].dtype.iteration_length_or_zero()
         ):
             return self.decompose_bloq().build_call_graph(ssa)
         num_loops = len(self.selection_registers)
-        bloq_counts: dict['Bloq', int | 'sympy.Expr'] = defaultdict(lambda: 0)
+        bloq_counts: dict[Bloq, int | sympy.Expr] = defaultdict(lambda: 0)
 
         def unary_iteration_loops(
             nested_depth: int, selection_reg_name_to_val: dict[str, int], num_controls: int

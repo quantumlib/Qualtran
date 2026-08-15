@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import itertools
 from collections.abc import Iterable, Sequence
 from functools import cached_property
@@ -57,13 +59,13 @@ class _GFPoly(BitEncoding):
         for it in itertools.product(self.gf.gf_type.elements, repeat=(self.degree + 1)):
             yield Poly(self.gf.gf_type(it), field=self.gf.gf_type)
 
-    def to_gf_coefficients(self, f_x: 'galois.Poly') -> 'galois.Array':
+    def to_gf_coefficients(self, f_x: galois.Poly) -> galois.Array:
         """Returns a big-endian array of coefficients of the polynomial f(x)."""
         f_x_coeffs = self.gf.gf_type.Zeros(self.degree + 1)
         f_x_coeffs[self.degree - f_x.degree :] = f_x.coeffs
         return f_x_coeffs
 
-    def from_gf_coefficients(self, f_x: 'galois.Array') -> 'galois.Poly':
+    def from_gf_coefficients(self, f_x: galois.Array) -> galois.Poly:
         """Expects a big-endian array of coefficients that represent a polynomial f(x)."""
         import galois
 
@@ -138,16 +140,16 @@ class QGFPoly(QDType):
     def bitsize(self) -> SymbolicInt:
         return self._bit_encoding.bitsize
 
-    def to_gf_coefficients(self, f_x: 'galois.Poly') -> 'galois.Array':
+    def to_gf_coefficients(self, f_x: galois.Poly) -> galois.Array:
         """Returns a big-endian array of coefficients of the polynomial f(x)."""
         return self._bit_encoding.to_gf_coefficients(f_x)
 
-    def from_gf_coefficients(self, f_x: 'galois.Array') -> 'galois.Poly':
+    def from_gf_coefficients(self, f_x: galois.Array) -> galois.Poly:
         """Expects a big-endian array of coefficients that represent a polynomial f(x)."""
         return self._bit_encoding.from_gf_coefficients(f_x)
 
     @cached_property
-    def _quint_equivalent(self) -> 'qdt.QUInt':
+    def _quint_equivalent(self) -> qdt.QUInt:
         from qualtran.dtype import QUInt
 
         return QUInt(self.num_qubits)

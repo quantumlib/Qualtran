@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
@@ -121,7 +123,7 @@ def test_gate_with_registers_uses_unitary_for_tensor_contraction():
 
 class BloqWithDecompose(GateWithRegisters):
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('l', QBit(), side=Side.LEFT),
@@ -130,9 +132,7 @@ class BloqWithDecompose(GateWithRegisters):
             ]
         )
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', l: 'SoquetT', t: 'SoquetT'
-    ) -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, l: SoquetT, t: SoquetT) -> dict[str, SoquetT]:
         l = bb.add(XGate(), q=l)
         bb.free(l)
         t = bb.add(YGate(), q=t)

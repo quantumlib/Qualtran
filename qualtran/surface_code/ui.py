@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Sequence
 from typing import Any
 
@@ -363,10 +365,10 @@ def create_qubit_pie_chart(
     physical_error_rate: float,
     error_budget: float,
     estimation_model: str,
-    algorithm: 'AlgorithmSummary',
+    algorithm: AlgorithmSummary,
     magic_factory: MagicStateFactory,
     magic_count: int,
-    n_logical_gates: 'GateCounts',
+    n_logical_gates: GateCounts,
 ) -> go.Figure:
     """Create a pie chart of the physical qubit utilization."""
     if estimation_model == _GIDNEY_FOWLER_MODEL:
@@ -440,12 +442,12 @@ def create_runtime_plot(
     physical_error_rate: float,
     error_budget: float,
     estimation_model: str,
-    algorithm: 'AlgorithmSummary',
+    algorithm: AlgorithmSummary,
     qec: QECScheme,
     magic_factory: MagicStateFactory,
     magic_count: int,
     rotation_model: rotation_cost_model.RotationCostModel,
-    n_logical_gates: 'GateCounts',
+    n_logical_gates: GateCounts,
 ) -> tuple[dict[str, Any], go.Figure]:
     """Creates the runtime figure and decides whether to display it or not.
 
@@ -590,7 +592,7 @@ def update(
     )
 
 
-def total_magic(estimation_model: str, n_logical_gates: 'GateCounts') -> tuple[list[str], str]:
+def total_magic(estimation_model: str, n_logical_gates: GateCounts) -> tuple[list[str], str]:
     """Compute the number of magic states needed for the algorithm and their type."""
     total_t = n_logical_gates.total_t_count()
     total_ccz = total_t / 4
@@ -601,13 +603,13 @@ def total_magic(estimation_model: str, n_logical_gates: 'GateCounts') -> tuple[l
 
 
 def min_num_factories(
-    logical_error_model: 'LogicalErrorModel',
+    logical_error_model: LogicalErrorModel,
     error_budget: float,
     estimation_model: str,
-    algorithm: 'AlgorithmSummary',
+    algorithm: AlgorithmSummary,
     rotation_model: rotation_cost_model.RotationCostModel,
     magic_factory: MagicStateFactory,
-    n_logical_gates: 'GateCounts',
+    n_logical_gates: GateCounts,
 ) -> tuple[dict[str, Any], int]:
     if estimation_model == _GIDNEY_FOWLER_MODEL:
         return {'display': 'none'}, 1
@@ -628,10 +630,10 @@ def compute_duration(
     physical_error_rate: float,
     error_budget: float,
     estimation_model: str,
-    algorithm: 'AlgorithmSummary',
+    algorithm: AlgorithmSummary,
     rotation_model: rotation_cost_model.RotationCostModel,
     magic_count: int,
-    n_logical_gates: 'GateCounts',
+    n_logical_gates: GateCounts,
 ) -> tuple[dict[str, Any], str]:
     """Compute the duration of running the algorithm and whether to display the result or not.
 

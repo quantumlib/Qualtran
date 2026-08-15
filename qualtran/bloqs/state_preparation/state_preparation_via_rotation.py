@@ -73,6 +73,8 @@ References:
 
 """
 
+from __future__ import annotations
+
 from collections import Counter
 from collections.abc import Iterable
 from typing import cast, TYPE_CHECKING
@@ -170,12 +172,12 @@ class StatePreparationViaRotations(GateWithRegisters):
         )
 
     @property
-    def rotation_tree(self) -> 'RotationTree':
+    def rotation_tree(self) -> RotationTree:
         assert isinstance(self.state_coefficients, tuple) and isinstance(self.phase_bitsize, int)
         return RotationTree(np.asarray(self.state_coefficients), self.phase_bitsize, self.uncompute)
 
     @property
-    def prga_prepare_amplitude(self) -> list['PRGAViaPhaseGradient']:
+    def prga_prepare_amplitude(self) -> list[PRGAViaPhaseGradient]:
         if is_symbolic(self.state_coefficients, self.phase_bitsize):
             return [
                 PRGAViaPhaseGradient(
@@ -198,7 +200,7 @@ class StatePreparationViaRotations(GateWithRegisters):
         return ret
 
     @property
-    def prga_prepare_phases(self) -> 'PRGAViaPhaseGradient':
+    def prga_prepare_phases(self) -> PRGAViaPhaseGradient:
         data_or_shape: Shaped | tuple[int, ...] = (
             Shaped((slen(self.state_coefficients),))
             if is_symbolic(self.state_coefficients) or is_symbolic(self.phase_bitsize)
@@ -228,8 +230,8 @@ class StatePreparationViaRotations(GateWithRegisters):
             soqs = self._prepare_phases(bb, **soqs)
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        ret: 'Counter[Bloq]' = Counter()
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        ret: Counter[Bloq] = Counter()
         ret[Rx(angle=-np.pi / 2)] += self.state_bitsize
         ret[Rx(angle=np.pi / 2)] += self.state_bitsize
         ret[XGate()] += 2
@@ -455,8 +457,8 @@ class PRGAViaPhaseGradient(Bloq):
         bb.free(cast(Soquet, soqs.pop("target0_")))
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        ret: 'Counter[Bloq]' = Counter()
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        ret: Counter[Bloq] = Counter()
         ret[self.qrom_bloq] += 1
         ret[self.qrom_bloq.adjoint()] += 1
         ret[self.add_into_phase_grad] += 1

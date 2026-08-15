@@ -14,6 +14,8 @@
 
 """A representation of a State as defined in https://arxiv.org/abs/1403.2975 and its operations."""
 
+from __future__ import annotations
+
 import attrs
 
 import qualtran.rotation_synthesis._math_config as mc
@@ -39,13 +41,13 @@ class GridOperatorAction:
     g: go.GridOperator
     path: tuple[str, ...] = attrs.field(default=(), converter=_grid_operation_path_converter)
 
-    def shift(self, k: int) -> "GridOperatorAction":
+    def shift(self, k: int) -> GridOperatorAction:
         """Returns the Action corresponding to shift(k)-self-shift(k)."""
         return attrs.evolve(
             self, g=self.g.shift(k), path=(f"Shift({k})",) + self.path + (f"Shift({-k})",)
         )
 
-    def followed_by(self, other: "GridOperatorAction") -> "GridOperatorAction":
+    def followed_by(self, other: GridOperatorAction) -> GridOperatorAction:
         """Returns the Action corresponding to self followed by other."""
         return GridOperatorAction(self.g @ other.g, self.path + other.path)
 
@@ -81,12 +83,12 @@ class SelingerState:
         e1: _geometry.EllipseParametricForm,
         e2: _geometry.EllipseParametricForm,
         config: mc.MathConfig,
-    ) -> "SelingerState":
+    ) -> SelingerState:
         """Constructs a state from the parametric form of the two regions."""
         l_value = 1 + config.sqrt(2)
         return SelingerState(e1.to_ellipse(l_value), e2.to_ellipse(l_value))
 
-    def shift(self, k: int, config: mc.MathConfig) -> "SelingerState":
+    def shift(self, k: int, config: mc.MathConfig) -> SelingerState:
         """Shift the state by k resulting in a state with the original bias+2k and the same skew"""
         e1 = self.m1.parametric_form(config)
         e2 = self.m2.parametric_form(config)
@@ -155,7 +157,7 @@ class SelingerState:
 
     def apply(
         self, operator_or_action: go.GridOperator | GridOperatorAction, config: mc.MathConfig
-    ) -> "SelingerState":
+    ) -> SelingerState:
         """Applies the given gridoperator/action on the state.
 
         Args:

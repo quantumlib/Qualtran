@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -92,7 +94,7 @@ class Cast(_BookkeepingBloq):
                 f"{self.inp_dtype.num_bits} != {self.out_dtype.num_bits}."
             )
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f'{self} is atomic')
 
     @cached_property
@@ -104,12 +106,12 @@ class Cast(_BookkeepingBloq):
             ]
         )
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return Cast(inp_dtype=self.out_dtype, out_dtype=self.inp_dtype)
 
     def my_tensors(
-        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
-    ) -> list['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         return [
@@ -119,14 +121,14 @@ class Cast(_BookkeepingBloq):
             for j in range(self.out_dtype.num_bits)
         ]
 
-    def on_classical_vals(self, reg: int) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, reg: int) -> dict[str, ClassicalValT]:
         res = self.out_dtype.from_bits(self.inp_dtype.to_bits(reg))
         return {'reg': res}
 
-    def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> tuple[None, dict[str, 'CirqQuregT']]:
+    def as_cirq_op(self, qubit_manager, reg: CirqQuregT) -> tuple[None, dict[str, CirqQuregT]]:
         return None, {'reg': reg}
 
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: Wires) -> Operation:
         return None
 
 

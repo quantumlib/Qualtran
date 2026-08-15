@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
 
 import attrs
@@ -138,12 +140,12 @@ class SelectBlockEncoding(BlockEncoding):
     def signal_state(self) -> BlackBoxPrepare | PrepareOracle:
         return self.prepare
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         select_reg = {reg.name: soqs[reg.name] for reg in self.select.signature}
         soqs |= bb.add_d(self.select, **select_reg)
         return soqs
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         else:
@@ -256,8 +258,8 @@ class LCUBlockEncoding(BlockEncoding):
     def signal_state(self) -> BlackBoxPrepare | PrepareOracle:
         return PrepareIdentity(self.selection_registers)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> dict[str, 'SoquetT']:
-        def _extract_soqs(bloq: Bloq) -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
+        def _extract_soqs(bloq: Bloq) -> dict[str, SoquetT]:
             return {reg.name: soqs.pop(reg.name) for reg in bloq.signature.lefts()}
 
         soqs |= bb.add_d(self.prepare, **_extract_soqs(self.prepare))
@@ -275,7 +277,7 @@ class LCUBlockEncoding(BlockEncoding):
 
         return soqs
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         if reg.name == 'control':
@@ -283,7 +285,7 @@ class LCUBlockEncoding(BlockEncoding):
         else:
             return TextBox('B[H]')
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 
         return get_ctrl_system_1bit_cv(
@@ -293,7 +295,7 @@ class LCUBlockEncoding(BlockEncoding):
             get_ctrl_bloq_and_ctrl_reg_name=lambda cv: (attrs.evolve(self, control_val=cv), 'ctrl'),
         )
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         from qualtran.bloqs.mcmt.specialized_ctrl import (
             AdjointWithSpecializedCtrl,
             SpecializeOnCtrlBit,

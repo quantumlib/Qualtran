@@ -125,17 +125,15 @@ class Add(Bloq):
         return Signature([Register("a", self.a_dtype), Register("b", self.b_dtype)])
 
     @classmethod
-    def qcall(cls, a: 'QVar', b: 'QVar'):
+    def qcall(cls, a: QVar, b: QVar):
         bloq = cls(a_dtype=a.dtype, b_dtype=b.dtype)  # type: ignore[arg-type]
         bb = a.bb
         return bb.add(bloq, a=a, b=b)
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         return decompose_from_cirq_style_method(self)
 
-    def on_classical_vals(
-        self, a: 'ClassicalValT', b: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, a: ClassicalValT, b: ClassicalValT) -> dict[str, ClassicalValT]:
         unsigned = isinstance(self.b_dtype, (QUInt, QMontgomeryUInt))
         b_bitsize = self.b_dtype.bitsize
         return {
@@ -148,7 +146,7 @@ class Add(Bloq):
         wire_symbols += ["In(y)/Out(x+y)"] * int(self.b_dtype.bitsize)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("")
         if reg.name == 'a':
@@ -220,12 +218,12 @@ class Add(Bloq):
         yield CNOT().on(input_bits[0], output_bits[0])
         context.qubit_manager.qfree(ancillas)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         n = self.b_dtype.bitsize
         n_cnot = (n - 2) * 6 + 3
         return {And(): n - 1, And().adjoint(): n - 1, CNOT(): n_cnot}
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         from qualtran.bloqs.arithmetic import CAdd
 
         return get_ctrl_system_1bit_cv(
@@ -293,7 +291,7 @@ class OutOfPlaceAdder(GateWithRegisters):
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
     """
 
-    bitsize: 'SymbolicInt'
+    bitsize: SymbolicInt
     is_adjoint: bool = False
     include_most_significant_bit: bool = True
 
@@ -312,12 +310,12 @@ class OutOfPlaceAdder(GateWithRegisters):
             ]
         )
 
-    def adjoint(self) -> 'OutOfPlaceAdder':
+    def adjoint(self) -> OutOfPlaceAdder:
         return evolve(self, is_adjoint=not self.is_adjoint)
 
     def on_classical_vals(
-        self, *, a: 'ClassicalValT', b: 'ClassicalValT', c: ClassicalValT | None = None
-    ) -> dict[str, 'ClassicalValT']:
+        self, *, a: ClassicalValT, b: ClassicalValT, c: ClassicalValT | None = None
+    ) -> dict[str, ClassicalValT]:
         if is_symbolic(self.bitsize):
             raise ValueError(f'Classical simulation is not supported for symbolic bloq {self}')
         expected_c = add_ints(int(a), int(b), num_bits=self.out_bitsize, is_signed=False)
@@ -352,7 +350,7 @@ class OutOfPlaceAdder(GateWithRegisters):
             optree.append([cirq.CX(a[i], c[i]), cirq.CX(b[i], c[i])])
         return cirq.inverse(optree) if self.is_adjoint else optree
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             And(uncompute=self.is_adjoint): self.out_bitsize - 1,
             CNOT(): 5 * (self.bitsize - 1) + 2 + (3 if self.include_most_significant_bit else 0),
@@ -365,7 +363,7 @@ class OutOfPlaceAdder(GateWithRegisters):
             return OutOfPlaceAdder(self.bitsize, is_adjoint=not self.is_adjoint)
         raise NotImplementedError("OutOfPlaceAdder.__pow__ defined only for +1/-1.")
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('c=a+b')
         return super().wire_symbol(reg, idx)
@@ -424,7 +422,7 @@ class AddK(Bloq):
     """
 
     dtype: QInt | QUInt | QMontgomeryUInt
-    k: 'SymbolicInt'
+    k: SymbolicInt
 
     def __attrs_post_init__(self):
         if not isinstance(self.dtype, (QInt, QUInt, QMontgomeryUInt)):
@@ -433,18 +431,18 @@ class AddK(Bloq):
             )
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=self.dtype)
 
     @classmethod
-    def qcall(cls, x: 'QVar', *, k: 'SymbolicInt') -> 'QVar':
+    def qcall(cls, x: QVar, *, k: SymbolicInt) -> QVar:
         bb = x.bb
         dtype = x.dtype
         return bb.add(cls(dtype=dtype, k=k), x=x)  # type: ignore[arg-type]
 
     def on_classical_vals(
-        self, x: 'ClassicalValT', **vals: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+        self, x: ClassicalValT, **vals: 'ClassicalValT'
+    ) -> dict[str, ClassicalValT]:
         if is_symbolic(self.k) or is_symbolic(self.dtype):
             raise ValueError(f"Classical simulation isn't supported for symbolic block {self}")
 
@@ -464,7 +462,7 @@ class AddK(Bloq):
 
         return XorK(self.dtype, k)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet) -> dict[str, SoquetT]:
         if is_symbolic(self.k) or is_symbolic(self.dtype):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}.")
 
@@ -483,7 +481,7 @@ class AddK(Bloq):
 
         return {'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         counts = Counter[Bloq]()
 
         counts[self._load_k_bloq] += 1
@@ -492,7 +490,7 @@ class AddK(Bloq):
 
         return counts
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         if reg.name == 'x':
@@ -525,7 +523,7 @@ def _add_k_large() -> AddK:
 _ADD_K_DOC = BloqDocSpec(bloq_cls=AddK, examples=[_add_k, _add_k_small, _add_k_large])
 
 
-def _get_add_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+def _get_add_classical_sim_test_cases() -> list[ClassicalSimTestCase]:
     """Test cases for the `Add` bloq."""
     from qualtran.simulation.verification import ClassicalSimTestCase
 
@@ -561,7 +559,7 @@ def _get_add_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
     return cases
 
 
-def _get_out_of_place_adder_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+def _get_out_of_place_adder_classical_sim_test_cases() -> list[ClassicalSimTestCase]:
     """Test cases for the `OutOfPlaceAdder` bloq."""
     from qualtran.simulation.verification import ClassicalSimTestCase
 
@@ -586,7 +584,7 @@ def _get_out_of_place_adder_classical_sim_test_cases() -> list['ClassicalSimTest
     return cases
 
 
-def _get_add_k_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+def _get_add_k_classical_sim_test_cases() -> list[ClassicalSimTestCase]:
     """Test cases for the `AddK` bloq.
 
     These specify concrete (non-symbolic) bloq instances with specific

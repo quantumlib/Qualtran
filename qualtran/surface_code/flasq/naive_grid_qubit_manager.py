@@ -14,6 +14,8 @@
 
 """Grid qubit allocation strategy for constructing circuits on a 2D layout."""
 
+from __future__ import annotations
+
 from collections.abc import Iterable
 
 import cirq
@@ -96,7 +98,7 @@ class NaiveGridQubitManager(QubitManager):
         self._num_generated += 1
         return qubit
 
-    def qalloc(self, n: int, dim: int = 2) -> list["cirq.Qid"]:
+    def qalloc(self, n: int, dim: int = 2) -> list[cirq.Qid]:
         """Allocates `n` clean GridQubits.
 
         Prefers reusing previously freed qubits before generating new ones
@@ -145,11 +147,11 @@ class NaiveGridQubitManager(QubitManager):
 
         return allocated  # type: ignore[return-value]
 
-    def qborrow(self, n: int, dim: int = 2) -> list["cirq.Qid"]:
+    def qborrow(self, n: int, dim: int = 2) -> list[cirq.Qid]:
         """Not implemented for NaiveGridQubitManager."""
         raise NotImplementedError("qborrow is not implemented for NaiveGridQubitManager.")
 
-    def qfree(self, qubits: Iterable["cirq.Qid"]) -> None:
+    def qfree(self, qubits: Iterable[cirq.Qid]) -> None:
         """Frees the given qubits, making them available for future qalloc calls.
 
         Args:

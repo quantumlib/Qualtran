@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
 
 import numpy as np
@@ -51,8 +53,8 @@ class TestMultiRegister(Bloq):
         )
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', xx: 'SoquetT', yy: 'SoquetT', zz: Soquet
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, xx: SoquetT, yy: SoquetT, zz: Soquet
+    ) -> dict[str, SoquetT]:
         xx = bb.add(TestAtom(), q=xx)
         for i in range(2):
             for j in range(2):
@@ -103,8 +105,8 @@ class TestMultiTypedRegister(Bloq):
         )
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', a: 'SoquetT', b: 'SoquetT', c: 'SoquetT', d: 'Soquet'
-    ) -> dict[str, 'Soquet']:
+        self, bb: BloqBuilder, a: SoquetT, b: SoquetT, c: SoquetT, d: Soquet
+    ) -> dict[str, Soquet]:
         a, b = bb.add(TestBoundedQUInt(), xx=a, yy=d)
         b, c = bb.add(TestQFxp(), xx=b, yy=c)
         return {'a': a, 'b': b, 'c': c, 'd': d}

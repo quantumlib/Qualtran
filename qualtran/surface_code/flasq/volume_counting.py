@@ -19,6 +19,8 @@ FLASQGateCounts. Distance-dependent costs (span) are handled separately
 by span_counting.py.
 """
 
+from __future__ import annotations
+
 import logging
 from collections.abc import Callable, Mapping
 
@@ -182,7 +184,7 @@ class FLASQGateCounts:
             return ", ".join(strs)
         return "-"
 
-    def asdict(self) -> dict[str, SymbolicInt | dict["Bloq", SymbolicInt]]:
+    def asdict(self) -> dict[str, SymbolicInt | dict[Bloq, SymbolicInt]]:
         # Filter out zero counts and empty dicts
         d = attrs.asdict(
             self, recurse=False, filter=lambda a, v: not is_zero(v) and v != frozendict()
@@ -228,7 +230,7 @@ class FLASQGateTotals(CostKey[FLASQGateCounts]):
     """
 
     def compute(
-        self, bloq: "Bloq", get_callee_cost: Callable[["Bloq"], FLASQGateCounts]
+        self, bloq: Bloq, get_callee_cost: Callable[[Bloq], FLASQGateCounts]
     ) -> FLASQGateCounts:
         # Note: The execution order here is slightly optimized relative to the
         # list in Phase5.md (handling GlobalPhase, Identity, and certain

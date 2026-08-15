@@ -20,6 +20,8 @@ are classically simulable (X, CNOT, Toffoli) so ``call_classically`` can be used
 verification.
 """
 
+from __future__ import annotations
+
 from functools import cached_property
 
 import numpy as np
@@ -75,8 +77,8 @@ class TestNDGrid(Bloq):
         )
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', grid: 'SoquetT', ctrl: 'SoquetT', flag: Soquet
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, grid: SoquetT, ctrl: SoquetT, flag: Soquet
+    ) -> dict[str, SoquetT]:
         # Step 1: X on grid[0, 0]
         grid[0, 0] = bb.add(XGate(), q=grid[0, 0])
 
@@ -145,8 +147,8 @@ class TestND3Grid(Bloq):
         return Signature([Register('cube', QBit(), shape=(2, 2, 2)), Register('aux', QBit())])
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', cube: 'SoquetT', aux: Soquet
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, cube: SoquetT, aux: Soquet
+    ) -> dict[str, SoquetT]:
         # Step 1
         cube[0, 0, 0] = bb.add(XGate(), q=cube[0, 0, 0])
         # Step 2

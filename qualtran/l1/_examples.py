@@ -52,11 +52,11 @@ class L1Example:
     """
 
     name: str
-    factory: Callable[[], 'qlt.Bloq'] = attrs.field(repr=False)
+    factory: Callable[[], qlt.Bloq] = attrs.field(repr=False)
     slow: bool = False
     docstring: str = ''
 
-    def make(self) -> 'qlt.Bloq':
+    def make(self) -> qlt.Bloq:
         """Construct the bloq."""
         return self.factory()
 
@@ -65,94 +65,94 @@ class L1Example:
         return reference_path(self.name)
 
 
-def _cnot() -> 'qlt.Bloq':
+def _cnot() -> qlt.Bloq:
     from qualtran.bloqs.basic_gates import CNOT
 
     return CNOT()
 
 
-def _cswap() -> 'qlt.Bloq':
+def _cswap() -> qlt.Bloq:
     from qualtran.bloqs.basic_gates import CSwap
 
     return CSwap(bitsize=5)
 
 
-def _hadamard() -> 'qlt.Bloq':
+def _hadamard() -> qlt.Bloq:
     from qualtran.bloqs.basic_gates import Hadamard
 
     return Hadamard()
 
 
-def _rz() -> 'qlt.Bloq':
+def _rz() -> qlt.Bloq:
     from qualtran.bloqs.basic_gates import Rz
 
     return Rz(0.25)
 
 
-def _qft_textbook() -> 'qlt.Bloq':
+def _qft_textbook() -> qlt.Bloq:
     from qualtran.bloqs.qft import QFTTextBook
 
     return QFTTextBook(3)
 
 
-def _test_nd3grid() -> 'qlt.Bloq':
+def _test_nd3grid() -> qlt.Bloq:
     from qualtran.bloqs.for_testing import TestND3Grid
 
     return TestND3Grid()
 
 
-def _multi_and() -> 'qlt.Bloq':
+def _multi_and() -> qlt.Bloq:
     from qualtran.bloqs.mcmt import MultiAnd
 
     return MultiAnd(cvs=(1, 1, 0, 1))
 
 
-def _and_bloq() -> 'qlt.Bloq':
+def _and_bloq() -> qlt.Bloq:
     from qualtran.bloqs.mcmt import And
 
     return And(1, 1)
 
 
-def _multi_target_cnot() -> 'qlt.Bloq':
+def _multi_target_cnot() -> qlt.Bloq:
     from qualtran.bloqs.mcmt import MultiTargetCNOT
 
     return MultiTargetCNOT(4)
 
 
-def _negate() -> 'qlt.Bloq':
+def _negate() -> qlt.Bloq:
     import qualtran.dtype as qdt
     from qualtran.bloqs.arithmetic import Negate
 
     return Negate(qdt.QInt(8))
 
 
-def _add() -> 'qlt.Bloq':
+def _add() -> qlt.Bloq:
     import qualtran.dtype as qdt
     from qualtran.bloqs.arithmetic import Add
 
     return Add(qdt.QUInt(4))
 
 
-def _bitwise_not() -> 'qlt.Bloq':
+def _bitwise_not() -> qlt.Bloq:
     import qualtran.dtype as qdt
     from qualtran.bloqs.arithmetic import BitwiseNot
 
     return BitwiseNot(qdt.QUInt(4))
 
 
-def _select_hubbard() -> 'qlt.Bloq':
+def _select_hubbard() -> qlt.Bloq:
     from qualtran.bloqs.chemistry.hubbard_model.qubitization import SelectHubbard
 
     return SelectHubbard(x_dim=2, y_dim=2)
 
 
-def _multi_control_x() -> 'qlt.Bloq':
+def _multi_control_x() -> qlt.Bloq:
     from qualtran.bloqs.mcmt import MultiControlX
 
     return MultiControlX(cvs=(1, 0, 1))
 
 
-def _qrom() -> 'qlt.Bloq':
+def _qrom() -> qlt.Bloq:
     from qualtran.bloqs.data_loading.qrom import QROM
 
     return QROM.build_from_data([1, 2, 3, 4])

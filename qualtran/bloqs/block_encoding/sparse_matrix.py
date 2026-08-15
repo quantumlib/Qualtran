@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import abc
 from collections.abc import Iterable
 from functools import cached_property
@@ -336,7 +338,7 @@ class SymmetricBandedRowColumnOracle(RowColumnOracle):
             raise IndexError("l out of bounds")
         return ((l + i - self.bandsize) % (2**self.system_bitsize), i)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             Add(QUInt(self.system_bitsize), QUInt(self.system_bitsize)): 1,
             AddK(QInt(self.system_bitsize), -self.bandsize): 1,

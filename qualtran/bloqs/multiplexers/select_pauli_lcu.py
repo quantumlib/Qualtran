@@ -14,6 +14,8 @@
 
 """Bloqs for applying SELECT unitary for LCU of Pauli Strings."""
 
+from __future__ import annotations
+
 from collections.abc import Iterable, Iterator, Sequence
 from functools import cached_property
 
@@ -126,7 +128,7 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):
         ps = self.select_unitaries[selection].on(*target)
         return ps.with_coefficient(np.sign(complex(ps.coefficient).real)).controlled_by(control)
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 
         return get_ctrl_system_1bit_cv(
@@ -139,7 +141,7 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):
             ),
         )
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return self
 
     def _has_unitary_(self):

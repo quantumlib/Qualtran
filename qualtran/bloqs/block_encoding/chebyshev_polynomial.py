@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from collections import Counter
 from functools import cached_property
 from typing import TYPE_CHECKING
@@ -139,7 +141,7 @@ class ChebyshevPolynomial(BlockEncoding):
             soqs |= bb.add_d(self.block_encoding, **soqs)
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         n = self.order
         s = Counter[Bloq]()
         s[self.block_encoding] += n // 2 + n % 2

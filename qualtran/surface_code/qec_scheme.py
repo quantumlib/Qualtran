@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import abc
 import math
 
@@ -117,7 +119,7 @@ class LogicalErrorModel:
     """
 
     physical_error: float
-    _qec_scheme: 'QECScheme'
+    _qec_scheme: QECScheme
 
     def __call__(self, code_distance: int) -> float:
         return self._qec_scheme.logical_error_rate(

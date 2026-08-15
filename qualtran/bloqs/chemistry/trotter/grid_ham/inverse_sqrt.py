@@ -13,6 +13,8 @@
 #  limitations under the License.
 """Bloqs for computing the inverse Square root of a fixed point number."""
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -166,12 +168,12 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("y=x^{-1/2}")
         return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # y * ((2 + b^2 + delta) + y^2 x)
         # 1. square y
         # 2. scale y^2 by x
@@ -218,12 +220,12 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("y~x^{-1/2}")
         return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # This should probably be scale int by float rather than 3 real
         # multiplications as x in Eq. 49 of the reference is an integer.
         return {MultiplyTwoReals(self.poly_bitsize): 3, Add(QInt(self.poly_bitsize)): 3}

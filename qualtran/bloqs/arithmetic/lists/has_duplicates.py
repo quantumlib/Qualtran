@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from collections import Counter
 
 import attrs
@@ -66,7 +68,7 @@ class HasDuplicates(Bloq):
     is_controlled: bool = False
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         registers = [Register('xs', self.dtype, shape=(self.l,)), Register('flag', QBit())]
         if self.is_controlled:
             registers.append(Register('ctrl', QBit()))
@@ -77,8 +79,8 @@ class HasDuplicates(Bloq):
         return LinearDepthHalfLessThan(self.dtype)
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', xs: 'SoquetT', flag: 'Soquet', **extra_soqs: 'SoquetT'
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, xs: SoquetT, flag: Soquet, **extra_soqs: 'SoquetT'
+    ) -> dict[str, SoquetT]:
         assert not is_symbolic(self.l)
         assert isinstance(xs, np.ndarray)
 
@@ -111,7 +113,7 @@ class HasDuplicates(Bloq):
 
         return {'xs': xs, 'flag': flag} | extra_soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         counts = Counter[Bloq]()
 
         counts[self._le_bloq] += self.l - 1
@@ -124,17 +126,17 @@ class HasDuplicates(Bloq):
 
         return counts
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, **vals: 'ClassicalValT') -> dict[str, ClassicalValT]:
         xs = np.asarray(vals['xs'])
         assert np.all(xs == np.sort(xs))
         if np.any(xs[:-1] == xs[1:]):
             vals['flag'] ^= 1
         return vals
 
-    def adjoint(self) -> 'HasDuplicates':
+    def adjoint(self) -> HasDuplicates:
         return self
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
 
         return get_ctrl_system_1bit_cv_from_bloqs(

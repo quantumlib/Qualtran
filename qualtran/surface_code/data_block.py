@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import abc
 import math
 from typing import TYPE_CHECKING
@@ -82,9 +84,7 @@ class DataBlock(metaclass=abc.ABCMeta):
         `self.n_cycles` to report the total number of cycles required.
         """
 
-    def n_cycles(
-        self, n_logical_gates: 'GateCounts', logical_error_model: 'LogicalErrorModel'
-    ) -> int:
+    def n_cycles(self, n_logical_gates: GateCounts, logical_error_model: LogicalErrorModel) -> int:
         """The number of surface code cycles to apply the number of gates to the data block.
 
         Note that only the Litinski (2019) derived data blocks model a limit on the number of
@@ -104,7 +104,7 @@ class DataBlock(metaclass=abc.ABCMeta):
         return n_phys_per_tile * self.n_tiles(n_algo_qubits)
 
     def data_error(
-        self, n_algo_qubits: int, n_cycles: int, logical_error_model: 'LogicalErrorModel'
+        self, n_algo_qubits: int, n_cycles: int, logical_error_model: LogicalErrorModel
     ) -> float:
         """The error associated with storing data on `n_algo_qubits` for `n_cycles`."""
         # spacetime_volue = number of data cells x number of cycles they will live for.
@@ -234,8 +234,8 @@ class FastDataBlock(DataBlock):
 
     @classmethod
     def from_error_budget(
-        cls, error_budget: float, n_algo_qubits: int, qec_scheme: 'QECScheme', phys_err_rate: float
-    ) -> 'FastDataBlock':
+        cls, error_budget: float, n_algo_qubits: int, qec_scheme: QECScheme, phys_err_rate: float
+    ) -> FastDataBlock:
         q = FastDataBlock.get_n_tiles(n_algo_qubits)
         d = qec_scheme.code_distance_from_budget(phys_err_rate, error_budget / q)
         return cls(data_d=d)

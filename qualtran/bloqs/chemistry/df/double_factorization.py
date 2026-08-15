@@ -31,6 +31,8 @@ $$
 where $\Xi^{(l)} $ is the rank of second factorization.
 """
 
+from __future__ import annotations
+
 from collections.abc import Iterable
 from functools import cached_property
 from typing import TYPE_CHECKING
@@ -183,7 +185,7 @@ class DoubleFactorizationOneBody(BlockEncoding):
 
     def build_composite_bloq(
         self,
-        bb: 'BloqBuilder',
+        bb: BloqBuilder,
         succ_l: Soquet,
         l_ne_zero: SoquetT,
         succ_p: Soquet,
@@ -195,7 +197,7 @@ class DoubleFactorizationOneBody(BlockEncoding):
         rot: SoquetT,
         rotations: SoquetT,
         sys: NDArray[Soquet],  # type: ignore[type-var]
-    ) -> dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         # 1st half
         in_prep = InnerPrepareDoubleFactorization(
             num_aux=self.num_aux,
@@ -259,7 +261,7 @@ class DoubleFactorizationOneBody(BlockEncoding):
             'sys': sys,
         }
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         in_prep = InnerPrepareDoubleFactorization(
             num_aux=self.num_aux,
             num_spin_orb=self.num_spin_orb,
@@ -343,7 +345,7 @@ class DoubleFactorizationBlockEncoding(BlockEncoding):
     @classmethod
     def build_from_coeffs(
         cls, one_body_ham: NDArray[np.float64], factorized_two_body_ham: NDArray[np.float64]
-    ) -> 'DoubleFactorizationBlockEncoding':
+    ) -> DoubleFactorizationBlockEncoding:
         """Factory method to build double factorization block encoding given Hamiltonian inputs.
 
         Args:
@@ -429,7 +431,7 @@ class DoubleFactorizationBlockEncoding(BlockEncoding):
 
     def build_composite_bloq(
         self,
-        bb: 'BloqBuilder',
+        bb: BloqBuilder,
         ctrl: NDArray[Soquet],  # type: ignore[type-var]
         l: SoquetT,
         p: SoquetT,
@@ -440,7 +442,7 @@ class DoubleFactorizationBlockEncoding(BlockEncoding):
         rot: SoquetT,
         rotations: SoquetT,
         sys: SoquetT,
-    ) -> dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         succ_l, l_ne_zero, theta, succ_p = ctrl
         n_n = (self.num_spin_orb // 2 - 1).bit_length()  # C14
         outer_prep = OuterPrepareDoubleFactorization(

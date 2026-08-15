@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import abc
 from functools import cached_property
 from typing import TYPE_CHECKING
@@ -34,7 +36,7 @@ class QPEWindowStateBase(Bloq, metaclass=abc.ABCMeta):
         return QFxp(self.m_bits, self.m_bits)
 
     @cached_property
-    def m_register(self) -> 'Register':
+    def m_register(self) -> Register:
         return Register('qpe_reg', self.m_qdtype, side=Side.RIGHT)
 
     @property
@@ -60,7 +62,7 @@ class RectangularWindowState(QPEWindowStateBase):
         return self.bitsize
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([self.m_register])
 
     @classmethod
@@ -99,7 +101,7 @@ class RectangularWindowState(QPEWindowStateBase):
         """
         return cls(ceil(2 * log2(pi(eps) / eps)))
 
-    def build_composite_bloq(self, bb: 'BloqBuilder') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder) -> dict[str, SoquetT]:
         qpe_reg = bb.allocate(dtype=self.m_qdtype)
         qpe_reg = bb.add(OnEach(self.m_bits, Hadamard()), q=qpe_reg)
         return {'qpe_reg': qpe_reg}

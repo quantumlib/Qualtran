@@ -18,6 +18,8 @@ QPIC is not a dependency of Qualtran and must be manually installed by users via
 `pip install qpic`.
 """
 
+from __future__ import annotations
+
 import os
 import pathlib
 import re
@@ -149,7 +151,7 @@ class QpicCircuit:
         # don't have any incoming or outgoing edges.
         self.empty_wire = None
 
-    def add_left_wires_for_signature(self, signature: 'Signature') -> None:
+    def add_left_wires_for_signature(self, signature: Signature) -> None:
         for reg in signature.lefts():
             for idx in reg.all_idxs():
                 self._alloc_wire_for_soq(_Soquet(LeftDangle, reg, idx))
@@ -157,7 +159,7 @@ class QpicCircuit:
         # corresponding to their QDType, which takes up horizontal space.
         self.wires += ['LABEL length=10']
 
-    def add_right_wires_for_signature(self, signature: 'Signature') -> None:
+    def add_right_wires_for_signature(self, signature: Signature) -> None:
         add_space = False
         for reg in signature.rights():
             if reg.side & Side.LEFT:
@@ -202,7 +204,7 @@ class QpicCircuit:
         self.soq_map.pop(soq)
 
     @classmethod
-    def _dtype_label_for_wire(cls, wire_name: str, dtype: 'QCDType') -> list[str]:
+    def _dtype_label_for_wire(cls, wire_name: str, dtype: QCDType) -> list[str]:
         if dtype != QBit():
             dtype_str = _format_label_text(str(dtype), scale=0.5)
             return [f'{wire_name} / {dtype_str}']
@@ -229,12 +231,12 @@ class QpicCircuit:
             # by the Bloq.
             self.wires += [f'{wire_name} W off']
 
-    def add_connection(self, cxn: 'Connection'):
+    def add_connection(self, cxn: Connection):
         if cxn.left not in self.soq_map:
             self._alloc_wire_for_soq(cxn.left)
         self.soq_map[cxn.right] = self.soq_map[cxn.left]
 
-    def _add_bloq_with_no_wire(self, bloq: 'Bloq'):
+    def _add_bloq_with_no_wire(self, bloq: Bloq):
         """Add bloq, like GlobalPhase, which doesn't have any incoming & outgoing wires."""
         if not self.empty_wire:
             self.empty_wire = '_empty_wire'
@@ -243,7 +245,7 @@ class QpicCircuit:
         width = _gate_width_for_text(gate_text)
         self.gates += [f'{self.empty_wire} G:width={width}:shape=8 {gate_text}']
 
-    def add_bloq(self, bloq: 'Bloq', pred: list['Connection'], succ: list['Connection']) -> None:
+    def add_bloq(self, bloq: Bloq, pred: list[Connection], succ: list[Connection]) -> None:
         controls, targets, wire_dtype_labels = [], [], []
 
         if not (pred or succ):
@@ -272,7 +274,7 @@ class QpicCircuit:
         self.gates += wire_dtype_labels
 
 
-def get_qpic_data(bloq: 'Bloq', file_path: None | pathlib.Path | str = None) -> list[str]:
+def get_qpic_data(bloq: Bloq, file_path: None | pathlib.Path | str = None) -> list[str]:
     """Get the input data that can be used to draw a latex diagram for `bloq` using `qpic`.
 
     Args:
@@ -381,7 +383,7 @@ def qpic_input_to_diagram(
 
 
 def qpic_diagram_for_bloq(
-    bloq: 'Bloq', base_file_path: None | pathlib.Path | str = None, output_type: str = 'pdf'
+    bloq: Bloq, base_file_path: None | pathlib.Path | str = None, output_type: str = 'pdf'
 ) -> str:
     r"""Generate latex diagram for `bloq` by invoking `qpic`. Assumes qpic is already installed.
 

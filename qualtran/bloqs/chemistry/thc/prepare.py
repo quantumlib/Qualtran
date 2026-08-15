@@ -13,6 +13,8 @@
 #  limitations under the License.
 """PREPARE for the molecular tensor hypercontraction (THC) hamiltonian"""
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -111,20 +113,20 @@ class UniformSuperpositionTHC(Bloq):
     def __str__(self) -> str:
         return r'$\sum_{\mu < \nu} |\mu\nu\rangle$'
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('Σ |μν>')
         return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(
         self,
-        bb: 'BloqBuilder',
+        bb: BloqBuilder,
         mu: SoquetT,
         nu: SoquetT,
         succ: SoquetT,
         nu_eq_mp1: SoquetT,
         rot: SoquetT,
-    ) -> dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         # If we introduce comparators using out of place adders these will be left/right registers.
         # See: https://github.com/quantumlib/Qualtran/issues/390
         lte_mu_nu, lte_nu_mp1, gt_mu_n, junk = bb.split(bb.allocate(4))
@@ -278,7 +280,7 @@ class PrepareTHC(PrepareOracle):
         zeta: NDArray[np.float64],
         num_bits_state_prep: int = 8,
         log_block_size: SymbolicInt | None = None,
-    ) -> 'PrepareTHC':
+    ) -> PrepareTHC:
         """Factory method to build PrepareTHC from Hamiltonian coefficients.
 
         Args:
@@ -400,7 +402,7 @@ class PrepareTHC(PrepareOracle):
             for reg in self.qroam_target_registers
         )
 
-    def build_qrom_bloq(self) -> 'Bloq':
+    def build_qrom_bloq(self) -> Bloq:
         log_mu = self.num_mu.bit_length()
         qroam = QROAMClean.build_from_data(
             self.theta,
@@ -413,12 +415,12 @@ class PrepareTHC(PrepareOracle):
         )
         return qroam
 
-    def add_qrom(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def add_qrom(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         qrom = self.build_qrom_bloq()
         # The qroam_junk_regs won't be present initially when building the
         # composite bloq as they're RIGHT registers.
         qroam_out_soqs = bb.add_d(qrom, selection=soqs['s'])
-        out_soqs: dict[str, 'SoquetT'] = {'s': qroam_out_soqs.pop('selection')}
+        out_soqs: dict[str, SoquetT] = {'s': qroam_out_soqs.pop('selection')}
         # map output soqs to Prepare junk registers names
         out_soqs |= {
             reg.name: qroam_out_soqs.pop(f'target{i}_')
@@ -430,7 +432,7 @@ class PrepareTHC(PrepareOracle):
         }
         return soqs | out_soqs
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         # 1. Prepare THC uniform superposition over mu, nu. succ flags success.
         soqs['mu'], soqs['nu'], soqs['succ'], soqs['nu_eq_mp1'], soqs['rot'] = bb.add(
             UniformSuperpositionTHC(num_mu=self.num_mu, num_spin_orb=self.num_spin_orb),
@@ -484,7 +486,7 @@ class PrepareTHC(PrepareOracle):
         )
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         cost_1 = (UniformSuperpositionTHC(self.num_mu, self.num_spin_orb), 1)
         nmu = self.num_mu.bit_length()
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2

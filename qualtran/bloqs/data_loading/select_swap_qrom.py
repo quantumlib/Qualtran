@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import numbers
 from collections import defaultdict
 from functools import cached_property
@@ -75,7 +77,7 @@ def find_optimal_log_block_size(
     return int(k_int[np.argmin(value(k_int))])  # obtain optimal k
 
 
-def _find_optimal_log_block_size_helper(qrom: 'SelectSwapQROM') -> tuple[SymbolicInt, ...]:
+def _find_optimal_log_block_size_helper(qrom: SelectSwapQROM) -> tuple[SymbolicInt, ...]:
     target_bitsize = sum(qrom.target_bitsizes) * sum(prod(shape) for shape in qrom.target_shapes)
     return tuple(
         find_optimal_log_block_size(ilen, target_bitsize, qrom.use_dirty_ancilla)
@@ -84,8 +86,8 @@ def _find_optimal_log_block_size_helper(qrom: 'SelectSwapQROM') -> tuple[Symboli
 
 
 def _alloc_anc_for_reg(
-    bb: 'BloqBuilder', dtype: 'QDType', shape: tuple[int, ...], dirty: bool
-) -> 'SoquetT':
+    bb: BloqBuilder, dtype: QDType, shape: tuple[int, ...], dirty: bool
+) -> SoquetT:
     if not shape:
         return bb.allocate(dtype=dtype, dirty=dirty)
     soqs = np.empty(shape, dtype=object)
@@ -168,14 +170,14 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):
 
     @classmethod
     def build_from_data(
-        cls: type['SelectSwapQROM'],
+        cls: type[SelectSwapQROM],
         *data: ArrayLike,
         target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
         num_controls: SymbolicInt = 0,
         log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
         use_dirty_ancilla: bool = True,
-    ) -> 'SelectSwapQROM':
-        qroam: 'SelectSwapQROM' = cls._build_from_data(
+    ) -> SelectSwapQROM:
+        qroam: SelectSwapQROM = cls._build_from_data(
             *data, target_bitsizes=target_bitsizes, num_controls=num_controls
         )
         qroam = attrs.evolve(qroam, use_dirty_ancilla=use_dirty_ancilla)
@@ -185,7 +187,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):
 
     @classmethod
     def build_from_bitsize(
-        cls: type['SelectSwapQROM'],
+        cls: type[SelectSwapQROM],
         data_len_or_shape: SymbolicInt | tuple[SymbolicInt, ...],
         target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...],
         *,
@@ -193,8 +195,8 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):
         num_controls: SymbolicInt = 0,
         log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
         use_dirty_ancilla: bool = True,
-    ) -> 'SelectSwapQROM':
-        qroam: 'SelectSwapQROM' = cls._build_from_bitsize(
+    ) -> SelectSwapQROM:
+        qroam: SelectSwapQROM = cls._build_from_bitsize(
             data_len_or_shape,
             target_bitsizes,
             selection_bitsizes=selection_bitsizes,
@@ -207,7 +209,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):
 
     def with_log_block_sizes(
         self: SelSwapQROM_T, log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None
-    ) -> 'SelSwapQROM_T':
+    ) -> SelSwapQROM_T:
         if log_block_sizes is None:
             return self
         if isinstance(log_block_sizes, (int, sympy.Basic, numbers.Number)):
@@ -277,7 +279,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):
             for target_bitsize in self.target_bitsizes
         ]
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         ret: dict[Bloq, SymbolicInt] = defaultdict(lambda: 0)
         toggle_overhead = 2 if self.use_dirty_ancilla else 1
         ret[self.qrom_bloq] += 1
@@ -292,12 +294,12 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):
 
     def _add_qrom_bloq(
         self,
-        bb: 'BloqBuilder',
-        ctrls: list['SoquetT'],
-        sel_l: list['SoquetT'],
-        targets: list['SoquetT'],
+        bb: BloqBuilder,
+        ctrls: list[SoquetT],
+        sel_l: list[SoquetT],
+        targets: list[SoquetT],
         uncompute: bool = False,
-    ) -> tuple[list['SoquetT'], list['SoquetT'], list['SoquetT']]:
+    ) -> tuple[list[SoquetT], list[SoquetT], list[SoquetT]]:
         in_soqs = {reg.name: soq for reg, soq in zip(self.qrom_bloq.control_registers, ctrls)}
         in_soqs |= {reg.name: soq for reg, soq in zip(self.qrom_bloq.selection_registers, sel_l)}
         in_soqs |= {reg.name: soq for reg, soq in zip(self.qrom_bloq.target_registers, targets)}
@@ -309,16 +311,16 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):
 
     def _add_swap_with_zero_bloq(
         self,
-        bb: 'BloqBuilder',
-        selection: list['SoquetT'],
-        targets: list['SoquetT'],
+        bb: BloqBuilder,
+        selection: list[SoquetT],
+        targets: list[SoquetT],
         uncompute: bool = False,
-    ) -> tuple[list['SoquetT'], list['SoquetT']]:
+    ) -> tuple[list[SoquetT], list[SoquetT]]:
         # Get soquets for SwapWithZero
         assert len(targets) == len(self.swap_with_zero_bloqs)
         sel_names = [reg.name for reg in self.swap_with_zero_bloqs[0].selection_registers]
         soqs = {sel_name: soq for sel_name, soq in zip(sel_names, selection)}
-        out_targets: list['SoquetT'] = []
+        out_targets: list[SoquetT] = []
         for target, swz in zip(targets, self.swap_with_zero_bloqs):
             soqs['targets'] = target
             soqs = bb.add_d(swz.adjoint() if uncompute else swz, **soqs)
@@ -326,8 +328,8 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):
         return [soqs[reg_name] for reg_name in sel_names], out_targets
 
     def _add_cnot(
-        self, bb: 'BloqBuilder', qrom_targets: list['SoquetT'], target: list['SoquetT']
-    ) -> tuple[list['SoquetT'], list['SoquetT']]:
+        self, bb: BloqBuilder, qrom_targets: list[SoquetT], target: list[SoquetT]
+    ) -> tuple[list[SoquetT], list[SoquetT]]:
         for i, qrom_reg in enumerate(qrom_targets):
             assert isinstance(qrom_reg, np.ndarray)  # Make mypy happy.
             idx = np.unravel_index(0, qrom_reg.shape)
@@ -348,8 +350,8 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):
         return partition_bloqs
 
     def _partition_sel_register(
-        self, bb: 'BloqBuilder', selection: list['SoquetT']
-    ) -> tuple[list['SoquetT'], list['SoquetT']]:
+        self, bb: BloqBuilder, selection: list[SoquetT]
+    ) -> tuple[list[SoquetT], list[SoquetT]]:
         sel_l, sel_k = [], []
         for sel, pbloq in zip(selection, self._partition_selection_reg_bloqs):
             sl, sk = bb.add(pbloq, x=sel)
@@ -358,8 +360,8 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):
         return sel_l, sel_k
 
     def _unpartition_sel_register(
-        self, bb: 'BloqBuilder', sel_l: list['SoquetT'], sel_k: list['SoquetT']
-    ) -> list['SoquetT']:
+        self, bb: BloqBuilder, sel_l: list[SoquetT], sel_k: list[SoquetT]
+    ) -> list[SoquetT]:
         selection = []
         for l, k, pbloq in zip(sel_l, sel_k, self._partition_selection_reg_bloqs):
             selection.append(bb.add(pbloq.adjoint(), l=l, k=k))
@@ -367,12 +369,12 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):
 
     def _build_composite_bloq_with_swz(
         self,
-        bb: 'BloqBuilder',
-        ctrl: list['SoquetT'],
-        selection: list['SoquetT'],
-        target: list['SoquetT'],
-        qrom_targets: list['SoquetT'],
-    ) -> tuple[list['SoquetT'], list['SoquetT'], list['SoquetT'], list['SoquetT']]:
+        bb: BloqBuilder,
+        ctrl: list[SoquetT],
+        selection: list[SoquetT],
+        target: list[SoquetT],
+        qrom_targets: list[SoquetT],
+    ) -> tuple[list[SoquetT], list[SoquetT], list[SoquetT], list[SoquetT]]:
         sel_l, sel_k = self._partition_sel_register(bb, selection)
         # Partition selection registers into l & k
         ctrl, sel_l, qrom_targets = self._add_qrom_bloq(bb, ctrl, sel_l, qrom_targets)
@@ -394,12 +396,12 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):
 
     def _build_composite_bloq_without_swz(
         self,
-        bb: 'BloqBuilder',
-        ctrl: list['SoquetT'],
-        selection: list['SoquetT'],
-        target: list['SoquetT'],
-        qrom_targets: list['SoquetT'],
-    ) -> tuple[list['SoquetT'], list['SoquetT'], list['SoquetT'], list['SoquetT']]:
+        bb: BloqBuilder,
+        ctrl: list[SoquetT],
+        selection: list[SoquetT],
+        target: list[SoquetT],
+        qrom_targets: list[SoquetT],
+    ) -> tuple[list[SoquetT], list[SoquetT], list[SoquetT], list[SoquetT]]:
         ctrl, selection, qrom_targets = self._add_qrom_bloq(bb, ctrl, selection, qrom_targets)
         qrom_targets, target = self._add_cnot(bb, qrom_targets, target)
         ctrl, selection, qrom_targets = self._add_qrom_bloq(
@@ -409,7 +411,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):
             qrom_targets, target = self._add_cnot(bb, qrom_targets, target)
         return ctrl, selection, target, qrom_targets
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         # Get the ctrl and target register for the SelectSwapQROM.
         ctrl = [soqs.pop(reg.name) for reg in self.control_registers]
         selection = [soqs.pop(reg.name) for reg in self.selection_registers]
@@ -456,7 +458,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):
 
         return _wire_symbol_to_cirq_diagram_info(self, args)
 
-    def my_static_costs(self, cost_key: "CostKey"):
+    def my_static_costs(self, cost_key: CostKey):
         from qualtran.resource_counting import get_cost_value, QubitCount
 
         if isinstance(cost_key, QubitCount):
@@ -468,7 +470,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):
 
         return NotImplemented
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('QROAM')
         name = reg.name

@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -50,12 +52,12 @@ class TestAtom(Bloq):
     def signature(self) -> Signature:
         return Signature.build(q=1)
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic")
 
     def my_tensors(
-        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
-    ) -> list['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         return [
@@ -66,7 +68,7 @@ class TestAtom(Bloq):
             )
         ]
 
-    def my_static_costs(self, cost_key: 'CostKey'):
+    def my_static_costs(self, cost_key: CostKey):
         if isinstance(cost_key, QECGatesCost):
             return GateCounts(t=100)
         return NotImplemented
@@ -89,12 +91,12 @@ class TestTwoBitOp(Bloq):
     def signature(self) -> Signature:
         return Signature.build(ctrl=1, target=1)
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic")
 
     def my_tensors(
-        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
-    ) -> list['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         _I = [[1, 0], [0, 1]]
@@ -134,12 +136,12 @@ class TestGWRAtom(GateWithRegisters):
     def signature(self) -> Signature:
         return Signature.build(q=1)
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic")
 
     def my_tensors(
-        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
-    ) -> list['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         from qualtran.cirq_interop._cirq_to_bloq import _my_tensors_from_gate
 
         return _my_tensors_from_gate(self, self.signature, incoming=incoming, outgoing=outgoing)
@@ -147,10 +149,10 @@ class TestGWRAtom(GateWithRegisters):
     def _unitary_(self):
         return np.eye(2)
 
-    def adjoint(self) -> 'TestGWRAtom':
+    def adjoint(self) -> TestGWRAtom:
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
-    def my_static_costs(self, cost_key: 'CostKey'):
+    def my_static_costs(self, cost_key: CostKey):
         if isinstance(cost_key, QECGatesCost):
             return GateCounts(t=100)
         return NotImplemented

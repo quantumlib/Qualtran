@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -63,7 +65,7 @@ class SignExtend(Bloq):
             )
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('x', self.inp_dtype, side=Side.LEFT),
@@ -75,10 +77,10 @@ class SignExtend(Bloq):
     def extend_bitsize(self):
         return self.out_dtype.num_qubits - self.inp_dtype.num_qubits
 
-    def adjoint(self) -> 'SignTruncate':
+    def adjoint(self) -> SignTruncate:
         return SignTruncate(self.out_dtype, self.inp_dtype)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet) -> dict[str, SoquetT]:
         extend_ys = bb.allocate(self.extend_bitsize)
         xs = bb.split(x)
 
@@ -91,10 +93,10 @@ class SignExtend(Bloq):
 
         return {'y': y}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {MultiTargetCNOT(self.extend_bitsize): 1}
 
-    def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, x: ClassicalValT) -> dict[str, ClassicalValT]:
         return {'y': x}
 
 
@@ -146,7 +148,7 @@ class SignTruncate(Bloq):
             )
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('x', self.inp_dtype, side=Side.LEFT),
@@ -158,10 +160,10 @@ class SignTruncate(Bloq):
     def truncate_bitsize(self):
         return self.inp_dtype.num_qubits - self.out_dtype.num_qubits
 
-    def adjoint(self) -> 'SignExtend':
+    def adjoint(self) -> SignExtend:
         return SignExtend(self.out_dtype, self.inp_dtype)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet) -> dict[str, SoquetT]:
         xs = bb.split(x)
         bits_to_drop, xs = xs[: self.truncate_bitsize], xs[self.truncate_bitsize :]
 
@@ -173,10 +175,10 @@ class SignTruncate(Bloq):
 
         return {'y': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {MultiTargetCNOT(self.truncate_bitsize): 1}
 
-    def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, x: ClassicalValT) -> dict[str, ClassicalValT]:
         bits = self.inp_dtype.to_bits(int(x))
 
         bits_to_drop = bits[: self.truncate_bitsize]

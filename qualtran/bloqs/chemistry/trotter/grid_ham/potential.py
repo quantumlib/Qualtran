@@ -83,7 +83,7 @@ class PairPotential(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text(f'U_{self.label}(dt)_ij')
         return super().wire_symbol(reg, idx)
@@ -217,7 +217,7 @@ class PotentialEnergy(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text(f'U_{self.label}(dt)')
         return super().wire_symbol(reg, idx)

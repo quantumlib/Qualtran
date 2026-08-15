@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from attrs import field, frozen
 
 
@@ -31,7 +33,7 @@ class PhysicalParameters:
     @classmethod
     def make_beverland_et_al(
         cls, qubit_modality: str = 'superconducting', optimistic_err_rate: bool = False
-    ) -> 'PhysicalParameters':
+    ) -> PhysicalParameters:
         """The physical parameters considered in the Beverland et al. reference.
 
         Args:
@@ -76,7 +78,7 @@ class PhysicalParameters:
         )
 
     @classmethod
-    def make_gidney_fowler(cls, optimistic_err_rate: bool = False) -> 'PhysicalParameters':
+    def make_gidney_fowler(cls, optimistic_err_rate: bool = False) -> PhysicalParameters:
         """The physical parameters considered in the Gidney and Fowler reference.
 
         References:

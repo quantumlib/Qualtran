@@ -92,7 +92,7 @@ class QROM(QROMBase, UnaryIterationGate):
         target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
         target_shapes: tuple[tuple[SymbolicInt, ...], ...] = (),
         num_controls: SymbolicInt = 0,
-    ) -> 'QROM':
+    ) -> QROM:
         return cls._build_from_data(
             *data,
             target_bitsizes=target_bitsizes,
@@ -109,7 +109,7 @@ class QROM(QROMBase, UnaryIterationGate):
         target_shapes: tuple[tuple[SymbolicInt, ...], ...] = (),
         selection_bitsizes: tuple[SymbolicInt, ...] = (),
         num_controls: SymbolicInt = 0,
-    ) -> 'QROM':
+    ) -> QROM:
         return cls._build_from_bitsize(
             data_len_or_shape,
             target_bitsizes,
@@ -190,7 +190,7 @@ class QROM(QROMBase, UnaryIterationGate):
 
         return _wire_symbol_to_cirq_diagram_info(self, args)
 
-    def my_static_costs(self, cost_key: "CostKey"):
+    def my_static_costs(self, cost_key: CostKey):
         from qualtran.resource_counting import QubitCount
 
         if isinstance(cost_key, QubitCount):
@@ -201,7 +201,7 @@ class QROM(QROMBase, UnaryIterationGate):
     def __str__(self):
         return f'QROM({self.data_shape}, {self.target_shapes}, {self.target_bitsizes})'
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('QROM')
         name = reg.name
@@ -221,7 +221,7 @@ class QROM(QROMBase, UnaryIterationGate):
             return Circle()
         raise ValueError(f'Unrecognized register name {name}')
 
-    def nth_operation_callgraph(self, **kwargs: int) -> set['BloqCountT']:
+    def nth_operation_callgraph(self, **kwargs: int) -> set[BloqCountT]:
         selection_idx = tuple(kwargs[reg.name] for reg in self.selection_registers)
         ret = 0
         for i, d in enumerate(self.data):
@@ -232,7 +232,7 @@ class QROM(QROMBase, UnaryIterationGate):
                 ret += data_to_load.bit_count()
         return {(CNOT(), ret)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         if self.has_data():
             return super().build_call_graph(ssa=ssa)
         n_and = prod(self.data_shape) - 2 + self.num_controls
@@ -241,7 +241,7 @@ class QROM(QROMBase, UnaryIterationGate):
         ) * prod(self.data_shape)
         return {And(): n_and, And().adjoint(): n_and, CNOT(): n_cnot}
 
-    def adjoint(self) -> 'QROM':
+    def adjoint(self) -> QROM:
         return self
 
 

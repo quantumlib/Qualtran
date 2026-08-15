@@ -33,7 +33,7 @@ class _TracingBloqFuncT(Protocol):
 
     __name__: str
 
-    def __call__(self, bb: 'BloqBuilder', *args: Any, **kwargs: Any) -> dict[str, Any]:
+    def __call__(self, bb: BloqBuilder, *args: Any, **kwargs: Any) -> dict[str, Any]:
         """the structure of the function.
 
         During normal operation
@@ -58,14 +58,14 @@ class _TracingBloqFuncT(Protocol):
 class _BloqifyPrepResult:
     """Container for the results of tracing a function to build a Bloq."""
 
-    cbloq: 'CompositeBloq'
+    cbloq: CompositeBloq
     in_qargnames: set[str]
     out_qargnames: set[str]
     explicit_bb: BloqBuilder | None = None
     found_bb: BloqBuilder | None = None
 
     @property
-    def bb(self) -> 'BloqBuilder':
+    def bb(self) -> BloqBuilder:
         if self.explicit_bb is not None:
             return self.explicit_bb
         if self.found_bb is not None:
@@ -168,14 +168,14 @@ class _TracingBloqIntermediate:
         soqs = self.func(bb, *classical_args, **kwargs)
         return bb.finalize(**soqs)
 
-    def __call__(self, bb: 'BloqBuilder', /, *args, **kwargs):
+    def __call__(self, bb: BloqBuilder, /, *args, **kwargs):
         """Trace the function and add it as a sub-bloq to the provided builder."""
         f = self._prep_qstackframe(self._bound_kvs(*args, **kwargs))
         return bb.add(
             f.cbloq, **{k: v for k, v in self._bound_kvs(*args, **kwargs) if k in f.in_qargnames}
         )
 
-    def inline(self, bb: 'BloqBuilder', /, *args, **kwargs):
+    def inline(self, bb: BloqBuilder, /, *args, **kwargs):
         """Run the function directly on the provided builder without creating a sub-bloq."""
         ret_dict = self.func(bb, *args, **kwargs)
         return tuple(ret_dict.values())

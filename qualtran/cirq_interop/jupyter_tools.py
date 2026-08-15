@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -58,7 +60,7 @@ def display_gate_and_compilation(
     IPython.display.display(box)
 
 
-def circuit_with_costs(circuit: 'cirq.AbstractCircuit') -> 'cirq.AbstractCircuit':
+def circuit_with_costs(circuit: cirq.AbstractCircuit) -> cirq.AbstractCircuit:
     """Annotates each operation in the circuit with its T-complexity cost."""
 
     def _map_func(op: cirq.Operation, _):
@@ -69,7 +71,7 @@ def circuit_with_costs(circuit: 'cirq.AbstractCircuit') -> 'cirq.AbstractCircuit
 
 
 def svg_circuit(
-    circuit: 'cirq.AbstractCircuit', registers: Iterable[Register] = (), include_costs: bool = False
+    circuit: cirq.AbstractCircuit, registers: Iterable[Register] = (), include_costs: bool = False
 ):
     """Return an SVG object representing a circuit.
 

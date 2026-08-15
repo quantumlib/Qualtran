@@ -47,8 +47,8 @@ from qualtran.bloqs.data_loading.select_swap_qrom import _alloc_anc_for_reg, Sel
 
 
 def _alloc_anc_for_reg_except_first(
-    bb: 'BloqBuilder', dtype: 'QDType', shape: tuple[int, ...], dirty: bool
-) -> 'SoquetT':
+    bb: BloqBuilder, dtype: QDType, shape: tuple[int, ...], dirty: bool
+) -> SoquetT:
     if not shape:
         return bb.allocate(dtype=dtype, dirty=dirty)
     soqs = np.empty(shape, dtype=object)
@@ -131,14 +131,14 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):
 
     @classmethod
     def build_from_data(
-        cls: type['QROAMCleanAdjoint'],
+        cls: type[QROAMCleanAdjoint],
         *data: ArrayLike,
         target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
         target_shapes: tuple[tuple[SymbolicInt, ...], ...] = (),
         num_controls: SymbolicInt = 0,
         log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
-    ) -> 'QROAMCleanAdjoint':
-        qroam: 'QROAMCleanAdjoint' = cls._build_from_data(
+    ) -> QROAMCleanAdjoint:
+        qroam: QROAMCleanAdjoint = cls._build_from_data(
             *data,
             target_bitsizes=target_bitsizes,
             target_shapes=target_shapes,
@@ -148,7 +148,7 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):
 
     @classmethod
     def build_from_bitsize(
-        cls: type['QROAMCleanAdjoint'],
+        cls: type[QROAMCleanAdjoint],
         data_len_or_shape: SymbolicInt | tuple[SymbolicInt, ...],
         target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...],
         *,
@@ -156,8 +156,8 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):
         selection_bitsizes: tuple[SymbolicInt, ...] = (),
         num_controls: SymbolicInt = 0,
         log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
-    ) -> 'QROAMCleanAdjoint':
-        qroam: 'QROAMCleanAdjoint' = cls._build_from_bitsize(
+    ) -> QROAMCleanAdjoint:
+        qroam: QROAMCleanAdjoint = cls._build_from_bitsize(
             data_len_or_shape,
             target_bitsizes,
             selection_bitsizes=selection_bitsizes,
@@ -178,7 +178,7 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):
 
     def with_log_block_sizes(
         self, log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None
-    ) -> 'QROAMCleanAdjoint':
+    ) -> QROAMCleanAdjoint:
         if log_block_sizes is None:
             return self
         if isinstance(log_block_sizes, (int, sympy.Basic, numbers.Number)):
@@ -187,7 +187,7 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):
             assert all(1 <= 2**bs <= ilen for bs, ilen in zip(log_block_sizes, self.data_shape))
         return attrs.evolve(self, log_block_sizes=log_block_sizes)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         block_sizes = prod([2**k for k in self.log_block_sizes])
         data_size = prod(self.data_shape)
         n_toffoli = ceil(data_size / block_sizes) + block_sizes - 4 + self.num_controls
@@ -201,10 +201,10 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):
             [*self.control_registers, *self.selection_registers, *self.target_registers]
         )
 
-    def adjoint(self) -> 'QROAMClean':
+    def adjoint(self) -> QROAMClean:
         return QROAMClean(**attrs.asdict(self))
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('QROAM').adjoint()
         name = reg.name
@@ -224,7 +224,7 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):
 class QROAMCleanAdjointWrapper(Bloq):
     """Wrapper bloq with signature matching Adjoint(QROAMClean). Delegates to QROAMCleanAdjoint"""
 
-    qroam_clean: 'QROAMClean'
+    qroam_clean: QROAMClean
     log_block_sizes: tuple[SymbolicInt, ...] = attrs.field(
         converter=lambda x: (
             x if x is None else tuple(x.tolist() if isinstance(x, np.ndarray) else x)
@@ -232,7 +232,7 @@ class QROAMCleanAdjointWrapper(Bloq):
     )
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return self.qroam_clean.signature.adjoint()
 
     @log_block_sizes.default
@@ -244,7 +244,7 @@ class QROAMCleanAdjointWrapper(Bloq):
         )
 
     @cached_property
-    def qroam_clean_adjoint_bloq(self) -> 'QROAMCleanAdjoint':
+    def qroam_clean_adjoint_bloq(self) -> QROAMCleanAdjoint:
         if self.qroam_clean.has_data():
             return QROAMCleanAdjoint.build_from_data(
                 *self.qroam_clean.batched_data_permuted,
@@ -264,7 +264,7 @@ class QROAMCleanAdjointWrapper(Bloq):
                 num_controls=self.qroam_clean.num_controls,
             )
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         block_sizes = cast(tuple[int, ...], self.qroam_clean.block_sizes)
         for target, adj_target in zip(
             self.qroam_clean.target_registers, self.qroam_clean_adjoint_bloq.target_registers
@@ -278,7 +278,7 @@ class QROAMCleanAdjointWrapper(Bloq):
         soqs = bb.add_d(self.qroam_clean_adjoint_bloq, **soqs)
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         block_sizes = prod([2**k for k in self.log_block_sizes])
         data_size = prod(self.qroam_clean.data_shape)
         n_toffoli = ceil(data_size / block_sizes) + block_sizes - 4 + self.qroam_clean.num_controls
@@ -286,15 +286,15 @@ class QROAMCleanAdjointWrapper(Bloq):
             n_toffoli = max(0, n_toffoli)
         return {Toffoli(): n_toffoli}
 
-    def adjoint(self) -> 'QROAMClean':
+    def adjoint(self) -> QROAMClean:
         return self.qroam_clean
 
     def with_log_block_sizes(
         self, log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None
-    ) -> 'QROAMCleanAdjointWrapper':
+    ) -> QROAMCleanAdjointWrapper:
         return attrs.evolve(self, log_block_sizes=log_block_sizes)
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('QROAM').adjoint()
         name = reg.name
@@ -380,28 +380,28 @@ class QROAMClean(SelectSwapQROM):
 
     @classmethod
     def build_from_data(
-        cls: type['QROAMClean'],
+        cls: type[QROAMClean],
         *data: ArrayLike,
         target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
         num_controls: SymbolicInt = 0,
         log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
-    ) -> 'QROAMClean':
-        qroam: 'QROAMClean' = cls._build_from_data(
+    ) -> QROAMClean:
+        qroam: QROAMClean = cls._build_from_data(
             *data, target_bitsizes=target_bitsizes, num_controls=num_controls
         )
         return qroam.with_log_block_sizes(log_block_sizes=log_block_sizes)
 
     @classmethod
     def build_from_bitsize(
-        cls: type['QROAMClean'],
+        cls: type[QROAMClean],
         data_len_or_shape: SymbolicInt | tuple[SymbolicInt, ...],
         target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...],
         *,
         selection_bitsizes: tuple[SymbolicInt, ...] = (),
         num_controls: SymbolicInt = 0,
         log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
-    ) -> 'QROAMClean':
-        qroam: 'QROAMClean' = cls._build_from_bitsize(
+    ) -> QROAMClean:
+        qroam: QROAMClean = cls._build_from_bitsize(
             data_len_or_shape,
             target_bitsizes,
             selection_bitsizes=selection_bitsizes,
@@ -461,7 +461,7 @@ class QROAMClean(SelectSwapQROM):
                 junk_regs += [attrs.evolve(reg, name='junk_' + reg.name, shape=(block_size - 1,))]
         return tuple(junk_regs)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         ret: dict[Bloq, SymbolicInt] = defaultdict(lambda: 0)
         ret[self.qrom_bloq] += 1
         for swz in self.swap_with_zero_bloqs:
@@ -469,7 +469,7 @@ class QROAMClean(SelectSwapQROM):
                 ret[swz] += 1
         return ret
 
-    def my_static_costs(self, cost_key: "CostKey"):
+    def my_static_costs(self, cost_key: CostKey):
         from qualtran.resource_counting import get_cost_value, QubitCount
 
         if isinstance(cost_key, QubitCount):
@@ -480,18 +480,18 @@ class QROAMClean(SelectSwapQROM):
 
     def _build_composite_bloq_with_swz_clean(
         self,
-        bb: 'BloqBuilder',
-        ctrl: list['SoquetT'],
-        selection: list['SoquetT'],
-        qrom_targets: list['SoquetT'],
-    ) -> tuple[list['SoquetT'], list['SoquetT'], list['SoquetT']]:
+        bb: BloqBuilder,
+        ctrl: list[SoquetT],
+        selection: list[SoquetT],
+        qrom_targets: list[SoquetT],
+    ) -> tuple[list[SoquetT], list[SoquetT], list[SoquetT]]:
         sel_l, sel_k = self._partition_sel_register(bb, selection)
         ctrl, sel_l, qrom_targets = self._add_qrom_bloq(bb, ctrl, sel_l, qrom_targets)
         sel_k, qrom_targets = self._add_swap_with_zero_bloq(bb, sel_k, qrom_targets)
         selection = self._unpartition_sel_register(bb, sel_l, sel_k)
         return ctrl, selection, qrom_targets
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         # Get the ctrl and target register for the SelectSwapQROM.
         ctrl = [soqs.pop(reg.name) for reg in self.control_registers]
         selection = [soqs.pop(reg.name) for reg in self.selection_registers]
@@ -533,10 +533,10 @@ class QROAMClean(SelectSwapQROM):
             vals_without_junk[junk_reg.name] = d[selection].flat[1:]
         return vals_without_junk
 
-    def adjoint(self) -> 'QROAMCleanAdjointWrapper':
+    def adjoint(self) -> QROAMCleanAdjointWrapper:
         return QROAMCleanAdjointWrapper(self)
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('QROAM')
         name = reg.name

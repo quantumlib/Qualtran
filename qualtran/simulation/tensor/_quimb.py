@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import logging
 from collections.abc import Iterable
 from typing import Any, cast, TypeAlias
@@ -116,7 +118,7 @@ _OuterIndT = tuple[str, tuple[int, ...], int, str]
 
 
 def _get_outer_indices(
-    tn: 'qtn.TensorNetwork', friendly_indices: bool = False
+    tn: qtn.TensorNetwork, friendly_indices: bool = False
 ) -> dict[_IndT, str | _OuterIndT]:
     """Provide a mapping for a tensor network's outer indices.
 
@@ -180,7 +182,7 @@ class DiscardInd:
             individual bits.
     """
 
-    ind_tuple: tuple['ConnectionT', int]
+    ind_tuple: tuple[ConnectionT, int]
 
 
 def make_forward_tensor(t: qtn.Tensor):
@@ -271,7 +273,7 @@ _SuperOuterIndT = tuple[str, tuple[int, ...], int, str]
 
 
 def _get_outer_superindices(
-    tn: 'qtn.TensorNetwork', friendly_indices: bool = False
+    tn: qtn.TensorNetwork, friendly_indices: bool = False
 ) -> dict[_IndT, str | _SuperOuterIndT]:
     """Provide a mapping for a super-tensor network's outer indices.
 
@@ -318,12 +320,12 @@ def _get_outer_superindices(
     return ind_name_map
 
 
-def _add_classical_kets(bb: BloqBuilder, registers: Iterable[Register]) -> dict[str, 'SoquetT']:
+def _add_classical_kets(bb: BloqBuilder, registers: Iterable[Register]) -> dict[str, SoquetT]:
     """Use `bb` to add `IntState(0)` for all the `vals`."""
 
     from qualtran.bloqs.basic_gates import IntState
 
-    soqs: dict[str, 'SoquetT'] = {}
+    soqs: dict[str, SoquetT] = {}
     for reg in registers:
         if reg.shape:
             reg_vals = np.zeros(reg.shape, dtype=int)

@@ -95,7 +95,7 @@ class And(GateWithRegisters):
             ]
         )
 
-    def adjoint(self) -> 'And':
+    def adjoint(self) -> And:
         return attrs.evolve(self, uncompute=not self.uncompute)
 
     @classmethod
@@ -116,7 +116,7 @@ class And(GateWithRegisters):
         else:
             return bb.add(bloq, ctrl=ctrl)
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic.")
 
     def on_classical_vals(
@@ -134,8 +134,8 @@ class And(GateWithRegisters):
         return {'ctrl': ctrl}
 
     def my_tensors(
-        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
-    ) -> list['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         # Fill in our tensor using "and" logic.
@@ -165,7 +165,7 @@ class And(GateWithRegisters):
             )
         ]
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         if reg.name == 'target':
@@ -209,7 +209,7 @@ class And(GateWithRegisters):
             yield [cirq.H(target), cirq.S(target)]
         yield pre_post_ops
 
-    def to_clifford_t_circuit(self) -> 'cirq.FrozenCircuit':
+    def to_clifford_t_circuit(self) -> cirq.FrozenCircuit:
         """Decomposes a single `And` gate on 2 controls and 1 target in terms of Clifford+T gates.
 
         * And(cv).on(c1, c2, target) uses 4 T-gates and assumes target is in |0> state.
@@ -327,7 +327,7 @@ class MultiAnd(Bloq):
         junk, target = accumulate_and[1:-1], accumulate_and[-1]
         return {'ctrl': ctrl, 'junk': junk, 'target': target}
 
-    def __pow__(self, power: int) -> "Bloq":
+    def __pow__(self, power: int) -> Bloq:
         if power == 1:
             return self
         if power == -1:
@@ -363,10 +363,10 @@ class MultiAnd(Bloq):
         )
         yield self._decompose_via_tree(control, self.concrete_cvs, ancilla, *target)
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         return decompose_from_cirq_style_method(self)
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         if reg.name == 'ctrl':
@@ -382,8 +382,8 @@ class MultiAnd(Bloq):
     def __str__(self):
         return f'MultiAnd(n={self.n_ctrls})'
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        cost: 'MutableBloqCountDictT' = {And(): self.n_ctrls - 1}
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        cost: MutableBloqCountDictT = {And(): self.n_ctrls - 1}
         if not (
             is_symbolic(self.cvs)
             or is_symbolic(*self.concrete_cvs)

@@ -72,22 +72,22 @@ class Free(_BookkeepingBloq):
     def signature(self) -> Signature:
         return Signature([Register('reg', self.dtype, side=Side.LEFT)])
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f'{self} is atomic.')
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         from qualtran.bloqs.bookkeeping.allocate import Allocate
 
         return Allocate(self.dtype, self.dirty)
 
-    def on_classical_vals(self, reg: int) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, reg: int) -> dict[str, ClassicalValT]:
         if reg != 0 and not self.dirty:
             raise QCDTypeDomainError(f"Tried to free a non-zero register: {reg} with {self.dirty=}")
         return {}
 
     def my_tensors(
-        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
-    ) -> list['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         from qualtran.bloqs.basic_gates.z_basis import _ZERO
@@ -97,19 +97,19 @@ class Free(_BookkeepingBloq):
             for i in range(self.dtype.num_qubits)
         ]
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         assert reg.name == 'reg'
         return directional_text_box('free', Side.LEFT)
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', reg: 'CirqQuregT'
-    ) -> tuple[cirq.Operation | None, dict[str, 'CirqQuregT']]:
+        self, qubit_manager: cirq.QubitManager, reg: CirqQuregT
+    ) -> tuple[cirq.Operation | None, dict[str, CirqQuregT]]:
         qubit_manager.qfree(reg.flatten().tolist())
         return (None, {})
 
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: Wires) -> Operation:
         return None
 
     def __str__(self):

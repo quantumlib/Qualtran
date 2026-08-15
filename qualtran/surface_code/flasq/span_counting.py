@@ -20,6 +20,8 @@ costs. These distances are later scaled by connect_span_volume and
 compute_span_volume in FLASQCostModel to produce ancilla volumes.
 """
 
+from __future__ import annotations
+
 import logging
 from collections.abc import Callable, Mapping, Sequence
 
@@ -158,7 +160,7 @@ class GateSpan:
             return "-"
         return ", ".join(parts)
 
-    def asdict(self) -> dict[str, SymbolicInt | dict["Bloq", SymbolicInt]]:
+    def asdict(self) -> dict[str, SymbolicInt | dict[Bloq, SymbolicInt]]:
         # Filter out zero counts and empty dicts
         d = attrs.asdict(
             self, recurse=False, filter=lambda a, v: not is_zero(v) and v != frozendict()

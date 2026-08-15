@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import math
 from typing import TYPE_CHECKING
 
@@ -40,10 +42,10 @@ class TestApproximateQFT(GateWithRegisters):
     with_reverse: bool
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(q=self.bitsize)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', *, q: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, *, q: SoquetT) -> dict[str, SoquetT]:
         phase_grad = bb.add(PhaseGradientState(self.phase_bitsize, exponent=-1))
 
         q, phase_grad = bb.add(

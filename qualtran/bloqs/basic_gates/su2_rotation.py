@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -78,14 +80,14 @@ class SU2RotationGate(GateWithRegisters):
     @classmethod
     def qcall(
         cls,
-        q: "QVar",
+        q: QVar,
         theta: SymbolicFloat,
         phi: SymbolicFloat,
         lambd: SymbolicFloat,
         *,
         global_shift: SymbolicFloat = 0,
         eps: SymbolicFloat = 1e-11,
-    ) -> "QVar":
+    ) -> QVar:
         return q.bb.add(
             cls(theta=theta, phi=phi, lambd=lambd, global_shift=global_shift, eps=eps), q=q
         )
@@ -111,7 +113,7 @@ class SU2RotationGate(GateWithRegisters):
         )
 
     @classmethod
-    def from_matrix(cls, mat: NDArray[np.complex128]) -> 'SU2RotationGate':
+    def from_matrix(cls, mat: NDArray[np.complex128]) -> SU2RotationGate:
 
         theta = np.arctan2(np.abs(mat[1, 0]), np.abs(mat[0, 0]))
         if np.isclose(np.cos(theta), 0):
@@ -138,7 +140,7 @@ class SU2RotationGate(GateWithRegisters):
         *,
         global_shift: SymbolicFloat = 0,
         eps: SymbolicFloat | None,
-    ) -> 'SU2RotationGate':
+    ) -> SU2RotationGate:
         r"""SU(2) rotation from Z-X-Z Euler angles.
 
         Corresponds to the matrix $e^{i \delta} Rz(\phi) Rx(\theta) Rz(\psi)$, i.e.
@@ -170,8 +172,8 @@ class SU2RotationGate(GateWithRegisters):
             return cls(su2_theta, su2_phi, su2_lambd, su2_global_shift)
 
     def my_tensors(
-        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
-    ) -> list['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         return [
@@ -187,7 +189,7 @@ class SU2RotationGate(GateWithRegisters):
             return None
         return self.rotation_matrix
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, q: SoquetT) -> dict[str, SoquetT]:
         # TODO implement controlled version, and pass eps/4 to each rotation (incl. global phase)
         #      https://github.com/quantumlib/Qualtran/issues/1330
         bb.add(
@@ -205,7 +207,7 @@ class SU2RotationGate(GateWithRegisters):
         q = bb.add(Rz(pi(self.phi) / 2 - self.phi, eps=self.eps / 3), q=q)
         return {'q': q}
 
-    def adjoint(self) -> 'SU2RotationGate':
+    def adjoint(self) -> SU2RotationGate:
         return SU2RotationGate(
             theta=self.theta,
             phi=-self.lambd,
@@ -218,7 +220,7 @@ class SU2RotationGate(GateWithRegisters):
         return is_symbolic(self.theta, self.phi, self.lambd, self.global_shift)
 
     @classmethod
-    def arbitrary(cls, ssa: 'SympySymbolAllocator') -> 'SU2RotationGate':
+    def arbitrary(cls, ssa: SympySymbolAllocator) -> SU2RotationGate:
         """Return a parametrized arbitrary rotation for resource counting"""
         theta = ssa.new_symbol("theta")
         phi = ssa.new_symbol("phi")
@@ -232,7 +234,7 @@ class SU2RotationGate(GateWithRegisters):
             return f'SU_2({self.theta},{self.phi},{self.lambd},{self.global_shift})'
         return f'SU_2({self.theta:.2f},{self.phi:.2f},{self.lambd:.2f},{self.global_shift:.2f})'
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             if self.is_symbolic():
                 return Text(f'({self.theta},{self.phi},{self.lambd},{self.global_shift})')

@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import cast, TYPE_CHECKING
 
@@ -53,10 +55,10 @@ if TYPE_CHECKING:
 class _KaliskiIterationStep1(Bloq):
     """The first layer of operations in figure 15 of https://arxiv.org/pdf/2302.06639."""
 
-    bitsize: 'SymbolicInt'
+    bitsize: SymbolicInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('v', QMontgomeryUInt(self.bitsize)),
@@ -68,7 +70,7 @@ class _KaliskiIterationStep1(Bloq):
 
     def on_classical_vals(
         self, v: int, m: int, f: int, is_terminal: int
-    ) -> dict[str, 'ClassicalValT']:
+    ) -> dict[str, ClassicalValT]:
         m ^= f & (v == 0)
         assert is_terminal == 0
         is_terminal ^= m
@@ -76,8 +78,8 @@ class _KaliskiIterationStep1(Bloq):
         return {'v': v, 'm': m, 'f': f, 'is_terminal': is_terminal}
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', v: Soquet, m: Soquet, f: Soquet, is_terminal: Soquet
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, v: Soquet, m: Soquet, f: Soquet, is_terminal: Soquet
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
         v_arr = bb.split(v)
@@ -94,7 +96,7 @@ class _KaliskiIterationStep1(Bloq):
         m, is_terminal = bb.add(CNOT(), ctrl=m, target=is_terminal)
         return {'v': v, 'm': m, 'f': f, 'is_terminal': is_terminal}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         if is_symbolic(self.bitsize):
             cvs: HasLength | list[int] = HasLength(self.bitsize + 1)
         else:
@@ -106,10 +108,10 @@ class _KaliskiIterationStep1(Bloq):
 class _KaliskiIterationStep2(Bloq):
     """The second layer of operations in figure 15 of https://arxiv.org/pdf/2302.06639."""
 
-    bitsize: 'SymbolicInt'
+    bitsize: SymbolicInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('u', QMontgomeryUInt(self.bitsize)),
@@ -123,7 +125,7 @@ class _KaliskiIterationStep2(Bloq):
 
     def on_classical_vals(
         self, u: int, v: int, b: int, a: int, m: int, f: int
-    ) -> dict[str, 'ClassicalValT']:
+    ) -> dict[str, ClassicalValT]:
         a ^= ((u & 1) == 0) & f
         m ^= ((v & 1) == 0) & (a == 0) & f
         b ^= a
@@ -131,8 +133,8 @@ class _KaliskiIterationStep2(Bloq):
         return {'u': u, 'v': v, 'b': b, 'a': a, 'm': m, 'f': f}
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', u: Soquet, v: Soquet, b: Soquet, a: Soquet, m: Soquet, f: Soquet
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, u: Soquet, v: Soquet, b: Soquet, a: Soquet, m: Soquet, f: Soquet
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
 
@@ -155,7 +157,7 @@ class _KaliskiIterationStep2(Bloq):
         v = bb.join(v_arr)
         return {'u': u, 'v': v, 'b': b, 'a': a, 'm': m, 'f': f}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             And(1, 0): 1,
             And(1, 0).adjoint(): 1,
@@ -169,10 +171,10 @@ class _KaliskiIterationStep2(Bloq):
 class _KaliskiIterationStep3(Bloq):
     """The third layer of operations in figure 15 of https://arxiv.org/pdf/2302.06639."""
 
-    bitsize: 'SymbolicInt'
+    bitsize: SymbolicInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('u', QMontgomeryUInt(self.bitsize)),
@@ -186,15 +188,15 @@ class _KaliskiIterationStep3(Bloq):
 
     def on_classical_vals(
         self, u: int, v: int, b: int, a: int, m: int, f: int
-    ) -> dict[str, 'ClassicalValT']:
+    ) -> dict[str, ClassicalValT]:
         c = (u > v) & (b == 0) & f
         a ^= c
         m ^= c
         return {'u': u, 'v': v, 'b': b, 'a': a, 'm': m, 'f': f}
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', u: Soquet, v: Soquet, b: Soquet, a: Soquet, m: Soquet, f: Soquet
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, u: Soquet, v: Soquet, b: Soquet, a: Soquet, m: Soquet, f: Soquet
+    ) -> dict[str, SoquetT]:
         u, v, junk_c, greater_than = bb.add(
             LinearDepthHalfGreaterThan(QMontgomeryUInt(self.bitsize)), a=u, b=v
         )
@@ -218,7 +220,7 @@ class _KaliskiIterationStep3(Bloq):
         )
         return {'u': u, 'v': v, 'b': b, 'a': a, 'm': m, 'f': f}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             LinearDepthHalfGreaterThan(QMontgomeryUInt(self.bitsize)): 1,
             LinearDepthHalfGreaterThan(QMontgomeryUInt(self.bitsize)).adjoint(): 1,
@@ -232,10 +234,10 @@ class _KaliskiIterationStep3(Bloq):
 class _KaliskiIterationStep4(Bloq):
     """The fourth layer of operations in figure 15 of https://arxiv.org/pdf/2302.06639."""
 
-    bitsize: 'SymbolicInt'
+    bitsize: SymbolicInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('u', QMontgomeryUInt(self.bitsize)),
@@ -246,22 +248,20 @@ class _KaliskiIterationStep4(Bloq):
             ]
         )
 
-    def on_classical_vals(
-        self, u: int, v: int, r: int, s: int, a: int
-    ) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, u: int, v: int, r: int, s: int, a: int) -> dict[str, ClassicalValT]:
         if a:
             u, v = v, u
             r, s = s, r
         return {'u': u, 'v': v, 'r': r, 's': s, 'a': a}
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', u: Soquet, v: Soquet, r: Soquet, s: Soquet, a: Soquet
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, u: Soquet, v: Soquet, r: Soquet, s: Soquet, a: Soquet
+    ) -> dict[str, SoquetT]:
         a, u, v = bb.add(CSwap(self.bitsize), ctrl=a, x=u, y=v)
         a, r, s = bb.add(CSwap(self.bitsize), ctrl=a, x=r, y=s)
         return {'u': u, 'v': v, 'r': r, 's': s, 'a': a}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {CSwap(self.bitsize): 2}
 
 
@@ -269,10 +269,10 @@ class _KaliskiIterationStep4(Bloq):
 class _KaliskiIterationStep5(Bloq):
     """The fifth layer of operations in figure 15 of https://arxiv.org/pdf/2302.06639."""
 
-    bitsize: 'SymbolicInt'
+    bitsize: SymbolicInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('u', QMontgomeryUInt(self.bitsize)),
@@ -286,15 +286,15 @@ class _KaliskiIterationStep5(Bloq):
 
     def on_classical_vals(
         self, u: int, v: int, r: int, s: int, b: int, f: int
-    ) -> dict[str, 'ClassicalValT']:
+    ) -> dict[str, ClassicalValT]:
         if f and b == 0:
             v -= u
             s += r
         return {'u': u, 'v': v, 'r': r, 's': s, 'b': b, 'f': f}
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', u: Soquet, v: Soquet, r: Soquet, s: Soquet, b: Soquet, f: Soquet
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, u: Soquet, v: Soquet, r: Soquet, s: Soquet, b: Soquet, f: Soquet
+    ) -> dict[str, SoquetT]:
         (f, b), c = bb.add(And(1, 0), ctrl=(f, b))
         v = bb.add(BitwiseNot(QMontgomeryUInt(self.bitsize)), x=v)
         c, u, v = bb.add(CAdd(QMontgomeryUInt(self.bitsize)), ctrl=c, a=u, b=v)
@@ -303,7 +303,7 @@ class _KaliskiIterationStep5(Bloq):
         f, b = bb.add(And(1, 0).adjoint(), ctrl=(f, b), target=c)
         return {'u': u, 'v': v, 'r': r, 's': s, 'b': b, 'f': f}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             And(1, 0): 1,
             And(1, 0).adjoint(): 1,
@@ -316,11 +316,11 @@ class _KaliskiIterationStep5(Bloq):
 class _KaliskiIterationStep6(Bloq):
     """The sixth layer of operations in figure 15 of https://arxiv.org/pdf/2302.06639."""
 
-    bitsize: 'SymbolicInt'
-    mod: 'SymbolicInt'
+    bitsize: SymbolicInt
+    mod: SymbolicInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('u', QMontgomeryUInt(self.bitsize, self.mod)),
@@ -336,7 +336,7 @@ class _KaliskiIterationStep6(Bloq):
 
     def on_classical_vals(
         self, u: int, v: int, r: int, s: int, b: int, a: int, m: int, f: int
-    ) -> dict[str, 'ClassicalValT']:
+    ) -> dict[str, ClassicalValT]:
         b ^= m
         b ^= a
         if f:
@@ -351,7 +351,7 @@ class _KaliskiIterationStep6(Bloq):
 
     def build_composite_bloq(
         self,
-        bb: 'BloqBuilder',
+        bb: BloqBuilder,
         u: Soquet,
         v: Soquet,
         r: Soquet,
@@ -360,7 +360,7 @@ class _KaliskiIterationStep6(Bloq):
         a: Soquet,
         m: Soquet,
         f: Soquet,
-    ) -> dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.bitsize, self.mod):
             raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
         m, b = bb.add(CNOT(), ctrl=m, target=b)
@@ -385,7 +385,7 @@ class _KaliskiIterationStep6(Bloq):
 
         return {'u': u, 'v': v, 'r': r, 's': s, 'b': b, 'a': a, 'm': m, 'f': f}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             CNOT(): 3,
             XGate(): 2,
@@ -399,11 +399,11 @@ class _KaliskiIterationStep6(Bloq):
 class _KaliskiIteration(Bloq):
     """The single full iteration of Kaliski. see figure 15 of https://arxiv.org/pdf/2302.06639."""
 
-    bitsize: 'SymbolicInt'
-    mod: 'SymbolicInt'
+    bitsize: SymbolicInt
+    mod: SymbolicInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('u', QMontgomeryUInt(self.bitsize, self.mod)),
@@ -418,7 +418,7 @@ class _KaliskiIteration(Bloq):
 
     def build_composite_bloq(
         self,
-        bb: 'BloqBuilder',
+        bb: BloqBuilder,
         u: Soquet,
         v: Soquet,
         r: Soquet,
@@ -426,7 +426,7 @@ class _KaliskiIteration(Bloq):
         m: Soquet,
         f: Soquet,
         is_terminal: Soquet,
-    ) -> dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         a = bb.allocate(1)
         b = bb.allocate(1)
 
@@ -451,7 +451,7 @@ class _KaliskiIteration(Bloq):
         bb.free(b)
         return {'u': u, 'v': v, 'r': r, 's': s, 'm': m, 'f': f, 'is_terminal': is_terminal}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             _KaliskiIterationStep1(self.bitsize): 1,
             _KaliskiIterationStep2(self.bitsize): 1,
@@ -463,7 +463,7 @@ class _KaliskiIteration(Bloq):
 
     def on_classical_vals(
         self, u: int, v: int, r: int, s: int, m: int, f: int, is_terminal: int
-    ) -> dict[str, 'ClassicalValT']:
+    ) -> dict[str, ClassicalValT]:
         """This is the Kaliski algorithm as described in Fig7 of https://arxiv.org/pdf/2001.09580.
 
         The following implementation merges together the pseudocode from Fig7 of https://arxiv.org/pdf/2001.09580
@@ -508,11 +508,11 @@ class _KaliskiIteration(Bloq):
 class _KaliskiModInverseImpl(Bloq):
     """The full KaliskiIteration algorithm. see C5 https://arxiv.org/pdf/2302.06639"""
 
-    bitsize: 'SymbolicInt'
-    mod: 'SymbolicInt'
+    bitsize: SymbolicInt
+    mod: SymbolicInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('u', QMontgomeryUInt(self.bitsize, self.mod)),
@@ -531,7 +531,7 @@ class _KaliskiModInverseImpl(Bloq):
 
     def build_composite_bloq(
         self,
-        bb: 'BloqBuilder',
+        bb: BloqBuilder,
         u: Soquet,
         v: Soquet,
         r: Soquet,
@@ -539,7 +539,7 @@ class _KaliskiModInverseImpl(Bloq):
         m: Soquet,
         f: Soquet,
         terminal_condition: Soquet,
-    ) -> dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
 
@@ -606,7 +606,7 @@ class _KaliskiModInverseImpl(Bloq):
             'terminal_condition': terminal_condition,
         }
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             self._kaliski_iteration: 2 * self.bitsize,
             BitwiseNot(QMontgomeryUInt(self.bitsize)): 1,
@@ -648,12 +648,12 @@ class KaliskiModInverse(Bloq):
             page 8.
     """
 
-    bitsize: 'SymbolicInt'
-    mod: 'SymbolicInt' = field(validator=lambda _, __, v: is_symbolic(v) or v % 2 == 1)
+    bitsize: SymbolicInt
+    mod: SymbolicInt = field(validator=lambda _, __, v: is_symbolic(v) or v % 2 == 1)
     uncompute: bool = False
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         side = Side.LEFT if self.uncompute else Side.RIGHT
         return Signature(
             [
@@ -663,8 +663,8 @@ class KaliskiModInverse(Bloq):
         )
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: Soquet, junk: Soquet | None = None
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, x: Soquet, junk: Soquet | None = None
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
 
@@ -722,13 +722,13 @@ class KaliskiModInverse(Bloq):
         junk = bb.join(np.concatenate([bb.split(m), bb.split(terminal_condition)]))
         return {'x': x, 'junk': junk}
 
-    def adjoint(self) -> 'KaliskiModInverse':
+    def adjoint(self) -> KaliskiModInverse:
         return evolve(self, uncompute=not self.uncompute)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return _KaliskiModInverseImpl(self.bitsize, self.mod).build_call_graph(ssa)
 
-    def on_classical_vals(self, x: int, junk: int = 0) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, x: int, junk: int = 0) -> dict[str, ClassicalValT]:
         mod = int(self.mod)
         u, v, r, s, f = mod, x, 0, 1, 1
         terminal_condition = m = 0

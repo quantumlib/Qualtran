@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import math
 from typing import TYPE_CHECKING
 
@@ -25,7 +27,7 @@ if TYPE_CHECKING:
 
 
 def minimum_time_steps(
-    *, error_budget: float, alg: 'AlgorithmSummary', rotation_model: 'RotationCostModel'
+    *, error_budget: float, alg: AlgorithmSummary, rotation_model: RotationCostModel
 ) -> int:
     r"""Minimum number of time steps needed for the algorithm.
 
@@ -81,8 +83,8 @@ def code_distance(
     *,
     error_budget: float,
     time_steps: float,
-    alg: 'AlgorithmSummary',
-    qec_scheme: 'QECScheme',
+    alg: AlgorithmSummary,
+    qec_scheme: QECScheme,
     physical_error: float,
 ) -> int:
     r"""Minimum code distance needed to run the algorithm within the error budget.
@@ -107,7 +109,7 @@ def code_distance(
 
 
 def n_discrete_logical_gates(
-    *, eps_syn: float, alg: 'AlgorithmSummary', rotation_model: 'RotationCostModel'
+    *, eps_syn: float, alg: AlgorithmSummary, rotation_model: RotationCostModel
 ) -> GateCounts:
     r"""Total number of T and CCZ states after synthesizing rotations.
 
@@ -129,7 +131,7 @@ def n_discrete_logical_gates(
 
 
 def t_states(
-    *, error_budget: float, alg: 'AlgorithmSummary', rotation_model: 'RotationCostModel'
+    *, error_budget: float, alg: AlgorithmSummary, rotation_model: RotationCostModel
 ) -> float:
     r"""Total number of T states consumed by the algorithm.
 

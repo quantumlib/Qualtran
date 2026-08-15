@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from qualtran.bloqs.block_encoding.lcu_block_encoding import SelectBlockEncoding
 from qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard import PrepareHubbard
 from qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard import SelectHubbard
@@ -19,7 +21,7 @@ from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationW
 
 def get_walk_operator_for_hubbard_model(
     x_dim: int, y_dim: int, t: int, u: int
-) -> 'QubitizationWalkOperator':
+) -> QubitizationWalkOperator:
     select = SelectHubbard(x_dim, y_dim)
     prepare = PrepareHubbard(x_dim, y_dim, t, u)
 

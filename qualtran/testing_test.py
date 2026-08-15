@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import re
 from functools import cached_property
 
@@ -96,10 +98,10 @@ def test_assert_registers_match_parent():
     @frozen
     class BadRegBloq(Bloq):
         @cached_property
-        def signature(self) -> 'Signature':
+        def signature(self) -> Signature:
             return Signature.build(x=2, y=3)
 
-        def decompose_bloq(self) -> 'CompositeBloq':
+        def decompose_bloq(self) -> CompositeBloq:
             # !! order of registers swapped.
             bb, soqs = BloqBuilder.from_signature(Signature.build(y=3, x=2))
             x, y = bb.add(BadRegBloq(), x=soqs['x'], y=soqs['y'])
@@ -194,7 +196,7 @@ def test_check_bloq_decompose_na():
 @frozen
 class TestMissingDecomp(Bloq):
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([])
 
 

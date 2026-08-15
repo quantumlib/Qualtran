@@ -191,7 +191,7 @@ class CtrlSpec:
                 return False
         return True
 
-    def wire_symbol(self, i: int, reg: Register, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, i: int, reg: Register, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         from qualtran.drawing import Circle, TextBox
 
         cvs = self.cvs[i]
@@ -231,7 +231,7 @@ class CtrlSpec:
     def __hash__(self):
         return hash((self.qdtypes, self.shapes, self.__cvs_tuple))
 
-    def to_cirq_cv(self) -> 'cirq.SumOfProducts':
+    def to_cirq_cv(self) -> cirq.SumOfProducts:
         """Convert CtrlSpec to cirq.SumOfProducts representation of control values."""
         import cirq
 
@@ -252,11 +252,11 @@ class CtrlSpec:
     @classmethod
     def from_cirq_cv(
         cls,
-        cirq_cv: 'cirq.ops.AbstractControlValues',
+        cirq_cv: cirq.ops.AbstractControlValues,
         *,
         qdtypes: Sequence[QCDType] | None = None,
         shapes: Sequence[tuple[int, ...]] | None = None,
-    ) -> 'CtrlSpec':
+    ) -> CtrlSpec:
         """Construct a CtrlSpec from cirq.SumOfProducts representation of control values."""
         conjunctions = [*cirq_cv.expand()]
         if len(conjunctions) > 1:
@@ -322,8 +322,8 @@ class AddControlledT(Protocol):
     """
 
     def __call__(
-        self, bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
-    ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]: ...
+        self, bb: BloqBuilder, ctrl_soqs: Sequence[SoquetT], in_soqs: dict[str, SoquetT]
+    ) -> tuple[Iterable[SoquetT], Iterable[SoquetT]]: ...
 
 
 def _get_nice_ctrl_reg_names(reg_names: list[str], n: int) -> tuple[str, ...]:
@@ -356,12 +356,12 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def subbloq(self) -> 'Bloq':
+    def subbloq(self) -> Bloq:
         """The bloq being controlled."""
 
     @property
     @abc.abstractmethod
-    def ctrl_spec(self) -> 'CtrlSpec':
+    def ctrl_spec(self) -> CtrlSpec:
         """The specification of how the `subbloq` is controlled."""
 
     @cached_property
@@ -369,7 +369,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         return self.signature.thru_registers_only
 
     @staticmethod
-    def _make_ctrl_system(cb: '_ControlledBase') -> tuple['_ControlledBase', 'AddControlledT']:
+    def _make_ctrl_system(cb: _ControlledBase) -> tuple[_ControlledBase, AddControlledT]:
         """A static method to create the adder function from an implementation of this class.
 
         Classes implementing this interface can use this static method to create a factory
@@ -380,8 +380,8 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         ctrl_reg_names = cb.ctrl_reg_names
 
         def add_controlled(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
-        ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            bb: BloqBuilder, ctrl_soqs: Sequence[SoquetT], in_soqs: dict[str, SoquetT]
+        ) -> tuple[Iterable[SoquetT], Iterable[SoquetT]]:
             in_soqs |= dict(zip(ctrl_reg_names, ctrl_soqs))
             new_out_d = bb.add_d(cb, **in_soqs)
 
@@ -411,11 +411,11 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         )
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         # Prepend register(s) corresponding to `ctrl_spec`.
         return Signature(self.ctrl_regs + tuple(self.subbloq.signature))
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Mapping[str, 'ClassicalValRetT']:
+    def on_classical_vals(self, **vals: 'ClassicalValT') -> Mapping[str, ClassicalValRetT]:
         """Classical action of controlled bloqs.
 
         This involves conditionally doing the classical action of `subbloq`. All implementers
@@ -501,8 +501,8 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         raise ValueError(f"Cannot handle non-thru registers in {self}.")
 
     def my_tensors(
-        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
-    ) -> list['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         from qualtran.simulation.tensor._dense import _order_incoming_outgoing_indices
@@ -513,7 +513,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         data = self._tensor_data().reshape((2,) * len(inds))
         return [qtn.Tensor(data=data, inds=inds, tags=[str(self)])]
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         from qualtran.drawing import Text
 
         if reg is None:
@@ -538,8 +538,8 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         return f'C({self.subbloq!s})'
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
-    ) -> tuple[cirq.Operation | None, dict[str, 'CirqQuregT']]:
+        self, qubit_manager: cirq.QubitManager, **cirq_quregs: 'CirqQuregT'
+    ) -> tuple[cirq.Operation | None, dict[str, CirqQuregT]]:
         ctrl_regs = {reg_name: cirq_quregs.pop(reg_name) for reg_name in self.ctrl_reg_names}
         ctrl_qubits = [q for reg in ctrl_regs.values() for q in reg.reshape(-1)]
         sub_op, cirq_quregs = self.subbloq.as_cirq_op(qubit_manager, **cirq_quregs)
@@ -549,9 +549,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
             cirq_quregs | ctrl_regs,
         )
 
-    def _circuit_diagram_info_(
-        self, args: 'cirq.CircuitDiagramInfoArgs'
-    ) -> 'cirq.CircuitDiagramInfo':
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         import cirq
 
         from qualtran.cirq_interop._bloq_to_cirq import _wire_symbol_to_cirq_diagram_info
@@ -586,8 +584,8 @@ class Controlled(_ControlledBase):
         ctrl_spec: The specification for how to control the bloq.
     """
 
-    subbloq: 'Bloq'
-    ctrl_spec: 'CtrlSpec'
+    subbloq: Bloq
+    ctrl_spec: CtrlSpec
 
     def __attrs_post_init__(self):
         for qdtype in self.ctrl_spec.qdtypes:
@@ -600,8 +598,8 @@ class Controlled(_ControlledBase):
 
     @classmethod
     def make_ctrl_system(
-        cls, bloq: 'Bloq', ctrl_spec: 'CtrlSpec'
-    ) -> tuple['_ControlledBase', 'AddControlledT']:
+        cls, bloq: Bloq, ctrl_spec: CtrlSpec
+    ) -> tuple[_ControlledBase, AddControlledT]:
         """A factory method for creating both the Controlled and the adder function.
 
         See `Bloq.get_ctrl_system`.
@@ -609,12 +607,12 @@ class Controlled(_ControlledBase):
         cb = cls(subbloq=bloq, ctrl_spec=ctrl_spec)
         return cls._make_ctrl_system(cb)
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         return Bloq.decompose_bloq(self)
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', **initial_soqs: 'SoquetT'
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, **initial_soqs: 'SoquetT'
+    ) -> dict[str, SoquetT]:
         if not self._thru_registers_only:
             raise DecomposeTypeError(f"Cannot handle non-thru registers in {self.subbloq}")
 
@@ -626,7 +624,7 @@ class Controlled(_ControlledBase):
         else:
             cbloq = self.subbloq.decompose_bloq()
 
-        ctrl_soqs: list['SoquetT'] = [initial_soqs[creg_name] for creg_name in self.ctrl_reg_names]
+        ctrl_soqs: list[SoquetT] = [initial_soqs[creg_name] for creg_name in self.ctrl_reg_names]
         soq_map = bb.initial_soq_map(cbloq.signature.lefts())
 
         for binst, _in_soqs, old_out_soqs in cbloq.iter_bloqsoqs():
@@ -641,7 +639,7 @@ class Controlled(_ControlledBase):
         fsoqs |= dict(zip(self.ctrl_reg_names, ctrl_soqs))
         return fsoqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         try:
             sub_cg = self.subbloq.build_call_graph(ssa=ssa)
         except DecomposeTypeError as e1:
@@ -660,7 +658,7 @@ class Controlled(_ControlledBase):
                 counts[bloq.controlled(self.ctrl_spec)] += n
         return counts
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return self.subbloq.adjoint().controlled(ctrl_spec=self.ctrl_spec)
 
     @classmethod
@@ -669,8 +667,8 @@ class Controlled(_ControlledBase):
 
 
 def make_ctrl_system_with_correct_metabloq(
-    bloq: 'Bloq', ctrl_spec: 'CtrlSpec'
-) -> tuple['_ControlledBase', 'AddControlledT']:
+    bloq: Bloq, ctrl_spec: CtrlSpec
+) -> tuple[_ControlledBase, AddControlledT]:
     """The default fallback for `Bloq.make_ctrl_system`.
 
     This intelligently selects the correct implementation of `_ControlledBase` based

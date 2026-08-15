@@ -13,6 +13,8 @@
 #  limitations under the License.
 r"""Bloqs for SELECT for the U and V parts of the first quantized chemistry Hamiltonian."""
 
+from __future__ import annotations
+
 from collections import Counter
 from functools import cached_property
 from typing import TYPE_CHECKING
@@ -77,12 +79,12 @@ class SelectUVFirstQuantizationWithProj(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('SEL UV')
         return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         cost = Counter['Bloq']()
         # tc_p and tc_n
         # C8 and C9, one of the registers of size num_bits_n so need to account for this.

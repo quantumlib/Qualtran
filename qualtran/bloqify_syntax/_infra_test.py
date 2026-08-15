@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import inspect
 
 import pytest
@@ -42,7 +44,7 @@ def test_inspect():
 
 
 @qlt.bloqify
-def minimal_bloq(bb: 'BloqBuilder', x: 'QVar') -> dict[str, 'QVar']:
+def minimal_bloq(bb: BloqBuilder, x: QVar) -> dict[str, QVar]:
     return {'x': x}
 
 
@@ -60,7 +62,7 @@ def test_bloqify_make():
 
 def test_bloqify_call():
     @qlt.bloqify
-    def outer_program(bb: 'BloqBuilder', x: 'QVar') -> dict[str, 'QVar']:
+    def outer_program(bb: BloqBuilder, x: QVar) -> dict[str, QVar]:
         x = minimal_bloq(bb, x=x)
         return {'x': x}
 
@@ -71,7 +73,7 @@ def test_bloqify_call():
 
 def test_bloqify_inline():
     @qlt.bloqify
-    def outer_program(bb: 'BloqBuilder', x: 'QVar') -> dict[str, 'QVar']:
+    def outer_program(bb: BloqBuilder, x: QVar) -> dict[str, QVar]:
         x_out = minimal_bloq.inline(bb, x=x)
         return {'x': x_out[0]}
 
@@ -88,11 +90,11 @@ def test_bloqify_l1():
 
 def test_bloqify_non_dict_return():
     @qlt.bloqify
-    def bad_bloq(bb: 'BloqBuilder', x: 'QVar'):
+    def bad_bloq(bb: BloqBuilder, x: QVar):
         return x  # Not a dict
 
     @qlt.bloqify
-    def outer_program(bb: 'BloqBuilder', x: 'QVar') -> dict[str, 'QVar']:
+    def outer_program(bb: BloqBuilder, x: QVar) -> dict[str, QVar]:
         x = bad_bloq(bb, x=x)
         return {'x': x}
 
@@ -111,7 +113,7 @@ def test_bloqify_missing_bb():
     with pytest.raises(ValueError, match="must take 'bb' as its first argument"):
 
         @qlt.bloqify  # type: ignore[arg-type]
-        def no_bb_func(x: 'QVar'):
+        def no_bb_func(x: QVar):
             return {'x': x}
 
 

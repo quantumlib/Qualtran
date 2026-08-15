@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Iterable, Sequence
 from functools import cached_property
 from typing import cast
@@ -118,7 +120,7 @@ class ApplyLthBloq(UnaryIterationGate, SelectOracle):
         target_qubits = merge_qubits(bloq.signature, **targets)
         return bloq.controlled().on(control, *target_qubits)
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 
         return get_ctrl_system_1bit_cv(
@@ -128,7 +130,7 @@ class ApplyLthBloq(UnaryIterationGate, SelectOracle):
             get_ctrl_bloq_and_ctrl_reg_name=lambda cv: (evolve(self, control_val=cv), 'control'),
         )
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         from qualtran.bloqs.mcmt.specialized_ctrl import (
             AdjointWithSpecializedCtrl,
             SpecializeOnCtrlBit,

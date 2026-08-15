@@ -13,6 +13,8 @@
 #  limitations under the License.
 """PREPARE for the sparse chemistry Hamiltonian in second quantization."""
 
+from __future__ import annotations
+
 import itertools
 from functools import cached_property
 from typing import TYPE_CHECKING
@@ -260,7 +262,7 @@ class PrepareSparse(PrepareOracle):
         num_bits_rot_aa: int = 8,
         drop_element_thresh: float = 0.0,
         log_block_size: SymbolicInt | None = None,
-    ) -> 'PrepareSparse':
+    ) -> PrepareSparse:
         r"""Factory method to build PrepareSparse from Hamiltonian coefficients.
 
         Args:
@@ -321,7 +323,7 @@ class PrepareSparse(PrepareOracle):
             log_block_size=log_block_size,
         )
 
-    def build_qrom_bloq(self) -> 'Bloq':
+    def build_qrom_bloq(self) -> Bloq:
         n_n = self.num_bits_spat_orb
         target_bitsizes = (
             (n_n,) * 4 + (1,) * 2 + (n_n,) * 4 + (1,) * 2 + (self.num_bits_state_prep,)
@@ -345,12 +347,12 @@ class PrepareSparse(PrepareOracle):
         )
         return qrom
 
-    def add_qrom(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def add_qrom(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         qrom = self.build_qrom_bloq()
         # The qroam_junk_regs won't be present initially when building the
         # composite bloq as they're RIGHT registers.
         qroam_out_soqs = bb.add_d(qrom, selection=soqs['d'])
-        out_soqs: dict[str, 'SoquetT'] = {'d': qroam_out_soqs.pop('selection')}
+        out_soqs: dict[str, SoquetT] = {'d': qroam_out_soqs.pop('selection')}
         # map output soqs to Prepare junk registers names
         out_soqs |= {
             reg.name: qroam_out_soqs.pop(f'target{i}_')
@@ -362,7 +364,7 @@ class PrepareSparse(PrepareOracle):
         }
         return soqs | out_soqs
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         n_n = self.num_bits_spat_orb
         # 1. Prepare \sum_d |d\rangle
         soqs['d'] = bb.add(PrepareUniformSuperposition(self.num_non_zero), target=soqs['d'])
@@ -425,7 +427,7 @@ class PrepareSparse(PrepareOracle):
         )
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             PrepareUniformSuperposition(self.num_non_zero): 1,
             self.build_qrom_bloq(): 1,

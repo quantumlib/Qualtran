@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property, lru_cache
 from typing import TYPE_CHECKING
 
@@ -71,10 +73,10 @@ class PhysicalCostModel:
         qec_scheme: The scheme used to suppress errors.
     """
 
-    physical_params: 'PhysicalParameters'
-    data_block: 'DataBlock'
-    factory: 'MagicStateFactory'
-    qec_scheme: 'QECScheme'
+    physical_params: PhysicalParameters
+    data_block: DataBlock
+    factory: MagicStateFactory
+    qec_scheme: QECScheme
 
     @cached_property
     def logical_error_model(self):
@@ -88,7 +90,7 @@ class PhysicalCostModel:
         )
 
     @lru_cache
-    def _get_physical_cost_base_quantities(self, algo_summary: 'AlgorithmSummary'):
+    def _get_physical_cost_base_quantities(self, algo_summary: AlgorithmSummary):
         # Time
         n_generation_cycles = self.factory.n_cycles(
             n_logical_gates=algo_summary.n_logical_gates,
@@ -119,24 +121,24 @@ class PhysicalCostModel:
 
         return n_cycles, n_phys_q, error
 
-    def n_cycles(self, algo_summary: 'AlgorithmSummary') -> int:
+    def n_cycles(self, algo_summary: AlgorithmSummary) -> int:
         """The number of error correction cycles required to execute the algorithm."""
         n_cycles, n_phys_q, error = self._get_physical_cost_base_quantities(algo_summary)
         return n_cycles
 
-    def duration_hr(self, algo_summary: 'AlgorithmSummary'):
+    def duration_hr(self, algo_summary: AlgorithmSummary):
         """The duration in hours required to execute the algorithm."""
         n_cycles = self.n_cycles(algo_summary)
         cycle_time_us = self.physical_params.cycle_time_us
         duration_hr = (cycle_time_us * n_cycles) / (1_000_000 * 60 * 60)
         return duration_hr
 
-    def n_phys_qubits(self, algo_summary: 'AlgorithmSummary') -> int:
+    def n_phys_qubits(self, algo_summary: AlgorithmSummary) -> int:
         """The number of physical qubits required to execute the algorithm"""
         n_cycles, n_phys_q, error = self._get_physical_cost_base_quantities(algo_summary)
         return n_phys_q
 
-    def error(self, algo_summary: 'AlgorithmSummary') -> float:
+    def error(self, algo_summary: AlgorithmSummary) -> float:
         """The total error rate of executing the algorithm."""
         n_cycles, n_phys_q, error = self._get_physical_cost_base_quantities(algo_summary)
         return error

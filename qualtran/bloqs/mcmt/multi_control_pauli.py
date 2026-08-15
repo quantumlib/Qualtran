@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import abc
 import warnings
 from functools import cached_property
@@ -55,10 +57,10 @@ class MultiControlPauliBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def target_bloq(self) -> 'Bloq': ...
+    def target_bloq(self) -> Bloq: ...
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         ctrl = Register('controls', QBit(), shape=(self.n_ctrls,))
         target = Register('target', QBit())
         return Signature(
@@ -83,7 +85,7 @@ class MultiControlPauliBase(GateWithRegisters, metaclass=abc.ABCMeta):
         ctrl_spec = CtrlSpec(cvs=(cvs,))
         return ControlledViaAnd(self.target_bloq, ctrl_spec)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         if is_symbolic(self.cvs):
             raise DecomposeTypeError(f"cannot decompose {self} with symbolic {self.cvs=}")
 
@@ -101,7 +103,7 @@ class MultiControlPauliBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
         return {'controls': out_soqs[ctrl_reg_name], 'target': out_soqs[target_reg_name]}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         if self.n_ctrls == 0:
             return {self.target_bloq: 1}
         return {self._multi_ctrl_bloq: 1}
@@ -111,7 +113,7 @@ class MultiControlPauliBase(GateWithRegisters, metaclass=abc.ABCMeta):
         ctrl = f'C^{n}' if is_symbolic(n) or n > 2 else ['', 'C', 'CC'][int(n)]
         return f'{ctrl}{self.target_bloq!s}'
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return TextBox(str(self))
         if reg.name == 'target':
@@ -122,12 +124,12 @@ class MultiControlPauliBase(GateWithRegisters, metaclass=abc.ABCMeta):
         cv = self.concrete_cvs[i]
         return Circle(filled=(cv == 1))
 
-    def _circuit_diagram_info_(self, args) -> 'cirq.CircuitDiagramInfo':
+    def _circuit_diagram_info_(self, args) -> cirq.CircuitDiagramInfo:
         from qualtran.cirq_interop._bloq_to_cirq import _wire_symbol_to_cirq_diagram_info
 
         return _wire_symbol_to_cirq_diagram_info(self, args)
 
-    def _apply_unitary_(self, args: 'cirq.ApplyUnitaryArgs') -> np.ndarray:
+    def _apply_unitary_(self, args: cirq.ApplyUnitaryArgs) -> np.ndarray:
         import cirq
 
         from qualtran.cirq_interop import BloqAsCirqGate
@@ -197,10 +199,10 @@ class MultiControlX(MultiControlPauliBase):
     cvs: HasLength | tuple[int, ...] = field(converter=_to_tuple_or_has_length)
 
     @cached_property
-    def target_bloq(self) -> 'Bloq':
+    def target_bloq(self) -> Bloq:
         return XGate()
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return self
 
     def __str__(self):
@@ -244,10 +246,10 @@ class MultiControlZ(MultiControlPauliBase):
     cvs: HasLength | tuple[int, ...] = field(converter=_to_tuple_or_has_length)
 
     @cached_property
-    def target_bloq(self) -> 'Bloq':
+    def target_bloq(self) -> Bloq:
         return ZGate()
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return self
 
     def __str__(self):

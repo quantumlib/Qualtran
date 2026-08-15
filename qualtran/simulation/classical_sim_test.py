@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import itertools
 
 import attrs
@@ -94,7 +96,7 @@ def test_dtype_validation():
 @frozen
 class ApplyClassicalTest(Bloq):
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [Register('x', QBit(), shape=(5,)), Register('z', QBit(), shape=(5,), side=Side.RIGHT)]
         )
@@ -314,7 +316,7 @@ class ClassicalDistributionTest(Bloq):
     """Bloq that outputs a random bit for testing."""
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [Register('q', QBit(), side=Side.LEFT), Register('c', CBit(), side=Side.RIGHT)]
         )
@@ -386,10 +388,10 @@ class ComposedPhasing(Bloq):
     n: int = 0
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('x', QBit(), side=Side.RIGHT)])
 
-    def build_composite_bloq(self, bb: 'BloqBuilder') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder) -> dict[str, SoquetT]:
         from qualtran.bloqs.basic_gates import OneState, ZGate
 
         x = bb.add(OneState())

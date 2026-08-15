@@ -167,7 +167,7 @@ class SelectHubbard(SelectOracle):
             [*self.control_registers, *self.selection_registers, *self.target_registers]
         )
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         return decompose_from_cirq_style_method(self)
 
     def decompose_from_registers(
@@ -205,7 +205,7 @@ class SelectHubbard(SelectOracle):
             x_dim=self.x_dim, y_dim=self.y_dim, control_val=self.control_val
         ).on_registers(x=q_x, y=q_y, V=V, control=control, target=target)
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
 
         return get_ctrl_system_1bit_cv_from_bloqs(
@@ -216,7 +216,7 @@ class SelectHubbard(SelectOracle):
             ctrl_reg_name='control',
         )
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         from qualtran.bloqs.mcmt.specialized_ctrl import (
             AdjointWithSpecializedCtrl,
             SpecializeOnCtrlBit,
@@ -315,8 +315,8 @@ class HubbardMajorannaOperator(Bloq):
             raise ValueError(f"Unknown gate {self.gate}")
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', x, y, spin, target, control=None
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, x, y, spin, target, control=None
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.x_dim, self.y_dim):
             raise DecomposeTypeError(f"Cannot decompose symbolic x_dim, y_dim in {self}")
 
@@ -338,14 +338,14 @@ class HubbardMajorannaOperator(Bloq):
             x, y, spin, target = bb.add_from(smf, x=x, y=y, spin=spin, target=target)
             return {'x': x, 'y': y, 'spin': spin, 'target': target}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
 
         count = self.N - 1
         if self.control_val is None:
             count -= 1
         return {And(): count, And().adjoint(): count}
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return TextBox("")
         if reg.name == 'control':
@@ -440,8 +440,8 @@ class HubbardSpinUpZ(Bloq):
         )
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', V, x, y, target, control=None
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, V, x, y, target, control=None
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.x_dim, self.y_dim):
             raise DecomposeTypeError(f"Cannot decompose symbolic x_dim, y_dim in {self}")
 
@@ -486,14 +486,14 @@ class HubbardSpinUpZ(Bloq):
 
         return ret | {'x': x, 'y': y, 'target': target}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         half_N = self.x_dim * self.y_dim
         count = half_N
         if self.control_val is None:
             count -= 1
         return {And(): count, And().adjoint(): count, CNOT(): half_N - 1, CZ(): half_N}
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return TextBox('')
         if reg.name == 'control' or reg.name == 'V':

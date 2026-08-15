@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Sequence
 from functools import cached_property
 from typing import TYPE_CHECKING
@@ -47,7 +49,7 @@ class PrepareIdentity(PrepareOracle):
     )
 
     @classmethod
-    def from_bitsizes(cls, bitsizes: Sequence[SymbolicInt]) -> 'PrepareIdentity':
+    def from_bitsizes(cls, bitsizes: Sequence[SymbolicInt]) -> PrepareIdentity:
         """Create an identity prepare oracle from register bitsizes.
 
         Args:
@@ -63,12 +65,12 @@ class PrepareIdentity(PrepareOracle):
     def junk_registers(self) -> tuple[Register, ...]:
         return ()
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: Soquet) -> dict[str, Soquet]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: Soquet) -> dict[str, Soquet]:
         for label, soq in soqs.items():
             soqs[label] = bb.add(Identity(soq.reg.bitsize), q=soq)
         return soqs
 
-    def adjoint(self) -> 'PrepareIdentity':
+    def adjoint(self) -> PrepareIdentity:
         return self
 
 

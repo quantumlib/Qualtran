@@ -88,14 +88,14 @@ class PrepareUVFirstQuantization(Bloq):
 
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, l: SoquetT, flag_nu: SoquetT
-    ) -> dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         mu, nu, m, flag_nu = bb.add(
             PrepareNuState(self.num_bits_p, self.m_param), mu=mu, nu=nu, m=m, flag_nu=flag_nu
         )
         l = bb.add(PrepareZetaState(self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos), l=l)
         return {'mu': mu, 'nu': nu, 'm': m, 'l': l, 'flag_nu': flag_nu}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # 1. Prepare the nu state
         # 2. Prepare the zeta_l state
         return {
@@ -103,7 +103,7 @@ class PrepareUVFirstQuantization(Bloq):
             PrepareZetaState(self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos): 1,
         }
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('PREP UV')
         return super().wire_symbol(reg, idx)

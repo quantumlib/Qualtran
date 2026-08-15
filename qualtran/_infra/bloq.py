@@ -54,7 +54,7 @@ if TYPE_CHECKING:
     from qualtran.simulation.tensor import DiscardInd
 
 
-def _decompose_from_build_composite_bloq(bloq: 'Bloq') -> 'CompositeBloq':
+def _decompose_from_build_composite_bloq(bloq: Bloq) -> CompositeBloq:
     from qualtran import BloqBuilder
 
     bb, initial_soqs = BloqBuilder.from_signature(
@@ -131,7 +131,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         """The input and output names and types for this bloq.
 
         This property can be thought of as analogous to the function signature in ordinary
@@ -156,7 +156,7 @@ class Bloq(metaclass=abc.ABCMeta):
             `qualtran.Signature` for details on how to construct a signature.
         """
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         """Override this method to define a bloq as a composition of sub-bloqs.
 
         Bloq authors should override this method. If you already have an instantiated bloq object,
@@ -173,7 +173,7 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         raise DecomposeNotImplementedError(f"{self} does not declare a decomposition.")
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         """Call this method to decompose this bloq into its parts.
 
         The returned composition encodes a directed acyclic graph of the flow of
@@ -198,7 +198,7 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         return _decompose_from_build_composite_bloq(self)
 
-    def as_composite_bloq(self) -> 'CompositeBloq':
+    def as_composite_bloq(self) -> CompositeBloq:
         """Wrap this Bloq into a size-1 CompositeBloq.
 
         This method is overridden so if this Bloq is already a CompositeBloq, it will
@@ -209,7 +209,7 @@ class Bloq(metaclass=abc.ABCMeta):
         bb, initial_soqs = BloqBuilder.from_signature(self.signature, add_registers_allowed=False)
         return bb.finalize(**bb.add_d(self, **initial_soqs))
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         """The adjoint of this bloq.
 
         Bloq authors can override this method in certain circumstances. Otherwise, the default
@@ -247,7 +247,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def on_classical_vals(
         self, **vals: sympy.Symbol | ClassicalValT
-    ) -> Mapping[str, 'ClassicalValRetT']:
+    ) -> Mapping[str, ClassicalValRetT]:
         """How this bloq operates on classical data.
 
         Override this method if your bloq represents classical, reversible logic. For example:
@@ -289,7 +289,7 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         return None
 
-    def call_classically(self, **vals: sympy.Symbol | ClassicalValT) -> tuple['ClassicalValT', ...]:
+    def call_classically(self, **vals: sympy.Symbol | ClassicalValT) -> tuple[ClassicalValT, ...]:
         """Call this bloq on classical data.
 
         Bloq users can call this function to apply bloqs to classical data. If you're
@@ -311,7 +311,7 @@ class Bloq(metaclass=abc.ABCMeta):
         res = self.as_composite_bloq().on_classical_vals(**vals)
         return tuple(res[reg.name] for reg in self.signature.rights())
 
-    def tensor_contract(self, superoperator: bool = False) -> 'NDArray':
+    def tensor_contract(self, superoperator: bool = False) -> NDArray:
         """Return a contracted, dense ndarray encoding of this bloq.
 
         This method decomposes and flattens this bloq into a factorized CompositeBloq,
@@ -348,7 +348,7 @@ class Bloq(metaclass=abc.ABCMeta):
         return bloq_to_dense(self, superoperator=superoperator)
 
     def my_tensors(
-        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
     ) -> list[qtn.Tensor | DiscardInd]:
         """Override this method to support native quimb simulation of this Bloq.
 
@@ -381,7 +381,7 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError(f"{self} does not support tensor simulation.")
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         """Override this method to build the bloq call graph.
 
         This method must return a set of `(bloq, n)` tuples where `bloq` is called `n` times in
@@ -398,7 +398,7 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         return self.decompose_bloq().build_call_graph(ssa)
 
-    def my_static_costs(self, cost_key: 'CostKey'):
+    def my_static_costs(self, cost_key: CostKey):
         """Override this method to provide static costs.
 
         The system will query a particular cost by asking for a `cost_key`. This method
@@ -415,7 +415,7 @@ class Bloq(metaclass=abc.ABCMeta):
     def call_graph(
         self,
         generalizer: GeneralizerT | Sequence[GeneralizerT] | None = None,
-        keep: Callable[['Bloq'], bool] | None = None,
+        keep: Callable[[Bloq], bool] | None = None,
         max_depth: int | None = None,
     ) -> tuple[nx.DiGraph, dict[Bloq, int | sympy.Expr]]:
         """Get the bloq call graph and call totals.
@@ -466,7 +466,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
         return dict(get_bloq_callee_counts(self, generalizer=generalizer))
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         """Get a controlled version of this bloq and a function to wire it up correctly.
 
         Users should likely call `Bloq.controlled(...)` which uses this method behind-the-scenes.
@@ -504,7 +504,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
         return make_ctrl_system_with_correct_metabloq(self, ctrl_spec=ctrl_spec)
 
-    def controlled(self, ctrl_spec: CtrlSpec | None = None) -> 'Bloq':
+    def controlled(self, ctrl_spec: CtrlSpec | None = None) -> Bloq:
         """Return a controlled version of this bloq.
 
         By default, the system will use the `qualtran.Controlled` meta-bloq to wrap this
@@ -528,7 +528,7 @@ class Bloq(metaclass=abc.ABCMeta):
         controlled_bloq, _ = self.get_ctrl_system(ctrl_spec=ctrl_spec)
         return controlled_bloq
 
-    def t_complexity(self) -> 'TComplexity':
+    def t_complexity(self) -> TComplexity:
         """The `TComplexity` for this bloq.
 
         By default, this will recurse into this bloq's decomposition but this
@@ -539,8 +539,8 @@ class Bloq(metaclass=abc.ABCMeta):
         return t_complexity(self)
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
-    ) -> tuple[cirq.Operation | None, dict[str, 'CirqQuregT']]:
+        self, qubit_manager: cirq.QubitManager, **cirq_quregs: 'CirqQuregT'
+    ) -> tuple[cirq.Operation | None, dict[str, CirqQuregT]]:
         """Override this method to support conversion to a Cirq operation.
 
         If this method is not overridden, the default implementation will wrap this bloq
@@ -567,7 +567,7 @@ class Bloq(metaclass=abc.ABCMeta):
             bloq=self, cirq_quregs=cirq_quregs, qubit_manager=qubit_manager
         )
 
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: Wires) -> Operation:
         """Override this method to support conversion to a PennyLane operation.
 
         If this method is not overridden, the default implementation will wrap this bloq
@@ -586,7 +586,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
         return FromBloq(bloq=self, wires=wires)
 
-    def on(self, *qubits: 'cirq.Qid') -> 'cirq.Operation':
+    def on(self, *qubits: 'cirq.Qid') -> cirq.Operation:
         """A `cirq.Operation` of this bloq operating on the given qubits.
 
         This method supports an alternative decomposition backend that follows a 'Cirq-style'
@@ -623,7 +623,7 @@ class Bloq(metaclass=abc.ABCMeta):
     def on_registers(
         self,
         **qubit_regs: cirq.Qid | Sequence[cirq.Qid] | NDArray[cirq.Qid],  # type: ignore[type-var]
-    ) -> 'cirq.Operation':
+    ) -> cirq.Operation:
         """A `cirq.Operation` of this bloq operating on the given qubit registers.
 
         This method supports an alternative decomposition backend that follows a 'Cirq-style'
@@ -643,7 +643,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
         return self.on(*merge_qubits(self.signature, **qubit_regs))
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         """On a musical score visualization, use this `WireSymbol` to represent the register.
 
         By default, we use a textbox containing the register name (and optionally the index for

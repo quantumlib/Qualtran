@@ -13,6 +13,8 @@
 #  limitations under the License.
 r"""PREPARE the potential energy terms of the first quantized chemistry Hamiltonian with projectile."""
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -77,14 +79,14 @@ class PrepareUVFirstQuantizationWithProj(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("PREP UV")
         return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, l: SoquetT, flag_nu: SoquetT
-    ) -> dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         mu, nu, m, flag_nu = bb.add(
             PrepareNuStateWithProj(self.num_bits_p, self.num_bits_n, self.m_param),
             mu=mu,
@@ -95,7 +97,7 @@ class PrepareUVFirstQuantizationWithProj(Bloq):
         l = bb.add(PrepareZetaState(self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos), l=l)
         return {'mu': mu, 'nu': nu, 'm': m, 'l': l, 'flag_nu': flag_nu}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # 1. Prepare the nu state
         # 2. Prepare the zeta_l state
         return {

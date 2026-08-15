@@ -80,30 +80,30 @@ class TwoBitSwap(Bloq):
     def signature(self) -> Signature:
         return Signature.build(x=1, y=1)
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic.")
 
     @classmethod
-    def qcall(cls, x: 'QVar', y: 'QVar'):
+    def qcall(cls, x: QVar, y: QVar):
         return x.bb.add(cls(), x=x, y=y)
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', x: 'CirqQuregT', y: 'CirqQuregT'
-    ) -> tuple['cirq.Operation', dict[str, 'CirqQuregT']]:
+        self, qubit_manager: cirq.QubitManager, x: CirqQuregT, y: CirqQuregT
+    ) -> tuple[cirq.Operation, dict[str, CirqQuregT]]:
         (x,) = x
         (y,) = y
         import cirq
 
         return cirq.SWAP.on(x, y), {'x': np.asarray([x]), 'y': np.asarray([y])}
 
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: Wires) -> Operation:
         import pennylane as qml
 
         return qml.SWAP(wires=wires)
 
     def my_tensors(
-        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
-    ) -> list['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         matrix = _swap_matrix()
@@ -111,15 +111,13 @@ class TwoBitSwap(Bloq):
         in_inds = [(incoming['x'], 0), (incoming['y'], 0)]
         return [qtn.Tensor(data=matrix, inds=out_inds + in_inds, tags=[str(self)])]
 
-    def on_classical_vals(
-        self, x: 'ClassicalValT', y: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, x: ClassicalValT, y: ClassicalValT) -> dict[str, ClassicalValT]:
         return {'x': y, 'y': x}
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return self
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
 
         return get_ctrl_system_1bit_cv_from_bloqs(
@@ -161,13 +159,13 @@ class TwoBitCSwap(Bloq):
         return Signature.build(ctrl=1, x=1, y=1)
 
     @classmethod
-    def qcall(cls, ctrl: 'QVar', x: 'QVar', y: 'QVar'):
+    def qcall(cls, ctrl: QVar, x: QVar, y: QVar):
         return ctrl.bb.add(cls(), ctrl=ctrl, x=x, y=y)
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic.")
 
-    def to_clifford_t_circuit(self) -> 'cirq.FrozenCircuit':
+    def to_clifford_t_circuit(self) -> cirq.FrozenCircuit:
         import cirq
 
         ctrl = cirq.NamedQubit('ctrl')
@@ -187,8 +185,8 @@ class TwoBitCSwap(Bloq):
         return circuit.freeze()
 
     def my_tensors(
-        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
-    ) -> list['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         matrix = _controlled_swap_matrix()
@@ -197,23 +195,23 @@ class TwoBitCSwap(Bloq):
         return [qtn.Tensor(data=matrix, inds=out_inds + in_inds, tags=[str(self)])]
 
     def on_classical_vals(
-        self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+        self, ctrl: ClassicalValT, x: ClassicalValT, y: ClassicalValT
+    ) -> dict[str, ClassicalValT]:
         if ctrl == 0:
             return {'ctrl': 0, 'x': x, 'y': y}
         if ctrl == 1:
             return {'ctrl': 1, 'x': y, 'y': x}
         raise ValueError("Bad control value for TwoBitCSwap classical simulation.")
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return self
 
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: Wires) -> Operation:
         import pennylane as qml
 
         return qml.CSWAP(wires=wires)
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = ()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = ()) -> WireSymbol:
         if reg is None:
             return Text('')
         if reg.name == 'ctrl':
@@ -221,7 +219,7 @@ class TwoBitCSwap(Bloq):
         else:
             return TextBox('×')
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
 
         return get_ctrl_system_1bit_cv_from_bloqs(
@@ -257,18 +255,16 @@ class Swap(Bloq):
     bitsize: int | sympy.Expr
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(x=self.bitsize, y=self.bitsize)
 
     @classmethod
-    def qcall(cls, x: 'QVar', y: 'QVar') -> tuple['QVar', 'QVar']:
+    def qcall(cls, x: QVar, y: QVar) -> tuple[QVar, QVar]:
         if x.dtype.num_qubits != y.dtype.num_qubits:
             raise ValueError(f"Bitsizes of registers must match: {x.dtype} vs {y.dtype}")
         return x.bb.add(cls(bitsize=x.dtype.num_qubits), x=x, y=y)
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: 'Soquet', y: 'Soquet'
-    ) -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet, y: Soquet) -> dict[str, SoquetT]:
         if isinstance(self.bitsize, sympy.Expr):
             raise DecomposeTypeError("`bitsize` must be a concrete value.")
 
@@ -280,15 +276,13 @@ class Swap(Bloq):
 
         return {'x': bb.join(xs), 'y': bb.join(ys)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {TwoBitSwap(): self.bitsize}
 
-    def on_classical_vals(
-        self, x: 'ClassicalValT', y: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, x: ClassicalValT, y: ClassicalValT) -> dict[str, ClassicalValT]:
         return {'x': y, 'y': x}
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = ()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = ()) -> WireSymbol:
         if reg is None:
             return Text('')
         if reg.name == 'x':
@@ -297,18 +291,18 @@ class Swap(Bloq):
             return TextBox('×(y)')
         raise ValueError(f"Bad register name {reg.name}")
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return self
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         if ctrl_spec != CtrlSpec():
             return super().get_ctrl_system(ctrl_spec=ctrl_spec)
 
         cswap = CSwap(self.bitsize)
 
         def adder(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
-        ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            bb: BloqBuilder, ctrl_soqs: Sequence[SoquetT], in_soqs: dict[str, SoquetT]
+        ) -> tuple[Iterable[SoquetT], Iterable[SoquetT]]:
             (ctrl,) = ctrl_soqs
             ctrl, x, y = bb.add(cswap, ctrl=ctrl, x=in_soqs['x'], y=in_soqs['y'])
             return [ctrl], [x, y]
@@ -361,14 +355,14 @@ class CSwap(GateWithRegisters):
         return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
     @classmethod
-    def qcall(cls, ctrl: 'QVar', x: 'QVar', y: 'QVar'):
+    def qcall(cls, ctrl: QVar, x: QVar, y: QVar):
         if x.dtype.num_qubits != y.dtype.num_qubits:
             raise ValueError(f"Bitsizes of registers must match: {x.dtype} vs {y.dtype}")
         return ctrl.bb.add(cls(bitsize=x.dtype.num_qubits), ctrl=ctrl, x=x, y=y)
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'Soquet', y: 'Soquet'
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, ctrl: SoquetT, x: Soquet, y: Soquet
+    ) -> dict[str, SoquetT]:
         if isinstance(self.bitsize, sympy.Expr):
             raise DecomposeTypeError("`bitsize` must be a concrete value.")
 
@@ -380,12 +374,12 @@ class CSwap(GateWithRegisters):
 
         return {'ctrl': ctrl, 'x': bb.join(xs), 'y': bb.join(ys)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {TwoBitCSwap(): self.bitsize}
 
     def on_classical_vals(
-        self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+        self, ctrl: ClassicalValT, x: ClassicalValT, y: ClassicalValT
+    ) -> dict[str, ClassicalValT]:
         if ctrl == 0:
             return {'ctrl': 0, 'x': x, 'y': y}
         if ctrl == 1:
@@ -395,13 +389,11 @@ class CSwap(GateWithRegisters):
     @classmethod
     def make_on(
         cls, **quregs: Sequence['cirq.Qid'] | NDArray['cirq.Qid']  # type: ignore[type-var]
-    ) -> 'cirq.Operation':
+    ) -> cirq.Operation:
         """Helper constructor to automatically deduce bitsize attributes."""
         return cls(bitsize=len(quregs['x'])).on_registers(**quregs)
 
-    def _circuit_diagram_info_(
-        self, args: 'cirq.CircuitDiagramInfoArgs'
-    ) -> 'cirq.CircuitDiagramInfo':
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         import cirq
 
         if not args.use_unicode_characters:
@@ -410,7 +402,7 @@ class CSwap(GateWithRegisters):
             )
         return cirq.CircuitDiagramInfo(("@",) + ("×(x)",) * self.bitsize + ("×(y)",) * self.bitsize)
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         if reg.name == 'x':
@@ -420,7 +412,7 @@ class CSwap(GateWithRegisters):
         else:
             return Circle(filled=True)
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return self
 
 

@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import logging
 import warnings
 from collections import defaultdict
@@ -42,7 +44,7 @@ logger = logging.getLogger(__name__)
 BloqCountDict = dict['Bloq', int]
 
 
-def _gateset_bloqs_to_tuple(bloqs: Sequence['Bloq']) -> tuple['Bloq', ...]:
+def _gateset_bloqs_to_tuple(bloqs: Sequence[Bloq]) -> tuple[Bloq, ...]:
     return tuple(bloqs)
 
 
@@ -61,7 +63,7 @@ class BloqCount(CostKey[BloqCountDict]):
         gateset_name: A string name of the gateset. Used for display and debugging purposes.
     """
 
-    gateset_bloqs: Sequence['Bloq'] = field(converter=_gateset_bloqs_to_tuple)
+    gateset_bloqs: Sequence[Bloq] = field(converter=_gateset_bloqs_to_tuple)
     gateset_name: str
 
     @classmethod
@@ -75,7 +77,7 @@ class BloqCount(CostKey[BloqCountDict]):
         """
         from qualtran.bloqs.basic_gates import TGate, Toffoli, TwoBitCSwap
 
-        bloqs: tuple['Bloq', ...]
+        bloqs: tuple[Bloq, ...]
         if gateset_name == 't':
             bloqs = (TGate(), TGate(is_adjoint=True))
         elif gateset_name == 't+tof':
@@ -99,7 +101,7 @@ class BloqCount(CostKey[BloqCountDict]):
         return cls(tuple(leaf_bloqs), gateset_name='leaf')
 
     def compute(
-        self, bloq: 'Bloq', get_callee_cost: Callable[['Bloq'], BloqCountDict]
+        self, bloq: Bloq, get_callee_cost: Callable[[Bloq], BloqCountDict]
     ) -> BloqCountDict:
         if bloq in self.gateset_bloqs:
             logger.info("Computing %s: %s is in the target gateset.", self, bloq)
@@ -227,7 +229,7 @@ class GateCounts:
         ts_per_and_bloq: int = 4,
         cliffords_per_and_bloq: int = 9,
         cliffords_per_cswap: int = 10,
-    ) -> 'TComplexity':
+    ) -> TComplexity:
         """Return a legacy `TComplexity` object.
 
         This coalesces all the gate types into t, rotations, and clifford fields. The conversion
@@ -297,7 +299,7 @@ class QECGatesCost(CostKey[GateCounts]):
 
     legacy_shims: bool = False
 
-    def compute(self, bloq: 'Bloq', get_callee_cost: Callable[['Bloq'], GateCounts]) -> GateCounts:
+    def compute(self, bloq: Bloq, get_callee_cost: Callable[[Bloq], GateCounts]) -> GateCounts:
         from qualtran.bloqs.basic_gates import (
             Discard,
             GlobalPhase,

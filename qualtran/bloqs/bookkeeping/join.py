@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
 from typing import cast, TYPE_CHECKING
 
@@ -71,23 +73,23 @@ class Join(_BookkeepingBloq):
         if value.is_symbolic():
             raise ValueError(f"{self} cannot have a symbolic data type.")
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f'{self} is atomic')
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         from qualtran.bloqs.bookkeeping.split import Split
 
         return Split(dtype=self.dtype)
 
-    def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> tuple[None, dict[str, 'CirqQuregT']]:
+    def as_cirq_op(self, qubit_manager, reg: CirqQuregT) -> tuple[None, dict[str, CirqQuregT]]:
         return None, {'reg': reg.reshape(self.dtype.num_qubits)}
 
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: Wires) -> Operation:
         return None
 
     def my_tensors(
-        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
-    ) -> list['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         eye = np.eye(2)
@@ -98,10 +100,10 @@ class Join(_BookkeepingBloq):
             for i in range(self.dtype.num_qubits)
         ]
 
-    def on_classical_vals(self, reg: 'NDArray[np.uint]') -> dict[str, int]:
+    def on_classical_vals(self, reg: NDArray[np.uint]) -> dict[str, int]:
         return {'reg': self.dtype.from_bits(reg.tolist())}
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         if reg.shape:

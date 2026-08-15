@@ -52,7 +52,7 @@ class _MultiControlledFromSinglyControlled(Bloq):
         assert len(self.cvs) >= 2, f"{self} must have at least 2 controls, got {self.cvs=}"
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [Register(self.ctrl_reg_name, dtype=QBit(), shape=(len(self.cvs),))]
             + [reg for reg in self.ctrl_bloq.signature if reg.name != self.ctrl_reg_name]
@@ -67,7 +67,7 @@ class _MultiControlledFromSinglyControlled(Bloq):
         else:
             return MultiAnd(self.cvs)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         and_soqs = bb.add_d(self._and_bloq, ctrl=soqs.pop(self.ctrl_reg_name))
 
         soqs |= {self.ctrl_reg_name: and_soqs.pop('target')}
@@ -78,10 +78,10 @@ class _MultiControlledFromSinglyControlled(Bloq):
 
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {self._and_bloq: 1, self.ctrl_bloq: 1, self._and_bloq.adjoint(): 1}
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         if ctrl_spec.num_qubits != 1:
             return super().get_ctrl_system(ctrl_spec=ctrl_spec)
 
@@ -99,12 +99,12 @@ class _MultiControlledFromSinglyControlled(Bloq):
 
 
 def _get_ctrl_system_1bit_cv(
-    bloq: 'Bloq',
-    ctrl_spec: 'CtrlSpec',
+    bloq: Bloq,
+    ctrl_spec: CtrlSpec,
     *,
     current_ctrl_bit: ControlBit | None,
-    get_ctrl_bloq_and_ctrl_reg_name: Callable[['ControlBit'], tuple['Bloq', str] | None],
-) -> tuple['Bloq', 'AddControlledT']:
+    get_ctrl_bloq_and_ctrl_reg_name: Callable[[ControlBit], tuple[Bloq, str] | None],
+) -> tuple[Bloq, AddControlledT]:
     """Internal method to build the control system for a bloq using single-qubit controlled variants.
 
     Uses the provided specialized implementation when a singly-controlled variant of the bloq is
@@ -144,8 +144,8 @@ def _get_ctrl_system_1bit_cv(
         ctrl_bloq, ctrl_reg_name = ctrl_bloq_and_ctrl_reg_name
 
         def _adder(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
-        ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            bb: BloqBuilder, ctrl_soqs: Sequence[SoquetT], in_soqs: dict[str, SoquetT]
+        ) -> tuple[Iterable[SoquetT], Iterable[SoquetT]]:
             (ctrl,) = ctrl_soqs
             in_soqs |= {ctrl_reg_name: ctrl}
 
@@ -167,8 +167,8 @@ def _get_ctrl_system_1bit_cv(
         )
 
         def _adder(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
-        ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            bb: BloqBuilder, ctrl_soqs: Sequence[SoquetT], in_soqs: dict[str, SoquetT]
+        ) -> tuple[Iterable[SoquetT], Iterable[SoquetT]]:
             # extract the two control bits
             (ctrl0,) = ctrl_soqs
             ctrl1 = in_soqs.pop(ctrl_reg_name)
@@ -193,12 +193,12 @@ def _get_ctrl_system_1bit_cv(
 
 
 def get_ctrl_system_1bit_cv(
-    bloq: 'Bloq',
-    ctrl_spec: 'CtrlSpec',
+    bloq: Bloq,
+    ctrl_spec: CtrlSpec,
     *,
     current_ctrl_bit: ControlBit | None,
-    get_ctrl_bloq_and_ctrl_reg_name: Callable[['ControlBit'], tuple['Bloq', str]],
-) -> tuple['Bloq', 'AddControlledT']:
+    get_ctrl_bloq_and_ctrl_reg_name: Callable[[ControlBit], tuple[Bloq, str]],
+) -> tuple[Bloq, AddControlledT]:
     """Build the control system for a bloq with specialized single-qubit controlled variants.
 
     Uses the provided specialized implementation when a singly-controlled variant of the bloq is
@@ -226,13 +226,13 @@ def get_ctrl_system_1bit_cv(
 
 
 def get_ctrl_system_1bit_cv_from_bloqs(
-    bloq: 'Bloq',
-    ctrl_spec: 'CtrlSpec',
+    bloq: Bloq,
+    ctrl_spec: CtrlSpec,
     *,
     current_ctrl_bit: ControlBit | None,
-    bloq_with_ctrl: 'Bloq',
-    ctrl_reg_name: 'str',
-) -> tuple['Bloq', 'AddControlledT']:
+    bloq_with_ctrl: Bloq,
+    ctrl_reg_name: str,
+) -> tuple[Bloq, AddControlledT]:
     """Helper to construct the control system given a singly-controlled variant of a bloq.
 
     Uses the provided specialized implementation when a singly-controlled (by `1`) variant of
@@ -250,7 +250,7 @@ def get_ctrl_system_1bit_cv_from_bloqs(
         ctrl_reg_name: The name of the control register for the controlled bloq variant(s).
     """
 
-    def get_ctrl_bloq_and_ctrl_reg_name(cv: 'ControlBit') -> tuple['Bloq', str] | None:
+    def get_ctrl_bloq_and_ctrl_reg_name(cv: ControlBit) -> tuple[Bloq, str] | None:
         if cv == 1:
             return bloq_with_ctrl, ctrl_reg_name
         else:
@@ -320,7 +320,7 @@ class AdjointWithSpecializedCtrl(Adjoint):
 
     specialize_on_ctrl: SpecializeOnCtrlBit = SpecializeOnCtrlBit.NONE
 
-    def _specialize_control(self, ctrl_spec: 'CtrlSpec') -> bool:
+    def _specialize_control(self, ctrl_spec: CtrlSpec) -> bool:
         """if True, push the control to the subbloq"""
         if ctrl_spec.num_qubits != 1:
             return False
@@ -329,7 +329,7 @@ class AdjointWithSpecializedCtrl(Adjoint):
         cv_flag = SpecializeOnCtrlBit.ONE if cv == 1 else SpecializeOnCtrlBit.ZERO
         return cv_flag in self.specialize_on_ctrl
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         from qualtran._infra.controlled import _get_nice_ctrl_reg_names
 
         if not self._specialize_control(ctrl_spec):
@@ -342,7 +342,7 @@ class AdjointWithSpecializedCtrl(Adjoint):
         (ctrl_reg_name,) = _get_nice_ctrl_reg_names([reg.name for reg in self.subbloq.signature], 1)
 
         # build a composite bloq using the control-adder
-        def _get_adj_cbloq() -> 'CompositeBloq':
+        def _get_adj_cbloq() -> CompositeBloq:
             bb, initial_soqs = BloqBuilder.from_signature(
                 self.subbloq.signature, add_registers_allowed=True
             )
@@ -360,8 +360,8 @@ class AdjointWithSpecializedCtrl(Adjoint):
         adj_cbloq = _get_adj_cbloq()
 
         def _adder(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
-        ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            bb: BloqBuilder, ctrl_soqs: Sequence[SoquetT], in_soqs: dict[str, SoquetT]
+        ) -> tuple[Iterable[SoquetT], Iterable[SoquetT]]:
             (ctrl,) = ctrl_soqs
             in_soqs |= {ctrl_reg_name: ctrl}
             soqs = bb.add_from(adj_cbloq, **in_soqs)

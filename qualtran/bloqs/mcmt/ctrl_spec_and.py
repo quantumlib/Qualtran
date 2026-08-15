@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -130,7 +132,7 @@ class CtrlSpecAnd(Bloq):
             flat_cvs.extend(reg.dtype.to_bits_array(cv.ravel()).ravel())
         return tuple(flat_cvs)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         if is_symbolic(self.n_ctrl_qubits):
             raise DecomposeTypeError(
                 f"Cannot decompose {self} with symbolic number of controls {self.n_ctrl_qubits}"
@@ -161,7 +163,7 @@ class CtrlSpecAnd(Bloq):
 
         return soqs
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('Ctrl')
 
@@ -179,7 +181,7 @@ class CtrlSpecAnd(Bloq):
             pretty_text = reg.name
         return directional_text_box(text=pretty_text, side=reg.side)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         if not is_symbolic(self.n_ctrl_qubits) and self.n_ctrl_qubits == 2:
             if isinstance(self._flat_cvs, tuple):
                 cv1, cv2 = self._flat_cvs

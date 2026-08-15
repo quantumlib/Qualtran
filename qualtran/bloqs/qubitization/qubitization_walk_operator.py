@@ -26,6 +26,8 @@ We first document the SelectOracle and PrepareOracle abstract base bloqs, and th
 how they can be combined in `QubitizationWalkOperator`.
 """
 
+from __future__ import annotations
+
 from functools import cached_property
 
 import attrs
@@ -133,7 +135,7 @@ class QubitizationWalkOperator(GateWithRegisters):
         r"""value of $\lambda$, i.e. sum of absolute values of coefficients $w_l$."""
         return self.block_encoding.alpha
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         be_soqs = {reg.name: soqs.pop(reg.name) for reg in self.block_encoding.signature}
         soqs |= bb.add_d(self.block_encoding, **be_soqs)
 
@@ -142,7 +144,7 @@ class QubitizationWalkOperator(GateWithRegisters):
 
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {self.block_encoding: 1, self.reflect: 1}
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:

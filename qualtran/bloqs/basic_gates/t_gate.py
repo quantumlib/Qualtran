@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -73,16 +75,16 @@ class TGate(Bloq):
     is_adjoint: bool = False
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(q=1)
 
     @classmethod
-    def qcall(cls, q: 'QVar', *, is_adjoint: bool = False) -> 'QVar':
+    def qcall(cls, q: QVar, *, is_adjoint: bool = False) -> QVar:
         return q.bb.add(cls(is_adjoint=is_adjoint), q=q)
 
     def my_tensors(
-        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
-    ) -> list['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         data = _TMATRIX.conj().T if self.is_adjoint else _TMATRIX
@@ -90,19 +92,19 @@ class TGate(Bloq):
             qtn.Tensor(data=data, inds=[(outgoing['q'], 0), (incoming['q'], 0)], tags=[str(self)])
         ]
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
-    ) -> tuple['cirq.Operation', dict[str, 'CirqQuregT']]:
+        self, qubit_manager: cirq.QubitManager, q: CirqQuregT
+    ) -> tuple[cirq.Operation, dict[str, CirqQuregT]]:
         import cirq
 
         (q,) = q
         p = -1 if self.is_adjoint else 1
         return cirq.T(q) ** p, {'q': np.array([q])}
 
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: Wires) -> Operation:
         import pennylane as qml
 
         return qml.adjoint(qml.T(wires=wires)) if self.is_adjoint else qml.T(wires=wires)
@@ -111,7 +113,7 @@ class TGate(Bloq):
         maybe_dag = '†' if self.is_adjoint else ''
         return f'T{maybe_dag}'
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         maybe_dag = '†' if self.is_adjoint else ''

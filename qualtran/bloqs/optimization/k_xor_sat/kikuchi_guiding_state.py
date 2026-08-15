@@ -19,6 +19,8 @@ References:
     Section 4.4.1, Theorem 4.15.
 """
 
+from __future__ import annotations
+
 from functools import cached_property
 
 from attrs import evolve, field, frozen
@@ -87,7 +89,7 @@ class SimpleGuidingState(PrepareOracle):
     eps: SymbolicFloat = field(default=1e-6, kw_only=True)
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(S=QAny(self.target_bitsize))
 
     @property
@@ -123,7 +125,7 @@ class SimpleGuidingState(PrepareOracle):
         bloq = evolve(bloq, target_bitsize=self.target_bitsize)
         return bloq
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {self._state_prep_bloq: 1}
 
 
@@ -175,12 +177,10 @@ class ProbabilisticUncompute(Bloq):
     bitsize: SymbolicInt
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(q=QAny(self.bitsize), flag=QBit())
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', q: 'Soquet', flag: 'Soquet'
-    ) -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, q: Soquet, flag: Soquet) -> dict[str, SoquetT]:
         q = bb.add(OnEach(self.bitsize, Hadamard()), q=q)
         q, flag = bb.add(
             XGate().controlled(CtrlSpec(qdtypes=QAny(self.bitsize), cvs=0)), ctrl=q, q=flag
@@ -244,7 +244,7 @@ class GuidingState(PrepareOracle):
         return self.coeff_good
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('T', QAny(self.target_bitsize)),
@@ -310,8 +310,8 @@ class GuidingState(PrepareOracle):
         return QUInt(self.inst.index_bitsize)
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', T: 'Soquet', ancilla: 'Soquet'
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, T: Soquet, ancilla: Soquet
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.c):
             raise DecomposeTypeError(f"cannot decompose {self} with symbolic c=l/k={self.c}")
 
@@ -378,7 +378,7 @@ class GuidingState(PrepareOracle):
 
         return {'T': T, 'ancilla': ancilla}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             self.simple_guiding_state: self.c,
             SortInPlace(self.ell, self._index_dtype): 1,

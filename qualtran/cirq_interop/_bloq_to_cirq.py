@@ -14,6 +14,8 @@
 
 """Qualtran Bloqs to Cirq gates/circuits conversion."""
 
+from __future__ import annotations
+
 from collections.abc import Iterable, Sequence
 
 import cirq
@@ -95,8 +97,8 @@ class BloqAsCirqGate(cirq.Gate):
 
     @classmethod
     def bloq_on(
-        cls, bloq: Bloq, cirq_quregs: dict[str, 'CirqQuregT'], qubit_manager: cirq.QubitManager
-    ) -> tuple['cirq.Operation', dict[str, 'CirqQuregT']]:
+        cls, bloq: Bloq, cirq_quregs: dict[str, CirqQuregT], qubit_manager: cirq.QubitManager
+    ) -> tuple[cirq.Operation, dict[str, CirqQuregT]]:
         """Shim `bloq` into a cirq gate and call it on `cirq_quregs`.
 
         This is used as a default implementation for `Bloq.as_cirq_op` if a native
@@ -226,10 +228,10 @@ def _bloq_to_cirq_op(
 
 def _cbloq_to_cirq_circuit(
     signature: Signature,
-    cirq_quregs: dict[str, 'CirqQuregInT'],
+    cirq_quregs: dict[str, CirqQuregInT],
     binst_graph: nx.DiGraph,
     qubit_manager: cirq.QubitManager,
-) -> tuple[cirq.FrozenCircuit, dict[str, 'CirqQuregT']]:
+) -> tuple[cirq.FrozenCircuit, dict[str, CirqQuregT]]:
     """Propagate `as_cirq_op` calls through a composite bloq's contents to export a `cirq.Circuit`.
 
     Args:

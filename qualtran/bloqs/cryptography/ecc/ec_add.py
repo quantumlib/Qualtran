@@ -82,11 +82,11 @@ class _ECAddStepOne(Bloq):
         Fig 10.
     """
 
-    n: 'SymbolicInt'
-    mod: 'SymbolicInt'
+    n: SymbolicInt
+    mod: SymbolicInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('f1', QBit(), side=Side.RIGHT),
@@ -102,8 +102,8 @@ class _ECAddStepOne(Bloq):
         )
 
     def on_classical_vals(
-        self, a: 'ClassicalValT', b: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+        self, a: ClassicalValT, b: ClassicalValT, x: ClassicalValT, y: ClassicalValT
+    ) -> dict[str, ClassicalValT]:
         f1 = int(a == x)
         f2 = int(b == (-y % self.mod))
         f3 = int(a == b == 0)
@@ -122,8 +122,8 @@ class _ECAddStepOne(Bloq):
         }
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', a: Soquet, b: Soquet, x: Soquet, y: Soquet
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, a: Soquet, b: Soquet, x: Soquet, y: Soquet
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
 
@@ -224,12 +224,12 @@ class _ECAddStepTwo(Bloq):
         Fig 1.
     """
 
-    n: 'SymbolicInt'
-    mod: 'SymbolicInt'
-    window_size: 'SymbolicInt' = 1
+    n: SymbolicInt
+    mod: SymbolicInt
+    window_size: SymbolicInt = 1
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('f1', QBit()),
@@ -245,14 +245,14 @@ class _ECAddStepTwo(Bloq):
 
     def on_classical_vals(
         self,
-        f1: 'ClassicalValT',
-        ctrl: 'ClassicalValT',
-        a: 'ClassicalValT',
-        b: 'ClassicalValT',
-        x: 'ClassicalValT',
-        y: 'ClassicalValT',
-        lam_r: 'ClassicalValT',
-    ) -> dict[str, 'ClassicalValT']:
+        f1: ClassicalValT,
+        ctrl: ClassicalValT,
+        a: ClassicalValT,
+        b: ClassicalValT,
+        x: ClassicalValT,
+        y: ClassicalValT,
+        lam_r: ClassicalValT,
+    ) -> dict[str, ClassicalValT]:
         x = (x - a) % self.mod
         if ctrl == 1:
             y = (y - b) % self.mod
@@ -269,7 +269,7 @@ class _ECAddStepTwo(Bloq):
 
     def build_composite_bloq(
         self,
-        bb: 'BloqBuilder',
+        bb: BloqBuilder,
         f1: Soquet,
         ctrl: Soquet,
         a: Soquet,
@@ -277,7 +277,7 @@ class _ECAddStepTwo(Bloq):
         x: Soquet,
         y: Soquet,
         lam_r: Soquet,
-    ) -> dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
 
@@ -407,12 +407,12 @@ class _ECAddStepThree(Bloq):
         Fig 10.
     """
 
-    n: 'SymbolicInt'
-    mod: 'SymbolicInt'
-    window_size: 'SymbolicInt' = 1
+    n: SymbolicInt
+    mod: SymbolicInt
+    window_size: SymbolicInt = 1
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('ctrl', QBit()),
@@ -426,28 +426,21 @@ class _ECAddStepThree(Bloq):
 
     def on_classical_vals(
         self,
-        ctrl: 'ClassicalValT',
-        a: 'ClassicalValT',
-        b: 'ClassicalValT',
-        x: 'ClassicalValT',
-        y: 'ClassicalValT',
-        lam: 'ClassicalValT',
-    ) -> dict[str, 'ClassicalValT']:
+        ctrl: ClassicalValT,
+        a: ClassicalValT,
+        b: ClassicalValT,
+        x: ClassicalValT,
+        y: ClassicalValT,
+        lam: ClassicalValT,
+    ) -> dict[str, ClassicalValT]:
         if ctrl == 1:
             x = (x + 3 * a) % self.mod
             y = 0
         return {'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y, 'lam': lam}
 
     def build_composite_bloq(
-        self,
-        bb: 'BloqBuilder',
-        ctrl: Soquet,
-        a: Soquet,
-        b: Soquet,
-        x: Soquet,
-        y: Soquet,
-        lam: Soquet,
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, ctrl: Soquet, a: Soquet, b: Soquet, x: Soquet, y: Soquet, lam: Soquet
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
 
@@ -544,12 +537,12 @@ class _ECAddStepFour(Bloq):
         Fig 10.
     """
 
-    n: 'SymbolicInt'
-    mod: 'SymbolicInt'
-    window_size: 'SymbolicInt' = 1
+    n: SymbolicInt
+    mod: SymbolicInt
+    window_size: SymbolicInt = 1
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('x', QMontgomeryUInt(self.n)),
@@ -559,8 +552,8 @@ class _ECAddStepFour(Bloq):
         )
 
     def on_classical_vals(
-        self, x: 'ClassicalValT', y: 'ClassicalValT', lam: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+        self, x: ClassicalValT, y: ClassicalValT, lam: ClassicalValT
+    ) -> dict[str, ClassicalValT]:
         x = (
             x - QMontgomeryUInt(self.n, self.mod).montgomery_product(int(lam), int(lam))
         ) % self.mod
@@ -569,8 +562,8 @@ class _ECAddStepFour(Bloq):
         return {'x': x, 'y': y, 'lam': lam}
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: Soquet, y: Soquet, lam: Soquet
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, x: Soquet, y: Soquet, lam: Soquet
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
 
@@ -693,12 +686,12 @@ class _ECAddStepFive(Bloq):
         Fig 2.
     """
 
-    n: 'SymbolicInt'
-    mod: 'SymbolicInt'
-    window_size: 'SymbolicInt' = 1
+    n: SymbolicInt
+    mod: SymbolicInt
+    window_size: SymbolicInt = 1
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('ctrl', QBit()),
@@ -713,14 +706,14 @@ class _ECAddStepFive(Bloq):
 
     def on_classical_vals(
         self,
-        ctrl: 'ClassicalValT',
-        a: 'ClassicalValT',
-        b: 'ClassicalValT',
-        x: 'ClassicalValT',
-        y: 'ClassicalValT',
-        lam_r: 'ClassicalValT',
-        lam: 'ClassicalValT',
-    ) -> dict[str, 'ClassicalValT']:
+        ctrl: ClassicalValT,
+        a: ClassicalValT,
+        b: ClassicalValT,
+        x: ClassicalValT,
+        y: ClassicalValT,
+        lam_r: ClassicalValT,
+        lam: ClassicalValT,
+    ) -> dict[str, ClassicalValT]:
         if ctrl == 1:
             x = (a - x) % self.mod
             y = (y - b) % self.mod
@@ -730,7 +723,7 @@ class _ECAddStepFive(Bloq):
 
     def build_composite_bloq(
         self,
-        bb: 'BloqBuilder',
+        bb: BloqBuilder,
         ctrl: Soquet,
         a: Soquet,
         b: Soquet,
@@ -738,7 +731,7 @@ class _ECAddStepFive(Bloq):
         y: Soquet,
         lam_r: Soquet,
         lam: Soquet,
-    ) -> dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
 
@@ -866,11 +859,11 @@ class _ECAddStepSix(Bloq):
         Fig 3.
     """
 
-    n: 'SymbolicInt'
-    mod: 'SymbolicInt'
+    n: SymbolicInt
+    mod: SymbolicInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('f1', QBit(), side=Side.LEFT),
@@ -887,16 +880,16 @@ class _ECAddStepSix(Bloq):
 
     def on_classical_vals(
         self,
-        f1: 'ClassicalValT',
-        f2: 'ClassicalValT',
-        f3: 'ClassicalValT',
-        f4: 'ClassicalValT',
-        ctrl: 'ClassicalValT',
-        a: 'ClassicalValT',
-        b: 'ClassicalValT',
-        x: 'ClassicalValT',
-        y: 'ClassicalValT',
-    ) -> dict[str, 'ClassicalValT']:
+        f1: ClassicalValT,
+        f2: ClassicalValT,
+        f3: ClassicalValT,
+        f4: ClassicalValT,
+        ctrl: ClassicalValT,
+        a: ClassicalValT,
+        b: ClassicalValT,
+        x: ClassicalValT,
+        y: ClassicalValT,
+    ) -> dict[str, ClassicalValT]:
         if f4 == 1:
             x = a
             y = b
@@ -907,7 +900,7 @@ class _ECAddStepSix(Bloq):
 
     def build_composite_bloq(
         self,
-        bb: 'BloqBuilder',
+        bb: BloqBuilder,
         f1: Soquet,
         f2: Soquet,
         f3: Soquet,
@@ -917,7 +910,7 @@ class _ECAddStepSix(Bloq):
         b: Soquet,
         x: Soquet,
         y: Soquet,
-    ) -> dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
 
@@ -1073,12 +1066,12 @@ class ECAdd(Bloq):
         Litinski. 2023. Fig 5.
     """
 
-    n: 'SymbolicInt'
-    mod: 'SymbolicInt'
-    window_size: 'SymbolicInt' = 1
+    n: SymbolicInt
+    mod: SymbolicInt
+    window_size: SymbolicInt = 1
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('a', QMontgomeryUInt(self.n)),
@@ -1090,8 +1083,8 @@ class ECAdd(Bloq):
         )
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', a: Soquet, b: Soquet, x: Soquet, y: Soquet, lam_r: Soquet
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, a: Soquet, b: Soquet, x: Soquet, y: Soquet, lam_r: Soquet
+    ) -> dict[str, SoquetT]:
         f1, f2, f3, f4, ctrl, a, b, x, y = bb.add(
             _ECAddStepOne(n=self.n, mod=self.mod), a=a, b=b, x=x, y=y
         )
@@ -1163,7 +1156,7 @@ class ECAdd(Bloq):
             'lam_r': lam_r,
         }
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             _ECAddStepOne(n=self.n, mod=self.mod): 1,
             _ECAddStepTwo(n=self.n, mod=self.mod, window_size=self.window_size): 1,

@@ -20,6 +20,8 @@ DAG, where each node is weighted by its measurement depth contribution.
 Also called 'reaction depth' in the paper.
 """
 
+from __future__ import annotations
+
 import logging
 from collections.abc import Callable, Mapping
 
@@ -76,7 +78,7 @@ class MeasurementDepth:
         converter=_to_frozendict, default=frozendict()
     )
 
-    def __add__(self, other: "MeasurementDepth") -> "MeasurementDepth":
+    def __add__(self, other: MeasurementDepth) -> MeasurementDepth:
         """Adds two MeasurementDepth objects.
 
         Depths are summed, and unknown bloq counts are merged by summing.

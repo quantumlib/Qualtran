@@ -16,6 +16,8 @@
 These are for temporary convenience to lock-in the quoted literature costs.
 """
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -109,7 +111,7 @@ class QROAM(Bloq):
     def signature(self) -> Signature:
         return Signature.build(sel=(self.data_size - 1).bit_length(), trg=self.target_bitsize)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         cost = get_qroam_cost_clean_ancilla(
             self.data_size,
             self.target_bitsize,
@@ -118,7 +120,7 @@ class QROAM(Bloq):
         )
         return {Toffoli(): cost}
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
     @classmethod
@@ -162,7 +164,7 @@ class QROAMTwoRegs(Bloq):
     def signature(self) -> Signature:
         return Signature.build(sel=(self.data_a_size - 1).bit_length(), trg=self.target_bitsize)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         cost = int(np.ceil(self.data_a_size / self.data_a_block_size))
         cost *= int(np.ceil(self.data_b_size / self.data_b_block_size))
         if self.is_adjoint:
@@ -171,7 +173,7 @@ class QROAMTwoRegs(Bloq):
             cost += self.target_bitsize * (self.data_a_block_size * self.data_b_block_size - 1)
         return {Toffoli(): cost}
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
     @classmethod
@@ -213,7 +215,7 @@ class ApplyControlledZs(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("C" * len(self.cvs) + "Z")
         if reg.name == 'system':
@@ -223,13 +225,13 @@ class ApplyControlledZs(Bloq):
         filled = bool(self.cvs[c_idx])
         return Circle(filled)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', ctrls: SoquetT, system: Soquet):
+    def build_composite_bloq(self, bb: BloqBuilder, ctrls: SoquetT, system: Soquet):
         split_sys = bb.split(system)
         ctrls, split_sys[0] = bb.add(MultiControlZ(self.cvs), controls=ctrls, target=split_sys[0])
         system = bb.join(split_sys)
         return {'ctrls': ctrls, 'system': system}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # remove this method once https://github.com/quantumlib/Qualtran/issues/528 is resolved.
         return {Toffoli(): len(self.cvs) - 1}
 

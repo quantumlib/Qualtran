@@ -13,6 +13,8 @@
 #  limitations under the License.
 r"""Bloqs for preparing the $\nu$ state for the first quantized chemistry Hamiltonian."""
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -76,10 +78,10 @@ class PrepareMuUnaryEncodedOneHotWithProj(Bloq):
             [Register("mu", QAny(self.bitsize_n)), Register("flag", QBit(), side=Side.RIGHT)]
         )
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         if self.is_adjoint:
             return {Toffoli(): (self.bitsize_n - 1) + 1}
         else:
@@ -136,7 +138,7 @@ class PrepareNuStateWithProj(Bloq):
 
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, flag_nu: SoquetT
-    ) -> dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         mu, flag_mu = bb.add(
             PrepareMuUnaryEncodedOneHotWithProj(self.num_bits_n, self.num_bits_p), mu=mu
         )
@@ -157,7 +159,7 @@ class PrepareNuStateWithProj(Bloq):
         )
         return {'mu': mu, 'nu': nu, 'm': m, 'flag_nu': flag_nu}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # 1. Prepare unary encoded superposition state (Eq 77)
         cost_1 = (PrepareMuUnaryEncodedOneHotWithProj(self.num_bits_n, self.num_bits_p), 1)
         n_m = (self.m_param - 1).bit_length()

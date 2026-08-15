@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import cast, TYPE_CHECKING
 
@@ -90,26 +92,26 @@ class GFPolySplit(_BookkeepingBloq):
         if is_symbolic(value.degree):
             raise ValueError(f"{self} cannot have a symbolic data type.")
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f'{self} is atomic')
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return GFPolyJoin(dtype=self.dtype)
 
-    def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> tuple[None, dict[str, 'CirqQuregT']]:
+    def as_cirq_op(self, qubit_manager, reg: CirqQuregT) -> tuple[None, dict[str, CirqQuregT]]:
         return None, {
             'reg': reg.reshape((int(self.dtype.degree) + 1, int(self.dtype.qgf.num_qubits)))
         }
 
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: Wires) -> Operation:
         return None
 
-    def on_classical_vals(self, reg: 'galois.Poly') -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, reg: galois.Poly) -> dict[str, ClassicalValT]:
         return {'reg': self.dtype.to_gf_coefficients(reg)}
 
     def my_tensors(
-        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
-    ) -> list['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         incoming = incoming['reg']
@@ -127,7 +129,7 @@ class GFPolySplit(_BookkeepingBloq):
             for i in range(int(self.dtype.num_qubits))
         ]
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         if reg.shape:
@@ -197,21 +199,21 @@ class GFPolyJoin(_BookkeepingBloq):
         if is_symbolic(value.degree):
             raise ValueError(f"{self} cannot have a symbolic data type.")
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f'{self} is atomic')
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return GFPolySplit(dtype=self.dtype)
 
-    def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> tuple[None, dict[str, 'CirqQuregT']]:
+    def as_cirq_op(self, qubit_manager, reg: CirqQuregT) -> tuple[None, dict[str, CirqQuregT]]:
         return None, {'reg': reg.reshape(int(self.dtype.num_qubits))}
 
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: Wires) -> Operation:
         return None
 
     def my_tensors(
-        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
-    ) -> list['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         incoming = cast(NDArray, incoming['reg'])
@@ -230,10 +232,10 @@ class GFPolyJoin(_BookkeepingBloq):
             for i in range(int(self.dtype.num_qubits))
         ]
 
-    def on_classical_vals(self, reg: 'galois.Array') -> dict[str, 'galois.Poly']:
+    def on_classical_vals(self, reg: galois.Array) -> dict[str, galois.Poly]:
         return {'reg': self.dtype.from_gf_coefficients(reg)}
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         if reg.shape:

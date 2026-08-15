@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -79,13 +81,13 @@ class KaiserWindowState(QPEWindowStateBase):
         return self.bitsize
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([self.m_register])
 
     @classmethod
     def from_precision_and_delta(
         cls, precision: SymbolicInt, delta: SymbolicFloat
-    ) -> 'KaiserWindowState':
+    ) -> KaiserWindowState:
         r"""Estimate $\varphi$ to $precision$ bits with $1-\delta$ success probability.
 
         See Eq.D14 and Eq.D15 of Ref[1] for more details.
@@ -106,8 +108,8 @@ class KaiserWindowState(QPEWindowStateBase):
         return KaiserWindowState(bitsize=m_bits, alpha=alpha)
 
     def my_tensors(
-        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
-    ) -> list['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         return [
@@ -118,7 +120,7 @@ class KaiserWindowState(QPEWindowStateBase):
             )
         ]
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
             StatePreparationViaRotations,
         )

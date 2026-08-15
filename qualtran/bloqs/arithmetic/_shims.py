@@ -19,6 +19,8 @@ so we don't have undefined symbols and can still merge the high-level algorithms
 will be fleshed out and moved to their final organizational location soon (written: 2024-05-06).
 """
 
+from __future__ import annotations
+
 from functools import cached_property
 
 from attrs import frozen
@@ -36,7 +38,7 @@ class MultiCToffoli(Bloq):
     n: int
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('ctrl', QBit(), shape=(self.n,)), Register('target', QBit())])
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
@@ -48,7 +50,7 @@ class CSub(Bloq):
     n: int
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [Register('ctrl', QBit()), Register('x', QUInt(self.n)), Register('y', QUInt(self.n))]
         )
@@ -63,7 +65,7 @@ class Lt(Bloq):
     signed: bool = False
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [Register('x', QUInt(self.n)), Register('y', QUInt(self.n)), Register('out', QBit())]
         )
@@ -78,7 +80,7 @@ class CHalf(Bloq):
     n: int
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('ctrl', QBit()), Register('x', QUInt(self.n))])
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:

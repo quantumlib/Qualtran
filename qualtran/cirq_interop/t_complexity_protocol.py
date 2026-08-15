@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from collections.abc import Callable, Iterable
 from typing import Any
 
@@ -53,15 +55,15 @@ class TComplexity:
         # See: https://github.com/quantumlib/Qualtran/issues/217
         return ceil(self.t + self.rotation_cost(eps) * self.rotations)
 
-    def __add__(self, other: 'TComplexity') -> 'TComplexity':
+    def __add__(self, other: TComplexity) -> TComplexity:
         return TComplexity(
             self.t + other.t, self.clifford + other.clifford, self.rotations + other.rotations
         )
 
-    def __mul__(self, other: int) -> 'TComplexity':
+    def __mul__(self, other: int) -> TComplexity:
         return TComplexity(self.t * other, self.clifford * other, self.rotations * other)
 
-    def __rmul__(self, other: int) -> 'TComplexity':
+    def __rmul__(self, other: int) -> TComplexity:
         return self.__mul__(other)
 
     def asdict(self):

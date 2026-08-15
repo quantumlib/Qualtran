@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import logging
 from collections.abc import Callable
 
@@ -102,9 +104,7 @@ class QubitCount(CostKey[SymbolicInt]):
     large algorithms.
     """
 
-    def compute(
-        self, bloq: 'Bloq', get_callee_cost: Callable[['Bloq'], SymbolicInt]
-    ) -> SymbolicInt:
+    def compute(self, bloq: Bloq, get_callee_cost: Callable[[Bloq], SymbolicInt]) -> SymbolicInt:
         """Compute an estimate of the number of qubits used by `bloq`.
 
         See the class docstring for more information.

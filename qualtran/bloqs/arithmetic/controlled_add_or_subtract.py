@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -84,8 +86,8 @@ class ControlledAddOrSubtract(Bloq):
         return Signature.build_from_dtypes(ctrl=QBit(), a=self.a_dtype, b=self.b_dtype)
 
     def on_classical_vals(
-        self, ctrl: 'ClassicalValT', a: 'ClassicalValT', b: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+        self, ctrl: ClassicalValT, a: ClassicalValT, b: ClassicalValT
+    ) -> dict[str, ClassicalValT]:
         if is_symbolic(self.a_dtype.bitsize, self.b_dtype.bitsize):
             raise ValueError(f"Cannot simulate symbolic bloq {self}")
 
@@ -100,8 +102,8 @@ class ControlledAddOrSubtract(Bloq):
         return {'ctrl': ctrl, 'a': a, 'b': b_out}
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', ctrl: 'Soquet', a: 'Soquet', b: 'Soquet'
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, ctrl: Soquet, a: Soquet, b: Soquet
+    ) -> dict[str, SoquetT]:
         if self.add_when_ctrl_is_on:
             # flip the control bit
             ctrl = bb.add(XGate(), q=ctrl)
@@ -152,7 +154,7 @@ _CONTROLLED_ADD_OR_SUBTRACT_DOC = BloqDocSpec(
 )
 
 
-def _get_controlled_add_or_subtract_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+def _get_controlled_add_or_subtract_classical_sim_test_cases() -> list[ClassicalSimTestCase]:
     """Test cases for the `ControlledAddOrSubtract` bloq.
 
     These specify concrete (non-symbolic) bloq instances with specific

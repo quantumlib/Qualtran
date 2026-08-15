@@ -72,11 +72,11 @@ class RoundtripArtifacts:
     root_bloq_key: str
     original: dict[str, QDefWithContext]
     l1_code: str
-    loaded: dict[str, 'qlt.Bloq']
+    loaded: dict[str, qlt.Bloq]
 
 
 def compile_bloq_to_l1(
-    bloq: 'qlt.Bloq', *, extern_only_from: bool = False, nodes: 'L1Nodes' = qualtran_l1_nodes
+    bloq: qlt.Bloq, *, extern_only_from: bool = False, nodes: L1Nodes = qualtran_l1_nodes
 ) -> RoundtripArtifacts:
     """Compile a bloq to `.qlt` text and evaluate it back into bloqs.
 
@@ -182,7 +182,7 @@ def check_bloq_object_identity(artifacts: RoundtripArtifacts) -> list[str]:
     return problems
 
 
-def _soquet_graph(cbloq: 'qlt.CompositeBloq') -> nx.DiGraph:
+def _soquet_graph(cbloq: qlt.CompositeBloq) -> nx.DiGraph:
     """Build a soquet-level directed graph from a composite bloq."""
     graph = nx.DiGraph()
     graph.add_nodes_from((soq, {'soq': soq}) for soq in cbloq.all_soquets)
@@ -238,7 +238,7 @@ DEFAULT_CHECKS = (
 )
 
 
-def check_bloq_roundtrip(bloq: 'qlt.Bloq', *, extern_only_from: bool = False) -> list[str]:
+def check_bloq_roundtrip(bloq: qlt.Bloq, *, extern_only_from: bool = False) -> list[str]:
     """Round-trip a bloq through Qualtran-L1 and return a list of problems.
 
     This compiles `bloq` to `.qlt`, parses and evaluates it back, and then runs
@@ -264,7 +264,7 @@ def check_artifacts(artifacts: RoundtripArtifacts) -> list[str]:
     return problems
 
 
-def assert_bloq_roundtrips(bloq: 'qlt.Bloq', *, extern_only_from: bool = False) -> None:
+def assert_bloq_roundtrips(bloq: qlt.Bloq, *, extern_only_from: bool = False) -> None:
     """Assert that a bloq round-trips through Qualtran-L1 with no problems.
 
     Raises:
@@ -278,8 +278,8 @@ def assert_bloq_roundtrips(bloq: 'qlt.Bloq', *, extern_only_from: bool = False) 
 
 
 def save_bloq_qlt(
-    bloq: 'qlt.Bloq',
-    path: str | 'os.PathLike[str]',
+    bloq: qlt.Bloq,
+    path: str | os.PathLike[str],
     *,
     extern_only_from: bool = False,
     validate: bool = True,
@@ -316,7 +316,7 @@ def save_bloq_qlt(
     return artifacts.l1_code
 
 
-def validate_bloq(bloq: 'qlt.Bloq') -> None:
+def validate_bloq(bloq: qlt.Bloq) -> None:
     """Validate a Python bloq before using it as a round-trip subject.
 
     Rejects malformed bloqs early, before they reach the round-trip machinery.

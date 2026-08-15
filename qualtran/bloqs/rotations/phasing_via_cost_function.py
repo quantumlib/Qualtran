@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -81,12 +83,12 @@ class PhasingViaCostFunction(Bloq):
             assert cost_eval_right_reg.side == Side.RIGHT
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         registers = [*self.cost_eval_oracle.signature.lefts(), *self.phase_oracle.extra_registers]
         return Signature(registers)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
-        def _extract_soqs(bloq: Bloq) -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+        def _extract_soqs(bloq: Bloq) -> dict[str, SoquetT]:
             return {reg.name: soqs.pop(reg.name) for reg in bloq.signature.lefts()}
 
         soqs |= bb.add_d(self.cost_eval_oracle, **_extract_soqs(self.cost_eval_oracle))

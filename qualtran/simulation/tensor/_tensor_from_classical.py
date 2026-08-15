@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import itertools
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
@@ -25,13 +27,13 @@ if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
-def _bits_to_classical_reg_data(reg: 'Register', bits: NDArray[np.uint8]) -> 'ClassicalValT':
+def _bits_to_classical_reg_data(reg: Register, bits: NDArray[np.uint8]) -> ClassicalValT:
     if reg.shape == ():
         return reg.dtype.from_bits([*bits.flat])
     return reg.dtype.from_bits_array(np.reshape(bits, reg.shape + (reg.dtype.num_qubits,)))
 
 
-def _bloq_to_dense_via_classical_action(bloq: 'Bloq') -> NDArray:
+def _bloq_to_dense_via_classical_action(bloq: Bloq) -> NDArray:
     """Internal method to compute the tensor of a bloq using its classical action.
 
     Args:
@@ -76,7 +78,7 @@ def _bloq_to_dense_via_classical_action(bloq: 'Bloq') -> NDArray:
     return matrix
 
 
-def bloq_to_dense_via_classical_action(bloq: 'Bloq') -> NDArray:
+def bloq_to_dense_via_classical_action(bloq: Bloq) -> NDArray:
     """Return a contracted, dense ndarray representing the bloq, using its classical action.
 
     Args:
@@ -105,8 +107,8 @@ def bloq_to_dense_via_classical_action(bloq: 'Bloq') -> NDArray:
 
 
 def my_tensors_from_classical_action(
-    bloq: 'Bloq', incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
-) -> list['qtn.Tensor']:
+    bloq: Bloq, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+) -> list[qtn.Tensor]:
     """Returns the quimb tensors for the bloq derived from its `on_classical_vals` method.
 
     This function has the same signature as `bloq.my_tensors`, and can be used as a
@@ -126,7 +128,7 @@ def my_tensors_from_classical_action(
     """
     import quimb.tensor as qtn
 
-    def _signature_to_inds(registers: Iterable['Register'], cxns: dict[str, 'ConnectionT']):
+    def _signature_to_inds(registers: Iterable[Register], cxns: dict[str, ConnectionT]):
         for reg in registers:
             for cxn in np.asarray(cxns[reg.name]).flat:
                 for j in range(reg.dtype.num_qubits):

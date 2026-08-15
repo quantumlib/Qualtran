@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import math
 from typing import TYPE_CHECKING
 
@@ -42,14 +44,12 @@ class MultiFactory(MagicStateFactory):
     def n_physical_qubits(self) -> int:
         return self.base_factory.n_physical_qubits() * self.n_factories
 
-    def n_cycles(
-        self, n_logical_gates: 'GateCounts', logical_error_model: 'LogicalErrorModel'
-    ) -> int:
+    def n_cycles(self, n_logical_gates: GateCounts, logical_error_model: LogicalErrorModel) -> int:
         return math.ceil(
             self.base_factory.n_cycles(n_logical_gates, logical_error_model) / self.n_factories
         )
 
     def factory_error(
-        self, n_logical_gates: 'GateCounts', logical_error_model: 'LogicalErrorModel'
+        self, n_logical_gates: GateCounts, logical_error_model: LogicalErrorModel
     ) -> float:
         return self.base_factory.factory_error(n_logical_gates, logical_error_model)

@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Iterator, Sequence
 from functools import cached_property
 
@@ -101,7 +103,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         self, context: cirq.DecompositionContext, **quregs
     ) -> Iterator[cirq.OP_TREE]:
         quregs['accumulator'] = np.array(context.qubit_manager.qalloc(1))
-        control: Sequence['cirq.Qid'] = (
+        control: Sequence[cirq.Qid] = (
             quregs[self.control_regs[0].name].tolist() if total_bits(self.control_registers) else []
         )
         yield cirq.X(*quregs['accumulator']).controlled_by(*control)
@@ -138,7 +140,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         yield self.target_gate(target[target_idx]).controlled_by(control)
         yield cirq.CZ(*accumulator, target[target_idx])
 
-    def on_classical_vals(self, **vals) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, **vals) -> dict[str, ClassicalValT]:
         if self.target_gate != cirq.X and self.target_gate != cirq.Z:
             return NotImplemented
         if len(self.control_registers) != 1 or len(self.selection_registers) != 1:

@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -56,7 +58,7 @@ class MatrixGate(GateWithRegisters):
         return Signature.build(q=self.bitsize)
 
     @classmethod
-    def random(cls, bitsize: int, *, random_state=None) -> 'MatrixGate':
+    def random(cls, bitsize: int, *, random_state=None) -> MatrixGate:
         """generate a uniformly random unitary on `bitsize` qubits"""
         from cirq.testing import random_unitary
 
@@ -64,8 +66,8 @@ class MatrixGate(GateWithRegisters):
         return cls(bitsize, matrix)
 
     def my_tensors(
-        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
-    ) -> list['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         data = np.array(self.matrix).reshape((2,) * (self.bitsize * 2))
@@ -81,5 +83,5 @@ class MatrixGate(GateWithRegisters):
     def _unitary_(self):
         return np.array(self.matrix)
 
-    def adjoint(self) -> 'MatrixGate':
+    def adjoint(self) -> MatrixGate:
         return MatrixGate(self.bitsize, np.conj(self.matrix).T, self.atol)

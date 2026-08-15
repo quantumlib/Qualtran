@@ -13,6 +13,8 @@
 #  limitations under the License.
 r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian."""
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -75,12 +77,12 @@ class PrepareTUVSuperpositions(Bloq):
     def signature(self) -> Signature:
         return Signature.build(tuv=1, uv=1)
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("PREP TUV")
         return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         n_eta_zeta = (self.eta + 2 * self.lambda_zeta - 1).bit_length()
         # The cost arises from rotating a qubit, and uniform state preparation
         # over eta + 2 lambda_zeta numbers along.
@@ -113,7 +115,7 @@ class UniformSuperpostionIJFirstQuantization(Bloq):
         n_eta = (self.eta - 1).bit_length()
         return Signature.build(i=n_eta, j=n_eta)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         n_eta = (self.eta - 1).bit_length()
         # Half of Eq. 62 which is the cost for prep and prep^\dagger
         return {Toffoli(): (7 * n_eta + 4 * self.num_bits_rot_aa - 18)}
@@ -164,7 +166,7 @@ class MultiplexedCSwap3D(Bloq):
         )
         return merged_qubits.reshape(out_shape)
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('MultiSwap')
         if reg.name == 'sel':
@@ -177,7 +179,7 @@ class MultiplexedCSwap3D(Bloq):
 
     def build_composite_bloq(
         self, bb: BloqBuilder, sel: SoquetT, targets: SoquetT, junk: SoquetT
-    ) -> dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         flat_sys = self._reshape_reg(bb, targets, (self.eta,), bitsize=3 * self.num_bits_p)
         flat_p = self._reshape_reg(bb, junk, (), bitsize=3 * self.num_bits_p)
         sel, flat_sys, flat_p = bb.add(
@@ -284,7 +286,7 @@ class PrepareFirstQuantization(PrepareOracle):
             )
         return self.sum_of_l1_coeffs
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("PREP")
         return super().wire_symbol(reg, idx)
@@ -307,7 +309,7 @@ class PrepareFirstQuantization(PrepareOracle):
         m: SoquetT,
         succ_nu: SoquetT,
         l: SoquetT,
-    ) -> dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         tuv, uv = bb.add(
             PrepareTUVSuperpositions(
                 self.num_bits_t, self.eta, self.lambda_zeta, self.num_bits_rot_aa
@@ -451,7 +453,7 @@ class SelectFirstQuantization(SelectOracle):
             [*self.control_registers, *self.selection_registers, *self.target_registers]
         )
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("SELECT")
         return super().wire_symbol(reg, idx)
@@ -475,7 +477,7 @@ class SelectFirstQuantization(SelectOracle):
         m: SoquetT,
         l: SoquetT,
         sys: SoquetT,
-    ) -> dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         # ancilla for swaps from electronic system registers.
         # we assume these are left in a clean state after SELECT operations
         p = [bb.allocate(self.num_bits_p) for _ in range(3)]

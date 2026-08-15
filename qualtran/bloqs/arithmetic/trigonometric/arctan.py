@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from collections.abc import Iterable, Sequence
 from functools import cached_property
 
@@ -52,7 +54,7 @@ class ArcTan(GateWithRegisters, cirq.ArithmeticGate):
     target_bitsize: SymbolicInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(select=self.selection_bitsize, sign=1, target=self.target_bitsize)
 
     def registers(self) -> Sequence[int | Sequence[int]]:
@@ -63,7 +65,7 @@ class ArcTan(GateWithRegisters, cirq.ArithmeticGate):
             )
         return (2,) * self.selection_bitsize, (2,), (2,) * self.target_bitsize
 
-    def with_registers(self, *new_registers: int | Sequence[int]) -> "ArcTan":
+    def with_registers(self, *new_registers: int | Sequence[int]) -> ArcTan:
         raise NotImplementedError()
 
     def apply(self, *register_values: int) -> int | Iterable[int]:
@@ -84,5 +86,5 @@ class ArcTan(GateWithRegisters, cirq.ArithmeticGate):
             PlusEqualProduct(self.target_bitsize, self.target_bitsize, 2 * self.target_bitsize): c
         }
 
-    def adjoint(self) -> 'ArcTan':
+    def adjoint(self) -> ArcTan:
         return self

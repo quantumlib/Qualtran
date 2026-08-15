@@ -13,6 +13,8 @@
 #  limitations under the License.
 """SELECT for the sparse chemistry Hamiltonian in second quantization."""
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -114,7 +116,7 @@ class SelectSparse(SelectOracle):
     def target_registers(self) -> tuple[Register, ...]:
         return (Register("sys", QAny(bitsize=self.num_spin_orb)),)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         p, q, r, s = soqs['p'], soqs['q'], soqs['r'], soqs['s']
         alpha, beta = soqs['alpha'], soqs['beta']
         flag_1b = soqs['flag_1b']
@@ -155,7 +157,7 @@ class SelectSparse(SelectOracle):
             out_soqs['control'] = soqs['control']
         return out_soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # Pg 30, enumeration 1: 2 applications of SELECT in Fig. 13, one of
         # which is not controlled (for the two body part of the Ham). The figure
         # is a bit misleading as applying that circuit twice would square the
@@ -169,7 +171,7 @@ class SelectSparse(SelectOracle):
         c_maj_y = SelectedMajoranaFermion(sel_pa, target_gate=cirq.Y)
         return {SGate(): 1, maj_x: 1, c_maj_x: 1, maj_y: 1, c_maj_y: 1}
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 
         return get_ctrl_system_1bit_cv(

@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -54,30 +56,28 @@ class Power(GateWithRegisters):
         ):
             raise ValueError(f'{self.power=} must be a positive integer.')
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return Power(self.bloq.adjoint(), self.power)
 
     @cached_property
     def signature(self) -> Signature:
         return self.bloq.signature
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         if not isinstance(self.power, int):
             raise ValueError(f'Symbolic power {self.power} not supported')
         for _ in range(self.power):
             soqs = bb.add_d(self.bloq, **soqs)
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {self.bloq: self.power}
 
-    def __pow__(self, power) -> 'Power':
+    def __pow__(self, power) -> Power:
         bloq = self.bloq.adjoint() if power < 0 else self.bloq
         return Power(bloq, self.power * abs(power))
 
-    def _circuit_diagram_info_(
-        self, args: 'cirq.CircuitDiagramInfoArgs'
-    ) -> 'cirq.CircuitDiagramInfo':
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         import cirq
 
         info = cirq.circuit_diagram_info(self.bloq, args, default=None)
@@ -89,7 +89,7 @@ class Power(GateWithRegisters):
 
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
 
         if reg is None:
             sub_title = self.bloq.wire_symbol(None, idx)

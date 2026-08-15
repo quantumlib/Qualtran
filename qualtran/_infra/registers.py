@@ -14,6 +14,8 @@
 
 """Classes for specifying `Bloq.registers`."""
 
+from __future__ import annotations
+
 import enum
 import itertools
 from collections import defaultdict
@@ -150,7 +152,7 @@ class Register:
         """
         return self.dtype.num_cbits * prod(self.shape_symbolic)
 
-    def adjoint(self) -> 'Register':
+    def adjoint(self) -> Register:
         """Return the 'adjoint' of this register by switching RIGHT and LEFT registers."""
         if self.side is Side.THRU:
             return self
@@ -210,7 +212,7 @@ class Signature:
         self._rights = _dedupe((reg.name, reg) for reg in self._registers if reg.side & Side.RIGHT)
 
     @classmethod
-    def build(cls, *args, **kwargs) -> 'Signature':
+    def build(cls, *args, **kwargs) -> Signature:
         """Construct a Signature using a more natural syntax.
 
         This builder constructs a `Signature` flexibly from a mix of types, positional elements,
@@ -328,7 +330,7 @@ class Signature:
         return cls(registers)
 
     @classmethod
-    def build_from_dtypes(cls, **registers: QCDType) -> 'Signature':
+    def build_from_dtypes(cls, **registers: QCDType) -> Signature:
         """Construct a Signature comprised of thru registers of the given dtypes.
 
         Examples:
@@ -386,7 +388,7 @@ class Signature:
 
         yield from groups.items()
 
-    def adjoint(self) -> 'Signature':
+    def adjoint(self) -> Signature:
         """Swap all RIGHT and LEFT registers in this collection."""
         return Signature(reg.adjoint() for reg in self._registers)
 

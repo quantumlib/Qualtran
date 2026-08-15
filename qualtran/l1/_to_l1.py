@@ -100,7 +100,7 @@ class Locals:
 
 
 def regs_to_sig_entry(
-    reg_name: str, regs: Sequence['qlt.Register'], *, nodes: L1Nodes = qualtran_l1_nodes
+    reg_name: str, regs: Sequence[qlt.Register], *, nodes: L1Nodes = qualtran_l1_nodes
 ) -> QSignatureEntry:
     """Convert a register group (from `Signature.groups()`) to a `QSignatureEntry`.
 
@@ -139,7 +139,7 @@ def regs_to_sig_entry(
 
 
 def signature_to_l1_entries(
-    signature: 'qlt.Signature', *, nodes: L1Nodes = qualtran_l1_nodes
+    signature: qlt.Signature, *, nodes: L1Nodes = qualtran_l1_nodes
 ) -> list[QSignatureEntry]:
     """Convert a `qualtran.Signature` to a list of `QSignatureEntry` AST nodes.
 
@@ -164,7 +164,7 @@ class QDefBuilder:
         if self.qlocals.nodes is qualtran_l1_nodes and self.nodes is not qualtran_l1_nodes:
             self.qlocals.nodes = self.nodes
 
-    def _get_sig_entry_annotation(self, reg: 'qlt.Register') -> CObjectNode | None:
+    def _get_sig_entry_annotation(self, reg: qlt.Register) -> CObjectNode | None:
         """Determine annotation based on wire symbol."""
         from qualtran.drawing import Circle, ModPlus
 
@@ -183,7 +183,7 @@ class QDefBuilder:
             annotation = self.nodes.CObjectNode('oplus', cargs=())
         return annotation
 
-    def _get_sig_entry(self, reg_name: str, regs: Sequence['qlt.Register']) -> QSignatureEntry:
+    def _get_sig_entry(self, reg_name: str, regs: Sequence[qlt.Register]) -> QSignatureEntry:
         entry = regs_to_sig_entry(reg_name, regs, nodes=self.nodes)
 
         # Layer on annotation from wire symbols
@@ -199,7 +199,7 @@ class QDefBuilder:
 
         return entry
 
-    def add_signature(self, signature: 'qlt.Signature') -> None:
+    def add_signature(self, signature: qlt.Signature) -> None:
         for reg_name, regs in signature.groups():
             entry = self._get_sig_entry(reg_name, regs)
             self._sig_entries.append(entry)
@@ -378,7 +378,7 @@ def bloq_to_ast(
     force_extern: bool = False,
     level: int = 0,
     nodes: L1Nodes = qualtran_l1_nodes,
-) -> tuple[QDefWithContext, list['qlt.Bloq']]:
+) -> tuple[QDefWithContext, list[qlt.Bloq]]:
     """Turn a bloq into Qualtran-L1 code.
 
     Generally just calls the right methods on `SubroutineFormatter`.
@@ -461,7 +461,7 @@ class L1ModuleBuilder:
         *,
         annotate_costs: bool = False,
         extern_only_from: bool = True,
-        force_extern_pred: Callable[['qlt.Bloq'], bool] = lambda b: False,
+        force_extern_pred: Callable[[qlt.Bloq], bool] = lambda b: False,
     ) -> BloqKey:
 
         # Stack of (Bloq, level) indices where `level` is the level of recursion
@@ -536,7 +536,7 @@ def dump_l1(
     *,
     annotate_costs: bool = False,
     extern_only_from: bool = False,
-    force_extern_pred: Callable[['qlt.Bloq'], bool] = lambda b: False,
+    force_extern_pred: Callable[[qlt.Bloq], bool] = lambda b: False,
     nodes: L1Nodes = qualtran_l1_nodes,
 ) -> str | None:
     from qualtran.l1 import L1ASTPrinter

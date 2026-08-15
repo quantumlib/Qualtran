@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import logging
 from collections import defaultdict
 from typing import TYPE_CHECKING
@@ -30,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 def _order_incoming_outgoing_indices(
-    signature: Signature, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    signature: Signature, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
 ) -> list[tuple[Connection, int]]:
     """Order incoming and outgoing indices provided by the tensor protocol according to `signature`.
 
@@ -66,7 +68,7 @@ def _order_incoming_outgoing_indices(
 
 
 def _group_outer_inds(
-    tn: 'qtn.TensorNetwork', signature: Signature, superoperator: bool = False
+    tn: qtn.TensorNetwork, signature: Signature, superoperator: bool = False
 ) -> list[list[_IndT]]:
     """Group outer indices of a tensor network.
 
@@ -114,7 +116,7 @@ def _group_outer_inds(
 
 
 def quimb_to_dense(
-    tn: 'qtn.TensorNetwork', signature: Signature, superoperator: bool = False
+    tn: qtn.TensorNetwork, signature: Signature, superoperator: bool = False
 ) -> NDArray:
     """Contract a quimb tensor network `tn` to a dense matrix consistent with `signature`."""
     inds = _group_outer_inds(tn, signature, superoperator=superoperator)

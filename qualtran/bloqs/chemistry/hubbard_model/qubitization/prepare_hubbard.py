@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from collections.abc import Iterator
 from functools import cached_property
 from typing import TYPE_CHECKING
@@ -97,7 +99,7 @@ class PrepareHubbard(PrepareOracle):
         return (Register('temp', QAny(2)),)
 
     @cached_property
-    def l1_norm_of_coeffs(self) -> 'SymbolicFloat':
+    def l1_norm_of_coeffs(self) -> SymbolicFloat:
         # https://arxiv.org/abs/1805.03662v2 equation 60
         N = self.x_dim * self.y_dim * 2
         qlambda = 2 * N * self.t + (N * self.u) // 2

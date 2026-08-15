@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from collections import Counter
 from collections.abc import Iterable, Sequence
 from functools import cached_property
@@ -66,8 +68,8 @@ class ControlledViaAnd(_ControlledBase):
 
     @classmethod
     def make_ctrl_system(
-        cls, bloq: 'Bloq', ctrl_spec: 'CtrlSpec'
-    ) -> tuple['_ControlledBase', 'AddControlledT']:
+        cls, bloq: Bloq, ctrl_spec: CtrlSpec
+    ) -> tuple[_ControlledBase, AddControlledT]:
         """A factory method for creating both the Controlled and the adder function.
 
         See `Bloq.get_ctrl_system`.
@@ -75,7 +77,7 @@ class ControlledViaAnd(_ControlledBase):
         cb = cls(subbloq=bloq, ctrl_spec=ctrl_spec)
         return cls._make_ctrl_system(cb)
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         return Bloq.decompose_bloq(self)
 
     def _is_single_bit_control(self) -> bool:
@@ -85,10 +87,10 @@ class ControlledViaAnd(_ControlledBase):
     def _single_control_value(self) -> int:
         return self.ctrl_spec.get_single_ctrl_val()
 
-    def adjoint(self) -> 'ControlledViaAnd':
+    def adjoint(self) -> ControlledViaAnd:
         return ControlledViaAnd(self.subbloq.adjoint(), self.ctrl_spec)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         # compute the control bit
         if self._is_single_bit_control():
             ctrl_soqs = None
@@ -144,7 +146,7 @@ class ControlledViaAnd(_ControlledBase):
 
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         counts: Counter[Bloq] = Counter()
         counts[self.subbloq.controlled()] += 1
 
@@ -158,7 +160,7 @@ class ControlledViaAnd(_ControlledBase):
 
         return counts
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         ctrl_spec_combined = CtrlSpec(
             qdtypes=ctrl_spec.qdtypes + self.ctrl_spec.qdtypes,
             cvs=ctrl_spec.cvs + self.ctrl_spec.cvs,
@@ -166,8 +168,8 @@ class ControlledViaAnd(_ControlledBase):
         ctrl_bloq = ControlledViaAnd(subbloq=self.subbloq, ctrl_spec=ctrl_spec_combined)
 
         def _adder(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
-        ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            bb: BloqBuilder, ctrl_soqs: Sequence[SoquetT], in_soqs: dict[str, SoquetT]
+        ) -> tuple[Iterable[SoquetT], Iterable[SoquetT]]:
             rhs_ctrl_soqs_t = tuple(in_soqs.pop(name) for name in self.ctrl_reg_names)
             all_ctrl_soqs_t = tuple([*ctrl_soqs, *rhs_ctrl_soqs_t])
 

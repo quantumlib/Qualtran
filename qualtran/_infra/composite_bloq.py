@@ -119,21 +119,21 @@ class Soquet(Protocol, metaclass=_NoSoquetIsInstanceMeta):
     def item(self, *args) -> _QVar: ...
 
     @property
-    def dtype(self) -> 'QCDType': ...
+    def dtype(self) -> QCDType: ...
 
     def __hash__(self):
         """Note! This is _Soquet only. _QVar is mutable."""
 
     @property
-    def reg(self) -> 'Register': ...
+    def reg(self) -> Register: ...
 
-    def __getitem__(self, item) -> 'QVarT': ...
+    def __getitem__(self, item) -> QVarT: ...
 
     def __setitem__(self, key, value) -> None:
         """For protocol compatibility with QVarT. Not supported on a single _QVar."""
 
     @property
-    def bb(self) -> 'BloqBuilder':
+    def bb(self) -> BloqBuilder:
         """Note! This is _QVar only. Not _Soquet."""
 
 
@@ -167,7 +167,7 @@ class QVarT(Protocol):
 
     def item(self, *args) -> _QVar: ...
 
-    def __getitem__(self, item) -> 'QVarT': ...
+    def __getitem__(self, item) -> QVarT: ...
 
     def __setitem__(self, key, value) -> None: ...
 
@@ -282,8 +282,8 @@ class CompositeBloq(Bloq):
         return _create_binst_graph(self.connections, self.bloq_instances)
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
-    ) -> tuple['cirq.Operation', dict[str, 'CirqQuregT']]:
+        self, qubit_manager: cirq.QubitManager, **cirq_quregs: 'CirqQuregT'
+    ) -> tuple[cirq.Operation, dict[str, CirqQuregT]]:
         """Return a `cirq.CircuitOperation` version of this cbloq."""
         import cirq
 
@@ -293,8 +293,8 @@ class CompositeBloq(Bloq):
         return cirq.CircuitOperation(circuit), out_quregs
 
     def to_cirq_circuit_and_quregs(
-        self, qubit_manager: 'cirq.QubitManager' | None = None, **cirq_quregs: 'CirqQuregInT'
-    ) -> tuple['cirq.FrozenCircuit', dict[str, 'CirqQuregT']]:
+        self, qubit_manager: cirq.QubitManager | None = None, **cirq_quregs: 'CirqQuregInT'
+    ) -> tuple[cirq.FrozenCircuit, dict[str, CirqQuregT]]:
         """Convert this CompositeBloq to a `cirq.Circuit` and output qubit registers.
 
         Args:
@@ -320,9 +320,9 @@ class CompositeBloq(Bloq):
     def to_cirq_circuit(
         self,
         *,
-        qubit_manager: 'cirq.QubitManager' | None = None,
-        cirq_quregs: Mapping[str, 'CirqQuregInT'] | None = None,
-    ) -> 'cirq.FrozenCircuit':
+        qubit_manager: cirq.QubitManager | None = None,
+        cirq_quregs: Mapping[str, CirqQuregInT] | None = None,
+    ) -> cirq.FrozenCircuit:
         """Convert this CompositeBloq to a `cirq.Circuit`.
 
         Args:
@@ -342,7 +342,7 @@ class CompositeBloq(Bloq):
         return self.to_cirq_circuit_and_quregs(qubit_manager=qubit_manager, **cirq_quregs)[0]
 
     @classmethod
-    def from_cirq_circuit(cls, circuit: 'cirq.Circuit') -> 'CompositeBloq':
+    def from_cirq_circuit(cls, circuit: cirq.Circuit) -> CompositeBloq:
         """Construct a composite bloq from a Cirq circuit.
 
         Each `cirq.Operation` will be wrapped by a `CirqGateAsBloq` wrapper. The
@@ -355,9 +355,7 @@ class CompositeBloq(Bloq):
 
         return cirq_optree_to_cbloq(circuit)
 
-    def on_classical_vals(
-        self, **vals: sympy.Symbol | 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, **vals: sympy.Symbol | 'ClassicalValT') -> dict[str, ClassicalValT]:
         """`CompositeBloq` implementation of `Bloq.on_classical_vals`.
 
         This override determines the classical action of this composite bloq by correctly
@@ -368,13 +366,13 @@ class CompositeBloq(Bloq):
         out_vals, _ = call_cbloq_classically(self.signature, vals, self._binst_graph)
         return out_vals
 
-    def as_composite_bloq(self) -> 'CompositeBloq':
+    def as_composite_bloq(self) -> CompositeBloq:
         """Returns this composite bloq unmodified.
 
         This overrides `Bloq.as_composite_bloq`."""
         return self
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         """Raise an error if this method is called.
 
         This overrides `Bloq.decompose_bloq` to unconditionally raise an exception:
@@ -386,7 +384,7 @@ class CompositeBloq(Bloq):
             "Consider using the composite bloq directly or using `.flatten()`."
         )
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator' | None) -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator | None) -> BloqCountDictT:
         """`CompositeBloq` implementation of `Bloq.build_call_graph`.
 
         Build this composite bloq's call graph by counting up all the subbloqs.
@@ -472,7 +470,7 @@ class CompositeBloq(Bloq):
             get_assign=lambda x: x.left,
         )
 
-    def copy(self) -> 'CompositeBloq':
+    def copy(self) -> CompositeBloq:
         """Create a copy of this composite bloq by re-building it."""
         bb, _ = BloqBuilder.from_signature(self.signature, bloq_key=self.bloq_key)
         soq_map = bb.initial_soq_map(self.signature.lefts())
@@ -487,7 +485,7 @@ class CompositeBloq(Bloq):
 
     def flatten_once(
         self, pred: Callable[[BloqInstance], bool] = lambda binst: True
-    ) -> 'CompositeBloq':
+    ) -> CompositeBloq:
         """Decompose and flatten each subbloq that satisfies `pred`.
 
         This will only flatten "once". That is, we will go through the bloq instances
@@ -551,7 +549,7 @@ class CompositeBloq(Bloq):
 
     def flatten(
         self, pred: Callable[[BloqInstance], bool] = lambda binst: True, max_depth: int = 1_000
-    ) -> 'CompositeBloq':
+    ) -> CompositeBloq:
         """Recursively decompose and flatten subbloqs until none satisfy `pred`.
 
         This will continue flattening the results of subbloq.decompose_bloq() until
@@ -579,7 +577,7 @@ class CompositeBloq(Bloq):
 
         return cbloq
 
-    def adjoint(self) -> 'CompositeBloq':
+    def adjoint(self) -> CompositeBloq:
         """Get a composite bloq which is the adjoint of this composite bloq.
 
         The adjoint of a composite bloq is another composite bloq where the order of
@@ -629,7 +627,7 @@ class CompositeBloq(Bloq):
         delimited_gens = ('\n' + '-' * 20 + '\n').join(gen_texts)
         return delimited_gens
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         from qualtran.drawing import Text
 
         if reg is None:
@@ -693,13 +691,13 @@ def _binst_to_cxns(
 
 
 def _get_soquet(
-    binst: 'BloqInstance',
+    binst: BloqInstance,
     reg_name: str,
     right: bool = False,
     idx: tuple[int, ...] = (),
     *,
     binst_graph: nx.DiGraph,
-) -> '_Soquet':
+) -> _Soquet:
     """Retrieve a soquet given identifying information.
 
     We can uniquely address a Soquet by the arguments to this function.
@@ -733,7 +731,7 @@ def _cxns_to_soq_dict(
     cxns: Iterable[Connection],
     get_me: Callable[[Connection], _Soquet],
     get_assign: Callable[[Connection], _Soquet],
-) -> dict[str, '_SoquetT']:
+) -> dict[str, _SoquetT]:
     """Helper function to get a dictionary of soquets from a list of connections.
 
     Args:
@@ -750,7 +748,7 @@ def _cxns_to_soq_dict(
     Returns:
         soqdict: A dictionary mapping register name to the selected soquets.
     """
-    soqdict: dict[str, '_SoquetT'] = {}
+    soqdict: dict[str, _SoquetT] = {}
 
     # Initialize multi-dimensional dictionary values.
     for reg in regs:
@@ -1000,7 +998,7 @@ def _map_soqs(
     # Use `vectorize` to call `_map_soq` on each element of the array.
     vmap = np.vectorize(_map_soq, otypes=[object])
 
-    def _map_soqs(soqs: _SoquetT) -> 'QVarT':
+    def _map_soqs(soqs: _SoquetT) -> QVarT:
         if BloqBuilder.is_ndarray(soqs):
             return vmap(soqs)
         return _map_soq(soqs.item())
@@ -1177,13 +1175,13 @@ class BloqBuilder:
     def add_register(self, reg: Register, bitsize: None = None) -> None | QVarT: ...
 
     @overload
-    def add_register(self, reg: str, bitsize: 'SymbolicInt') -> QVarT: ...
+    def add_register(self, reg: str, bitsize: SymbolicInt) -> QVarT: ...
 
     @overload
-    def add_register(self, reg: str, bitsize: 'QCDType') -> QVarT: ...
+    def add_register(self, reg: str, bitsize: QCDType) -> QVarT: ...
 
     def add_register(
-        self, reg: str | Register, bitsize: None | 'QCDType' | 'SymbolicInt' = None
+        self, reg: str | Register, bitsize: None | QCDType | SymbolicInt = None
     ) -> None | QVarT:
         """Add a new register to the composite bloq being built.
 
@@ -1224,7 +1222,7 @@ class BloqBuilder:
         add_registers_allowed: bool = False,
         *,
         bloq_key: str | None = None,
-    ) -> tuple['BloqBuilder', dict[str, QVarT]]:
+    ) -> tuple[BloqBuilder, dict[str, QVarT]]:
         """Construct a BloqBuilder with a pre-specified signature.
 
         This is safer if e.g. you're decomposing an existing Bloq and need the signatures
@@ -1249,11 +1247,11 @@ class BloqBuilder:
 
     @overload
     @staticmethod
-    def is_single(x: '_SoquetT') -> TypeGuard['_Soquet']: ...
+    def is_single(x: _SoquetT) -> TypeGuard[_Soquet]: ...
 
     @overload
     @staticmethod
-    def is_single(x: 'QVarT') -> TypeGuard['QVar']: ...
+    def is_single(x: QVarT) -> TypeGuard[QVar]: ...
 
     @staticmethod
     def is_single(x):
@@ -1266,11 +1264,11 @@ class BloqBuilder:
 
     @overload
     @staticmethod
-    def is_ndarray(x: '_SoquetT') -> TypeGuard['NDArray']: ...
+    def is_ndarray(x: _SoquetT) -> TypeGuard[NDArray]: ...
 
     @overload
     @staticmethod
-    def is_ndarray(x: 'QVarT') -> TypeGuard['NDArray']: ...
+    def is_ndarray(x: QVarT) -> TypeGuard[NDArray]: ...
 
     @staticmethod
     def is_ndarray(x):
@@ -1311,7 +1309,7 @@ class BloqBuilder:
 
     def _reg_to_qvar(
         self, binst: BloqInstance | DanglingT, reg: Register, *, track: bool = False
-    ) -> 'QVarT':
+    ) -> QVarT:
         """Create the soquet or array of soquets for a register.
 
         Args:
@@ -1500,18 +1498,18 @@ class BloqBuilder:
             (reg.name, self._reg_to_qvar(binst, reg, track=True)) for reg in bloq.signature.rights()
         )
 
-    def initial_soq_map(self, lefts: Iterable[Register]) -> list[tuple['_SoquetT', 'QVarT']]:
+    def initial_soq_map(self, lefts: Iterable[Register]) -> list[tuple[_SoquetT, QVarT]]:
         """The initial mapping from old soquets to new soquets known to this bloq builder.
 
         This is used in patterns when you plan on calling `BloqBuilder.map_soqs` to add
         connections from an "old" composite bloq to the "new" bloq we're currently building.
         """
-        soq_map: list[tuple['_SoquetT', 'QVarT']] = [
+        soq_map: list[tuple[_SoquetT, QVarT]] = [
             (_reg_to_soq(LeftDangle, reg), self._reg_to_qvar(LeftDangle, reg)) for reg in lefts
         ]
         return soq_map
 
-    def add_from(self, bloq: Bloq, **in_soqs: SoquetInT) -> tuple['QVarT', ...]:
+    def add_from(self, bloq: Bloq, **in_soqs: SoquetInT) -> tuple[QVarT, ...]:
         """Add all the sub-bloqs from `bloq` to the compute graph.
 
         This is useful for adding multiple bloq instances at once in a "flat" or "unrolled" way.
@@ -1610,7 +1608,7 @@ class BloqBuilder:
         # If items from `final_soqs` don't already exist in `_regs`, add RIGHT registers
         # for them. Then call `_finalize_strict` where the actual dangling connections are added.
 
-        def _infer_shaped_dtype(soq: SoquetT) -> tuple['QCDType', tuple[int, ...]]:
+        def _infer_shaped_dtype(soq: SoquetT) -> tuple[QCDType, tuple[int, ...]]:
             """Extract (dtype, shape) from SoquetT"""
             if BloqBuilder.is_single(soq):
                 return soq.item().dtype, ()
@@ -1670,7 +1668,7 @@ class BloqBuilder:
 
     def allocate(
         self, n: int | sympy.Expr = 1, dtype: QDType | None = None, dirty: bool = False
-    ) -> 'QVar':
+    ) -> QVar:
         from qualtran.bloqs.bookkeeping import Allocate
 
         if dtype is not None:
@@ -1689,7 +1687,7 @@ class BloqBuilder:
 
         self.add(Free(dtype=qdtype, dirty=dirty), reg=soq)
 
-    def split(self, soq: QVarT) -> NDArray['QVar']:  # type: ignore[type-var]
+    def split(self, soq: QVarT) -> NDArray[QVar]:  # type: ignore[type-var]
         """Add a Split bloq to split up a register."""
         from qualtran.bloqs.bookkeeping import Split
 
@@ -1702,7 +1700,7 @@ class BloqBuilder:
 
         return self.add(Split(dtype=qdtype), reg=soq)
 
-    def join(self, soqs: SoquetInT, dtype: QDType | None = None) -> 'Soquet':
+    def join(self, soqs: SoquetInT, dtype: QDType | None = None) -> Soquet:
         from qualtran.bloqs.bookkeeping import Join
 
         try:
@@ -1721,12 +1719,12 @@ class BloqBuilder:
     def in_register(self, name: str, dtype: QCDType, shape=()) -> None | QVarT:
         return self.add_register_from_dtype(Register(name=name, dtype=dtype, shape=shape))
 
-    def alloc_qint(self, k: int, bitsize: int) -> 'QVar':
+    def alloc_qint(self, k: int, bitsize: int) -> QVar:
         from qualtran.bloqs.basic_gates import IntState
 
         return self.add(IntState(val=k, bitsize=bitsize))
 
-    def alloc_qbit(self, k: int = 0) -> 'QVar':
+    def alloc_qbit(self, k: int = 0) -> QVar:
         from qualtran.bloqs.basic_gates import OneState, ZeroState
 
         if k == 0:
@@ -1735,7 +1733,7 @@ class BloqBuilder:
             return self.add(OneState())
         raise ValueError(f"Bad qubit value: {k}")
 
-    def free_qbit(self, q: 'QVar', k: int = 0) -> None:
+    def free_qbit(self, q: QVar, k: int = 0) -> None:
         from qualtran.bloqs.basic_gates import OneEffect, ZeroEffect
 
         if k == 0:
@@ -1744,121 +1742,121 @@ class BloqBuilder:
             return self.add(OneEffect(), q=q)
         raise ValueError(f"Bad qubit value: {k}")
 
-    def X(self, q: 'QVar'):
+    def X(self, q: QVar):
         """Applies the XGate bloq."""
         from qualtran.bloqs.basic_gates import XGate
 
         return XGate.qcall(q=q)
 
-    def Z(self, q: 'QVar'):
+    def Z(self, q: QVar):
         """Applies the ZGate bloq."""
         from qualtran.bloqs.basic_gates import ZGate
 
         return ZGate.qcall(q=q)
 
-    def H(self, q: 'QVar'):
+    def H(self, q: QVar):
         """Applies the Hadamard bloq."""
         from qualtran.bloqs.basic_gates import Hadamard
 
         return Hadamard.qcall(q=q)
 
-    def CZ(self, q1: 'QVar', q2: 'QVar'):
+    def CZ(self, q1: QVar, q2: QVar):
         """Applies the CZ bloq."""
         from qualtran.bloqs.basic_gates import CZ
 
         return CZ.qcall(q1=q1, q2=q2)
 
-    def CNOT(self, ctrl: 'QVar', target: 'QVar'):
+    def CNOT(self, ctrl: QVar, target: QVar):
         """Applies the CNOT bloq."""
         from qualtran.bloqs.basic_gates import CNOT
 
         return CNOT.qcall(ctrl=ctrl, target=target)
 
-    def And(self, ctrl: 'QVarT | Sequence[QVarT]', *, cv1: int = 1, cv2: int = 1):
+    def And(self, ctrl: QVarT | Sequence[QVarT], *, cv1: int = 1, cv2: int = 1):
         """Applies the And bloq."""
         from qualtran.bloqs.mcmt import And
 
         return And.qcall(ctrl=ctrl, cv1=cv1, cv2=cv2)
 
-    def UnAnd(self, ctrl: 'QVarT | Sequence[QVarT]', target: 'QVar', *, cv1: int = 1, cv2: int = 1):
+    def UnAnd(self, ctrl: QVarT | Sequence[QVarT], target: QVar, *, cv1: int = 1, cv2: int = 1):
         """Applies the And bloq."""
         from qualtran.bloqs.mcmt import And
 
         return And.qcall(ctrl=ctrl, target=target, cv1=cv1, cv2=cv2, uncompute=True)
 
-    def Toffoli(self, ctrl1: 'QVar', ctrl2: 'QVar', target: 'QVar'):
+    def Toffoli(self, ctrl1: QVar, ctrl2: QVar, target: QVar):
         """Applies the Toffoli bloq."""
         from qualtran.bloqs.basic_gates import Toffoli
 
         return Toffoli.qcall(ctrl1, ctrl2, target)
 
-    def Y(self, q: 'QVar') -> 'QVar':
+    def Y(self, q: QVar) -> QVar:
         """Applies the YGate bloq."""
         from qualtran.bloqs.basic_gates import YGate
 
         return YGate.qcall(q=q)
 
-    def CY(self, ctrl: 'QVar', target: 'QVar'):
+    def CY(self, ctrl: QVar, target: QVar):
         """Applies the CYGate bloq."""
         from qualtran.bloqs.basic_gates import CYGate
 
         return CYGate.qcall(ctrl=ctrl, target=target)
 
-    def CH(self, ctrl: 'QVar', target: 'QVar'):
+    def CH(self, ctrl: QVar, target: QVar):
         """Applies the CHadamard bloq."""
         from qualtran.bloqs.basic_gates import CHadamard
 
         return CHadamard.qcall(ctrl=ctrl, target=target)
 
-    def T(self, q: 'QVar', *, is_adjoint: bool = False) -> 'QVar':
+    def T(self, q: QVar, *, is_adjoint: bool = False) -> QVar:
         """Applies the TGate bloq."""
         from qualtran.bloqs.basic_gates import TGate
 
         return TGate.qcall(q=q, is_adjoint=is_adjoint)
 
-    def S(self, q: 'QVar', *, is_adjoint: bool = False) -> 'QVar':
+    def S(self, q: QVar, *, is_adjoint: bool = False) -> QVar:
         """Applies the SGate bloq."""
         from qualtran.bloqs.basic_gates import SGate
 
         return SGate.qcall(q=q, is_adjoint=is_adjoint)
 
-    def swap(self, x: 'QVar', y: 'QVar') -> tuple['QVar', 'QVar']:
+    def swap(self, x: QVar, y: QVar) -> tuple[QVar, QVar]:
         """Applies the Swap bloq."""
         from qualtran.bloqs.basic_gates import Swap
 
         return Swap.qcall(x=x, y=y)
 
-    def cswap(self, ctrl: 'QVar', x: 'QVar', y: 'QVar'):
+    def cswap(self, ctrl: QVar, x: QVar, y: QVar):
         """Applies the CSwap bloq."""
         from qualtran.bloqs.basic_gates import CSwap
 
         return CSwap.qcall(ctrl=ctrl, x=x, y=y)
 
-    def rx(self, q: 'QVar', angle: 'SymbolicFloat', *, eps: 'SymbolicFloat' = 1e-11) -> 'QVar':
+    def rx(self, q: QVar, angle: SymbolicFloat, *, eps: SymbolicFloat = 1e-11) -> QVar:
         """Applies the Rx bloq."""
         from qualtran.bloqs.basic_gates import Rx
 
         return Rx.qcall(q=q, angle=angle, eps=eps)
 
-    def ry(self, q: 'QVar', angle: 'SymbolicFloat', *, eps: 'SymbolicFloat' = 1e-11) -> 'QVar':
+    def ry(self, q: QVar, angle: SymbolicFloat, *, eps: SymbolicFloat = 1e-11) -> QVar:
         """Applies the Ry bloq."""
         from qualtran.bloqs.basic_gates import Ry
 
         return Ry.qcall(q=q, angle=angle, eps=eps)
 
-    def rz(self, q: 'QVar', angle: 'SymbolicFloat', *, eps: 'SymbolicFloat' = 1e-11) -> 'QVar':
+    def rz(self, q: QVar, angle: SymbolicFloat, *, eps: SymbolicFloat = 1e-11) -> QVar:
         """Applies the Rz bloq."""
         from qualtran.bloqs.basic_gates import Rz
 
         return Rz.qcall(q=q, angle=angle, eps=eps)
 
-    def cry(self, ctrl: 'QVar', q: 'QVar', angle: 'SymbolicFloat', *, eps: 'SymbolicFloat' = 1e-11):
+    def cry(self, ctrl: QVar, q: QVar, angle: SymbolicFloat, *, eps: SymbolicFloat = 1e-11):
         """Applies the CRy bloq."""
         from qualtran.bloqs.basic_gates import CRy
 
         return CRy.qcall(ctrl=ctrl, q=q, angle=angle, eps=eps)
 
-    def crz(self, ctrl: 'QVar', q: 'QVar', angle: 'SymbolicFloat', *, eps: 'SymbolicFloat' = 1e-11):
+    def crz(self, ctrl: QVar, q: QVar, angle: SymbolicFloat, *, eps: SymbolicFloat = 1e-11):
         """Applies the CRz bloq."""
         from qualtran.bloqs.basic_gates import CRz
 
@@ -1866,14 +1864,14 @@ class BloqBuilder:
 
     def su2_rotation(
         self,
-        q: 'QVar',
-        theta: 'SymbolicFloat',
-        phi: 'SymbolicFloat',
-        lambd: 'SymbolicFloat',
+        q: QVar,
+        theta: SymbolicFloat,
+        phi: SymbolicFloat,
+        lambd: SymbolicFloat,
         *,
-        global_shift: 'SymbolicFloat' = 0.0,
-        eps: 'SymbolicFloat' = 1e-11,
-    ) -> 'QVar':
+        global_shift: SymbolicFloat = 0.0,
+        eps: SymbolicFloat = 1e-11,
+    ) -> QVar:
         """Applies the SU2RotationGate bloq."""
         from qualtran.bloqs.basic_gates import SU2RotationGate
 
@@ -1881,21 +1879,14 @@ class BloqBuilder:
             q=q, theta=theta, phi=phi, lambd=lambd, global_shift=global_shift, eps=eps
         )
 
-    def z_pow(
-        self, q: 'QVar', *, exponent: 'SymbolicFloat' = 1.0, eps: 'SymbolicFloat' = 1e-11
-    ) -> 'QVar':
+    def z_pow(self, q: QVar, *, exponent: SymbolicFloat = 1.0, eps: SymbolicFloat = 1e-11) -> QVar:
         """Applies the ZPowGate bloq."""
         from qualtran.bloqs.basic_gates import ZPowGate
 
         return ZPowGate.qcall(q=q, exponent=exponent, eps=eps)
 
     def cz_pow(
-        self,
-        ctrl: 'QVar',
-        target: 'QVar',
-        *,
-        exponent: 'SymbolicFloat' = 1.0,
-        eps: 'SymbolicFloat' = 1e-11,
+        self, ctrl: QVar, target: QVar, *, exponent: SymbolicFloat = 1.0, eps: SymbolicFloat = 1e-11
     ):
         """Applies the CZPowGate bloq."""
         from qualtran.bloqs.basic_gates import CZPowGate
@@ -1904,12 +1895,12 @@ class BloqBuilder:
 
     def x_pow(
         self,
-        q: 'QVar',
+        q: QVar,
         *,
-        exponent: 'SymbolicFloat' = 1.0,
+        exponent: SymbolicFloat = 1.0,
         global_shift: float = 0.0,
-        eps: 'SymbolicFloat' = 1e-11,
-    ) -> 'QVar':
+        eps: SymbolicFloat = 1e-11,
+    ) -> QVar:
         """Applies the XPowGate bloq."""
         from qualtran.bloqs.basic_gates import XPowGate
 
@@ -1917,42 +1908,42 @@ class BloqBuilder:
 
     def y_pow(
         self,
-        q: 'QVar',
+        q: QVar,
         *,
-        exponent: 'SymbolicFloat' = 1.0,
+        exponent: SymbolicFloat = 1.0,
         global_shift: float = 0.0,
-        eps: 'SymbolicFloat' = 1e-11,
-    ) -> 'QVar':
+        eps: SymbolicFloat = 1e-11,
+    ) -> QVar:
         """Applies the YPowGate bloq."""
         from qualtran.bloqs.basic_gates import YPowGate
 
         return YPowGate.qcall(q=q, exponent=exponent, global_shift=global_shift, eps=eps)
 
-    def measure_x(self, q: 'QVar') -> 'QVar':
+    def measure_x(self, q: QVar) -> QVar:
         """Applies the MeasureX bloq."""
         from qualtran.bloqs.basic_gates import MeasureX
 
         return MeasureX.qcall(q=q)
 
-    def measure_z(self, q: 'QVar') -> 'QVar':
+    def measure_z(self, q: QVar) -> QVar:
         """Applies the MeasureZ bloq."""
         from qualtran.bloqs.basic_gates import MeasureZ
 
         return MeasureZ.qcall(q=q)
 
-    def identity(self, q: 'QVar') -> 'QVar':
+    def identity(self, q: QVar) -> QVar:
         """Applies the Identity bloq."""
         from qualtran.bloqs.basic_gates import Identity
 
         return Identity.qcall(q=q)
 
-    def discard(self, c: 'QVar') -> None:
+    def discard(self, c: QVar) -> None:
         """Applies the Discard bloq."""
         from qualtran.bloqs.basic_gates import Discard
 
         return Discard.qcall(c=c)
 
-    def discard_q(self, q: 'QVar') -> None:
+    def discard_q(self, q: QVar) -> None:
         """Applies the DiscardQ bloq."""
         from qualtran.bloqs.basic_gates import DiscardQ
 

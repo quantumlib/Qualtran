@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import itertools
 from collections.abc import Sequence
 from unittest.mock import ANY
@@ -47,12 +49,12 @@ class AtomWithSpecializedControl(Bloq):
     target_reg_name: str = 'q'
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         n_ctrl = 1 if self.cv is not None else 0
         reg_name_map = {self.ctrl_reg_name: n_ctrl, self.target_reg_name: 2}
         return Signature.build(**reg_name_map)
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         return get_ctrl_system_1bit_cv(
             self,
             ctrl_spec,
@@ -74,14 +76,14 @@ class AtomWithSpecializedControl(Bloq):
             return c_unctrl
         return c_unctrl + c_ctrl
 
-    def my_static_costs(self, cost_key: 'CostKey'):
+    def my_static_costs(self, cost_key: CostKey):
         if cost_key == QECGatesCost():
             r = self.cost_expr_for_cv(self.cv)
             return GateCounts(rotation=r)
 
         return NotImplemented
 
-    def adjoint(self) -> 'AdjointWithSpecializedCtrl':
+    def adjoint(self) -> AdjointWithSpecializedCtrl:
         return AdjointWithSpecializedCtrl(self, specialize_on_ctrl=SpecializeOnCtrlBit.BOTH)
 
 
@@ -127,10 +129,10 @@ class TestAtom(Bloq):
     tag: str
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(q=2)
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         return get_ctrl_system_1bit_cv_from_bloqs(
             self,
             ctrl_spec,
@@ -139,7 +141,7 @@ class TestAtom(Bloq):
             ctrl_reg_name='ctrl',
         )
 
-    def adjoint(self) -> 'AdjointWithSpecializedCtrl':
+    def adjoint(self) -> AdjointWithSpecializedCtrl:
         return AdjointWithSpecializedCtrl(self, specialize_on_ctrl=SpecializeOnCtrlBit.ONE)
 
 
@@ -148,15 +150,15 @@ class CTestAtom(Bloq):
     tag: str
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(ctrl=1, q=2)
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         return get_ctrl_system_1bit_cv_from_bloqs(
             self, ctrl_spec, current_ctrl_bit=1, bloq_with_ctrl=self, ctrl_reg_name='ctrl'
         )
 
-    def adjoint(self) -> 'AdjointWithSpecializedCtrl':
+    def adjoint(self) -> AdjointWithSpecializedCtrl:
         return AdjointWithSpecializedCtrl(self, specialize_on_ctrl=SpecializeOnCtrlBit.ONE)
 
 
@@ -198,12 +200,12 @@ class TestBloqWithDecompose(Bloq):
     target_reg_name: str
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [Register(self.ctrl_reg_name, QBit()), Register(self.target_reg_name, QAny(2))]
         )
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         for _ in range(2):
             soqs = bb.add_d(
                 AtomWithSpecializedControl(

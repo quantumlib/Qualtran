@@ -23,6 +23,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import itertools
 from collections import defaultdict
 from collections.abc import Sequence
@@ -177,7 +179,7 @@ class KXorInstance:
         assert isinstance(self.constraints, tuple)
         return is_symbolic(*self.constraints)
 
-    def subset(self, indices: Sequence[int] | HasLength) -> 'KXorInstance':
+    def subset(self, indices: Sequence[int] | HasLength) -> KXorInstance:
         """Pick a subset of clauses defined by the set of indices provided."""
         if self.is_symbolic() or is_symbolic(indices):
             return evolve(self, constraints=HasLength(slen(indices)))

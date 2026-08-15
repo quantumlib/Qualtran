@@ -14,6 +14,8 @@
 
 """SELECT for the molecular tensor hypercontraction (THC) hamiltonian"""
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -90,14 +92,14 @@ class THCRotations(Bloq):
             ]
         )
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return evolve(self, is_adjoint=not self.is_adjoint)
 
     def __str__(self) -> str:
         dag = '†' if self.is_adjoint else ''
         return f"In_mu-R{dag}"
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # from listings on page 17 of Ref. [1]
         num_data_sets = self.num_mu + self.num_spin_orb // 2
         if self.is_adjoint:
@@ -192,7 +194,7 @@ class SelectTHC(SelectOracle):
             Register("sys_b", QAny(bitsize=self.num_spin_orb // 2)),
         )
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         succ = soqs['succ']
         nu_eq_mp1 = soqs['nu_eq_mp1']
         mu = soqs['mu']
@@ -315,7 +317,7 @@ class SelectTHC(SelectOracle):
 
         return out_soqs
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 
         return get_ctrl_system_1bit_cv(

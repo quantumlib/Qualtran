@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import itertools
 from typing import TYPE_CHECKING
 
@@ -25,7 +27,7 @@ if TYPE_CHECKING:
 
 
 @qlt.bloqify
-def maj(bb: 'BloqBuilder', ck, ik, tk):
+def maj(bb: BloqBuilder, ck, ik, tk):
     # Figure 2, left part: uses one AND
     ck, ik = bb.CNOT(ck, ik)
     ck, tk = bb.CNOT(ck, tk)
@@ -70,7 +72,7 @@ ck  ik  tk  |  ck  ik  tk  ckp1
 
 
 @qlt.bloqify
-def un_maj(bb: 'BloqBuilder', ck, ik, tk, ckp1):
+def un_maj(bb: BloqBuilder, ck, ik, tk, ckp1):
     """Uncompute the carry bits.
 
     This is most of the right part of the building block in Figure 2. We omit the final
@@ -86,7 +88,7 @@ def un_maj(bb: 'BloqBuilder', ck, ik, tk, ckp1):
 
 
 @qlt.bloqify
-def add_bits(bb: 'BloqBuilder', i: 'QVarT', t: 'QVarT'):
+def add_bits(bb: BloqBuilder, i: QVarT, t: QVarT):
     assert i.shape == t.shape
     assert len(i.shape) == 1, '1d array'
     n = i.shape[0]
@@ -118,7 +120,7 @@ def add_bits(bb: 'BloqBuilder', i: 'QVarT', t: 'QVarT'):
 
 
 @qlt.bloqify
-def add(bb: 'BloqBuilder', a: 'QVar', b: 'QVar'):
+def add(bb: BloqBuilder, a: QVar, b: QVar):
     assert a.dtype.num_bits == b.dtype.num_bits
     assert a.dtype.num_bits > 1
 

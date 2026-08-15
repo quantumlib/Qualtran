@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
 
 import numpy as np
@@ -26,12 +28,12 @@ from qualtran.simulation.tensor import cbloq_to_quimb
 @frozen
 class TensorAdderSimple(Bloq):
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(x=1)
 
     def my_tensors(
-        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
-    ) -> list['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         assert list(incoming.keys()) == ['x']
         assert list(outgoing.keys()) == ['x']
         return [qtn.Tensor(data=np.eye(2), inds=[(incoming['x'], 0), (outgoing['x'], 0)])]

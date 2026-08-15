@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -64,9 +66,7 @@ class ToContiguousIndex(Bloq):
             ]
         )
 
-    def on_classical_vals(
-        self, mu: 'ClassicalValT', nu: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, mu: ClassicalValT, nu: ClassicalValT) -> dict[str, ClassicalValT]:
         return {'mu': mu, 'nu': nu, 's': nu * (nu + 1) // 2 + mu}
 
     def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
@@ -80,7 +80,7 @@ class ToContiguousIndex(Bloq):
             text = r'⊕ν(ν-1)/2+μ'
             return TextBox(text)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         num_toffoli = self.bitsize**2 + self.bitsize - 1
         return {Toffoli(): num_toffoli}
 

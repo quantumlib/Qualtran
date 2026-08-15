@@ -22,6 +22,8 @@ where $\sum_l^L W_{pq}^{(l)} W_{rs}^{(l)} = (pq|rs)$ are the standard chemist's
 electron repulsion integrals.
 """
 
+from __future__ import annotations
+
 from collections.abc import Iterable
 from functools import cached_property
 from typing import TYPE_CHECKING
@@ -117,7 +119,7 @@ class SingleFactorizationOneBody(BlockEncoding):
             Register('succ_pq', QBit()),
         )
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return evolve(self, is_adjoint=not self.is_adjoint)
 
     @property
@@ -192,7 +194,7 @@ class SingleFactorizationOneBody(BlockEncoding):
 
     def build_composite_bloq(
         self,
-        bb: 'BloqBuilder',
+        bb: BloqBuilder,
         *,
         succ_l: SoquetT,
         l_ne_zero: SoquetT,
@@ -204,7 +206,7 @@ class SingleFactorizationOneBody(BlockEncoding):
         swap_pq: SoquetT,
         spin: SoquetT,
         sys: SoquetT,
-    ) -> dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         iprep = InnerPrepareSingleFactorization(
             self.num_aux,
             self.num_spin_orb,
@@ -251,7 +253,7 @@ class SingleFactorizationOneBody(BlockEncoding):
             'sys': sys,
         }
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         iprep = InnerPrepareSingleFactorization(
             self.num_aux,
             self.num_spin_orb,
@@ -386,7 +388,7 @@ class SingleFactorizationBlockEncoding(BlockEncoding):
 
     def build_composite_bloq(
         self,
-        bb: 'BloqBuilder',
+        bb: BloqBuilder,
         *,
         ctrl: NDArray[Soquet],  # type: ignore[type-var]
         l: SoquetT,
@@ -395,7 +397,7 @@ class SingleFactorizationBlockEncoding(BlockEncoding):
         swap_pq: SoquetT,
         spin: SoquetT,
         sys: SoquetT,
-    ) -> dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         succ_l, l_ne_zero, succ_pq = ctrl
         p, q = pq
         # prepare_l

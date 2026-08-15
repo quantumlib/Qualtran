@@ -63,7 +63,7 @@ class GF2PolyAdd(Bloq):
     qgf_poly: QGFPoly
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [Register('f_x', dtype=self.qgf_poly), Register('g_x', dtype=self.qgf_poly)]
         )
@@ -72,8 +72,8 @@ class GF2PolyAdd(Bloq):
         return is_symbolic(self.qgf_poly.degree)
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', *, f_x: 'Soquet', g_x: 'Soquet'
-    ) -> dict[str, 'Soquet']:
+        self, bb: BloqBuilder, *, f_x: Soquet, g_x: Soquet
+    ) -> dict[str, Soquet]:
         if self.is_symbolic():
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
         f_x = bb.add(GFPolySplit(self.qgf_poly), reg=f_x)
@@ -85,10 +85,10 @@ class GF2PolyAdd(Bloq):
         g_x = bb.add(GFPolyJoin(self.qgf_poly), reg=g_x)
         return {'f_x': f_x, 'g_x': g_x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         return {GF2Addition(self.qgf_poly.qgf.bitsize): self.qgf_poly.degree + 1}
 
-    def on_classical_vals(self, *, f_x, g_x) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, *, f_x, g_x) -> dict[str, ClassicalValT]:
         return {'f_x': f_x, 'g_x': f_x + g_x}
 
 

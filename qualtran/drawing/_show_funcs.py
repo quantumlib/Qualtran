@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     import sympy
 
 
-def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-builtin
+def show_bloq(bloq: Bloq, type: str = 'graph'):  # pylint: disable=redefined-builtin
     """Display a visual representation of the bloq in IPython.
 
     Args:
@@ -54,7 +54,7 @@ def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-b
         )
 
 
-def show_bloqs(bloqs: Sequence['Bloq'], labels: Sequence[str | None] | None = None):
+def show_bloqs(bloqs: Sequence[Bloq], labels: Sequence[str | None] | None = None):
     """Display multiple bloqs side-by-side in IPython."""
     import IPython.display
     import ipywidgets
@@ -80,13 +80,13 @@ def show_bloqs(bloqs: Sequence['Bloq'], labels: Sequence[str | None] | None = No
 
 @overload
 def show_call_graph(
-    item: 'Bloq', /, *, max_depth: int | None = None, agg_gate_counts: str | None = None
+    item: Bloq, /, *, max_depth: int | None = None, agg_gate_counts: str | None = None
 ) -> None: ...
 
 
 @overload
 def show_call_graph(
-    item: 'nx.Graph', /, *, max_depth: int | None = None, agg_gate_counts: str | None = None
+    item: nx.Graph, /, *, max_depth: int | None = None, agg_gate_counts: str | None = None
 ) -> None: ...
 
 
@@ -142,7 +142,7 @@ def show_flame_graph(*bloqs: 'Bloq', **kwargs):
     IPython.display.display(IPython.display.SVG(svg_data))
 
 
-def show_bloq_graph(bloq: 'Bloq'):
+def show_bloq_graph(bloq: Bloq):
     import IPython.display
 
     from .graphviz import PrettyGraphDrawer
@@ -158,7 +158,7 @@ def show_bloq_dtype_graph(bloq):
     IPython.display.display(TypedGraphDrawer(bloq).get_svg())
 
 
-def show_bloq_musical_score(bloq: 'Bloq'):
+def show_bloq_musical_score(bloq: Bloq):
     import matplotlib.pyplot as plt
 
     from .musical_score import draw_musical_score, get_musical_score_data
@@ -167,7 +167,7 @@ def show_bloq_musical_score(bloq: 'Bloq'):
     plt.show()
 
 
-def show_bloq_via_qpic(bloq: 'Bloq', width: int = 1000, height: int = 400):
+def show_bloq_via_qpic(bloq: Bloq, width: int = 1000, height: int = 400):
     """Display latex diagram for bloq by invoking `qpic`. Assumes qpic is already installed."""
     from .qpic_diagram import qpic_diagram_for_bloq
 

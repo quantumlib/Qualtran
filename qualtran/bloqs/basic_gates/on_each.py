@@ -14,6 +14,8 @@
 
 """Classes to apply single qubit bloq to multiple qubits."""
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import cast, TYPE_CHECKING
 
@@ -77,7 +79,7 @@ class OnEach(Bloq):
         return Signature([reg])
 
     @classmethod
-    def qcall(cls, q: 'QVar', *, gate: Bloq) -> 'QVar':
+    def qcall(cls, q: QVar, *, gate: Bloq) -> QVar:
         return q.bb.add(cls(n=q.dtype.num_qubits, gate=gate, target_dtype=q.dtype), q=q)  # type: ignore[arg-type]
 
     def build_composite_bloq(self, bb: BloqBuilder, *, q: Soquet) -> dict[str, SoquetT]:
@@ -88,7 +90,7 @@ class OnEach(Bloq):
             qs[i] = bb.add(self.gate, q=qs[i])
         return {'q': bb.join(qs, self.target_dtype)}
 
-    def on_classical_vals(self, q: int) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, q: int) -> dict[str, ClassicalValT]:
         n = self.n
         if isinstance(n, sympy.Expr):
             raise ValueError(f'Cannot simulate symbolic bloq {self}')
@@ -102,7 +104,7 @@ class OnEach(Bloq):
             out_bits[i] = int(cast(int, out['q']))
         return {'q': dtype.from_bits(out_bits)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {self.gate: self.n}
 
     def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
@@ -122,7 +124,7 @@ class OnEach(Bloq):
         return f'{self.gate}(oneach={self.n})'
 
 
-def _get_on_each_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+def _get_on_each_classical_sim_test_cases() -> list[ClassicalSimTestCase]:
     """Test cases for the `OnEach` bloq.
 
     These specify concrete (non-symbolic) bloq instances with specific

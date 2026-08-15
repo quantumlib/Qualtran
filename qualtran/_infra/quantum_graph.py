@@ -39,7 +39,7 @@ class BloqInstance:
             within a `CompositeBloq`.
     """
 
-    bloq: 'Bloq'
+    bloq: Bloq
     i: int
 
     def __str__(self):
@@ -103,7 +103,7 @@ class _Soquet:
     """
 
     binst: BloqInstance | DanglingT
-    reg: 'Register'
+    reg: Register
     idx: tuple[int, ...] = field(converter=_to_tuple, default=tuple())
 
     @idx.validator
@@ -116,14 +116,14 @@ class _Soquet:
         return value
 
     @property
-    def dtype(self) -> 'QCDType':
+    def dtype(self) -> QCDType:
         return self.reg.dtype
 
     @property
     def shape(self) -> tuple[int, ...]:
         return ()
 
-    def item(self, *args) -> '_Soquet':
+    def item(self, *args) -> _Soquet:
         if args:
             raise ValueError("Tried to index into a single soquet.")
         return self
@@ -147,12 +147,12 @@ class _QVar:
     """
 
     soquet: _Soquet
-    bb: 'BloqBuilder' = field(kw_only=True)
+    bb: BloqBuilder = field(kw_only=True)
     _split_components: QVarT | None = field(default=None)
     ssa_name: str | None = field(default=None, kw_only=True)
 
     @property
-    def dtype(self) -> 'QCDType':
+    def dtype(self) -> QCDType:
         return self.soquet.dtype
 
     @property
@@ -165,7 +165,7 @@ class _QVar:
         return self
 
     @property
-    def reg(self) -> 'Register':
+    def reg(self) -> Register:
         warnings.warn(
             "Accessing the register property of a quantum variable is highly discouraged "
             "and will be dis-allowed in the future.",

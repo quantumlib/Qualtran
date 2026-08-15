@@ -23,6 +23,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from collections import Counter
 from functools import cached_property
 
@@ -88,7 +90,7 @@ class KikuchiMatrixEntry(Bloq):
     entry_bitsize: SymbolicInt
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(
             S=QAny(self.composite_index_bitsize), T=QAny(self.composite_index_bitsize), q=QBit()
         )
@@ -106,7 +108,7 @@ class KikuchiMatrixEntry(Bloq):
     def rotation_angle_dtype(self):
         return QFxp(self.entry_bitsize, self.entry_bitsize)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         counts = Counter[Bloq]()
 
         # S \Delta T

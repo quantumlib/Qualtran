@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 GeneralizerT = Callable[['Bloq'], 'Bloq | None']
 
 
-def _make_composite_generalizer(*funcs: 'GeneralizerT') -> 'GeneralizerT':
+def _make_composite_generalizer(*funcs: 'GeneralizerT') -> GeneralizerT:
     """Return a generalizer that calls each `*funcs` generalizers in order."""
 
     def _composite_generalize(b: Bloq | None) -> Bloq | None:

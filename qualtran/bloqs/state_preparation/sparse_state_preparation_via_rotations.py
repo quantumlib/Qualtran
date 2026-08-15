@@ -185,8 +185,8 @@ class SparseStatePreparationViaRotations(Bloq):
         return attrs.evolve(permute_bloq, bitsize=self.target_bitsize)
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', target_state: 'SoquetT', phase_gradient: 'SoquetT'
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, target_state: SoquetT, phase_gradient: SoquetT
+    ) -> dict[str, SoquetT]:
         if self.is_symbolic():
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic data")
 
@@ -204,7 +204,7 @@ class SparseStatePreparationViaRotations(Bloq):
 
         return {'target_state': target_state, 'phase_gradient': phase_gradient}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {self._dense_stateprep_bloq: 1, self._basis_permutation_bloq: 1}
 
 

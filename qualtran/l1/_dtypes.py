@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import lru_cache
 from typing import cast
 
@@ -23,7 +25,7 @@ from .nodes import CObjectNode, L1Nodes, QDTypeNode
 
 
 @lru_cache
-def get_builtin_qdtype_mapping() -> dict[str, type['qdt.QCDType']]:
+def get_builtin_qdtype_mapping() -> dict[str, type[qdt.QCDType]]:
     """Datatypes that are available without namespacing and with `safe=True`."""
     from qualtran.dtype import (
         BQUInt,
@@ -56,11 +58,11 @@ def get_builtin_qdtype_mapping() -> dict[str, type['qdt.QCDType']]:
 
 
 @lru_cache
-def get_builtin_qdtypes() -> tuple[type['qdt.QCDType'], ...]:
+def get_builtin_qdtypes() -> tuple[type[qdt.QCDType], ...]:
     return tuple(get_builtin_qdtype_mapping().values())
 
 
-def to_qdtype_node(dtype: 'qlt.QCDType', *, nodes: L1Nodes = qualtran_l1_nodes) -> CObjectNode:
+def to_qdtype_node(dtype: qlt.QCDType, *, nodes: L1Nodes = qualtran_l1_nodes) -> CObjectNode:
     """Convert a QCDType object to its equivalent AST node.
 
     This includes special casing for 'builtin' datatypes. Otherwise, it uses
@@ -106,7 +108,7 @@ def to_qdtype_node(dtype: 'qlt.QCDType', *, nodes: L1Nodes = qualtran_l1_nodes) 
     return dtype_node
 
 
-def reg_to_qdtype_node(reg: 'qlt.Register', *, nodes: L1Nodes = qualtran_l1_nodes) -> QDTypeNode:
+def reg_to_qdtype_node(reg: qlt.Register, *, nodes: L1Nodes = qualtran_l1_nodes) -> QDTypeNode:
     """Extract the shaped dtype from a register and return it as an AST node.
 
     This includes special casing for 'builtin' datatypes. Otherwise, it uses

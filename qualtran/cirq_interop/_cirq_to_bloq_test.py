@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from collections.abc import Iterator
 
 import attr
@@ -50,7 +52,7 @@ class TestCNOT(Bloq):
     def signature(self) -> Signature:
         return Signature.build(control=1, target=1)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         ctrl, target = soqs['control'], soqs['target']
         assert BloqBuilder.is_single(ctrl)
         assert BloqBuilder.is_single(target)
@@ -59,7 +61,7 @@ class TestCNOT(Bloq):
 
     def as_cirq_op(
         self, qubit_manager: cirq.QubitManager, **cirq_quregs: 'CirqQuregT'
-    ) -> tuple['cirq.Operation', dict[str, 'CirqQuregT']]:
+    ) -> tuple[cirq.Operation, dict[str, CirqQuregT]]:
         (control,) = cirq_quregs['control']
         (target,) = cirq_quregs['target']
         return cirq.CNOT(control, target), cirq_quregs

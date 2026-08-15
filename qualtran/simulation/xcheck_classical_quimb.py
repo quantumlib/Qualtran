@@ -14,6 +14,8 @@
 
 """Tools to cross-check classical and quimb tensor network simulations of bloqs."""
 
+from __future__ import annotations
+
 from collections.abc import Iterable
 from typing import cast, TYPE_CHECKING
 
@@ -26,12 +28,12 @@ if TYPE_CHECKING:
 
 
 def _add_classical_kets(
-    bb: BloqBuilder, registers: Iterable[Register], vals: dict[str, 'ClassicalValT']
-) -> dict[str, 'SoquetT']:
+    bb: BloqBuilder, registers: Iterable[Register], vals: dict[str, ClassicalValT]
+) -> dict[str, SoquetT]:
     """Use `bb` to add `QUIntState` for all the `vals`."""
     from qualtran.bloqs.basic_gates import QUIntState
 
-    soqs: dict[str, 'SoquetT'] = {}
+    soqs: dict[str, SoquetT] = {}
     for reg in registers:
         if reg.shape:
             reg_vals = np.asarray(vals[reg.name])
@@ -48,8 +50,8 @@ def _add_classical_kets(
 def _add_classical_bras(
     bb: BloqBuilder,
     registers: Iterable[Register],
-    vals: dict[str, 'ClassicalValT'],
-    soqs: dict[str, 'SoquetT'],
+    vals: dict[str, ClassicalValT],
+    soqs: dict[str, SoquetT],
 ) -> None:
     """Use `bb` to add `QUIntEffect` on `soqs` for all the `vals`."""
     from qualtran.bloqs.basic_gates import QUIntEffect
@@ -69,10 +71,8 @@ def _add_classical_bras(
 
 
 def flank_with_classical_vectors(
-    bloq: 'Bloq',
-    in_vals: dict[str, 'ClassicalValT'],
-    out_vals: dict[str, 'ClassicalValT'] | None = None,
-) -> 'CompositeBloq':
+    bloq: Bloq, in_vals: dict[str, ClassicalValT], out_vals: dict[str, ClassicalValT] | None = None
+) -> CompositeBloq:
     """Surround `bloq` with computational basis vectors according to the provided values.
 
     This function is useful for cross-checking classical and quantum simulation protocols.

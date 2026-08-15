@@ -13,6 +13,8 @@
 #  limitations under the License.
 r"""PREPARE for the first quantized chemistry Hamiltonian."""
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -52,7 +54,7 @@ class UniformSuperpostionIJFirstQuantization(Bloq):
         n_eta = (self.eta - 1).bit_length()
         return Signature.build(i=n_eta, j=n_eta)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         n_eta = (self.eta - 1).bit_length()
         # Half of Eq. 62 which is the cost for prep and prep^\dagger
         return {Toffoli(): (7 * n_eta + 4 * self.num_bits_rot_aa - 18)}

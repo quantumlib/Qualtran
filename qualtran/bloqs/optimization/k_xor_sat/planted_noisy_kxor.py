@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
 
 import numpy as np
@@ -241,7 +243,7 @@ class PlantedNoisyKXOR(Bloq):
             assert ell % k == 0 and ell >= k, f"{ell=} must be a multiple of {k=}"
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return self.guided_hamiltonian_bloq.signature
 
     @classmethod
@@ -376,10 +378,10 @@ class PlantedNoisyKXOR(Bloq):
             gamma=self.overlap,
         )
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         return bb.add_d(self.guided_hamiltonian_bloq, **soqs)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {self.guided_hamiltonian_bloq: 1}
 
 

@@ -63,7 +63,7 @@ class GF2Square(Bloq):
     uncompute: bool = False
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('x', dtype=self.qgf)])
 
     @cached_property
@@ -106,7 +106,7 @@ class GF2Square(Bloq):
             ret = ret.adjoint()
         return ret
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'Soquet') -> dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: BloqBuilder, *, x: Soquet) -> dict[str, Soquet]:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
         x = bb.split(x)[::-1]
@@ -114,13 +114,13 @@ class GF2Square(Bloq):
         x = bb.join(x[::-1], dtype=self.qgf)
         return {'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT | set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         return {self.synthesize_squaring_matrix: 1}
 
     def adjoint(self):
         return attrs.evolve(self, uncompute=not self.uncompute)
 
-    def on_classical_vals(self, *, x) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, *, x) -> dict[str, ClassicalValT]:
         assert isinstance(x, self.qgf.gf_type)
         if self.uncompute:
             for _ in range(self.k):

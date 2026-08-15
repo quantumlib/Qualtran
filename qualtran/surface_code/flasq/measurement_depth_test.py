@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import attrs
 
 # test_measurement_depth.py
@@ -70,7 +72,7 @@ class UnknownBloq(Bloq):
     def signature(self) -> Signature:
         return Signature.build(q=1)
 
-    def decompose_bloq(self) -> "CompositeBloq":
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeNotImplementedError(f"{self} is atomic.")
 
 

@@ -32,6 +32,8 @@ References:
     Theorem 4.17, proof para 2 for $U_j$.
 """
 
+from __future__ import annotations
+
 from collections import Counter
 from collections.abc import Sequence
 from functools import cached_property
@@ -94,7 +96,7 @@ class LoadConstraintScopes(Bloq):
     inst: KXorInstance
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         registers: list[Register] = [
             Register('j', self.m_dtype),
             Register('U', QAny(self.scope_bitsize), side=Side.RIGHT),
@@ -136,7 +138,7 @@ class LoadConstraintScopes(Bloq):
             *scopes.T, target_bitsizes=(self.inst.index_bitsize,) * self.inst.k
         )
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', j: 'Soquet') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, j: Soquet) -> dict[str, SoquetT]:
         if self.inst.is_symbolic():
             raise DecomposeTypeError(f"cannot decompose symbolic {self}")
 
@@ -151,7 +153,7 @@ class LoadConstraintScopes(Bloq):
         )
         return {'j': j, 'U': U}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {self._qrom_bloq: 1}
 
 
@@ -211,7 +213,7 @@ class LoadUniqueScopeIndex(Bloq):
     inst: KXorInstance
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(j=self.m_dtype, U=QAny(self.scope_bitsize))
 
     @cached_property
@@ -226,7 +228,7 @@ class LoadUniqueScopeIndex(Bloq):
         bitsize = ceil(log2(m))
         return BQUInt(bitsize, m)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         counts = Counter[Bloq]()
 
         c = ssa.new_symbol("c")
@@ -267,7 +269,7 @@ class PRGAUniqueConstraintRHS(Bloq):
     is_controlled: bool = False
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(ctrl=QAny(self.n_ctrl), j=self.m_dtype, q=QBit())
 
     @property
@@ -326,7 +328,7 @@ class PRGAUniqueConstraintRHS(Bloq):
         assert np.all(signs == np.sort(signs)), "data must be sorted!"
         return int(np.searchsorted(signs, 0))
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         counts = Counter[Bloq]()
 
         # load the amplitudes
@@ -347,7 +349,7 @@ class PRGAUniqueConstraintRHS(Bloq):
 
         return counts
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
 
         return get_ctrl_system_1bit_cv_from_bloqs(

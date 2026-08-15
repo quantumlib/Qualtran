@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -87,14 +89,14 @@ class TwoBitFFFT(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('x', QBit()), Register('y', QBit())])
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('F(k, n)')
         return super().wire_symbol(reg, idx)
 
     def my_tensors(
-        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
-    ) -> list['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         # TODO: https://github.com/quantumlib/Qualtran/issues/873. This tensor definition
@@ -108,7 +110,7 @@ class TwoBitFFFT(Bloq):
             qtn.Tensor(data=matrix.reshape((2,) * 4), inds=out_inds + in_inds, tags=[str(self)])
         ]
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             Rz(2 * np.pi * self.k / self.n, eps=self.eps): 1,
             SGate(): 3,
@@ -117,9 +119,7 @@ class TwoBitFFFT(Bloq):
             CNOT(): 3,
         }
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: 'Soquet', y: 'Soquet'
-    ) -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet, y: Soquet) -> dict[str, SoquetT]:
         x = bb.add(Rz(2 * np.pi * self.k / self.n, eps=self.eps), q=x)
         y = bb.add(SGate(), q=y)
         x = bb.add(Hadamard(), q=x)

@@ -106,7 +106,7 @@ class CirqGateAsBloqBase(Bloq, metaclass=abc.ABCMeta):
         """The `cirq.Gate` to use as the source of truth."""
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         nqubits = cirq.num_qubits(self.cirq_gate)
         if nqubits == 1:
             return Signature([Register('q', QBit())])
@@ -115,7 +115,7 @@ class CirqGateAsBloqBase(Bloq, metaclass=abc.ABCMeta):
         # else
         return Signature([Register('q', QBit(), shape=nqubits)])
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         return decompose_from_cirq_style_method(self)
 
     def decompose_from_registers(
@@ -128,22 +128,22 @@ class CirqGateAsBloqBase(Bloq, metaclass=abc.ABCMeta):
             raise DecomposeNotImplementedError(f"{self} does not declare a decomposition.") from e
 
     def my_tensors(
-        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
-    ) -> list['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         return _my_tensors_from_gate(
             self.cirq_gate, self.signature, incoming=incoming, outgoing=outgoing
         )
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', **in_quregs: 'CirqQuregT'
-    ) -> tuple[cirq.Operation | None, dict[str, 'CirqQuregT']]:
+        self, qubit_manager: cirq.QubitManager, **in_quregs: 'CirqQuregT'
+    ) -> tuple[cirq.Operation | None, dict[str, CirqQuregT]]:
         qubits = in_quregs.get('q', np.array([])).flatten()
         return self.cirq_gate.on(*qubits), in_quregs
 
     def __pow__(self, power):
         return CirqGateAsBloq(gate=cirq.pow(self.cirq_gate, power))
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return CirqGateAsBloq(gate=cirq.inverse(self.cirq_gate))
 
     def __str__(self):
@@ -179,7 +179,7 @@ class CirqGateAsBloq(CirqGateAsBloqBase):
     def cirq_gate(self) -> cirq.Gate:
         return self.gate
 
-    def my_static_costs(self, cost_key: 'CostKey'):
+    def my_static_costs(self, cost_key: CostKey):
         if isinstance(cost_key, QECGatesCost):
             t_count = _from_directly_countable_cirq(self.cirq_gate)
             if t_count is not None:
@@ -189,7 +189,7 @@ class CirqGateAsBloq(CirqGateAsBloqBase):
         return NotImplemented
 
 
-def _cirq_wire_symbol_to_qualtran_wire_symbol(symbol: str, side: Side) -> 'WireSymbol':
+def _cirq_wire_symbol_to_qualtran_wire_symbol(symbol: str, side: Side) -> WireSymbol:
     from qualtran.drawing import Circle, directional_text_box, ModPlus
 
     if symbol == "@":
@@ -203,7 +203,7 @@ def _cirq_wire_symbol_to_qualtran_wire_symbol(symbol: str, side: Side) -> 'WireS
 
 def _wire_symbol_from_gate(
     gate: cirq.Gate, signature: Signature, wire_reg: Register, idx: tuple[int, ...] = tuple()
-) -> 'WireSymbol':
+) -> WireSymbol:
     wire_symbols = cirq.circuit_diagram_info(gate).wire_symbols
     begin = 0
     if len(idx) > 0:
@@ -234,9 +234,9 @@ def _my_tensors_from_gate(
     gate: cirq.Gate,
     signature: Signature,
     *,
-    incoming: dict[str, 'ConnectionT'],
-    outgoing: dict[str, 'ConnectionT'],
-) -> list['qtn.Tensor']:
+    incoming: dict[str, ConnectionT],
+    outgoing: dict[str, ConnectionT],
+) -> list[qtn.Tensor]:
     import quimb.tensor as qtn
 
     from qualtran.simulation.tensor._dense import _order_incoming_outgoing_indices
@@ -453,7 +453,7 @@ def cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
     return CirqGateAsBloq(gate)
 
 
-def _extract_bloq_from_op(op: 'cirq.Operation') -> Bloq:
+def _extract_bloq_from_op(op: cirq.Operation) -> Bloq:
     """Get a `Bloq` out of a cirq Operation.
 
     Unwrap BloqAsCirqGate, pass through any GateWithRegisters, and wrap
@@ -468,8 +468,8 @@ def cirq_optree_to_cbloq(
     optree: cirq.OP_TREE,
     *,
     signature: Signature | None = None,
-    in_quregs: dict[str, 'CirqQuregT'] | None = None,
-    out_quregs: dict[str, 'CirqQuregT'] | None = None,
+    in_quregs: dict[str, CirqQuregT] | None = None,
+    out_quregs: dict[str, CirqQuregT] | None = None,
     op_conversion_method: Callable[[cirq.Operation], Bloq] | None = None,
 ) -> CompositeBloq:
     """Convert a Cirq OP-TREE into a `CompositeBloq` with signature `signature`.

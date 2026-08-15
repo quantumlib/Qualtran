@@ -13,6 +13,8 @@
 #  limitations under the License.
 r"""Bloqs for SELECT T for the first quantized chemistry Hamiltonian with a quantum projectile."""
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -72,12 +74,12 @@ class SelectTFirstQuantizationWithProj(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("SEL T")
         return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # Modification of the SEL T costs from the first quantized bloq with n_p replace with n_n.
         # The + 1 is from an additional Toffoli for the selection between the
         # square and the product of the momentum offset of the projectile.
