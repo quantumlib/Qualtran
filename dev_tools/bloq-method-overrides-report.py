@@ -42,7 +42,7 @@ def _call_graph(bc: type[Bloq]):
         print(f"{bc}.build_call_graph `ssa: 'SympySymbolAllocator'`")
     ret_str = str(annot.get('return', ''))
     if not any(
-        sub in ret_str for sub in ('BloqCountDictT', 'set[BloqCountT]', 'Mapping[', 'BloqCountT')
+        sub in ret_str for sub in ('BloqCountDictT', 'set[BloqCountT]', 'Mapping[')
     ):
         print(f"{bc}.build_call_graph -> {ret_str!r}")
 
