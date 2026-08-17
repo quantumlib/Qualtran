@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import Any, cast
+from typing import Any, assert_type, cast
 
 import attrs
 import networkx as nx
@@ -23,7 +23,6 @@ import numpy as np
 import pytest
 import sympy
 from numpy.typing import NDArray
-from typing_extensions import assert_type
 
 import qualtran.testing as qlt_testing
 from qualtran import (

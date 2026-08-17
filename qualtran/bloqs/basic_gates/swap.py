@@ -388,7 +388,7 @@ class CSwap(GateWithRegisters):
 
     @classmethod
     def make_on(
-        cls, **quregs: Sequence['cirq.Qid'] | NDArray['cirq.Qid']  # type: ignore[type-var]
+        cls, **quregs: Sequence[cirq.Qid] | NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> cirq.Operation:
         """Helper constructor to automatically deduce bitsize attributes."""
         return cls(bitsize=len(quregs['x'])).on_registers(**quregs)

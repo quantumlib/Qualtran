@@ -67,7 +67,7 @@ class _MultiControlledFromSinglyControlled(Bloq):
         else:
             return MultiAnd(self.cvs)
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         and_soqs = bb.add_d(self._and_bloq, ctrl=soqs.pop(self.ctrl_reg_name))
 
         soqs |= {self.ctrl_reg_name: and_soqs.pop('target')}

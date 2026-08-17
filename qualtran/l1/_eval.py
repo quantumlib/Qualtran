@@ -55,7 +55,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-BloqKey: TypeAlias = str
+type BloqKey = str
 
 
 @lru_cache

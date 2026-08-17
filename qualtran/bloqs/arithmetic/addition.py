@@ -441,7 +441,7 @@ class AddK(Bloq):
         return bb.add(cls(dtype=dtype, k=k), x=x)  # type: ignore[arg-type]
 
     def on_classical_vals(
-        self, x: ClassicalValT, **vals: 'ClassicalValT'
+        self, x: ClassicalValT, **vals: ClassicalValT
     ) -> dict[str, ClassicalValT]:
         if is_symbolic(self.k) or is_symbolic(self.dtype):
             raise ValueError(f"Classical simulation isn't supported for symbolic block {self}")

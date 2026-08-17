@@ -40,11 +40,11 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT, MeasurementPhase
 
-ControlBit: TypeAlias = int
+type ControlBit = int
 """A control bit, either 0 or 1."""
 
-_CVInLeafT: TypeAlias = int | np.integer | NDArray[np.integer] | Shaped
-_CVInType: TypeAlias = _CVInLeafT | Sequence['_CVInType']
+type _CVInLeafT = int | np.integer | NDArray[np.integer] | Shaped
+type _CVInType = _CVInLeafT | Sequence['_CVInType']
 
 
 def _cvs_convert(cvs: _CVInType) -> tuple[NDArray[np.integer] | Shaped, ...]:
@@ -159,7 +159,7 @@ class CtrlSpec:
         """
         return [(qdtype, cv.shape) for qdtype, cv in zip(self.qdtypes, self.cvs)]
 
-    def is_active(self, *vals: 'ClassicalValT') -> bool:
+    def is_active(self, *vals: ClassicalValT) -> bool:
         """A classical implementation of the 'activation function'.
 
         The activation function takes in (quantum) data and determines whether
@@ -416,7 +416,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         # Prepend register(s) corresponding to `ctrl_spec`.
         return Signature(self.ctrl_regs + tuple(self.subbloq.signature))
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Mapping[str, ClassicalValRetT]:
+    def on_classical_vals(self, **vals: ClassicalValT) -> Mapping[str, ClassicalValRetT]:
         """Classical action of controlled bloqs.
 
         This involves conditionally doing the classical action of `subbloq`. All implementers
@@ -438,7 +438,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
         return vals
 
-    def basis_state_phase(self, **vals: 'ClassicalValT') -> complex | MeasurementPhase | None:
+    def basis_state_phase(self, **vals: ClassicalValT) -> complex | MeasurementPhase | None:
         """Phasing action of controlled bloqs.
 
         This involves conditionally doing the phasing action of `subbloq`. All implementers
@@ -539,7 +539,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         return f'C({self.subbloq!s})'
 
     def as_cirq_op(
-        self, qubit_manager: cirq.QubitManager, **cirq_quregs: 'CirqQuregT'
+        self, qubit_manager: cirq.QubitManager, **cirq_quregs: CirqQuregT
     ) -> tuple[cirq.Operation | None, dict[str, CirqQuregT]]:
         ctrl_regs = {reg_name: cirq_quregs.pop(reg_name) for reg_name in self.ctrl_reg_names}
         ctrl_qubits = [q for reg in ctrl_regs.values() for q in reg.reshape(-1)]
@@ -611,9 +611,7 @@ class Controlled(_ControlledBase):
     def decompose_bloq(self) -> CompositeBloq:
         return Bloq.decompose_bloq(self)
 
-    def build_composite_bloq(
-        self, bb: BloqBuilder, **initial_soqs: 'SoquetT'
-    ) -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **initial_soqs: SoquetT) -> dict[str, SoquetT]:
         if not self._thru_registers_only:
             raise DecomposeTypeError(f"Cannot handle non-thru registers in {self.subbloq}")
 

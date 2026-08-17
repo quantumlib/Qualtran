@@ -164,7 +164,7 @@ class HamiltonianSimulationByGQSP(Bloq):
         }
         return gqsp_soqs, prepare_out_soqs
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         state_prep_ancilla: dict[str, SoquetT] = {
             reg.name: bb.allocate(reg.total_bits())
             for reg in self.walk_operator.prepare.junk_registers

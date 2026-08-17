@@ -412,7 +412,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):
             qrom_targets, target = self._add_cnot(bb, qrom_targets, target)
         return ctrl, selection, target, qrom_targets
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         # Get the ctrl and target register for the SelectSwapQROM.
         ctrl = [soqs.pop(reg.name) for reg in self.control_registers]
         selection = [soqs.pop(reg.name) for reg in self.selection_registers]

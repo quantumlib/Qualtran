@@ -61,7 +61,7 @@ class TestIndependentParallelCombo(Bloq):
     def signature(self) -> Signature:
         return Signature.build()
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         for _ in range(3):
             reg = bb.allocate(1)
             reg = bb.add(TestAtom(), q=reg)

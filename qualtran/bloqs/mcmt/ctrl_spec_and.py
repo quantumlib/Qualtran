@@ -132,7 +132,7 @@ class CtrlSpecAnd(Bloq):
             flat_cvs.extend(reg.dtype.to_bits_array(cv.ravel()).ravel())
         return tuple(flat_cvs)
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         if is_symbolic(self.n_ctrl_qubits):
             raise DecomposeTypeError(
                 f"Cannot decompose {self} with symbolic number of controls {self.n_ctrl_qubits}"

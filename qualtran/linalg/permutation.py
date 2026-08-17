@@ -14,7 +14,7 @@
 from collections.abc import Iterator, Sequence
 from typing import TypeAlias
 
-CycleT: TypeAlias = tuple[int, ...]
+type CycleT = tuple[int, ...]
 
 
 def decompose_permutation_into_cycles(permutation: Sequence[int]) -> Iterator[CycleT]:

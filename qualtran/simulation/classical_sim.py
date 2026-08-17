@@ -19,14 +19,13 @@ from __future__ import annotations
 import abc
 import itertools
 from collections.abc import Iterable, Mapping, Sequence
-from typing import Any, TYPE_CHECKING, TypeAlias
+from typing import Any, Self, TYPE_CHECKING, TypeAlias
 
 import attrs
 import networkx as nx
 import numpy as np
 import sympy
 from numpy.typing import NDArray
-from typing_extensions import Self
 
 from qualtran import (
     Bloq,
@@ -45,7 +44,7 @@ from qualtran._infra.quantum_graph import _Soquet
 if TYPE_CHECKING:
     from qualtran import CompositeBloq, QCDType
 
-ClassicalValT: TypeAlias = int | np.integer | NDArray[np.integer]
+type ClassicalValT = int | np.integer | NDArray[np.integer]
 
 
 class QCDTypeDomainError(ValueError):
@@ -141,7 +140,7 @@ class ClassicalValDistribution:
     p: np.typing.ArrayLike | None = None
 
 
-ClassicalValRetT: TypeAlias = int | np.integer | NDArray[np.integer] | ClassicalValDistribution
+type ClassicalValRetT = int | np.integer | NDArray[np.integer] | ClassicalValDistribution
 
 
 class _ClassicalValHandler(metaclass=abc.ABCMeta):

@@ -265,7 +265,7 @@ class QROAMCleanAdjointWrapper(Bloq):
                 num_controls=self.qroam_clean.num_controls,
             )
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         block_sizes = cast(tuple[int, ...], self.qroam_clean.block_sizes)
         for target, adj_target in zip(
             self.qroam_clean.target_registers, self.qroam_clean_adjoint_bloq.target_registers
@@ -492,7 +492,7 @@ class QROAMClean(SelectSwapQROM):
         selection = self._unpartition_sel_register(bb, sel_l, sel_k)
         return ctrl, selection, qrom_targets
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         # Get the ctrl and target register for the SelectSwapQROM.
         ctrl = [soqs.pop(reg.name) for reg in self.control_registers]
         selection = [soqs.pop(reg.name) for reg in self.selection_registers]

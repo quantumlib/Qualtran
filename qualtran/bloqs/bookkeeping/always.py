@@ -71,10 +71,10 @@ class Always(Bloq):
     def signature(self) -> Signature:
         return self.subbloq.signature
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         return bb.add_d(self.subbloq, **soqs)
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Mapping[str, ClassicalValRetT]:
+    def on_classical_vals(self, **vals: ClassicalValT) -> Mapping[str, ClassicalValRetT]:
         return self.subbloq.on_classical_vals(**vals)
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:

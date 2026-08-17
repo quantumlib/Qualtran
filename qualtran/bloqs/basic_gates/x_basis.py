@@ -100,7 +100,7 @@ class _XVector(Bloq, metaclass=abc.ABCMeta):
         ]
 
     def as_cirq_op(
-        self, qubit_manager: cirq.QubitManager, **cirq_quregs: 'CirqQuregT'
+        self, qubit_manager: cirq.QubitManager, **cirq_quregs: CirqQuregT
     ) -> tuple[cirq.Operation | None, dict[str, CirqQuregT]]:
         if not self.state:
             raise ValueError(f"There is no Cirq equivalent for {self}")
@@ -294,7 +294,7 @@ class XGate(Bloq):
         return {'q': (q + 1) % 2}
 
     def as_cirq_op(
-        self, qubit_manager: cirq.QubitManager, **cirq_quregs: 'CirqQuregT'
+        self, qubit_manager: cirq.QubitManager, **cirq_quregs: CirqQuregT
     ) -> tuple[cirq.Operation, dict[str, CirqQuregT]]:
         import cirq
 

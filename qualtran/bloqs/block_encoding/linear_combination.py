@@ -15,11 +15,10 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import cast
+from typing import cast, Self
 
 import numpy as np
 from attrs import evolve, field, frozen, validators
-from typing_extensions import Self
 
 from qualtran import (
     AddControlledT,

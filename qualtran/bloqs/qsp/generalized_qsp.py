@@ -350,7 +350,7 @@ class GeneralizedQSP(GateWithRegisters):
         *,
         context: cirq.DecompositionContext,
         signal,
-        **quregs: NDArray['cirq.Qid'],  # type: ignore[type-var]
+        **quregs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         if self.is_symbolic():
             raise DecomposeTypeError(f'Cannot decompose symbolic {self=}')

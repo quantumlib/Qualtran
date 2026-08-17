@@ -378,7 +378,7 @@ class PlantedNoisyKXOR(Bloq):
             gamma=self.overlap,
         )
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         return bb.add_d(self.guided_hamiltonian_bloq, **soqs)
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:

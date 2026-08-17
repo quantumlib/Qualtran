@@ -100,7 +100,7 @@ class _QConst(Bloq):
             bb.add(effects[bit], q=xs[i])
         return {}
 
-    def build_composite_bloq(self, bb: BloqBuilder, **val: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **val: SoquetT) -> dict[str, SoquetT]:
         if is_symbolic(self.qdtype) or is_symbolic(self.val):
             raise DecomposeTypeError(
                 f'Symbolic qdtype {self.qdtype} or val {self.val} not supported'
@@ -165,7 +165,7 @@ class QIntState(Bloq):
     def signature(self) -> Signature:
         return self._impl.signature
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         return self._impl.build_composite_bloq(bb, **soqs)
 
     def on_classical_vals(
@@ -223,7 +223,7 @@ class QIntEffect(Bloq):
     def signature(self) -> Signature:
         return self._impl.signature
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         return self._impl.build_composite_bloq(bb, **soqs)
 
     def on_classical_vals(
@@ -281,7 +281,7 @@ class QUIntState(Bloq):
     def signature(self) -> Signature:
         return self._impl.signature
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         return self._impl.build_composite_bloq(bb, **soqs)
 
     def on_classical_vals(
@@ -339,7 +339,7 @@ class QUIntEffect(Bloq):
     def signature(self) -> Signature:
         return self._impl.signature
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         return self._impl.build_composite_bloq(bb, **soqs)
 
     def on_classical_vals(

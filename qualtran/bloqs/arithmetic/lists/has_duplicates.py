@@ -79,7 +79,7 @@ class HasDuplicates(Bloq):
         return LinearDepthHalfLessThan(self.dtype)
 
     def build_composite_bloq(
-        self, bb: BloqBuilder, xs: SoquetT, flag: Soquet, **extra_soqs: 'SoquetT'
+        self, bb: BloqBuilder, xs: SoquetT, flag: Soquet, **extra_soqs: SoquetT
     ) -> dict[str, SoquetT]:
         assert not is_symbolic(self.l)
         l = int(self.l)
@@ -127,7 +127,7 @@ class HasDuplicates(Bloq):
 
         return counts
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> dict[str, ClassicalValT]:
+    def on_classical_vals(self, **vals: ClassicalValT) -> dict[str, ClassicalValT]:
         xs = np.asarray(vals['xs'])
         assert np.all(xs == np.sort(xs))
         if np.any(xs[:-1] == xs[1:]):

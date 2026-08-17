@@ -90,7 +90,7 @@ class ControlledViaAnd(_ControlledBase):
     def adjoint(self) -> ControlledViaAnd:
         return ControlledViaAnd(self.subbloq.adjoint(), self.ctrl_spec)
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         # compute the control bit
         if self._is_single_bit_control():
             ctrl_soqs = None

@@ -45,7 +45,7 @@ if TYPE_CHECKING:
         StatementNode,
     )
 
-BloqKey: TypeAlias = str
+type BloqKey = str
 
 log = logging.getLogger(__name__)
 

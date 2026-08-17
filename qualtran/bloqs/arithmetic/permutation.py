@@ -55,7 +55,7 @@ if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
     from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
 
-SymbolicCycleT: TypeAlias = CycleT | Shaped
+type SymbolicCycleT = CycleT | Shaped
 
 
 def _convert_cycle(cycle) -> tuple[int, ...] | Shaped:

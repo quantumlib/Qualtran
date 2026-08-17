@@ -415,7 +415,7 @@ class PrepareTHC(PrepareOracle):
         )
         return qroam
 
-    def add_qrom(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def add_qrom(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         qrom = self.build_qrom_bloq()
         # The qroam_junk_regs won't be present initially when building the
         # composite bloq as they're RIGHT registers.
@@ -432,7 +432,7 @@ class PrepareTHC(PrepareOracle):
         }
         return soqs | out_soqs
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         # 1. Prepare THC uniform superposition over mu, nu. succ flags success.
         soqs['mu'], soqs['nu'], soqs['succ'], soqs['nu_eq_mp1'], soqs['rot'] = bb.add(
             UniformSuperpositionTHC(num_mu=self.num_mu, num_spin_orb=self.num_spin_orb),

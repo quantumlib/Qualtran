@@ -176,8 +176,8 @@ class QVarT(Protocol):
 
 
 # Compatibilities aliases
-SoquetT: TypeAlias = QVarT
-QVar: TypeAlias = Soquet
+type SoquetT = QVarT
+type QVar = Soquet
 
 
 SoquetInT = QVarT | Sequence[QVarT]
@@ -199,7 +199,7 @@ def _to_tuple(x: Iterable[Connection]) -> Sequence[Connection]:
     return tuple(x)
 
 
-def _to_set(x: Iterable[BloqInstance]) -> FrozenSet[BloqInstance]:
+def _to_set(x: Iterable[BloqInstance]) -> frozenset[BloqInstance]:
     """mypy-compatible attrs converter for CompositeBloq.bloq_instances"""
     return frozenset(x)
 
@@ -249,7 +249,7 @@ class CompositeBloq(Bloq):
 
     connections: tuple[Connection, ...] = attrs.field(converter=_to_tuple)
     signature: Signature
-    bloq_instances: FrozenSet[BloqInstance] = attrs.field(converter=_to_set)
+    bloq_instances: frozenset[BloqInstance] = attrs.field(converter=_to_set)
 
     decomposed_from: Bloq | None = attrs.field(default=None, kw_only=True)
     bloq_key: str | None = attrs.field(default=None, kw_only=True)
@@ -264,7 +264,7 @@ class CompositeBloq(Bloq):
         }
 
     @cached_property
-    def all_soquets(self) -> FrozenSet[_Soquet]:
+    def all_soquets(self) -> frozenset[_Soquet]:
         """A set of all `Soquet`s present in the compute graph."""
         soquets = {cxn.left for cxn in self.connections}
         soquets |= {cxn.right for cxn in self.connections}
@@ -285,7 +285,7 @@ class CompositeBloq(Bloq):
         return _create_binst_graph(self.connections, self.bloq_instances)
 
     def as_cirq_op(
-        self, qubit_manager: cirq.QubitManager, **cirq_quregs: 'CirqQuregT'
+        self, qubit_manager: cirq.QubitManager, **cirq_quregs: CirqQuregT
     ) -> tuple[cirq.Operation, dict[str, CirqQuregT]]:
         """Return a `cirq.CircuitOperation` version of this cbloq."""
         import cirq
@@ -296,7 +296,7 @@ class CompositeBloq(Bloq):
         return cirq.CircuitOperation(circuit), out_quregs
 
     def to_cirq_circuit_and_quregs(
-        self, qubit_manager: cirq.QubitManager | None = None, **cirq_quregs: 'CirqQuregInT'
+        self, qubit_manager: cirq.QubitManager | None = None, **cirq_quregs: CirqQuregInT
     ) -> tuple[cirq.FrozenCircuit, dict[str, CirqQuregT]]:
         """Convert this CompositeBloq to a `cirq.Circuit` and output qubit registers.
 
@@ -358,7 +358,7 @@ class CompositeBloq(Bloq):
 
         return cirq_optree_to_cbloq(circuit)
 
-    def on_classical_vals(self, **vals: sympy.Symbol | 'ClassicalValT') -> dict[str, ClassicalValT]:
+    def on_classical_vals(self, **vals: sympy.Symbol | ClassicalValT) -> dict[str, ClassicalValT]:
         """`CompositeBloq` implementation of `Bloq.on_classical_vals`.
 
         This override determines the classical action of this composite bloq by correctly

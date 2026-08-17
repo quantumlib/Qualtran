@@ -211,7 +211,7 @@ class GF2Multiplication(Bloq):
     def bitsize(self) -> SymbolicInt:
         return self.qgf.bitsize
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'Soquet') -> dict[str, Soquet]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: Soquet) -> dict[str, Soquet]:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
         x, y = soqs['x'], soqs['y']
@@ -347,7 +347,7 @@ class GF2MulMBUC(Bloq):
             alpha += [0]
         return np.transpose(M)
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'Soquet') -> dict[str, Soquet]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: Soquet) -> dict[str, Soquet]:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
         x, y, result = soqs['x'], soqs['y'], soqs['result']
@@ -1099,7 +1099,7 @@ class GF2MulViaKaratsuba(Bloq):
         return impl
 
     def build_composite_bloq(
-        self, bb: BloqBuilder, x: Soquet, y: Soquet, **soqs: 'SoquetT'
+        self, bb: BloqBuilder, x: Soquet, y: Soquet, **soqs: SoquetT
     ) -> dict[str, SoquetT]:
         if is_symbolic(self.k, self.n):
             raise DecomposeTypeError(f"Symbolic Decomposition is not supported for {self}")

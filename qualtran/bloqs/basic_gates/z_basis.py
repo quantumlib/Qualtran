@@ -112,7 +112,7 @@ class _ZVector(Bloq, metaclass=abc.ABCMeta):
         return {}
 
     def as_cirq_op(
-        self, qubit_manager: cirq.QubitManager, **cirq_quregs: 'CirqQuregT'
+        self, qubit_manager: cirq.QubitManager, **cirq_quregs: CirqQuregT
     ) -> tuple[cirq.Operation | None, dict[str, CirqQuregT]]:
         if not self.state:
             raise ValueError(f"There is no Cirq equivalent for {self}")
@@ -282,7 +282,7 @@ class ZGate(Bloq):
             )
         ]
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> dict[str, ClassicalValT]:
+    def on_classical_vals(self, **vals: ClassicalValT) -> dict[str, ClassicalValT]:
         # Diagonal, but causes phases: see `basis_state_phase`
         return vals
 
@@ -398,7 +398,7 @@ class CZ(Bloq):
             self, ctrl_spec, current_ctrl_bit=1, bloq_with_ctrl=self, ctrl_reg_name='q1'
         )
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> dict[str, ClassicalValT]:
+    def on_classical_vals(self, **vals: ClassicalValT) -> dict[str, ClassicalValT]:
         # Diagonal, but causes phases: see `basis_state_phase`
         return vals
 
@@ -462,7 +462,7 @@ class MeasureZ(Bloq):
         return [t, DiscardInd((meas_result, 0))]
 
     def as_cirq_op(
-        self, qubit_manager: cirq.QubitManager, **cirq_quregs: 'CirqQuregT'
+        self, qubit_manager: cirq.QubitManager, **cirq_quregs: CirqQuregT
     ) -> tuple[cirq.Operation | None, dict[str, CirqQuregT]]:
 
         import cirq
@@ -517,7 +517,7 @@ class IntState(Bloq):
     def signature(self) -> Signature:
         return self._impl.signature
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         return self._impl.build_composite_bloq(bb, **soqs)
 
     def on_classical_vals(
@@ -581,7 +581,7 @@ class IntEffect(Bloq):
     def signature(self) -> Signature:
         return self._impl.signature
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         return self._impl.build_composite_bloq(bb, **soqs)
 
     def on_classical_vals(

@@ -38,7 +38,7 @@ from numpy.typing import NDArray
 
 from qualtran.symbolics import bit_length, ceil, HasLength, is_symbolic, log2, slen, SymbolicInt
 
-Scope: TypeAlias = tuple[int, ...] | HasLength
+type Scope = tuple[int, ...] | HasLength
 """A subset of variables"""
 
 

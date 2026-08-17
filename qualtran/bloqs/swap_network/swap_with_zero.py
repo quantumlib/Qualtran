@@ -170,7 +170,7 @@ class SwapWithZero(GateWithRegisters):
         return tuple(ret[::-1] if self.uncompute else ret)
 
     def build_composite_bloq(
-        self, bb: BloqBuilder, targets: NDArray[Soquet], **sel: 'Soquet'  # type: ignore[type-var]
+        self, bb: BloqBuilder, targets: NDArray[Soquet], **sel: Soquet  # type: ignore[type-var]
     ) -> dict[str, SoquetT]:
         sel_soqs = [bb.split(sel[reg.name]) for reg in self.selection_registers]
         for i, sel_idx_small, idx_one, idx_two in self._swap_sequence:
@@ -204,7 +204,7 @@ class SwapWithZero(GateWithRegisters):
         raise ValueError(f'Unrecognized register name {name}')
 
     def on_classical_vals(
-        self, *, targets: ClassicalValT, **selection: 'ClassicalValT'
+        self, *, targets: ClassicalValT, **selection: ClassicalValT
     ) -> dict[str, ClassicalValT]:
         assert isinstance(targets, np.ndarray)
         selection_idx = tuple(selection.values())

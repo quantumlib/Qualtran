@@ -252,7 +252,7 @@ class StatePreparationAliasSampling(PrepareOracle):
         alt: SoquetT,
         keep: SoquetT,
         less_than_equal: Soquet,
-        **soqs: 'SoquetT',
+        **soqs: SoquetT,
     ):
         selection = soqs.pop(self.selection_registers[0].name)
         assert not soqs
@@ -505,7 +505,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
             (self.selection_bitsize, self.selection_bitsize, self.mu),
         )
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         soqs['sparse_index'] = bb.add(
             PrepareUniformSuperposition(self.n_nonzero_coeff), target=soqs['sparse_index']
         )

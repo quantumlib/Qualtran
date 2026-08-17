@@ -161,7 +161,7 @@ class QArgValueNode(L1ASTNode):
     idx: Sequence[int]
 
 
-NestedQArgValue: TypeAlias = QArgValueNode | Sequence['NestedQArgValue']
+type NestedQArgValue = QArgValueNode | Sequence['NestedQArgValue']
 
 
 @attrs.frozen

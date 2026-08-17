@@ -107,9 +107,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
             quregs[self.control_regs[0].name].tolist() if total_bits(self.control_registers) else []
         )
         yield cirq.X(*quregs['accumulator']).controlled_by(*control)
-        yield super(SelectedMajoranaFermion, self).decompose_from_registers(
-            context=context, **quregs
-        )
+        yield super().decompose_from_registers(context=context, **quregs)
         context.qubit_manager.qfree(quregs['accumulator'])
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:

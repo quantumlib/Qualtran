@@ -211,7 +211,7 @@ class PotentialEnergy(Bloq):
             [
                 Register(
                     'system',
-                    dtype=QAny(((self.num_grid - 1).bit_length() + 1)),
+                    dtype=QAny((self.num_grid - 1).bit_length() + 1),
                     shape=(self.num_elec, 3),
                 )
             ]

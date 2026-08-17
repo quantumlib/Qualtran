@@ -286,7 +286,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
             return decompose_from_cirq_style_method(self)
 
     def as_cirq_op(
-        self, qubit_manager: cirq.QubitManager, **in_quregs: 'CirqQuregT'
+        self, qubit_manager: cirq.QubitManager, **in_quregs: CirqQuregT
     ) -> tuple[cirq.Operation | None, dict[str, CirqQuregT]]:
         """Allocates/Deallocates qubits for RIGHT/LEFT only registers to construct a Cirq operation
 
@@ -321,7 +321,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         self,
         *,
         context: cirq.DecompositionContext,
-        **quregs: NDArray['cirq.Qid'],  # type: ignore[type-var]
+        **quregs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> cirq.OP_TREE:
         raise DecomposeNotImplementedError(f"{self} does not declare a decomposition.")
 

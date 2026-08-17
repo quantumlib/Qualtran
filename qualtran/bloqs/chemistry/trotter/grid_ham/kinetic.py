@@ -62,7 +62,7 @@ class KineticEnergy(Bloq):
         return Signature(
             [
                 Register(
-                    'system', QAny(((self.num_grid - 1).bit_length() + 1)), shape=(self.num_elec, 3)
+                    'system', QAny((self.num_grid - 1).bit_length() + 1), shape=(self.num_elec, 3)
                 )
             ]
         )

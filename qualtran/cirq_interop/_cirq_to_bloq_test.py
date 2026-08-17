@@ -52,7 +52,7 @@ class TestCNOT(Bloq):
     def signature(self) -> Signature:
         return Signature.build(control=1, target=1)
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         ctrl, target = soqs['control'], soqs['target']
         assert BloqBuilder.is_single(ctrl)
         assert BloqBuilder.is_single(target)
@@ -60,7 +60,7 @@ class TestCNOT(Bloq):
         return {'control': ctrl, 'target': target}
 
     def as_cirq_op(
-        self, qubit_manager: cirq.QubitManager, **cirq_quregs: 'CirqQuregT'
+        self, qubit_manager: cirq.QubitManager, **cirq_quregs: CirqQuregT
     ) -> tuple[cirq.Operation, dict[str, CirqQuregT]]:
         (control,) = cirq_quregs['control']
         (target,) = cirq_quregs['target']

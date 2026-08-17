@@ -14,9 +14,9 @@
 
 from collections import Counter
 from functools import cached_property
+from typing import Self
 
 from attrs import evolve, field, frozen, validators
-from typing_extensions import Self
 
 from qualtran import (
     bloq_example,

@@ -156,7 +156,7 @@ class Bloq(metaclass=abc.ABCMeta):
             `qualtran.Signature` for details on how to construct a signature.
         """
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         """Override this method to define a bloq as a composition of sub-bloqs.
 
         Bloq authors should override this method. If you already have an instantiated bloq object,
@@ -269,7 +269,7 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         return NotImplemented
 
-    def basis_state_phase(self, **vals: 'ClassicalValT') -> complex | MeasurementPhase | None:
+    def basis_state_phase(self, **vals: ClassicalValT) -> complex | MeasurementPhase | None:
         """How this bloq phases classical basis states.
 
         Override this method if your bloq represents classical logic with basis-state
@@ -539,7 +539,7 @@ class Bloq(metaclass=abc.ABCMeta):
         return t_complexity(self)
 
     def as_cirq_op(
-        self, qubit_manager: cirq.QubitManager, **cirq_quregs: 'CirqQuregT'
+        self, qubit_manager: cirq.QubitManager, **cirq_quregs: CirqQuregT
     ) -> tuple[cirq.Operation | None, dict[str, CirqQuregT]]:
         """Override this method to support conversion to a Cirq operation.
 
@@ -586,7 +586,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
         return FromBloq(bloq=self, wires=wires)
 
-    def on(self, *qubits: 'cirq.Qid') -> cirq.Operation:
+    def on(self, *qubits: cirq.Qid) -> cirq.Operation:
         """A `cirq.Operation` of this bloq operating on the given qubits.
 
         This method supports an alternative decomposition backend that follows a 'Cirq-style'

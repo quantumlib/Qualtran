@@ -37,7 +37,7 @@ from qualtran._infra.quantum_graph import _Soquet
 
 logger = logging.getLogger(__name__)
 
-_IndT: TypeAlias = Any
+type _IndT = Any
 
 
 def cbloq_to_quimb(cbloq: CompositeBloq, friendly_indices: bool = False) -> qtn.TensorNetwork:

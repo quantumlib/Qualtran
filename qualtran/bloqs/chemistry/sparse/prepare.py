@@ -347,7 +347,7 @@ class PrepareSparse(PrepareOracle):
         )
         return qrom
 
-    def add_qrom(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def add_qrom(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         qrom = self.build_qrom_bloq()
         # The qroam_junk_regs won't be present initially when building the
         # composite bloq as they're RIGHT registers.
@@ -364,7 +364,7 @@ class PrepareSparse(PrepareOracle):
         }
         return soqs | out_soqs
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         n_n = self.num_bits_spat_orb
         # 1. Prepare \sum_d |d\rangle
         soqs['d'] = bb.add(PrepareUniformSuperposition(self.num_non_zero), target=soqs['d'])

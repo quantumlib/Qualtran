@@ -194,7 +194,7 @@ class SelectTHC(SelectOracle):
             Register("sys_b", QAny(bitsize=self.num_spin_orb // 2)),
         )
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         succ = soqs['succ']
         nu_eq_mp1 = soqs['nu_eq_mp1']
         mu = soqs['mu']

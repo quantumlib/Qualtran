@@ -15,11 +15,10 @@
 from collections import Counter
 from collections.abc import Sequence
 from functools import cached_property
-from typing import cast
+from typing import cast, Self
 
 from attrs import field, frozen, validators
 from numpy.typing import NDArray
-from typing_extensions import Self
 
 from qualtran import (
     Bloq,

@@ -87,7 +87,7 @@ class PhasingViaCostFunction(Bloq):
         registers = [*self.cost_eval_oracle.signature.lefts(), *self.phase_oracle.extra_registers]
         return Signature(registers)
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         def _extract_soqs(bloq: Bloq) -> dict[str, SoquetT]:
             return {reg.name: soqs.pop(reg.name) for reg in bloq.signature.lefts()}
 

@@ -214,7 +214,7 @@ class KikuchiHamiltonian(BlockEncoding):
     def junk_registers(self) -> tuple[Register, ...]:
         return self._sparse_matrix_encoding.junk_registers
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         return bb.add_d(self._sparse_matrix_encoding, **soqs)
 
     def __str__(self):

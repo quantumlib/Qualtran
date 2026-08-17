@@ -205,7 +205,7 @@ class TestBloqWithDecompose(Bloq):
             [Register(self.ctrl_reg_name, QBit()), Register(self.target_reg_name, QAny(2))]
         )
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         for _ in range(2):
             soqs = bb.add_d(
                 AtomWithSpecializedControl(

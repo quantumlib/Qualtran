@@ -106,7 +106,7 @@ class And(GateWithRegisters):
         cv1=1,
         cv2=1,
         uncompute: bool = False,
-        **maybe_target: 'QVar',
+        **maybe_target: QVar,
     ):
         ctrl = np.asarray(ctrl)
         bb = ctrl.item(0).bb

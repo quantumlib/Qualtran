@@ -82,7 +82,7 @@ class HammingWeightPhasing(GateWithRegisters):
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=QUInt(self.bitsize))
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         soqs['x'], junk, out = bb.add(HammingWeightCompute(self.bitsize), x=soqs['x'])
         out = bb.split(out)
         for i in range(len(out)):

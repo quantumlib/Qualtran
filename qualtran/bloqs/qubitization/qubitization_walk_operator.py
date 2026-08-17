@@ -131,7 +131,7 @@ class QubitizationWalkOperator(GateWithRegisters):
         r"""value of $\lambda$, i.e. sum of absolute values of coefficients $w_l$."""
         return self.block_encoding.alpha
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         be_soqs = {reg.name: soqs.pop(reg.name) for reg in self.block_encoding.signature}
         soqs |= bb.add_d(self.block_encoding, **be_soqs)
 

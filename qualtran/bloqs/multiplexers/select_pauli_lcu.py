@@ -105,7 +105,7 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):
     ) -> Iterator[cirq.OP_TREE]:
         if self.control_val == 0:
             yield cirq.X(*quregs['control'])
-        yield super(SelectPauliLCU, self).decompose_from_registers(context=context, **quregs)
+        yield super().decompose_from_registers(context=context, **quregs)
         if self.control_val == 0:
             yield cirq.X(*quregs['control'])
 

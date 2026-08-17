@@ -138,7 +138,7 @@ class _PartitionBase(_BookkeepingBloq, metaclass=abc.ABCMeta):
             start += size
         return out_vals
 
-    def _classical_unpartition_to_bits(self, **vals: 'ClassicalValT') -> NDArray[np.uint8]:
+    def _classical_unpartition_to_bits(self, **vals: ClassicalValT) -> NDArray[np.uint8]:
         out_vals: list[NDArray[np.uint8]] = []
         for reg in self._regs:
             reg_val = np.asanyarray(vals[reg.name])
@@ -146,7 +146,7 @@ class _PartitionBase(_BookkeepingBloq, metaclass=abc.ABCMeta):
             out_vals.append(bitstrings.ravel())
         return np.concatenate(out_vals)
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> dict[str, ClassicalValT]:
+    def on_classical_vals(self, **vals: ClassicalValT) -> dict[str, ClassicalValT]:
         if self.partition:
             return self._classical_partition(vals['x'])
         else:

@@ -85,7 +85,7 @@ class MultiControlPauliBase(GateWithRegisters, metaclass=abc.ABCMeta):
         ctrl_spec = CtrlSpec(cvs=(cvs,))
         return ControlledViaAnd(self.target_bloq, ctrl_spec)
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         if is_symbolic(self.cvs):
             raise DecomposeTypeError(f"cannot decompose {self} with symbolic {self.cvs=}")
 

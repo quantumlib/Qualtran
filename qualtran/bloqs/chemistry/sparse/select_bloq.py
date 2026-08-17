@@ -116,7 +116,7 @@ class SelectSparse(SelectOracle):
     def target_registers(self) -> tuple[Register, ...]:
         return (Register("sys", QAny(bitsize=self.num_spin_orb)),)
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         p, q, r, s = soqs['p'], soqs['q'], soqs['r'], soqs['s']
         alpha, beta = soqs['alpha'], soqs['beta']
         flag_1b = soqs['flag_1b']
