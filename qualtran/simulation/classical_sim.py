@@ -151,7 +151,9 @@ class _ClassicalValHandler(metaclass=abc.ABCMeta):
     choice of values."""
 
     @abc.abstractmethod
-    def get(self, binst: BloqInstance, distribution: ClassicalValDistribution) -> Any: ...
+    def get(
+        self, binst: DanglingT | BloqInstance, distribution: ClassicalValDistribution
+    ) -> Any: ...
 
 
 class _RandomClassicalValHandler(_ClassicalValHandler):
@@ -252,7 +254,7 @@ class ClassicalSimState:
         self.soq_assign: dict[_Soquet, ClassicalValT] = {}
         self._update_assign_from_vals(self._signature.lefts(), LeftDangle, dict(vals))
 
-        self.last_binst: BloqInstance | None = None
+        self.last_binst: BloqInstance | DanglingT | None = None
 
     @classmethod
     def from_cbloq(
@@ -275,7 +277,7 @@ class ClassicalSimState:
         self,
         regs: Iterable[Register],
         binst: DanglingT | BloqInstance,
-        vals: dict[str, sympy.Symbol | ClassicalValT] | dict[str, ClassicalValT],
+        vals: dict[str, sympy.Symbol | ClassicalValRetT | Any] | Mapping[str, Any],
     ) -> None:
         """Update `self.soq_assign` using `vals`.
 
@@ -529,7 +531,9 @@ class PhasedClassicalSimState(ClassicalSimState):
         phase = sim.phase
         return final_vals, phase
 
-    def _update(self, binst: BloqInstance, out_vals, bloq_phase: complex | None) -> None:
+    def _update(
+        self, binst: BloqInstance, out_vals, bloq_phase: complex | MeasurementPhase | None
+    ) -> None:
         """Update the current simulator state, including phase tracking."""
         self._update_assign_from_vals(binst.bloq.signature.rights(), binst, out_vals)
 

@@ -165,6 +165,18 @@ class SparseMatrixHermitian(BlockEncoding):
         return 0
 
     @cached_property
+    def target_registers(self) -> tuple[Register, ...]:
+        return (Register("i", QAny(self.system_bitsize)),)
+
+    @cached_property
+    def selection_registers(self) -> tuple[Register, ...]:
+        return (Register("q", QBit()), Register("j", QAny(self.system_bitsize)))
+
+    @cached_property
+    def junk_registers(self) -> tuple[Register, ...]:
+        return ()
+
+    @cached_property
     def epsilon(self) -> SymbolicFloat:
         return self.eps
 

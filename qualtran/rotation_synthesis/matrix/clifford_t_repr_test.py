@@ -13,6 +13,8 @@
 #  limitations under the License.
 
 
+from collections.abc import Iterator
+
 import cirq
 import numpy as np
 import pytest
@@ -21,7 +23,9 @@ import qualtran.rotation_synthesis.matrix._clifford_t_repr as ctr
 import qualtran.rotation_synthesis.matrix._su2_ct as _su2_ct
 
 
-def _make_random_su(n: int, m: int, random_cliffords: bool = False, seed: int | None = None):
+def _make_random_su(
+    n: int, m: int, random_cliffords: bool = False, seed: int | None = None
+) -> Iterator[_su2_ct.SU2CliffordT]:
     rng = np.random.default_rng(seed)
     gates = [_su2_ct.Tx, _su2_ct.Ty, _su2_ct.Tz]
     if random_cliffords:

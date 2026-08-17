@@ -45,11 +45,10 @@ from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.simulation.classical_sim import ClassicalValT
-from qualtran.symbolics import is_symbolic
+from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder
-    from qualtran.symbolics import SymbolicInt
 
 
 @frozen
@@ -194,9 +193,9 @@ class ModAddK(GateWithRegisters):
     of integers passed as `cvs`.
     """
 
-    bitsize: int
-    mod: int = field()
-    add_val: int = 1
+    bitsize: SymbolicInt
+    mod: SymbolicInt = field()
+    add_val: SymbolicInt = 1
     cvs: tuple[int, ...] = field(
         converter=lambda v: (v,) if isinstance(v, int) else tuple(v), default=()
     )

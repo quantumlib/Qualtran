@@ -77,7 +77,7 @@ class Negate(Bloq):
 
     def on_classical_vals(self, x: ClassicalValT) -> dict[str, ClassicalValT]:
         n = self.dtype.num_qubits
-        if isinstance(n, sympy.Expr):
+        if isinstance(self.dtype.bitsize, sympy.Expr):
             raise ValueError(f'Cannot simulate symbolic bloq {self}')
         # Two's complement negation: -x == (~x + 1) mod 2^n
         # Work in unsigned space, then re-interpret in the dtype.

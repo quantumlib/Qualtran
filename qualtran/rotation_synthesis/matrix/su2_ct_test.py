@@ -13,6 +13,8 @@
 #  limitations under the License.
 
 
+from collections.abc import Iterator
+
 import numpy as np
 import pytest
 
@@ -27,7 +29,9 @@ _LAMBDA = _zsqrt2.ZSqrt2(2, 1)
 _LAMBDA_ZW = _zw.ZW.from_pair(_LAMBDA, _zsqrt2.Zero)
 
 
-def _make_random_su(n: int, m: int, random_cliffords: bool = False, seed: int | None = None):
+def _make_random_su(
+    n: int, m: int, random_cliffords: bool = False, seed: int | None = None
+) -> Iterator[_su2_ct.SU2CliffordT]:
     rng = np.random.default_rng(seed)
     gates = [_su2_ct.Tx, _su2_ct.Ty, _su2_ct.Tz]
     if random_cliffords:

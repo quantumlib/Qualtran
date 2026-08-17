@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from typing import Any, cast, TypeAlias
 
 import attrs
@@ -92,7 +92,7 @@ def cbloq_to_quimb(cbloq: CompositeBloq, friendly_indices: bool = False) -> qtn.
     return tn.reindex(_get_outer_indices(tn, friendly_indices=friendly_indices))
 
 
-def _get_placeholder_tensors(cxn):
+def _get_placeholder_tensors(cxn: Connection) -> Iterator[qtn.Tensor]:
     """Get identity placeholder tensors to directly connect LeftDangle to RightDangle.
 
     This function is used in `cbloq_to_quimb` and `cbloq_to_superquimb` for the following

@@ -120,7 +120,7 @@ def test_update_bad_input():
         (7443007001009, ("days", 86)),
     ],
 )
-def test_formatting(duration: int, desired: str):
+def test_formatting(duration: int, desired: tuple[str, int]):
     unit, (final_duration,) = ui.format_duration([duration])
     assert unit == desired[0]
     assert round(final_duration) == desired[1]

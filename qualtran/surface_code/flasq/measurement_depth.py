@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable, Mapping
+from typing import Any
 
 import attrs
 import networkx as nx
@@ -78,7 +79,7 @@ class MeasurementDepth:
         converter=_to_frozendict, default=frozendict()
     )
 
-    def __add__(self, other: MeasurementDepth) -> MeasurementDepth:
+    def __add__(self, other: Any) -> MeasurementDepth:
         """Adds two MeasurementDepth objects.
 
         Depths are summed, and unknown bloq counts are merged by summing.
@@ -99,7 +100,7 @@ class MeasurementDepth:
         # The constructor handles converting the merged dict back to frozendict
         return MeasurementDepth(depth=new_depth, bloqs_with_unknown_depth=merged_unknowns)
 
-    def __radd__(self, other):
+    def __radd__(self, other: Any) -> MeasurementDepth:
         """Handles reversed addition, e.g., sum([MeasurementDepth(...)])"""
         if other == 0:
             return self

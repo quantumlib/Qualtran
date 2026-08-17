@@ -100,12 +100,12 @@ def test_measurement_depth_add():
     assert isinstance(md_sum.bloqs_with_unknown_depth, frozendict)
 
     # Test adding zero identity
-    assert md1 + 0 == md1  # type: ignore[operator]
+    assert md1 + 0 == md1
     assert 0 + md1 == md1
 
     # Test type error on invalid addition
     with pytest.raises(TypeError):
-        _ = md1 + "string"  # type: ignore[operator]
+        _ = md1 + "string"
 
 
 def test_measurement_depth_str():
@@ -318,7 +318,7 @@ class TotalMeasurementDepthEdgeCasesTestSuite:
         """MeasurementDepth.__radd__ with non-zero non-MeasurementDepth delegates to __add__ (L95-96)."""
         md = MeasurementDepth(depth=5)
         # __add__ returns NotImplemented for non-MeasurementDepth, non-zero
-        result = md.__add__("bad")  # type: ignore[operator]
+        result = md.__add__("bad")
         assert result is NotImplemented
 
 

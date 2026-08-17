@@ -46,7 +46,7 @@ def test_no_symbolic_degree():
 def test_classical_sim():
     bloq = _gf_poly_split.make()
     p = Poly(bloq.dtype.qgf.gf_type([1, 2, 3, 4]))
-    coeffs = bloq.call_classically(reg=p)[0]  # type: ignore[arg-type]
+    coeffs = bloq.call_classically(reg=p)[0]
     assert np.all(coeffs == [0, 1, 2, 3, 4])
     assert bloq.adjoint().call_classically(reg=coeffs)[0] == p
 

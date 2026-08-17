@@ -24,9 +24,11 @@ import numpy as np
 
 from qualtran import (
     Bloq,
+    BloqInstance,
     Connection,
     DecomposeNotImplementedError,
     DecomposeTypeError,
+    GateWithRegisters,
     LeftDangle,
     QDType,
     Register,
@@ -81,7 +83,7 @@ class BloqAsCirqGate(cirq.Gate):
     """
 
     def __init__(self, bloq: Bloq):
-        assert not isinstance(bloq, cirq.Gate)
+        assert not isinstance(bloq, GateWithRegisters)
         for _, regs in bloq.signature.groups():
             if len(regs) > 1:
                 raise ValueError(
@@ -261,6 +263,7 @@ def _cbloq_to_cirq_circuit(
         if binst is RightDangle:
             _track_soq_name_changes(pred_cxns, qvar_to_qreg)
             continue
+        assert isinstance(binst, BloqInstance)
 
         op = _bloq_to_cirq_op(binst.bloq, pred_cxns, succ_cxns, qvar_to_qreg, qubit_manager)
         if op is not None:

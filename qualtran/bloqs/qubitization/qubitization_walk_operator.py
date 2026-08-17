@@ -120,11 +120,7 @@ class QubitizationWalkOperator(GateWithRegisters):
     def signature(self) -> Signature:
         # TODO Make `QubitizationWalkOperator` a `BlockEncoding`.
         #      https://github.com/quantumlib/Qualtran/issues/1266
-        if isinstance(self.block_encoding, (SelectBlockEncoding, LCUBlockEncoding)):
-            return Signature(
-                [*self.selection_registers, *self.target_registers, *self.junk_registers]
-            )
-        return self.block_encoding.signature
+        return Signature([*self.selection_registers, *self.target_registers, *self.junk_registers])
 
     @cached_property
     def reflect(self) -> ReflectionUsingPrepare:

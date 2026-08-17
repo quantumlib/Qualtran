@@ -13,6 +13,8 @@
 #  limitations under the License.
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import attrs
 import cirq
 import numpy as np
@@ -103,7 +105,8 @@ def test_hamming_weight_phasing_using_phase_via_cost_function(
     # TODO: This test is broken due to Cirq compatibility issues:
     #       https://github.com/quantumlib/Qualtran/issues/1763
     #       It can cause a SIGKILL
-    return pytest.xfail("Broken Cirq simulation")
+    if not TYPE_CHECKING:
+        pytest.xfail("Broken Cirq simulation")
     # pylint: disable=unreachable
     cost_reg_size = 2 ** n.bit_length()
     normalization_factor = 1 if normalize_cost_function else cost_reg_size

@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import Any, cast, TYPE_CHECKING
 
 import numpy as np
 from frozendict import frozendict
@@ -95,14 +95,14 @@ def post_process_for_logical_depth(
     try:
         from joblib import delayed, Parallel  # type: ignore[import-untyped]
     except ImportError:
-        Parallel, delayed = None, None
+        Parallel, delayed = cast(Any, None), cast(Any, None)
 
     try:
         from tqdm.auto import tqdm
     except ImportError:
         tqdm = lambda x, **kw: x  # type: ignore[assignment, misc]
 
-    if Parallel is not None:
+    if bool(Parallel):
         parallel_gen = Parallel(n_jobs=n_jobs, return_as="generator")(
             delayed(_process_single_result_for_logical_depth)(r) for r in sweep_results
         )
@@ -194,14 +194,14 @@ def post_process_for_pec_runtime(
     try:
         from joblib import delayed, Parallel
     except ImportError:
-        Parallel, delayed = None, None
+        Parallel, delayed = cast(Any, None), cast(Any, None)
 
     try:
         from tqdm.auto import tqdm
     except ImportError:
         tqdm = lambda x, **kw: x  # type: ignore[assignment, misc]
 
-    if Parallel is not None:
+    if bool(Parallel):
         parallel_gen = Parallel(n_jobs=n_jobs, return_as="generator")(
             delayed(_process_single_result_for_pec)(r, time_per_surface_code_cycle)
             for r in sweep_results

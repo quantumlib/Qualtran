@@ -92,7 +92,7 @@ class ECAddR(Bloq):
         result: ECPoint = A + self.R
         return {'ctrl': 1, 'x': result.x, 'y': result.y}
 
-    def wire_symbol(self, reg: Register, idx: tuple[int, ...] = tuple()) -> WireSymbol:
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         if reg.name == 'ctrl':

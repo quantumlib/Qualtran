@@ -123,7 +123,7 @@ class CtrlSpecAnd(Bloq):
 
     @property
     def _flat_cvs(self) -> tuple[int, ...] | HasLength:
-        if is_symbolic(self.ctrl_spec):
+        if self.ctrl_spec.is_symbolic():
             return HasLength(self.n_ctrl_qubits)
 
         flat_cvs: list[int] = []

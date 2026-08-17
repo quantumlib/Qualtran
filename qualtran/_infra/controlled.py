@@ -199,6 +199,7 @@ class CtrlSpec:
         if is_symbolic(cvs):
             # control value is not given
             return TextBox('ctrl')
+        assert isinstance(cvs, np.ndarray)
 
         # Return a circle for bits; a box otherwise.
         cv = cvs[idx]
@@ -554,7 +555,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
         from qualtran.cirq_interop._bloq_to_cirq import _wire_symbol_to_cirq_diagram_info
 
-        if isinstance(self.subbloq, cirq.Gate):
+        if isinstance(self.subbloq, GateWithRegisters):
             sub_info = cirq.circuit_diagram_info(self.subbloq, args, None)
             if sub_info is not None:
                 cv_info = cirq.circuit_diagram_info(self.ctrl_spec.to_cirq_cv())

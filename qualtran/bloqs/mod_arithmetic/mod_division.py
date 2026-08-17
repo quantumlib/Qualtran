@@ -82,12 +82,13 @@ class _KaliskiIterationStep1(Bloq):
     ) -> dict[str, SoquetT]:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
+        bitsize_int = int(self.bitsize)
         v_arr = bb.split(v)
         ctrls = np.concatenate([v_arr, [f]])
-        ctrls, junk, target = bb.add(MultiAnd(cvs=[0] * self.bitsize + [1]), ctrl=ctrls)
+        ctrls, junk, target = bb.add(MultiAnd(cvs=[0] * bitsize_int + [1]), ctrl=ctrls)
         target, m = bb.add(CNOT(), ctrl=target, target=m)
         ctrls = bb.add(
-            MultiAnd(cvs=[0] * self.bitsize + [1]).adjoint(), ctrl=ctrls, junk=junk, target=target
+            MultiAnd(cvs=[0] * bitsize_int + [1]).adjoint(), ctrl=ctrls, junk=junk, target=target
         )
         v_arr = ctrls[:-1]
         f = ctrls[-1]
@@ -649,7 +650,13 @@ class KaliskiModInverse(Bloq):
     """
 
     bitsize: SymbolicInt
-    mod: SymbolicInt = field(validator=lambda _, __, v: is_symbolic(v) or v % 2 == 1)
+    mod: SymbolicInt = field(
+        validator=lambda _, __, v: (
+            ValueError("mod must be odd")
+            if isinstance(v, (int, np.integer)) and v % 2 == 0
+            else None
+        )
+    )
     uncompute: bool = False
 
     @cached_property

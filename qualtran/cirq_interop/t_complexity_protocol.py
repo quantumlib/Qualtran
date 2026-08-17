@@ -124,8 +124,6 @@ def _from_iterable(it: Any) -> TComplexity | None:
     t = TComplexity()
     for v in it:
         r = t_complexity_compat(v)
-        if r is None:
-            return None
         t = t + r
     return t
 

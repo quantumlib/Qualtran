@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import abc
 from collections.abc import Callable, Mapping, Sequence
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import cirq
@@ -289,7 +289,7 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         return None
 
-    def call_classically(self, **vals: sympy.Symbol | ClassicalValT) -> tuple[ClassicalValT, ...]:
+    def call_classically(self, **vals: Any) -> tuple[Any, ...]:
         """Call this bloq on classical data.
 
         Bloq users can call this function to apply bloqs to classical data. If you're

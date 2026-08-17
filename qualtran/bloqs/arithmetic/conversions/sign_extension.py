@@ -21,7 +21,6 @@ from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, QInt, QIntOnesComp, Register, Side, Signature
 from qualtran.bloqs.mcmt import MultiTargetCNOT
-from qualtran.symbolics import is_symbolic
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, Soquet, SoquetT
@@ -58,7 +57,7 @@ class SignExtend(Bloq):
                 f"Expected same input and output base types, got: {self.inp_dtype}, {self.out_dtype}"
             )
 
-        if not is_symbolic(self.extend_bitsize) and self.extend_bitsize <= 0:
+        if self.extend_bitsize <= 0:
             raise ValueError(
                 f"input bitsize {self.inp_dtype.num_qubits} must be smaller than "
                 f"output bitsize {self.out_dtype.num_qubits}"
@@ -141,7 +140,7 @@ class SignTruncate(Bloq):
                 f"Expected same input and output base types, got: {self.inp_dtype}, {self.out_dtype}"
             )
 
-        if not is_symbolic(self.truncate_bitsize) and self.truncate_bitsize <= 0:
+        if self.truncate_bitsize <= 0:
             raise ValueError(
                 f"input bitsize {self.inp_dtype.num_qubits} must be larger than "
                 f"output bitsize {self.out_dtype.num_qubits}"

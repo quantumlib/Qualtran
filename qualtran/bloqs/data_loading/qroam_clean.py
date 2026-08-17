@@ -81,7 +81,8 @@ def get_optimal_log_block_size_clean_ancilla(
     else:
         k = log2(qroam_block_size)
     if is_symbolic(k):
-        return k
+        return cast(SymbolicInt, k)
+    k = float(k)
     if k < 0:
         return 0
     k_int = np.array([np.floor(k), np.ceil(k)])

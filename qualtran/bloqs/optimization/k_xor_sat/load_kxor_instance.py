@@ -295,6 +295,7 @@ class PRGAUniqueConstraintRHS(Bloq):
             m = self.inst.num_unique_constraints
             return HasLength(m), HasLength(m)
 
+        assert isinstance(scopes, tuple)
         b = [b for _, b in scopes]
         assert np.all(b == np.sort(b)), "data must be sorted!"
 
@@ -313,7 +314,7 @@ class PRGAUniqueConstraintRHS(Bloq):
                 target_bitsizes=self.angle_bitsize,
                 num_controls=self.n_ctrl,
             )
-
+        assert isinstance(data, (Sequence, np.ndarray))
         return QROM.build_from_data(
             data, target_bitsizes=(self.angle_bitsize,), num_controls=self.n_ctrl
         )
@@ -324,7 +325,7 @@ class PRGAUniqueConstraintRHS(Bloq):
         _, signs = self._qrom_angle_data
         if is_symbolic(signs):
             return self.inst.num_unique_constraints // 2
-
+        assert isinstance(signs, (Sequence, np.ndarray))
         assert np.all(signs == np.sort(signs)), "data must be sorted!"
         return int(np.searchsorted(signs, 0))
 

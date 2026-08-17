@@ -13,20 +13,21 @@
 #  limitations under the License.
 from collections.abc import Sequence
 
+import numpy as np
+import sympy
 from galois import Poly
 
 from qualtran import QGF
-from qualtran.symbolics import is_symbolic, SymbolicInt
+from qualtran.symbolics import SymbolicInt
 
 
 def qgf_converter(x: QGF | int | Poly | SymbolicInt | Sequence[int]) -> QGF:
     if isinstance(x, QGF):
         return x
-    if isinstance(x, int):
-        return QGF(2, x)
-    if is_symbolic(x):
+    if isinstance(x, (int, sympy.Expr)):
         return QGF(2, x)
     if isinstance(x, Poly):
         return QGF(2, x.degree, x)
+    assert isinstance(x, (Sequence, np.ndarray))
     p = Poly.Degrees(x)
     return QGF(2, p.degree, p)

@@ -136,7 +136,7 @@ class MultiControlPauliBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
         target_gate = (
             self.target_bloq
-            if isinstance(self.target_bloq, cirq.Gate)
+            if isinstance(self.target_bloq, GateWithRegisters)
             else BloqAsCirqGate(self.target_bloq)
         )
         cpauli = (

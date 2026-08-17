@@ -71,10 +71,10 @@ class _MontgomeryUInt(BitEncoding[int]):
         Args:
             xm: An integer in montgomery form.
         """
-        assert self.modulus is not None and not is_symbolic(self.modulus)
-        return (
-            (pow(xm, -1, self.modulus)) * pow(2, 2 * self.bitsize, int(self.modulus))
-        ) % self.modulus
+        mod = self.modulus
+        assert mod is not None and not is_symbolic(mod)
+        mod_int = int(mod)
+        return ((pow(xm, -1, mod_int)) * pow(2, 2 * self.bitsize, mod_int)) % mod_int
 
     def montgomery_product(self, xm: int, ym: int) -> int:
         """Returns the modular product of two integers in montgomery form.

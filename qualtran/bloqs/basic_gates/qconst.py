@@ -155,7 +155,7 @@ class QIntState(Bloq):
     def __attrs_post_init__(self):
         if is_symbolic(self.val) or is_symbolic(self.bitsize):
             return
-        QInt(self.bitsize).assert_valid_classical_val(self.val)
+        QInt(self.bitsize).assert_valid_classical_val(int(self.val))
 
     @cached_property
     def _impl(self):
@@ -213,7 +213,7 @@ class QIntEffect(Bloq):
     def __attrs_post_init__(self):
         if is_symbolic(self.val) or is_symbolic(self.bitsize):
             return
-        QInt(self.bitsize).assert_valid_classical_val(self.val)
+        QInt(self.bitsize).assert_valid_classical_val(int(self.val))
 
     @cached_property
     def _impl(self):
@@ -271,7 +271,7 @@ class QUIntState(Bloq):
     def __attrs_post_init__(self):
         if is_symbolic(self.val) or is_symbolic(self.bitsize):
             return
-        QUInt(self.bitsize).assert_valid_classical_val(self.val)
+        QUInt(self.bitsize).assert_valid_classical_val(int(self.val))
 
     @cached_property
     def _impl(self):
@@ -329,7 +329,7 @@ class QUIntEffect(Bloq):
     def __attrs_post_init__(self):
         if is_symbolic(self.val) or is_symbolic(self.bitsize):
             return
-        QUInt(self.bitsize).assert_valid_classical_val(self.val)
+        QUInt(self.bitsize).assert_valid_classical_val(int(self.val))
 
     @cached_property
     def _impl(self):

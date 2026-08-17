@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 import itertools
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -128,7 +128,9 @@ def my_tensors_from_classical_action(
     """
     import quimb.tensor as qtn
 
-    def _signature_to_inds(registers: Iterable[Register], cxns: dict[str, ConnectionT]):
+    def _signature_to_inds(
+        registers: Iterable[Register], cxns: dict[str, ConnectionT]
+    ) -> Iterator[tuple[ConnectionT, int]]:
         for reg in registers:
             for cxn in np.asarray(cxns[reg.name]).flat:
                 for j in range(reg.dtype.num_qubits):

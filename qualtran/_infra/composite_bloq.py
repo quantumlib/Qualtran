@@ -21,10 +21,12 @@ from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping, Seq
 from functools import cached_property
 from typing import (
     _ProtocolMeta,
+    Any,
     cast,
     FrozenSet,
     overload,
     Protocol,
+    runtime_checkable,
     TYPE_CHECKING,
     TypeAlias,
     TypeGuard,
@@ -74,6 +76,7 @@ class _NoSoquetIsInstanceMeta(_ProtocolMeta):
         # )
 
 
+@runtime_checkable
 class Soquet(Protocol, metaclass=_NoSoquetIsInstanceMeta):
     """A typing protocol for a soquet or qvar.
 
@@ -116,7 +119,7 @@ class Soquet(Protocol, metaclass=_NoSoquetIsInstanceMeta):
     @property
     def shape(self) -> tuple[int, ...]: ...
 
-    def item(self, *args) -> _QVar: ...
+    def item(self, *args) -> Any: ...
 
     @property
     def dtype(self) -> QCDType: ...
@@ -165,7 +168,7 @@ class QVarT(Protocol):
     @property
     def shape(self) -> tuple[int, ...]: ...
 
-    def item(self, *args) -> _QVar: ...
+    def item(self, *args) -> Any: ...
 
     def __getitem__(self, item) -> QVarT: ...
 
@@ -973,7 +976,7 @@ def _map_soqs(
     for old_soqs, new_soqs in soq_map:
         if BloqBuilder.is_single(old_soqs):
             assert BloqBuilder.is_single(new_soqs), new_soqs
-            flat_soq_map[old_soqs.item()] = new_soqs.item()
+            flat_soq_map[old_soqs.item()] = cast(_QVar, new_soqs.item())
             continue
 
         assert isinstance(old_soqs, np.ndarray), old_soqs

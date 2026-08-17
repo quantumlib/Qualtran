@@ -153,7 +153,8 @@ class StatePreparationViaRotations(GateWithRegisters):
         if not is_symbolic(self.phase_bitsize):
             assert self.phase_bitsize > 1
         # a valid quantum state must have norm one
-        assert np.isclose(np.linalg.norm(self.state_coefficients), 1)
+        if not isinstance(self.state_coefficients, HasLength):
+            assert np.isclose(np.linalg.norm(self.state_coefficients), 1)
 
     @property
     def state_bitsize(self) -> SymbolicInt:

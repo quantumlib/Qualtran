@@ -149,7 +149,7 @@ class PhaseGradientUnitary(GateWithRegisters):
 
         return {
             gate(exponent=self.exponent / 2**i, eps=self.eps / self.bitsize): 1
-            for i in range(self.bitsize)
+            for i in range(int(self.bitsize))
         }
 
 

@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import attrs
 
@@ -34,7 +34,6 @@ from qualtran.symbolics import is_symbolic
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, Soquet
     from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
-    from qualtran.simulation.classical_sim import ClassicalValT
 
 
 @attrs.frozen
@@ -88,7 +87,7 @@ class GF2PolyAdd(Bloq):
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         return {GF2Addition(self.qgf_poly.qgf.bitsize): self.qgf_poly.degree + 1}
 
-    def on_classical_vals(self, *, f_x, g_x) -> dict[str, ClassicalValT]:
+    def on_classical_vals(self, *, f_x: Any, g_x: Any) -> dict[str, Any]:
         return {'f_x': f_x, 'g_x': f_x + g_x}
 
 

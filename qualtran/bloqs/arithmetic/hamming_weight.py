@@ -80,7 +80,7 @@ class HammingWeightCompute(GateWithRegisters):
         #      add explicit support for symbolic functions without relying on pre-computed bounds.
         if is_symbolic(self.bitsize):
             return 1  # worst case
-        return self.bitsize.bit_count()
+        return int(self.bitsize).bit_count()
 
     def _three_to_two_adder(self, a, b, c, out) -> cirq.OP_TREE:
         return [

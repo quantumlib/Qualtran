@@ -14,7 +14,7 @@
 
 """Ising model Trotter circuit builder for FLASQ analysis examples."""
 
-from collections.abc import Generator
+from collections.abc import Generator, Iterator
 from functools import lru_cache
 
 import cirq
@@ -65,7 +65,9 @@ def ising_zz_layer(
         index = r * cols + c
         return qubits[index]
 
-    def yield_interaction_set(interactions: list[tuple[cirq.GridQubit, cirq.GridQubit]]):
+    def yield_interaction_set(
+        interactions: list[tuple[cirq.GridQubit, cirq.GridQubit]],
+    ) -> Iterator[cirq.Moment]:
         """Helper function to generate the 3 moments for a specific set of interactions."""
         if not interactions:
             return

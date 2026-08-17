@@ -115,6 +115,7 @@ class SimpleGuidingState(PrepareOracle):
             )
         else:
             assert not is_symbolic(self.inst.batched_scopes)
+            assert isinstance(self.inst.batched_scopes, tuple)
 
             bloq = SparseStatePreparationViaRotations.from_coefficient_map(
                 N,
@@ -314,6 +315,7 @@ class GuidingState(PrepareOracle):
     ) -> dict[str, SoquetT]:
         if is_symbolic(self.c):
             raise DecomposeTypeError(f"cannot decompose {self} with symbolic c=l/k={self.c}")
+        c = int(self.c)
 
         partition_ancilla = Partition(
             self.ancilla_bitsize,
@@ -331,7 +333,7 @@ class GuidingState(PrepareOracle):
             (Register('S', dtype=QAny(self.simple_guiding_state.target_bitsize), shape=(self.c,)),),
         )
         S = bb.add(partition_T_to_S, x=T)
-        for i in range(self.c):
+        for i in range(c):
             S[i] = bb.add(self.simple_guiding_state, S=S[i])
         T = bb.add(partition_T_to_S.adjoint(), S=S)
 

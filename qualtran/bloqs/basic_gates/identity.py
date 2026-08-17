@@ -97,7 +97,7 @@ class Identity(Bloq):
         if is_symbolic(self.bitsize):
             raise ValueError(f"cirq.IdentityGate does not support symbolic {self.bitsize=}")
 
-        return cirq.IdentityGate(self.bitsize).on(*q), {'q': q}
+        return cirq.IdentityGate(int(self.bitsize)).on(*q), {'q': q}
 
     def as_pl_op(self, wires: Wires) -> Operation:
         import pennylane as qml

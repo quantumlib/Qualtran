@@ -51,9 +51,7 @@ def _side_to_proto(side: Side) -> registers_pb2.Register.Side.ValueType:
         return registers_pb2.Register.Side.LEFT
     if side == Side.RIGHT:
         return registers_pb2.Register.Side.RIGHT
-    if side == Side.THRU:
-        return registers_pb2.Register.Side.THRU
-    return registers_pb2.Register.Side.UNKNOWN
+    return registers_pb2.Register.Side.THRU
 
 
 def _side_from_proto(side: registers_pb2.Register.Side.ValueType) -> Side:

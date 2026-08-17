@@ -82,6 +82,7 @@ class HasDuplicates(Bloq):
         self, bb: BloqBuilder, xs: SoquetT, flag: Soquet, **extra_soqs: 'SoquetT'
     ) -> dict[str, SoquetT]:
         assert not is_symbolic(self.l)
+        l = int(self.l)
         assert isinstance(xs, np.ndarray)
 
         cs = []
@@ -90,7 +91,7 @@ class HasDuplicates(Bloq):
             oks = [extra_soqs.pop('ctrl')]
         assert not extra_soqs
 
-        for i in range(1, self.l):
+        for i in range(1, l):
             xs[i - 1], xs[i], c, ok = bb.add(self._le_bloq, a=xs[i - 1], b=xs[i])
             cs.append(c)
             oks.append(ok)
@@ -102,7 +103,7 @@ class HasDuplicates(Bloq):
             oks[0], flag = bb.add(CNOT(), ctrl=oks[0], target=flag)
 
         oks = list(oks)
-        for i in reversed(range(1, self.l)):
+        for i in reversed(range(1, l)):
             xs[i - 1], xs[i] = bb.add(
                 self._le_bloq.adjoint(), a=xs[i - 1], b=xs[i], c=cs.pop(), target=oks.pop()
             )

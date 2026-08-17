@@ -45,6 +45,7 @@ Scope: TypeAlias = tuple[int, ...] | HasLength
 def _sort_scope(S: Scope) -> Scope:
     if is_symbolic(S):
         return S
+    assert isinstance(S, tuple)
     return tuple(sorted(S))
 
 
@@ -124,7 +125,10 @@ class KXorInstance:
 
         This is a classical preprocessing step. Time $m$.
         """
-        if is_symbolic(self.constraints) or is_symbolic(*self.constraints):
+        if is_symbolic(self.constraints):
+            return 2
+        assert isinstance(self.constraints, tuple)
+        if is_symbolic(*self.constraints):
             # user did not provide a value, assume some small constant
             return 2
 
@@ -184,6 +188,7 @@ class KXorInstance:
         if self.is_symbolic() or is_symbolic(indices):
             return evolve(self, constraints=HasLength(slen(indices)))
         assert isinstance(self.constraints, tuple)
+        assert isinstance(indices, Sequence)
 
         constraints = tuple(self.constraints[i] for i in indices)
         return evolve(self, constraints=constraints)
@@ -247,6 +252,7 @@ class KXorInstance:
         The bitsize `r` is picked as `ceil(log(n))` for an n-variable instance.
         """
         assert not is_symbolic(S)
+        assert isinstance(S, tuple)
 
         bitsize = self.index_bitsize
 

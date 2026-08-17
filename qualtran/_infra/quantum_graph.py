@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import warnings
 from functools import cached_property
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -122,6 +122,16 @@ class _Soquet:
     @property
     def shape(self) -> tuple[int, ...]:
         return ()
+
+    def __getitem__(self, item) -> _Soquet:
+        raise TypeError("Tried to index into a single soquet.")
+
+    @property
+    def bb(self) -> Any:
+        raise AttributeError("Soquet has no attribute 'bb'")
+
+    def __setitem__(self, key, value) -> None:
+        raise TypeError("Tried to assign into a single soquet.")
 
     def item(self, *args) -> _Soquet:
         if args:

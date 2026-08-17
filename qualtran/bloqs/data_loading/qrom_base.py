@@ -212,7 +212,7 @@ class QROMBase(metaclass=abc.ABCMeta):
             f"len(self.data)={len(self.data_or_shape)}"
         )
         assert len(self.target_bitsizes) == len(self.target_shapes)
-        if isinstance(self.data_or_shape, np.ndarray) and not is_symbolic(*self.target_bitsizes):
+        if self.has_data() and not is_symbolic(*self.target_bitsizes):
             assert all(
                 t >= int(np.max(d)).bit_length() for t, d in zip(self.target_bitsizes, self.data)
             )

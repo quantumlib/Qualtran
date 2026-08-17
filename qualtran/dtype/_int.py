@@ -47,7 +47,7 @@ class _Int(BitEncoding[int]):
             raise ValueError(f"cannot compute bits with symbolic {self.bitsize=}")
 
         self.assert_valid_val(x)
-        return [int(b) for b in np.binary_repr(x, width=self.bitsize)]
+        return [int(b) for b in np.binary_repr(x, width=int(self.bitsize))]
 
     def from_bits(self, bits: Sequence[int]) -> int:
         sign = bits[0]

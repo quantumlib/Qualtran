@@ -40,6 +40,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
+from qualtran._infra.registers import Register
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.sparse_matrix import RowColumnOracle
 from qualtran.bloqs.block_encoding.sparse_matrix_hermitian import (
@@ -200,6 +201,18 @@ class KikuchiHamiltonian(BlockEncoding):
     @property
     def signal_state(self) -> BlackBoxPrepare:
         return self._sparse_matrix_encoding.signal_state
+
+    @property
+    def selection_registers(self) -> tuple[Register, ...]:
+        return self._sparse_matrix_encoding.selection_registers
+
+    @property
+    def target_registers(self) -> tuple[Register, ...]:
+        return self._sparse_matrix_encoding.target_registers
+
+    @property
+    def junk_registers(self) -> tuple[Register, ...]:
+        return self._sparse_matrix_encoding.junk_registers
 
     def build_composite_bloq(self, bb: BloqBuilder, **soqs: 'SoquetT') -> dict[str, SoquetT]:
         return bb.add_d(self._sparse_matrix_encoding, **soqs)

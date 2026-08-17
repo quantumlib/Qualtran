@@ -66,6 +66,7 @@ def find_optimal_log_block_size(
     k: SymbolicFloat = 0.5 * log2(iteration_length / target_bitsize)
     if is_symbolic(k):
         return ceil(k)
+    k = float(k)
 
     if k < 0:
         return 0
@@ -155,7 +156,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):
             raise ValueError(
                 f"{type(self)} currently only supports target registers of shape (). Found {self.target_shapes}"
             )
-        if self.log_block_sizes is None:
+        if getattr(self, "log_block_sizes", None) is None:
             object.__setattr__(self, "log_block_sizes", _find_optimal_log_block_size_helper(self))
 
     @cached_property

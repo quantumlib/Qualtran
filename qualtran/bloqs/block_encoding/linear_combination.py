@@ -199,7 +199,8 @@ class LinearCombination(BlockEncoding):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
 
         alt, keep, mu = preprocess_probabilities_for_reversible_sampling(
-            unnormalized_probabilities=tuple(self.rescaled_lambd), sub_bit_precision=self.lambd_bits
+            unnormalized_probabilities=tuple(self.rescaled_lambd),
+            sub_bit_precision=int(self.lambd_bits),
         )
         N = len(self.rescaled_lambd)
 

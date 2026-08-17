@@ -308,7 +308,7 @@ class XGate(Bloq):
 
         return qml.PauliX(wires=wires)
 
-    def wire_symbol(self, reg: Register, idx: tuple[int, ...] = tuple()) -> WireSymbol:
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         from qualtran.drawing import ModPlus
 
         if reg is None:

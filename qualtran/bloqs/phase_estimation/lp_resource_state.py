@@ -88,7 +88,7 @@ class LPRSInterimPrep(GateWithRegisters):
         if is_symbolic(self.bitsize):
             ret[Rz(angle=rz_angle).controlled()] += self.bitsize
         else:
-            for i in range(self.bitsize):
+            for i in range(int(self.bitsize)):
                 ret[Rz(angle=rz_angle * (2**i)).controlled()] += 1
         return ret
 

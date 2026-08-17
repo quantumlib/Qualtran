@@ -192,7 +192,7 @@ class SwapWithZero(GateWithRegisters):
 
         return _wire_symbol_to_cirq_diagram_info(self, args)
 
-    def wire_symbol(self, reg: Register, idx: tuple[int, ...] = tuple()) -> WireSymbol:
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return super().wire_symbol(reg, idx)
         name = reg.name

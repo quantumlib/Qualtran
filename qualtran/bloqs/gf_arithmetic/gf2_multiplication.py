@@ -99,27 +99,28 @@ class SynthesizeLRCircuit(Bloq):
         L, U, P = self.lup
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"Symbolic decomposition isn't supported for {self}")
+        n = int(self.n)
 
-        for i in range(self.n):
-            for j in range(i + 1, self.n):
+        for i in range(n):
+            for j in range(i + 1, n):
                 if U[i, j]:
                     q[j], q[i] = bb.add(CNOT(), ctrl=q[j], target=q[i])
 
-        for i in reversed(range(self.n)):
+        for i in reversed(range(n)):
             for j in reversed(range(i)):
                 if L[i, j]:
                     q[j], q[i] = bb.add(CNOT(), ctrl=q[j], target=q[i])
 
-        column = [*range(self.n)]
-        for i in range(self.n):
-            for j in range(i + 1, self.n):
+        column = [*range(n)]
+        for i in range(n):
+            for j in range(i + 1, n):
                 if P[i, column[j]]:
                     q[i], q[j] = q[j], q[i]
                     column[i], column[j] = column[j], column[i]
         return {'q': q}
 
     def on_classical_vals(self, *, q: ClassicalValT) -> dict[str, ClassicalValT]:
-        if is_symbolic(self.matrix):
+        if is_symbolic(self.matrix) or not isinstance(self.matrix, np.ndarray):
             raise ValueError(f"Cannot do classical simulation on symbolic {self}")
         matrix = GF(2)(self.matrix.astype(int))
         assert isinstance(q, np.ndarray)
@@ -548,14 +549,15 @@ class MultiplyPolyByOnePlusXk(Bloq):
     ) -> dict[str, ClassicalValT]:
         if is_symbolic(self.k):
             raise TypeError(f'classical action is not supported for {self=}')
+        k = int(self.k)
         assert isinstance(f, np.ndarray)
         assert isinstance(g, np.ndarray)
         assert isinstance(h, np.ndarray)
         f_p = Poly(f[::-1])
         g_p = Poly(g[::-1])
         h_p = Poly(h[::-1])
-        if self.k > 0:
-            h_p += f_p * g_p * Poly.Degrees([0, self.k])
+        if k > 0:
+            h_p += f_p * g_p * Poly.Degrees([0, k])
         res = h_p.coefficients().tolist()
         res = [0 for _ in range(len(h) - len(res))] + res
         res = res[::-1]
@@ -564,11 +566,11 @@ class MultiplyPolyByOnePlusXk(Bloq):
     def build_composite_bloq(
         self, bb: BloqBuilder, f: SoquetT, g: SoquetT, h: SoquetT
     ) -> dict[str, SoquetT]:
-        n = self.n
-        k = self.k
-        l = self.l
-        if is_symbolic(n) or is_symbolic(k) or is_symbolic(l):
+        if is_symbolic(self.n) or is_symbolic(self.k) or is_symbolic(self.l):
             raise DecomposeTypeError(f"symbolic decomposition is not supported for {self}")
+        n = int(self.n)
+        k = int(self.k)
+        l = int(self.l)
         assert isinstance(f, np.ndarray)
         assert isinstance(g, np.ndarray)
         assert isinstance(h, np.ndarray)
@@ -806,9 +808,10 @@ class GF2ShiftLeft(Bloq):
     def build_composite_bloq(self, bb: BloqBuilder, f: Soquet) -> dict[str, SoquetT]:
         if is_symbolic(self.k):
             raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
+        k = int(self.k)
         f_arr = bb.split(f)[::-1]
         if self.n > 1:
-            for _ in range(self.k):
+            for _ in range(k):
                 for i in reversed(self.degrees[1:-1]):
                     f_arr[0], f_arr[i] = bb.add(CNOT(), ctrl=f_arr[0], target=f_arr[i])
                 f_arr = np.roll(f_arr, -1)
@@ -897,9 +900,10 @@ class GF2ShiftRight(Bloq):
     def build_composite_bloq(self, bb: BloqBuilder, f: Soquet) -> dict[str, SoquetT]:
         if is_symbolic(self.k):
             raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
+        k = int(self.k)
         f_arr = bb.split(f)[::-1]
         if self.n > 1:
-            for _ in range(self.k):
+            for _ in range(k):
                 f_arr = np.roll(f_arr, 1)
                 for i in self.degrees[1:-1]:
                     f_arr[0], f_arr[i] = bb.add(CNOT(), ctrl=f_arr[0], target=f_arr[i])

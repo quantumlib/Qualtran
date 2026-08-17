@@ -18,7 +18,6 @@ from typing import TYPE_CHECKING
 
 import attrs
 import numpy as np
-import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
@@ -144,8 +143,6 @@ class SparseStatePreparationViaRotations(Bloq):
         """Bloq to extract the first `d` qubits to prepare the dense state on."""
         if is_symbolic(self.target_bitsize):
             raise ValueError(f"cannot partition with symbolic {self.target_bitsize=}")
-
-        assert not isinstance(self.target_bitsize, sympy.Expr)
 
         return Partition(
             self.target_bitsize,

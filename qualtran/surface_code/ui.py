@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from typing import Any
 
 import numpy as np
@@ -41,7 +41,9 @@ from qualtran.surface_code import (
 )
 
 
-def get_objects(modules, object_type):
+def get_objects(
+    modules: Sequence[Any], object_type: type | tuple[type, ...]
+) -> Iterator[tuple[str, Any]]:
     """Get all objects of a given type from a list of modules."""
     for module in modules:
         for obj_name in dir(module):

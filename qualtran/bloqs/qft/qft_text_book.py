@@ -93,7 +93,7 @@ class QFTTextBook(GateWithRegisters):
                 self.bitsize // 2
             )
         else:
-            for i in range(1, self.bitsize):
+            for i in range(1, int(self.bitsize)):
                 ret[PhaseGradientUnitary(i, exponent=0.5, is_controlled=True)] = 1
         if self.with_reverse:
             ret[TwoBitSwap()] = self.bitsize // 2

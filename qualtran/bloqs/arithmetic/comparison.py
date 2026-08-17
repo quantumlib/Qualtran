@@ -992,11 +992,7 @@ class Equals(Bloq):
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
 
-        cvs: list[int] | HasLength
-        if isinstance(self.bitsize, int):
-            cvs = [0] * self.bitsize
-        else:
-            cvs = HasLength(self.bitsize)
+        cvs: list[int] = [0] * int(self.bitsize)
 
         x, y = bb.add(Xor(self.dtype), x=x, y=y)
         y_split = bb.split(y)
@@ -1067,7 +1063,7 @@ class EqualsAConstant(Bloq):
         if is_symbolic(self.bitsize) or is_symbolic(self.val):
             return HasLength(self.bitsize)
 
-        return tuple(QUInt(self.bitsize).to_bits(self.val))
+        return tuple(QUInt(int(self.bitsize)).to_bits(int(self.val)))
 
     def build_composite_bloq(
         self, bb: BloqBuilder, x: Soquet, target: Soquet

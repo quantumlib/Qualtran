@@ -15,12 +15,11 @@
 """Python types to support propagating symbolic compile-time classical parameters."""
 
 from collections.abc import Sized
-from typing import overload, TypeVar
+from typing import Any, Literal, overload, TypeVar
 
 import numpy as np
 import sympy
 from attrs import field, frozen, validators
-from typing_extensions import TypeIs
 
 SymbolicFloat = float | sympy.Expr
 """A floating point value or a sympy expression."""
@@ -116,16 +115,18 @@ T = TypeVar('T')
 
 
 @overload
-def is_symbolic(
-    arg: T | sympy.Expr | Shaped | HasLength, /
-) -> TypeIs[sympy.Expr | Shaped | HasLength]: ...
+def is_symbolic(arg: sympy.Expr | Shaped | HasLength, /) -> Literal[True]: ...
 
 
 @overload
-def is_symbolic(*args) -> bool: ...
+def is_symbolic(arg: int | float | complex | str | bytes | bool, /) -> Literal[False]: ...
 
 
-def is_symbolic(*args) -> TypeIs[sympy.Expr | Shaped | HasLength] | bool:
+@overload
+def is_symbolic(*args: Any) -> bool: ...
+
+
+def is_symbolic(*args: Any) -> bool:
     """Returns whether the inputs contain any symbolic object.
 
     Returns:

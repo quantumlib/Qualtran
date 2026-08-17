@@ -26,7 +26,7 @@ from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
 from qualtran.bloqs.basic_gates import Hadamard
 from qualtran.bloqs.basic_gates.swap import Swap
 from qualtran.resource_counting import BloqCountDictT, MutableBloqCountDictT, SympySymbolAllocator
-from qualtran.symbolics.types import is_symbolic
+from qualtran.symbolics.types import is_symbolic, SymbolicInt
 
 
 @attrs.frozen
@@ -72,7 +72,7 @@ class QFTPhaseGradient(GateWithRegisters):
         [Turning Gradients into Additions into QFTs](https://algassert.com/post/1620)
     """
 
-    bitsize: int
+    bitsize: SymbolicInt
     with_reverse: bool = True
 
     @cached_property

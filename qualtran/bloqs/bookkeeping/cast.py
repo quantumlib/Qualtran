@@ -35,7 +35,6 @@ from qualtran import (
     Signature,
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
-from qualtran.symbolics import is_symbolic
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -83,9 +82,6 @@ class Cast(_BookkeepingBloq):
                 f"Casting {self.inp_dtype} to {self.out_dtype} is potentially dangerous. "
                 f"If you are sure, set `Cast(..., allow_quantum_to_classical=True)`."
             )
-
-        if is_symbolic(self.inp_dtype.num_bits):
-            return
 
         if self.inp_dtype.num_bits != self.out_dtype.num_bits:
             raise ValueError(

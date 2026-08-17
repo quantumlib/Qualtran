@@ -116,7 +116,7 @@ def test_zero_effect_manual():
         bloq.call_classically(q=1)
 
     with pytest.raises(ValueError, match=r'Bad bit value: \[0\, 0\, 0\]'):
-        bloq.call_classically(q=[0, 0, 0])  # type: ignore[arg-type]
+        bloq.call_classically(q=[0, 0, 0])
 
 
 def test_one_effect_manual():
@@ -328,7 +328,7 @@ def test_meas_z_classical():
         qs[i] = bb.add(MeasureZ(), q=qs[i])
     cbloq = bb.finalize(outs=qs)
     (ret,) = cbloq.call_classically()
-    assert list(ret) == QUInt(8).to_bits(52)  # type: ignore[arg-type]
+    assert list(ret) == QUInt(8).to_bits(52)
 
 
 @pytest.mark.notebook

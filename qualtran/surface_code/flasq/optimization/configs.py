@@ -234,12 +234,9 @@ def generate_configs_from_cultivation_data(
                 raise ValueError(
                     "cultivation_data_sampling_frequency must be None or a positive integer."
                 )
-            if not cult_df.empty:
-                # Sample every k-th row from the tail of the already sorted/filtered cult_df
-                indices = range(len(cult_df) - 1, -1, -k)
-                rows_to_process = cult_df.iloc[list(indices)]
-            else:
-                rows_to_process = cult_df  # empty
+            # Sample every k-th row from the tail of the already sorted/filtered cult_df
+            indices = range(len(cult_df) - 1, -1, -k)
+            rows_to_process = cult_df.iloc[list(indices)]
         for _, row in rows_to_process.iterrows():
             derived_cult_error_rate = row["t_gate_cultivation_error_rate"]
             expected_volume = row["expected_volume"]

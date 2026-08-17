@@ -340,7 +340,7 @@ class PlantedNoisyKXOR(Bloq):
         # d = \delta m
         d = self.degree_guarantee.delta * self.inst_solve.m
         if is_symbolic(d):
-            return d  # type: ignore[return-value]
+            return d
         return ceil(d)
 
     @cached_property

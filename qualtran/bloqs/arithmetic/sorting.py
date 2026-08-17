@@ -155,8 +155,8 @@ class ParallelComparators(Bloq):
         if is_symbolic(self.k) or is_symbolic(self.offset):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
 
-        k = self.k
-        offset = self.offset
+        k = int(self.k)
+        offset = int(self.offset)
         assert isinstance(xs, np.ndarray)
 
         comp = Comparator(self.bitsize)
@@ -248,6 +248,7 @@ class BitonicMerge(Bloq):
         k = self.half_length
         if is_symbolic(k):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
+        k = int(k)
         if (k & (k - 1)) != 0:
             # TODO(#1090) support non-power-of-two input lengths
             raise DecomposeNotImplementedError("length of input lists must be a power of 2")
@@ -336,8 +337,8 @@ class BitonicSort(Bloq):
     bitsize: SymbolicInt
 
     def __attrs_post_init__(self):
-        k = self.k
-        if not is_symbolic(k):
+        if not is_symbolic(self.k):
+            k = int(self.k)
             assert k >= 1, f"length of input list must be positive, got {k=}"
             # TODO(#1090) support non-power-of-two input lengths
             assert (k & (k - 1)) == 0, f"length of input list must be a power of 2, got {k=}"

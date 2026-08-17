@@ -96,7 +96,7 @@ def test_bloq_to_dense():
     # Left inds: x=3, qubits=(0,1)
     left = 3 * 2**2 + 0 * 2**1 + 1 * 2**0
 
-    assert np.where(mat2) == (right, left)
+    assert tuple(int(x[0]) for x in np.where(mat2)) == (right, left)
 
 
 @frozen

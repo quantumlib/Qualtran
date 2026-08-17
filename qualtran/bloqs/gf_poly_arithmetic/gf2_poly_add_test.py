@@ -31,7 +31,7 @@ def test_gf2_poly_add_classical_sim():
     bloq = _gf2_poly_4_8_add.make()
     f_x = Poly(bloq.qgf_poly.qgf.gf_type([0, 1, 2, 3, 4]))
     g_x = Poly(bloq.qgf_poly.qgf.gf_type([1, 2, 3, 4, 5]))
-    assert bloq.call_classically(f_x=f_x, g_x=g_x) == (f_x, f_x + g_x)  # type: ignore[arg-type]
+    assert bloq.call_classically(f_x=f_x, g_x=g_x) == (f_x, f_x + g_x)
 
     f_x_range = np.asarray(
         [

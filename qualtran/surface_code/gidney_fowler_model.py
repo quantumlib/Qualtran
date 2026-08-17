@@ -177,7 +177,7 @@ def iter_ccz2t_factories(
             yield factory(distillation_l1_d=l1_distance, distillation_l2_d=l2_distance)
 
 
-def iter_simple_data_blocks(d_start: int = 7, d_stop: int = 35):
+def iter_simple_data_blocks(d_start: int = 7, d_stop: int = 35) -> Iterator[SimpleDataBlock]:
     for logical_data_qubit_distance in range(d_start, d_stop, 2):
         yield SimpleDataBlock(data_d=logical_data_qubit_distance)
 

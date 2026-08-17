@@ -26,6 +26,7 @@ from numpy.typing import NDArray
 from qualtran import (
     Bloq,
     BloqBuilder,
+    BloqInstance,
     BQUInt,
     CBit,
     LeftDangle,
@@ -196,8 +197,8 @@ def test_step():
     sim.step()
     assert sim.last_binst is not None and sim.last_binst is LeftDangle
     sim.step()
-    assert sim.last_binst is not None and sim.last_binst.bloq_is(ApplyClassicalTest)
-    assert sim.last_binst is not None and sim.last_binst.i == 0
+    assert isinstance(sim.last_binst, BloqInstance) and sim.last_binst.bloq_is(ApplyClassicalTest)
+    assert sim.last_binst.i == 0
 
     final_vals = sim.step().finalize()
     np.testing.assert_array_equal(final_vals['x'], xarr)

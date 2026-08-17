@@ -352,14 +352,16 @@ class SingleWindowModMul(Bloq):
     def on_classical_vals(self, x: Sequence[int], y: int, target: Sequence[int], qrom_index: int):
         if is_symbolic(self.bitsize) or is_symbolic(self.window_size):
             raise ValueError(f'classical action is not supported for {self}')
-        dtype = QMontgomeryUInt(self.window_size + self.bitsize)
+        bitsize = int(self.bitsize)
+        window_size = int(self.window_size)
+        dtype = QMontgomeryUInt(window_size + bitsize)
         target_val = QMontgomeryUInt.from_bits(dtype, target)
-        for i in range(self.window_size):
+        for i in range(window_size):
             if x[i]:
                 target_val += y << i
-        qrom_index = target_val & (2**self.window_size - 1)
+        qrom_index = target_val & (2**window_size - 1)
         Tm = self.qrom.data[0][qrom_index]
-        target_val = (target_val + Tm) >> self.window_size
+        target_val = (target_val + Tm) >> window_size
         target = QMontgomeryUInt.to_bits(dtype, target_val)
         return {'target': target, 'qrom_index': qrom_index, 'x': x, 'y': y}
 
@@ -371,28 +373,25 @@ class SingleWindowModMul(Bloq):
         target: NDArray[Soquet],  # type: ignore[type-var]
         qrom_index: Soquet,
     ):
-        if is_symbolic(self.window_size):
+        if is_symbolic(self.window_size) or is_symbolic(self.bitsize):
             raise DecomposeNotImplementedError(f'symbolic decomposition not supported for {self}')
-        for i in range(self.window_size):
-            z = bb.join(target[-self.bitsize - 1 - i : len(target) - i])
+        window_size = int(self.window_size)
+        bitsize = int(self.bitsize)
+        for i in range(window_size):
+            z = bb.join(target[-bitsize - 1 - i : len(target) - i])
             x[i], y, z = bb.add(
-                CAdd(QMontgomeryUInt(self.bitsize), QMontgomeryUInt(self.bitsize + 1)),
-                ctrl=x[i],
-                a=y,
-                b=z,
+                CAdd(QMontgomeryUInt(bitsize), QMontgomeryUInt(bitsize + 1)), ctrl=x[i], a=y, b=z
             )
             z_arr = bb.split(z)
-            target[-self.bitsize - 1 - i : len(target) - i] = z_arr
+            target[-bitsize - 1 - i : len(target) - i] = z_arr
 
-        m = bb.join(target[-self.window_size :], QMontgomeryUInt(self.window_size))
-        m, qrom_index = bb.add(Xor(QMontgomeryUInt(self.window_size)), x=m, y=qrom_index)
-        target[-self.window_size :] = bb.split(m)
+        m = bb.join(target[-window_size:], QMontgomeryUInt(window_size))
+        m, qrom_index = bb.add(Xor(QMontgomeryUInt(window_size)), x=m, y=qrom_index)
+        target[-window_size:] = bb.split(m)
 
         qrom_index, qrom_target, *junk = bb.add(self.qrom, selection=qrom_index)
         z = bb.join(target)
-        qrom_target, z = bb.add(
-            Add(QMontgomeryUInt(self.bitsize + self.window_size)), a=qrom_target, b=z
-        )
+        qrom_target, z = bb.add(Add(QMontgomeryUInt(bitsize + window_size)), a=qrom_target, b=z)
         if junk:
             assert len(junk) == 1
             qrom_index = bb.add(
@@ -404,7 +403,7 @@ class SingleWindowModMul(Bloq):
         else:
             qrom_index = bb.add(self.qrom.adjoint(), selection=qrom_index, target0_=qrom_target)
         target_arr = bb.split(z)
-        target_arr = np.roll(target_arr, self.window_size)
+        target_arr = np.roll(target_arr, window_size)
 
         return {'x': x, 'y': y, 'target': target_arr, 'qrom_index': qrom_index}
 
@@ -503,21 +502,23 @@ class _DirtyOutOfPlaceMontgomeryModMulImpl(Bloq):
     ) -> dict[str, SoquetT]:
         if is_symbolic(self.window_size) or is_symbolic(self.bitsize) or is_symbolic(self.mod):
             raise DecomposeNotImplementedError(f'symbolic decomposition not supported for {self}')
+        window_size = int(self.window_size)
+        bitsize = int(self.bitsize)
         x_arr = bb.split(x)
         x_arr = np.flip(x_arr)
 
-        target_arr = np.concatenate([bb.split(bb.allocate(self.window_size)), bb.split(target)])
+        target_arr = np.concatenate([bb.split(bb.allocate(window_size)), bb.split(target)])
         qrom_indices_arr = bb.split(qrom_indices)
 
-        for i in range(0, self.bitsize, self.window_size):
-            x_arr[i : i + self.window_size], y, target_arr, qrom_index = bb.add(
+        for i in range(0, bitsize, window_size):
+            x_arr[i : i + window_size], y, target_arr, qrom_index = bb.add(
                 self._window,
-                x=x_arr[i : i + self.window_size],
+                x=x_arr[i : i + window_size],
                 y=y,
                 target=target_arr,
-                qrom_index=bb.join(qrom_indices_arr[i : i + self.window_size]),
+                qrom_index=bb.join(qrom_indices_arr[i : i + window_size]),
             )
-            qrom_indices_arr[i : i + self.window_size] = bb.split(qrom_index)
+            qrom_indices_arr[i : i + window_size] = bb.split(qrom_index)
 
         # Free ancillas and join
         bb.free(bb.join(target_arr[: -self.bitsize]))
@@ -635,14 +636,15 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
         # Calls to this function are equivalent to calls to self._window.call_classically given the appropriate conversion int <-> bitarray.
         if is_symbolic(self.bitsize) or is_symbolic(self.window_size) or is_symbolic(self.mod):
             raise ValueError(f'classical action is not supported for {self}')
-        for i in range(self.window_size):
+        window_size = int(self.window_size)
+        for i in range(window_size):
             if (x >> i) & 1:
                 target += y << i
-        m = target & (2**self.window_size - 1)
+        m = target & (2**window_size - 1)
         Tm = self._inversion_data[m]
         target += Tm
-        target >>= self.window_size
-        qrom_indices = (qrom_indices << self.window_size) | m
+        target >>= window_size
+        qrom_indices = (qrom_indices << window_size) | m
         return target, qrom_indices
 
     def on_classical_vals(
@@ -655,11 +657,11 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
     ) -> dict[str, ClassicalValT]:
         if is_symbolic(self.bitsize) or is_symbolic(self.window_size) or is_symbolic(self.mod):
             raise ValueError(f'classical action is not supported for {self}')
+        window_size = int(self.window_size)
+        bitsize = int(self.bitsize)
+        mod = int(self.mod)
         if self.uncompute:
-            assert (
-                target is not None
-                and target == (x * y * pow(2, self.bitsize * (self.mod - 2), self.mod)) % self.mod
-            )
+            assert target is not None and target == (x * y * pow(2, bitsize * (mod - 2), mod)) % mod
             assert qrom_indices is not None
             assert reduced is not None
             return {'x': x, 'y': y}
@@ -667,20 +669,20 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
         assert qrom_indices is None
         assert reduced is None
 
-        if not (0 < x < self.mod and 0 < y < self.mod):
+        if not (0 < x < mod and 0 < y < mod):
             return {'x': x, 'y': y, 'target': 0, 'qrom_indices': 0, 'reduced': 0}
 
         target = 0
         qrom_indices = 0
         reduced = 0
-        for i in range(0, self.bitsize, self.window_size):
+        for i in range(0, bitsize, window_size):
             target, qrom_indices = self._classical_action_window(x >> i, y, target, qrom_indices)
 
-        if target >= self.mod:
-            target -= self.mod
+        if target >= mod:
+            target -= mod
             reduced = 1
 
-        montgomery_prod = (x * y * pow(2, self.bitsize * (self.mod - 2), self.mod)) % self.mod
+        montgomery_prod = (x * y * pow(2, bitsize * (mod - 2), mod)) % mod
         assert target == montgomery_prod
         return {'x': x, 'y': y, 'target': target, 'qrom_indices': qrom_indices, 'reduced': reduced}
 

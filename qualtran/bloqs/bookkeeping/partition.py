@@ -119,7 +119,7 @@ class _PartitionBase(_BookkeepingBloq, metaclass=abc.ABCMeta):
 
         return [
             qtn.Tensor(data=np.eye(2), inds=[partitioned_inds[j], (grouped, j)], tags=[str(self)])
-            for j in range(self.n)
+            for j in range(int(self.n))
         ]
 
     def _classical_partition(self, x: ClassicalValT) -> dict[str, ClassicalValT]:
@@ -154,7 +154,7 @@ class _PartitionBase(_BookkeepingBloq, metaclass=abc.ABCMeta):
             big_int = self.lumped_dtype.from_bits(big_int_bits.tolist())
             return {'x': big_int}
 
-    def wire_symbol(self, reg: Register, idx: tuple[int, ...] = tuple()) -> WireSymbol:
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
 

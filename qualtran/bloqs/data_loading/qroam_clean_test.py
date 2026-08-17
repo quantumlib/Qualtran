@@ -118,7 +118,7 @@ def test_t_complexity_2d_data_symbolic():
 @pytest.mark.parametrize('n', range(3, 8))
 def test_qroam_default_log_block_sizes(n: int):
     data = np.arange(2**n)
-    bloq = QROAMClean.build_from_data(data, data, target_bitsizes=(n.bit_length(), n.bit_length()))
+    bloq = QROAMClean.build_from_data(data, data, target_bitsizes=(n, n))
     bs = get_optimal_log_block_size_clean_ancilla(len(data), sum(bloq.target_bitsizes))
     assert bs == bloq.log_block_sizes[0]
     bloq = bloq.adjoint().qroam_clean_adjoint_bloq

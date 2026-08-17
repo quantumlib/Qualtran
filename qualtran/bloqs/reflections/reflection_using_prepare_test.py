@@ -11,8 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 import itertools
+from typing import TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -20,7 +20,7 @@ import pytest
 from numpy.typing import NDArray
 
 import qualtran.testing as qlt_testing
-from qualtran import Adjoint
+from qualtran import Adjoint, GateWithRegisters
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.arithmetic import LessThanConstant, LessThanEqual
 from qualtran.bloqs.basic_gates.swap import CSwap
@@ -69,7 +69,7 @@ def keep(op: cirq.Operation):
     if op.gate is not None and isinstance(op.gate, Adjoint):
         subgate = (
             op.gate.subbloq
-            if isinstance(op.gate.subbloq, cirq.Gate)
+            if isinstance(op.gate.subbloq, GateWithRegisters)
             else BloqAsCirqGate(op.gate.subbloq)
         )
         ret |= subgate in gateset_to_keep
@@ -118,7 +118,8 @@ def test_reflection_using_prepare(num_ones, eps, global_phase):
     # TODO: This test is broken due to Cirq compatibility issues:
     #       https://github.com/quantumlib/Qualtran/issues/1763
     #       It can cause a SIGKILL
-    return pytest.xfail("Broken Cirq simulation")
+    if not TYPE_CHECKING:
+        pytest.xfail("Broken Cirq simulation")
     # pylint: disable=unreachable
 
     data = [1] * num_ones

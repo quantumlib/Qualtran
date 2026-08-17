@@ -14,7 +14,7 @@
 
 import dataclasses
 import inspect
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from typing import Any
 
 import attrs
@@ -247,7 +247,7 @@ def bloqs_to_proto(
     return library
 
 
-def _iter_fields(bloq: Bloq):
+def _iter_fields(bloq: Any) -> Iterator[dataclasses.Field | attrs.Attribute]:
     """Yields fields of `bloq` iff `type(bloq)` is implemented using `dataclasses` or `attr`.
 
     The method only yields Fields corresponding to attributes that are part of the __init__ method
@@ -263,7 +263,7 @@ def _iter_fields(bloq: Bloq):
             if field.name in inspect.signature(type(bloq).__init__).parameters:
                 yield field
     elif attrs.has(type(bloq)):
-        for field in attrs.fields(type(bloq)):  # type: ignore[arg-type]
+        for field in attrs.fields(type(bloq)):
             if field.name in inspect.signature(type(bloq).__init__).parameters:
                 yield field
 

@@ -175,7 +175,7 @@ class Product(BlockEncoding):
     def _multCX(self, bitsize) -> Bloq:
         return XGate().controlled(ctrl_spec=CtrlSpec(QAny(bitsize), cvs=0))
 
-    def _multCX_autopart(self, *, used_bits: int, total_bits: int) -> Bloq:
+    def _multCX_autopart(self, *, used_bits: SymbolicInt, total_bits: SymbolicInt) -> Bloq:
         if used_bits <= 0:
             raise ValueError("used_bits must be > 0")
         if used_bits > total_bits:

@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterator
+
 import numpy as np
 import pytest
 from scipy import stats
@@ -20,13 +22,13 @@ import qualtran.rotation_synthesis._math_config as mc
 from qualtran.rotation_synthesis.matrix import _analytical_decomposition as ad
 
 
-def _random_angles(n, seed):
+def _random_angles(n: int, seed: int) -> Iterator[np.ndarray]:
     rng = np.random.default_rng(seed)
     for _ in range(n):
         yield rng.random(3) * 2 * np.pi
 
 
-def _random_su2(n, seed):
+def _random_su2(n: int, seed: int) -> Iterator[np.ndarray]:
     for u in stats.unitary_group(2).rvs(n, seed):
         yield u / np.linalg.det(u) ** 0.5
 

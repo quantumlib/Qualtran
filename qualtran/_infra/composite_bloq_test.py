@@ -718,7 +718,7 @@ def test_can_tell_individual_from_ndsoquet():
     assert hash(single_soq2_unwrap) == hash(s1)
     assert single_soq2_unwrap == s1
     with pytest.warns(DeprecationWarning, match=r'deprecated'):
-        assert isinstance(single_soq2_unwrap, Soquet)  # type: ignore[misc]
+        assert isinstance(single_soq2_unwrap, Soquet)
     assert isinstance(single_soq2_unwrap, _Soquet)
 
 

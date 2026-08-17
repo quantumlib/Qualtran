@@ -30,7 +30,7 @@ from qualtran.resource_counting import GateCounts
         ),
     ],
 )
-def test_rotation_cost(model: rcm.RotationCostModel, want: float):
+def test_rotation_cost(model: rcm.RotationCostModel, want: GateCounts):
     assert model.rotation_cost(2**-3) == want
 
 
@@ -46,5 +46,5 @@ def test_rotation_cost(model: rcm.RotationCostModel, want: float):
         ),
     ],
 )
-def test_preparation_overhead(model: rcm.RotationCostModel, want: float):
+def test_preparation_overhead(model: rcm.RotationCostModel, want: GateCounts):
     assert model.preparation_overhead(2**-3) == want

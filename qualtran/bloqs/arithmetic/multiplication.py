@@ -104,7 +104,7 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):
             raise ValueError(f'Symbolic bitsize {self.b_bitsize} not supported')
         if is_symbolic(self.result_bitsize):
             raise ValueError(f'Symbolic bitsize {self.result_bitsize} not supported')
-        return [2] * self.a_bitsize, [2] * self.b_bitsize, [2] * self.result_bitsize
+        return [2] * int(self.a_bitsize), [2] * int(self.b_bitsize), [2] * int(self.result_bitsize)
 
     def adjoint(self) -> PlusEqualProduct:
         return evolve(self, is_adjoint=not self.is_adjoint)
@@ -126,8 +126,8 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):
             raise ValueError(f'Symbolic bitsize {self.b_bitsize} not supported')
         if is_symbolic(self.result_bitsize):
             raise ValueError(f'Symbolic bitsize {self.result_bitsize} not supported')
-        wire_symbols = ['a'] * self.a_bitsize + ['b'] * self.b_bitsize
-        wire_symbols += ['c-=a*b' if self.is_adjoint else 'c+=a*b'] * self.result_bitsize
+        wire_symbols = ['a'] * int(self.a_bitsize) + ['b'] * int(self.b_bitsize)
+        wire_symbols += ['c-=a*b' if self.is_adjoint else 'c+=a*b'] * int(self.result_bitsize)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def my_tensors(
@@ -212,7 +212,7 @@ class Square(Bloq):
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot get tensors for symbolic {self=}")
 
-        n = self.bitsize
+        n = int(self.bitsize)
         N = 2**self.bitsize
         data = np.zeros((N, N, N**2), dtype=np.complex128)
         for x in range(N):

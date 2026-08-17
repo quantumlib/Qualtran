@@ -388,7 +388,7 @@ def cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
     if isinstance(gate, BloqAsCirqGate):
         # Perhaps this operation was constructed from `Bloq.on()`.
         return gate.bloq
-    if isinstance(gate, Bloq):
+    if isinstance(gate, GateWithRegisters):
         # I.e., `GateWithRegisters`.
         return gate
 

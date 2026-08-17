@@ -252,7 +252,7 @@ class QDefBuilder:
 
     def add_bloqnection(
         self,
-        binst: qlt.BloqInstance,
+        binst: qlt.BloqInstance | qlt.DanglingT,
         preds: Sequence[qlt.Connection],
         succs: Sequence[qlt.Connection],
     ) -> None:
@@ -297,6 +297,7 @@ class QDefBuilder:
             self._stmnts.append(self.nodes.QReturnNode(ret_mapping=kwargs))
             return
 
+        assert isinstance(binst, qlt.BloqInstance)
         # Otherwise, this is a qcall to a sub-bloq.
         # A. Handle input variables to the subbloq
         inpsoqs = _cxns_to_soq_dict(
