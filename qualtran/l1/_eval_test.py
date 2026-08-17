@@ -61,7 +61,7 @@ def test_safe_eval_prevents_arbitrary_code():
     assert result.name == 'os.system'
 
 
-def test_safe_eval_allows_whitelisted():
+def test_safe_eval_allows_allowlisted():
     # `qualtran.Register` is the canonical, allow-listed spelling.
     # We need to construct a node that evaluates to QBit() first.
     from qualtran import Register
@@ -127,7 +127,7 @@ def test_safe_eval_symbol_enforces_string():
 
 
 def test_safe_eval_propagates_safe_flag():
-    # Nested object that is not whitelisted
+    # Nested object that is not allowlisted
     inner_node = CObjectNode(name='os.system', cargs=[CArgNode(None, LiteralNode('echo hacked'))])
 
     # Tuple containing the unsafe node

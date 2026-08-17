@@ -203,7 +203,7 @@ def get_ccz2t_costs_from_grid_search(
         factory_iter: iterable containing the instances of MagicStateFactory to search over.
         data_block_iter: iterable containing the instances of SimpleDataBlock to search over.
         cost_function: function of PhysicalCostsSummary to be minimized. Defaults to spacetime volume.
-            Set `cost_function = (lambda pc: pc.duration_hr)` to mimimize wall time.
+            Set `cost_function = (lambda pc: pc.duration_hr)` to minimize wall time.
 
     Returns:
         best_cost, best_factory, best_data_block

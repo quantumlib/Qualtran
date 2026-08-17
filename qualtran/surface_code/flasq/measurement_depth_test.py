@@ -64,7 +64,7 @@ class BloqWithStaticMeasurementDepth(Bloq):
 
 @attrs.frozen(kw_only=True)
 class UnknownBloq(Bloq):
-    """Dummy Bloq that cannot be decomposed for cost analysis."""
+    """Placeholder Bloq that cannot be decomposed for cost analysis."""
 
     @property
     def signature(self) -> Signature:

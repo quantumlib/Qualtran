@@ -34,7 +34,7 @@ def _call_graph(bc: type[Bloq]):
 
     bloq_counts = getattr(bc, 'bloq_counts')
     if bloq_counts.__qualname__ != 'Bloq.bloq_counts':
-        print(f'{bc}.bloq_counts should not be overriden.')
+        print(f'{bc}.bloq_counts should not be overridden.')
 
     bcg = getattr(bc, 'build_call_graph')
     annot = bcg.__annotations__
