@@ -75,7 +75,7 @@ class NotebookSpecV2:
         return str(Path(path).parent)
 
     @property
-    def path_stem(self):
+    def path_stem(self) -> str:
         if self._path_stem is None:
             return self.module.__name__.split('.')[-1]
         return self._path_stem
@@ -168,7 +168,7 @@ def get_bloq_doc_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> list[_Cell]:
     ]
 
 
-def _get_one_ex_instance_cell(bloq_ex: BloqExample, cid_prefix):
+def _get_one_ex_instance_cell(bloq_ex: BloqExample, cid_prefix: str) -> _PyCell:
     """Code cell for one example instance."""
     return _PyCell(
         text='\n'.join(_get_bloq_example_source_lines(bloq_ex)),
@@ -275,7 +275,7 @@ def _get_title_lines(title: str, mod: ModuleType) -> list[str]:
 
 
 def _init_notebook(
-    path_stem: str, overwrite=False, directory: str = '.'
+    path_stem: str, overwrite: bool = False, directory: str = '.'
 ) -> tuple[nbformat.NotebookNode, Path]:
     """Initialize a jupyter notebook.
 

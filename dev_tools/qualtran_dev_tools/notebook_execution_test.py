@@ -19,7 +19,7 @@ from nbformat import NotebookNode
 from .notebook_execution import is_out_of_date, linkify
 
 
-def test_is_out_of_date(tmpdir):
+def test_is_out_of_date(tmpdir: Path) -> None:
     tmpdir = Path(tmpdir)
     src_path = tmpdir / 'src.txt'
     dest_path = tmpdir / 'dest.txt'
@@ -41,7 +41,7 @@ def test_is_out_of_date(tmpdir):
     assert is_out_of_date(src_path, dest_path)
 
 
-def test_linkify():
+def test_linkify() -> None:
     nb = NotebookNode()
     nb.cells = []
     nb.cells.append(NotebookNode(cell_type='code', source='print("hello world")'))

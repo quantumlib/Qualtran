@@ -115,7 +115,7 @@ def diff_to_new_interesting_lines(unified_diff_lines: list[str]) -> dict[int, st
     return interesting_lines
 
 
-def fix_line_from_coverage_file(line):
+def fix_line_from_coverage_file(line: str) -> str:
     line = line.rstrip()
     if line.startswith("!"):
         line = line[1:]

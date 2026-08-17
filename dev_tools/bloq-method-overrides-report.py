@@ -16,7 +16,7 @@ from qualtran_dev_tools.bloq_finder import get_bloq_classes
 from qualtran import Bloq
 
 
-def _call_graph(bc: type[Bloq]):
+def _call_graph(bc: type[Bloq]) -> None:
     """Check that a bloq class overrides the right call graph methods.
 
     - Override `build_call_graph` with canonical type annotations.
@@ -45,13 +45,13 @@ def _call_graph(bc: type[Bloq]):
         print(f"{bc}.build_call_graph -> {ret_str!r}")
 
 
-def report_call_graph_methods():
+def report_call_graph_methods() -> None:
     bcs = get_bloq_classes()
     for bc in bcs:
         _call_graph(bc)
 
 
-def main():
+def main() -> None:
     report_call_graph_methods()
 
 

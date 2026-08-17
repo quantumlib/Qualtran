@@ -27,7 +27,7 @@ import shutil
 from qualtran_dev_tools.git_tools import get_git_root
 
 
-def main():
+def main() -> None:
     docs = get_git_root() / 'docs'
 
     checkpoint_dirs = docs.glob('**/.ipynb_checkpoints')

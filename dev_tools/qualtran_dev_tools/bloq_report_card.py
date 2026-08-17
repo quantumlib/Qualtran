@@ -37,7 +37,7 @@ def _get_package(bloq_cls: type[Bloq]) -> str:
     return '.'.join(bloq_cls.__module__.split('.')[:-1])
 
 
-def color_status(v: BloqCheckResult) -> str:
+def color_status(v: Any) -> str:
     """Used to style the dataframe."""
     if v is BloqCheckResult.PASS:
         return 'background-color:lightgreen'
@@ -51,9 +51,11 @@ def color_status(v: BloqCheckResult) -> str:
     return 'background-color:red'
 
 
-def format_status(v: BloqCheckResult) -> str:
+def format_status(v: Any) -> str:
     """Used to format the dataframe."""
-    return v.name.lower()
+    if isinstance(v, BloqCheckResult):
+        return v.name.lower()
+    return str(v).lower()
 
 
 def bloq_classes_with_no_examples(
@@ -98,7 +100,8 @@ def record_for_bloq_example(be: BloqExample) -> dict[str, Any]:
 
 
 def show_bloq_report_card(df: pd.DataFrame) -> pandas.io.formats.style.Styler:
-    return df.style.map(color_status, CHECKCOLS).format(format_status, CHECKCOLS)
+    cols = pd.Index(CHECKCOLS)
+    return df.style.map(color_status, subset=cols).format(format_status, subset=cols)
 
 
 def get_bloq_report_card(
@@ -133,5 +136,5 @@ def summarize_results(report_card: pd.DataFrame) -> pd.DataFrame:
         .fillna(0)
         .astype(int)
     )
-    summary.columns = [v.name.lower() for v in summary.columns]
+    summary.columns = [getattr(v, 'name', str(v)).lower() for v in summary.columns]
     return summary

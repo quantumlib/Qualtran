@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import asyncio
 import multiprocessing
 import random
@@ -18,6 +20,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Self
 
 import attrs
 import filelock
@@ -74,7 +77,7 @@ class _NBInOutPaths:
     @classmethod
     def from_nb_rel_path(
         cls, nb_rel_path: Path, reporoot: Path, sourceroot: Path, output_md: bool, output_nbs: bool
-    ):
+    ) -> Self:
         nbpath = sourceroot / nb_rel_path
 
         md_rel_path = nb_rel_path.with_name(f'{nb_rel_path.stem}.md')
@@ -96,7 +99,7 @@ class _NBInOutPaths:
 
         return is_out_of_date(self.nb_in, self.nb_out)
 
-    def needs_reexport(self):
+    def needs_reexport(self) -> bool:
         """Whether anything needs to be re-exported"""
         return self.md_needs_reexport() or self.nb_needs_reexport()
 
@@ -123,7 +126,7 @@ def _make_link_replacements() -> list[tuple[str, str]]:
 _LINK_REPLACEMENTS = _make_link_replacements()
 
 
-def linkify(nb: NotebookNode):
+def linkify(nb: NotebookNode) -> None:
     """Replace certain object names with links to their reference docs in markdown cells."""
     for i, cell in enumerate(nb.cells):
         if cell.cell_type != 'markdown':
@@ -241,7 +244,7 @@ def execute_and_export_notebooks(
     output_md: bool,
     only_out_of_date: bool = True,
     n_workers: int | None = None,
-):
+) -> None:
     """Find, execute, and export all checked-in ipynbs.
 
     Args:

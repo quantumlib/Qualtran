@@ -126,14 +126,14 @@ def _get_all_aliases(obj: griffe.Object | griffe.Alias) -> set[str]:
     return valid_aliases
 
 
-def _get_preferred_dotpath(all_aliases: set[str]):
+def _get_preferred_dotpath(all_aliases: set[str]) -> str:
     """From a list of candidates, select the best "dotpath".
 
     A "dotpath" is a string path of the form "foo.bar.X", i.e. with dots. It is in contrast
     to a file path with slashes.
     """
 
-    def prefered_path_key(alias: str):
+    def prefered_path_key(alias: str) -> int:
         return -len(alias.split('.'))
 
     pref_path = sorted(all_aliases, key=prefered_path_key)[0]
@@ -161,7 +161,7 @@ class _PackageWalker:
     link_d: dict[str, tuple[Page, str | None]] = attrs.field(factory=dict, kw_only=True)
     """Mapping from preferred dotpath to a doc location."""
 
-    def _walk_table_of_contents(self, obj: griffe.Alias | griffe.Object):
+    def _walk_table_of_contents(self, obj: griffe.Alias | griffe.Object) -> None:
         """DFS through all the objects.
 
         First, we recurse on the objects we care about.
@@ -385,12 +385,12 @@ def make_reference_docs(
         'Soquet': 'qualtran.Soquet',
     }
 
-    def _pages_sort_key(p: Page):
+    def _pages_sort_key(p: Page) -> list[str]:
         assert p.pref_path is not None, f'Uninitialized {p}'
         path_parts = p.pref_path.split('.')
         return path_parts
 
-    def _page_in_section(p: Page, section: str):
+    def _page_in_section(p: Page, section: str) -> bool:
         if p.section == section:
             return True
         if section == 'qualtran' and p.section in ['qualtran.dtype', 'qualtran.exception']:

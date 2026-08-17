@@ -14,6 +14,7 @@
 
 import subprocess
 import sys
+from typing import Any
 
 BOLD = 1
 DIM = 2
@@ -53,7 +54,7 @@ def run(
     abbreviate_non_option_arguments: bool = False,
     check: bool = True,
     text: bool = True,
-    **subprocess_run_kwargs,
+    **subprocess_run_kwargs: Any,
 ) -> subprocess.CompletedProcess:
     """Call subprocess.run with an option to log executed command to stderr.
 
@@ -95,7 +96,7 @@ def run(
     )
 
 
-def output_of(args: str | list[str], **kwargs) -> str:
+def output_of(args: str | list[str], **kwargs: Any) -> str:
     """Invokes a subprocess and returns its output as a string.
 
     Args:

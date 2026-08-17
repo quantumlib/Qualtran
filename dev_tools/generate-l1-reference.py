@@ -96,7 +96,7 @@ def generate(check: bool = False, include_slow: bool = True) -> list[str]:
     return stale
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         '--check',

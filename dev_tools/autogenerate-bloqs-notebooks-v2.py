@@ -80,7 +80,7 @@ def _all_nbspecs() -> Iterable[NotebookSpecV2]:
         yield from nbspecs
 
 
-def render_notebooks():
+def render_notebooks() -> None:
     for nbspec in _all_nbspecs():
         render_notebook(nbspec)
 
@@ -94,7 +94,7 @@ def _get_toc_section_lines(caption: str, entries: list[str], maxdepth: int = 2) 
     )
 
 
-def write_toc():
+def write_toc() -> None:
     """Write the table-of-contents for the library based on `NB_BY_SECTION`."""
     header = [
         '.. _bloqs_library:',
@@ -119,7 +119,7 @@ def write_toc():
         f.write('\n'.join(toc_lines))
 
 
-def check_all_bloqs_included():
+def check_all_bloqs_included() -> None:
     """Scour the library for BloqDocSpecs. Emit a warning if they're not listed in any of the nb specs."""
     bspecs = get_bloqdocspecs()
     rendered_bspecs = []

@@ -20,7 +20,7 @@ from qualtran_dev_tools.incremental_coverage import check_for_uncovered_lines
 from qualtran_dev_tools.prepared_env import PreparedEnv
 
 
-def main():
+def main() -> None:
     if len(sys.argv) < 2:
         print(
             shell_tools.highlight(

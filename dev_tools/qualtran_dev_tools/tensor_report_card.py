@@ -61,7 +61,7 @@ class ExecuteWithTimeout:
         """
         self.queued.append((func, kwargs))
 
-    def _submit_from_queue(self):
+    def _submit_from_queue(self) -> None:
         # helper method that takes an item from the queue, launches a process,
         # and records it in the `pending` attribute. This must only be called
         # if we're allowed to spawn a new process.
@@ -126,7 +126,9 @@ class ExecuteWithTimeout:
         return (finished.kwargs, result)
 
 
-def report_on_tensors(name: str, cls_name: str, bloq: Bloq, cxn) -> None:
+def report_on_tensors(
+    name: str, cls_name: str, bloq: Bloq, cxn: multiprocessing.connection.Connection
+) -> None:
     """Get timing information for tensor functionality.
 
     This should be used with `ExecuteWithTimeout`. The resultant

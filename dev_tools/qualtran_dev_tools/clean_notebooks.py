@@ -21,7 +21,7 @@ import nbformat
 from nbconvert.preprocessors import ClearMetadataPreprocessor, ClearOutputPreprocessor
 
 
-def get_nb_rel_paths(rootdir) -> list[Path]:
+def get_nb_rel_paths(rootdir: Path | str) -> list[Path]:
     """List all checked-in *.ipynb files within `rootdir`."""
     cp = subprocess.run(
         ['git', 'ls-files', '*.ipynb'],
@@ -36,7 +36,7 @@ def get_nb_rel_paths(rootdir) -> list[Path]:
     return nb_rel_paths
 
 
-def clean_notebook(nb_path: Path, do_clean: bool = True):
+def clean_notebook(nb_path: Path, do_clean: bool = True) -> bool:
     """Clean a notebook.
 
     If `do_clean` is true, modify the notebook. Otherwise, just print a diff.
