@@ -48,13 +48,10 @@ def _my_bloq_example() -> TestAtom:
 def test_get_bloq_example_source_lines() -> None:
     lines = _get_bloq_example_source_lines(_my_bloq_example)
     source = '\n'.join(lines)
-    assert (
-        source
-        == """\
+    assert source == """\
 # Comment
 x = 'y' + str(2)
 my_bloq_example = TestAtom(tag=x)"""
-    )
 
 
 def test_get_cells() -> None:

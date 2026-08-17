@@ -93,4 +93,3 @@ class WriteIfDifferent:
         If size is not specified, resizes to the current position.
         """
         return self._buffer.truncate(size)
-
