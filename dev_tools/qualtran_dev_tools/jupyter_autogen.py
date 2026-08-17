@@ -14,6 +14,8 @@
 
 """Autogeneration of stub Jupyter notebooks."""
 
+from __future__ import annotations
+
 import abc
 import inspect
 import re
@@ -85,7 +87,7 @@ class NotebookSpecV2:
         return Path(self.directory) / f'{self.path_stem}.ipynb'
 
 
-def _get_bloq_example_source_lines(bloq_ex: 'BloqExample') -> list[str]:
+def _get_bloq_example_source_lines(bloq_ex: BloqExample) -> list[str]:
     """Parse out the source code from a factory function, so we can render it into a cell.
 
     Args:

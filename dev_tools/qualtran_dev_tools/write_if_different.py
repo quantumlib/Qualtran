@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import io
 from collections.abc import Iterable
 from pathlib import Path
@@ -60,7 +62,7 @@ class WriteIfDifferent:
             print(f"{self.path}\t writing.")
             f_write.write(new_content)
 
-    def __enter__(self) -> 'WriteIfDifferent':
+    def __enter__(self) -> WriteIfDifferent:
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
