@@ -104,9 +104,7 @@ def test_composite_bloq():
     cxns, signature = _manually_make_test_cbloq_cxns()
     cbloq = CompositeBloq(connections=cxns, signature=signature)
 
-    assert (
-        cbloq.debug_text()
-        == """\
+    assert cbloq.debug_text() == """\
 TestTwoBitOp<1>
   LeftDangle.q1 -> ctrl
   LeftDangle.q2 -> target
@@ -118,7 +116,6 @@ TestTwoBitOp<2>
   TestTwoBitOp<1>.target -> ctrl
   ctrl -> RightDangle.q1
   target -> RightDangle.q2"""
-    )
 
 
 def test_iter_bloqnections():
@@ -250,7 +247,7 @@ def test_wrong_soquet():
 def test_double_use_1():
     bb, x, y = _get_bb()
 
-    with pytest.raises(BloqError, match=r'.*quantum variable was re\-used.*'):
+    with pytest.raises(BloqError, match=r'.*quantum variable was reused.*'):
         bb.add(TestTwoBitOp(), ctrl=x, target=x)
 
 
@@ -259,7 +256,7 @@ def test_double_use_2():
 
     x2, y2 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
-    with pytest.raises(BloqError, match=r'.*quantum variable was re\-used.*'):
+    with pytest.raises(BloqError, match=r'.*quantum variable was reused.*'):
         x3, y3 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
 
@@ -285,7 +282,7 @@ def test_finalize_wrong_soquet():
     assert x != x2
     assert y != y2
 
-    with pytest.raises(BloqError, match=r'.*quantum variable was re\-used.*'):
+    with pytest.raises(BloqError, match=r'.*quantum variable was reused.*'):
         bb.finalize(
             x=x2, y=bb._make_qvar(BloqInstance(TestTwoBitOp(), i=12), Register('target', QAny(2)))
         )
@@ -295,7 +292,7 @@ def test_finalize_double_use_1():
     bb, x, y = _get_bb()
     x2, y2 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
-    with pytest.raises(BloqError, match=r'.*quantum variable was re\-used.*'):
+    with pytest.raises(BloqError, match=r'.*quantum variable was reused.*'):
         bb.finalize(x=x2, y=x2)
 
 
@@ -303,7 +300,7 @@ def test_finalize_double_use_2():
     bb, x, y = _get_bb()
     x2, y2 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
-    with pytest.raises(BloqError, match=r'.*quantum variable was re\-used.*'):
+    with pytest.raises(BloqError, match=r'.*quantum variable was reused.*'):
         bb.finalize(x=x, y=y2)
 
 
@@ -496,9 +493,7 @@ def test_add_from(call_decompose):
     else:
         (stuff,) = bb.add_from(TestParallelCombo(), reg=stuff)
     bloq = bb.finalize(stuff=stuff)
-    assert (
-        bloq.debug_text()
-        == """\
+    assert bloq.debug_text() == """\
 TestParallelCombo<0>
   LeftDangle.stuff -> reg
   reg -> Split<1>.reg
@@ -524,7 +519,6 @@ Join<5>
   TestAtom<3>.q -> reg[1]
   TestAtom<4>.q -> reg[2]
   reg -> RightDangle.stuff"""
-    )
 
 
 def test_final_soqs():

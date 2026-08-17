@@ -77,7 +77,7 @@ class SingleFactorizationOneBody(BlockEncoding):
         is_adjoint: Whether this bloq is daggered or not. This affects the QROM cost.
         kp1: QROAM blocking factor for data prepared over l (auxiliary) index.
             Defaults to 1 (i.e. QROM).
-        kp1: QROAM blocking factor for data prepared over pq indicies. Defaults to 1 (i.e.) QROM.
+        kp1: QROAM blocking factor for data prepared over pq indices. Defaults to 1 (i.e.) QROM.
         kp1_inv: QROAM blocking factor for inverting data prepared over l (auxiliary) index.
         kp1_inv: QROAM blocking factor for inverting of data prepared over pq.
 
@@ -93,7 +93,7 @@ class SingleFactorizationOneBody(BlockEncoding):
         spin: Qubit for controlling swaps over system registers.
         sys: The system registers.
 
-    Refererences:
+    References:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             Hypercontraction](https://arxiv.org/abs/2011.03494) Fig. 15 page 43.
     """
@@ -295,7 +295,7 @@ class SingleFactorizationBlockEncoding(BlockEncoding):
             amplification in inner uniform state preparation. Called $b_r$ in the reference.
         kp1: QROAM blocking factor for data prepared over l (auxiliary) index.
             Defaults to 1 (i.e. QROM).
-        kp1: QROAM blocking factor for data prepared over pq indicies. Defaults to 1 (i.e.) QROM.
+        kp1: QROAM blocking factor for data prepared over pq indices. Defaults to 1 (i.e.) QROM.
         kp1_inv: QROAM blocking factor for inverting the data prepared over l (auxiliary) index.
         kp1_inv: QROAM blocking factor for inverting the data prepared over pq.
 
@@ -309,7 +309,7 @@ class SingleFactorizationBlockEncoding(BlockEncoding):
         spin: Qubit for controlling swaps over system registers.
         sys: The system registers.
 
-    Refererences:
+    References:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             Hypercontraction](https://arxiv.org/abs/2011.03494) Fig 15, page 43.
     """

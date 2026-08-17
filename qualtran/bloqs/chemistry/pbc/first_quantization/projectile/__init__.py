@@ -15,8 +15,8 @@ r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian with a quan
 
 Here we consider the simulation setup from [Quantum computation of stopping
 power for inertial fusion target design](https://arxiv.org/abs/2308.12352),
-which is concerned with the dyamics on a (quantum) projectile traversing a
-medium, which is modelled using a first quantizated representation. The main
+which is concerned with the dynamics of a (quantum) projectile traversing a
+medium, which is modelled using a first quantized representation. The main
 modifications are that we need to add the Hamiltonian terms for the projectile
 and allow for a different (larger) set of momenta for the projectile.
 

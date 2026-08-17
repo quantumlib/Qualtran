@@ -63,8 +63,8 @@ class UnitaryChannel(Channel):
 
 
     Attributes:
-        p: The upper left elemenet of the clifford+T matrix.
-        q: The lower left elemenet of the clifford+T matrix.
+        p: The upper left element of the clifford+T matrix.
+        q: The lower left element of the clifford+T matrix.
         n: The number of T gates.
         twirl: If True, the unitary is twirled with gates equiprobable chosen
             from the gates $\{I, Z, S, S^\dagger\}$.
@@ -115,7 +115,7 @@ class UnitaryChannel(Channel):
         return UnitaryChannel(u.matrix[0, 0], u.matrix[1, 0], n, twirl)
 
     def to_cirq(self, fmt: str = "xz", qs: Optional[Sequence[cirq.Qid]] = None) -> cirq.Circuit:
-        """Retruns a representation of the channel as a cirq circuit.
+        """Returns a representation of the channel as a cirq circuit.
 
         Args:
             fmt: The gates to use (see the documentation of to_sequence).
@@ -134,7 +134,7 @@ class UnitaryChannel(Channel):
         return cirq.Circuit(ctr.to_cirq(self.to_matrix(), fmt, q))
 
     def to_quirk(self, fmt: str = "xz", allow_global_phase: bool = True) -> str:
-        """Retruns a quirk link representing the channel operation.
+        """Returns a quirk link representing the channel operation.
 
         Args:
             fmt: The gates to use (see the documentation of to_sequence).
@@ -221,7 +221,7 @@ class ProjectiveChannel(Channel):
     correction: Channel
 
     def success_probability(self, config: mc.MathConfig) -> rst.Real:
-        """Constructs a probablity of a zero measurement."""
+        """Constructs a probability of a zero measurement."""
         v = self.rotation.q.polar(config)[0] / _zsqrt2.radius_at_n(
             _zsqrt2.LAMBDA_KLIUCHNIKOV, self.rotation.n, config
         )
@@ -262,7 +262,7 @@ class ProjectiveChannel(Channel):
         )
 
     def to_cirq(self, fmt: str = "xz", qs: Optional[Sequence[cirq.Qid]] = None) -> cirq.Circuit:
-        """Retruns a representation of the channel as a cirq circuit.
+        """Returns a representation of the channel as a cirq circuit.
 
         Args:
             fmt: The gates to use (see the documentation of to_sequence).
@@ -290,7 +290,7 @@ class ProjectiveChannel(Channel):
         )
 
     def to_quirk(self, fmt: str = "xz", allow_global_phase: bool = True) -> str:
-        """Retruns a quirk link representing the channel operation.
+        """Returns a quirk link representing the channel operation.
 
         Args:
             fmt: The gates to use (see the documentation of to_sequence).
@@ -344,7 +344,7 @@ class ProbabilisticChannel(Channel):
     Attributes:
         c1: The first channel.
         c2: The second channel.
-        probability: The probablility of applying the first channel.
+        probability: The probability of applying the first channel.
     """
 
     c1: Channel

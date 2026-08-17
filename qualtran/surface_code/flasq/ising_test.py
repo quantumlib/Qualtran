@@ -476,7 +476,7 @@ def test_full_ising_circuit_measurement_depth(n_steps, dt_param, expected_depth_
         # Depth of X layer = 1.0, Depth of ZZ layer = 4.0 (from Rz gates)
         calculated_expected_depth = (n_steps + 1) * 1.0 + n_steps * 4.0
         assert depth_result == MeasurementDepth(depth=calculated_expected_depth)
-        assert calculated_expected_depth == expected_depth_val  # Sanity check parameterization
+        assert calculated_expected_depth == expected_depth_val  # Validate parameterization
     assert len(list(decomposed_full_circuit.all_operations())) == expected_ops_full
 
 
