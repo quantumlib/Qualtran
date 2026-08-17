@@ -258,7 +258,7 @@ class UnserializableBloq(Bloq):
 
 def test_check_bloq_example_serializes() -> None:
     try:
-        import google.protobuf  # noqa: F401
+        from qualtran.serialization.bloq import bloqs_from_proto, bloqs_to_proto  # noqa: F401
 
         has_protobuf = True
     except ModuleNotFoundError:
