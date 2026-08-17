@@ -407,4 +407,3 @@ def test_check_equivalent_bloq_example_counts() -> None:
     with pytest.raises(BloqCheckException) as raises_ctx:
         assert_equivalent_bloq_example_counts(_disagree)
     assert raises_ctx.value.check_result is BloqCheckResult.FAIL
-
