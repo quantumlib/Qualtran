@@ -27,7 +27,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import cast, TYPE_CHECKING, TypeAlias
+from typing import cast, TYPE_CHECKING
 
 from attrs import field, frozen
 

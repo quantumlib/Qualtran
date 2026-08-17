@@ -17,7 +17,7 @@ import abc
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from functools import cached_property
-from typing import Any, Protocol, TYPE_CHECKING, TypeAlias
+from typing import Any, Protocol, TYPE_CHECKING
 
 import attrs
 import numpy as np

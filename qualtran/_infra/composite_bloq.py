@@ -23,12 +23,10 @@ from typing import (
     _ProtocolMeta,
     Any,
     cast,
-    FrozenSet,
     overload,
     Protocol,
     runtime_checkable,
     TYPE_CHECKING,
-    TypeAlias,
     TypeGuard,
     TypeVar,
 )

@@ -15,7 +15,7 @@
 
 import abc
 from collections.abc import Sequence
-from typing import Any, Protocol, TypeAlias
+from typing import Any, Protocol
 
 import attrs
 

@@ -19,7 +19,7 @@ import logging
 import uuid
 import warnings
 from collections.abc import Callable, Container, Sequence
-from typing import cast, TYPE_CHECKING, TypeAlias
+from typing import cast, TYPE_CHECKING
 
 import attrs
 import numpy as np

@@ -18,7 +18,7 @@ import logging
 import warnings
 from collections.abc import Mapping, Sequence
 from functools import lru_cache
-from typing import Any, cast, Protocol, TYPE_CHECKING, TypeAlias
+from typing import Any, cast, Protocol, TYPE_CHECKING
 
 import attrs
 import numpy as np

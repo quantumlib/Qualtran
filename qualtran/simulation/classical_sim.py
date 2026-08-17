@@ -19,7 +19,7 @@ from __future__ import annotations
 import abc
 import itertools
 from collections.abc import Iterable, Mapping, Sequence
-from typing import Any, Self, TYPE_CHECKING, TypeAlias
+from typing import Any, Self, TYPE_CHECKING
 
 import attrs
 import networkx as nx

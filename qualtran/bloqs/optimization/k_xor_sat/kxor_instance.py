@@ -29,7 +29,7 @@ import itertools
 from collections import defaultdict
 from collections.abc import Sequence
 from functools import cached_property
-from typing import cast, TypeAlias
+from typing import cast
 
 import numpy as np
 import sympy
