@@ -47,7 +47,6 @@ from qualtran.testing import (
     assert_bloq_example_decompose,
     assert_bloq_example_make,
     assert_bloq_example_qtyping,
-    assert_bloq_example_serializes,
     assert_connections_compatible,
     assert_consistent_classical_action,
     assert_equivalent_bloq_example_counts,
@@ -60,7 +59,6 @@ from qualtran.testing import (
     check_bloq_example_decompose,
     check_bloq_example_make,
     check_bloq_example_qtyping,
-    check_bloq_example_serializes,
     check_equivalent_bloq_example_counts,
 )
 
@@ -307,33 +305,6 @@ def test_check_bloq_example_qtyping() -> None:
     assert res is BloqCheckResult.FAIL
     with pytest.raises(BloqCheckException) as raises_ctx:
         assert_bloq_example_qtyping(_fail)
-    assert raises_ctx.value.check_result is BloqCheckResult.FAIL
-
-
-@frozen
-class UnserializableBloq(Bloq):
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature([])
-
-
-def test_check_bloq_example_serializes() -> None:
-    @bloq_example
-    def _cnot() -> CNOT:
-        return CNOT()
-
-    res, msg = check_bloq_example_serializes(_cnot)
-    assert res is BloqCheckResult.PASS
-    assert_bloq_example_serializes(_cnot)
-
-    @bloq_example
-    def _unserializable() -> UnserializableBloq:
-        return UnserializableBloq()
-
-    res, msg = check_bloq_example_serializes(_unserializable)
-    assert res is BloqCheckResult.FAIL
-    with pytest.raises(BloqCheckException) as raises_ctx:
-        assert_bloq_example_serializes(_unserializable)
     assert raises_ctx.value.check_result is BloqCheckResult.FAIL
 
 
