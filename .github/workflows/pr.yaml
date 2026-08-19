@@ -223,7 +223,7 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --frozen --directory experimental/rsqualtran --no-install-project --no-install-package qualtran
-          uv pip install --no-deps -e .
-          uv pip install --no-deps -e experimental/rsqualtran
+          uv pip install --directory experimental/rsqualtran --no-deps -e ../..
+          uv pip install --directory experimental/rsqualtran --no-deps -e .
       - run: |
           uv run --no-sync check/experimental-rsqualtran
