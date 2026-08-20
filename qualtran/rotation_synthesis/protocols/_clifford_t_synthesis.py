@@ -558,33 +558,33 @@ def mixed_magnitude_approx(
     if rz_prob_approx is None:
         return None
 
+    # Rx is a negative rotation around X - as a result, the over- and under-rotations are flipped.
     rz_under_rotation = rz_prob_approx.c2.to_matrix()
     rz_over_rotation = rz_prob_approx.c1.to_matrix()
-    rx_under_rotation = (_su2_ct.HSqrt2 @ rz_under_rotation @ _su2_ct.HSqrt2.adjoint()).numpy(
-        config
+    rx_under_rotation = channels.UnitaryChannel.from_unitaries(
+        _su2_ct.HSqrt2, rz_under_rotation, _su2_ct.HSqrt2.adjoint()
     )
-    rx_over_rotation = (_su2_ct.HSqrt2 @ rz_over_rotation @ _su2_ct.HSqrt2.adjoint()).numpy(config)
+    rx_over_rotation = channels.UnitaryChannel.from_unitaries(
+        _su2_ct.HSqrt2, rz_over_rotation, _su2_ct.HSqrt2.adjoint()
+    )
 
-    # Probabilities produced by `mixed_diagonal_protocol` (Theorem 3.12) differ from what is
-    # calculated via mixed magnitue approximation (Proposition 3.21), so we need to recalculate
-    # them. Furthermore, rotating the under and over Z-approximations from mixed diagonalization
-    # to become X-approximations can add error proportional to Im(|rz[1, 0]|) ocasionally producing
-    # two under-rotations (and thus a negative probability value).
-    delta_under = config.arccos(abs(rx_under_rotation[0, 0])) + (-theta / 2)
-    delta_over = config.arccos(abs(rx_over_rotation[0, 0])) + (-theta / 2)
-    p = config.sin(2 * delta_over) / (config.sin(2 * delta_over) - config.sin(2 * delta_under))
-    if p < 0:
-        return None
-
-    zxz_under_rotation = rsad.su_unitary_to_zxz_angles(rx_under_rotation, config)
-    zxz_over_rotation = rsad.su_unitary_to_zxz_angles(rx_over_rotation, config)
+    zxz_under_rotation = rsad.su_unitary_to_zxz_angles(rx_under_rotation.to_matrix().numpy(config), config)
+    zxz_over_rotation = rsad.su_unitary_to_zxz_angles(rx_over_rotation.to_matrix().numpy(config), config)
 
     z_under_rotations = (
         diagonal_unitary_approx(
-            theta=-(alpha - zxz_under_rotation[0]) / 2, eps=eps, max_n=max_n, config=config
+            theta=-(alpha - zxz_under_rotation[0]) / 2,
+            eps=eps,
+            max_n=max_n,
+            config=config,
+            verbose=verbose,
         ),
         diagonal_unitary_approx(
-            theta=-(beta - zxz_under_rotation[2]) / 2, eps=eps, max_n=max_n, config=config
+            theta=-(beta - zxz_under_rotation[2]) / 2,
+            eps=eps,
+            max_n=max_n,
+            config=config,
+            verbose=verbose,
         ),
     )
 
@@ -608,20 +608,36 @@ def mixed_magnitude_approx(
     if None in [*z_under_rotations, *z_over_rotations]:
         return None
 
-    return channels.ProbabilisticChannel(
+    prob_channel = channels.ProbabilisticChannel(
         c1=channels.UnitaryChannel.from_unitaries(
             z_under_rotations[0].to_matrix(),
-            _su2_ct.HSqrt2,
-            rz_under_rotation,
-            _su2_ct.HSqrt2.adjoint(),
+            rx_under_rotation,
             z_under_rotations[1].to_matrix(),
         ),
         c2=channels.UnitaryChannel.from_unitaries(
             z_over_rotations[0].to_matrix(),
-            _su2_ct.HSqrt2,
-            rz_over_rotation,
-            _su2_ct.HSqrt2.adjoint(),
+            rx_over_rotation,
             z_over_rotations[1].to_matrix(),
         ),
-        probability=p,
+        probability=rz_prob_approx.probability,
     )
+
+    # Error Calculation
+    theta_under = config.arccos(abs(rx_under_rotation.to_matrix().numpy(config)[0, 0]))
+    theta_over = config.arccos(abs(rx_over_rotation.to_matrix().numpy(config)[0, 0]))
+    e1 = prob_channel.c1.diamond_norm_distance_to_unitary(
+        rsad.rz(alpha, config)
+        @ rsad.rx(theta_under * 2, config)
+        @ rsad.rz(beta, config),
+        config,
+    ) * prob_channel.probability
+    e2 = prob_channel.c2.diamond_norm_distance_to_unitary(
+        rsad.rz(alpha, config)
+        @ rsad.rx(theta_over * 2, config)
+        @ rsad.rz(beta, config),
+        config,
+    ) * (1 - prob_channel.probability)
+    e3 = rz_prob_approx.diamond_norm_distance_to_rz(-theta / 2, config)
+    print(e1 + e2 + e3)
+
+    return prob_channel
