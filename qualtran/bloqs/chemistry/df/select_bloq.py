@@ -42,11 +42,11 @@ class ProgRotGateArray(Bloq):
     Registers:
         offset: Offset for p register.
         p: Register for inner state preparation. This is of size $\ceil \log (L \Xi + N / 2)$.
-        rotatations: Data register storing rotations.
+        rotations: Data register storing rotations.
         spin_sel: A single qubit register for spin.
         sys: The system register.
 
-    Refererences:
+    References:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             Hypercontraction](https://arxiv.org/abs/2011.03494). Step 4. Page 53.
     """

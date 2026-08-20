@@ -72,7 +72,7 @@ def _is_symbol_or_int(expression):
 def _extract_common_bloq_attributes(bloq: Bloq, name: Optional[str] = None) -> dict[str, Any]:
     """Extract common bloq attributes such as name, type and ports.
 
-    There are several Bloq classes, however, they all share common set of atributes.
+    There are several Bloq classes, however, they all share common set of attributes.
     This function is used to extract them, so that we don't have to duplicate logic
     for each Bloq subtype.
 
