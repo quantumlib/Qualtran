@@ -547,7 +547,8 @@ def mixed_magnitude_approx(
         section 3.5
     """
     # From Proposition 3.21, this algorithm produces an estimation that is a
-    # $3\epsilon$-approximation to the target unitary.
+    # $3\epsilon$-approximation to the target unitary. So, we should target
+    # $\epsilon / 3$ as our error.
     eps = config.number(eps) / 3
 
     alpha, theta, beta = rsad.su_unitary_to_zxz_angles(unitary, config)
@@ -558,9 +559,8 @@ def mixed_magnitude_approx(
     if rz_prob_approx is None:
         return None
 
-    # Rx is a negative rotation around X - as a result, the over- and under-rotations are flipped.
-    rz_under_rotation = rz_prob_approx.c2.to_matrix()
-    rz_over_rotation = rz_prob_approx.c1.to_matrix()
+    rz_under_rotation = rz_prob_approx.c1.to_matrix()
+    rz_over_rotation = rz_prob_approx.c2.to_matrix()
     rx_under_rotation = channels.UnitaryChannel.from_unitaries(
         _su2_ct.HSqrt2, rz_under_rotation, _su2_ct.HSqrt2.adjoint()
     )
@@ -568,8 +568,12 @@ def mixed_magnitude_approx(
         _su2_ct.HSqrt2, rz_over_rotation, _su2_ct.HSqrt2.adjoint()
     )
 
-    zxz_under_rotation = rsad.su_unitary_to_zxz_angles(rx_under_rotation.to_matrix().numpy(config), config)
-    zxz_over_rotation = rsad.su_unitary_to_zxz_angles(rx_over_rotation.to_matrix().numpy(config), config)
+    zxz_under_rotation = rsad.su_unitary_to_zxz_angles(
+        rx_under_rotation.to_matrix().numpy(config), config
+    )
+    zxz_over_rotation = rsad.su_unitary_to_zxz_angles(
+        rx_over_rotation.to_matrix().numpy(config), config
+    )
 
     z_under_rotations = (
         diagonal_unitary_approx(
@@ -610,34 +614,12 @@ def mixed_magnitude_approx(
 
     prob_channel = channels.ProbabilisticChannel(
         c1=channels.UnitaryChannel.from_unitaries(
-            z_under_rotations[0].to_matrix(),
-            rx_under_rotation,
-            z_under_rotations[1].to_matrix(),
+            z_under_rotations[0].to_matrix(), rx_under_rotation, z_under_rotations[1].to_matrix()
         ),
         c2=channels.UnitaryChannel.from_unitaries(
-            z_over_rotations[0].to_matrix(),
-            rx_over_rotation,
-            z_over_rotations[1].to_matrix(),
+            z_over_rotations[0].to_matrix(), rx_over_rotation, z_over_rotations[1].to_matrix()
         ),
         probability=rz_prob_approx.probability,
     )
-
-    # Error Calculation
-    theta_under = config.arccos(abs(rx_under_rotation.to_matrix().numpy(config)[0, 0]))
-    theta_over = config.arccos(abs(rx_over_rotation.to_matrix().numpy(config)[0, 0]))
-    e1 = prob_channel.c1.diamond_norm_distance_to_unitary(
-        rsad.rz(alpha, config)
-        @ rsad.rx(theta_under * 2, config)
-        @ rsad.rz(beta, config),
-        config,
-    ) * prob_channel.probability
-    e2 = prob_channel.c2.diamond_norm_distance_to_unitary(
-        rsad.rz(alpha, config)
-        @ rsad.rx(theta_over * 2, config)
-        @ rsad.rz(beta, config),
-        config,
-    ) * (1 - prob_channel.probability)
-    e3 = rz_prob_approx.diamond_norm_distance_to_rz(-theta / 2, config)
-    print(e1 + e2 + e3)
 
     return prob_channel
