@@ -218,7 +218,9 @@ def to_cobject_node(x: Any, *, nodes: L1Nodes = qualtran_l1_nodes) -> CValueNode
         )
 
     if isinstance(x, QDType) and isinstance(x, get_builtin_qdtypes()):
-        return object_to_object_node(x, pkg='', nodes=nodes)
+        from ._dtypes import to_qdtype_node
+
+        return to_qdtype_node(x, nodes=nodes)
 
     if attrs.has(x):
         return object_to_object_node(x, nodes=nodes)
