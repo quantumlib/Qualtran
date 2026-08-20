@@ -146,9 +146,29 @@ def test_empty_tuple_node():
     assert FastL1ASTPrinter().visit(node) == L1ASTPrinter().visit(node)
 
 
-def test_qdtype_node_invalid_shape_raises():
+def test_qdtype_node_numpy_shape():
+    import numpy as np
+
     from qualtran.l1.nodes import CObjectNode, QDTypeNode
 
-    node = QDTypeNode(dtype=CObjectNode(name='QBit', cargs=[]), shape=['not_an_int'])  # type: ignore[list-item]
+    node = QDTypeNode(
+        dtype=CObjectNode(name='QBit', cargs=[]), shape=[np.int64(2), np.int32(3)]  # type: ignore[list-item]
+    )
+    assert FastL1ASTPrinter().visit(node) == 'QBit[2, 3]'
+    assert FastL1ASTPrinter().visit(node) == L1ASTPrinter().visit(node)
+
+
+def test_qdtype_node_invalid_shape_raises():
+    import sympy
+
+    from qualtran.l1.nodes import CObjectNode, QDTypeNode
+
+    node_str = QDTypeNode(dtype=CObjectNode(name='QBit', cargs=[]), shape=['not_an_int'])  # type: ignore[list-item]
     with pytest.raises(ValueError, match='Invalid shape'):
-        FastL1ASTPrinter().visit(node)
+        FastL1ASTPrinter().visit(node_str)
+
+    node_sym = QDTypeNode(dtype=CObjectNode(name='QBit', cargs=[]), shape=[sympy.Symbol('n')])  # type: ignore[list-item]
+    with pytest.raises(ValueError, match='Invalid shape'):
+        FastL1ASTPrinter().visit(node_sym)
+    with pytest.raises(ValueError, match='Invalid shape'):
+        L1ASTPrinter().visit(node_sym)

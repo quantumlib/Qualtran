@@ -18,9 +18,8 @@ representation using direct function calls rather than singledispatch/visitor
 metaprogramming.
 """
 
+import numbers
 from typing import Any, cast, Tuple
-
-import sympy
 
 from .nodes import (
     AliasAssignmentNode,
@@ -92,9 +91,9 @@ def format_qdtype(node: QDTypeNode) -> str:
     """Format a quantum data type node."""
     dtype_str = format_cobject(node.dtype)
     if node.shape is not None:
-        if not all(isinstance(x, (int, sympy.Expr)) for x in node.shape):
+        if not all(isinstance(x, numbers.Integral) for x in node.shape):
             raise ValueError(f"Invalid shape in QDTypeNode {node}")
-        shape_str = ', '.join(repr(x) for x in node.shape)
+        shape_str = ', '.join(str(int(x)) for x in node.shape)
         return f"{dtype_str}[{shape_str}]"
     return dtype_str
 
