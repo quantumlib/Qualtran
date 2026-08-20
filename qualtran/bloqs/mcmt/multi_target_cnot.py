@@ -11,8 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
+from collections.abc import Iterator
 from functools import cached_property
-from typing import Dict, Iterator
 
 import cirq
 import sympy
@@ -36,7 +38,7 @@ class MultiTargetCNOT(GateWithRegisters):
         Appendix B.1.
     """
 
-    bitsize: 'SymbolicInt'
+    bitsize: SymbolicInt
 
     @cached_property
     def signature(self) -> Signature:
@@ -66,8 +68,8 @@ class MultiTargetCNOT(GateWithRegisters):
         return cirq.CircuitDiagramInfo(wire_symbols=["@"] + ["X"] * self.bitsize)
 
     def on_classical_vals(
-        self, control: 'ClassicalValT', targets: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+        self, control: ClassicalValT, targets: ClassicalValT
+    ) -> dict[str, ClassicalValT]:
         if control:
             targets = (2**self.bitsize - 1) ^ targets
         return {'control': control, 'targets': targets}

@@ -12,12 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Iterator, TYPE_CHECKING
+from __future__ import annotations
+
+from collections.abc import Iterator
+from typing import TYPE_CHECKING
 
 import networkx as nx
 
 if TYPE_CHECKING:
     from qualtran import BloqInstance
+    from qualtran._infra.quantum_graph import DanglingT
 
 _ALLOCATION_PRIORITY: int = int(1e16)
 """A large constant value to ensure that allocations are performed as late as possible
@@ -25,7 +29,7 @@ and de-allocations (with -_ALLOCATION_PRIORITY priority) are performed as early 
 To determine ordering among allocations, we may add a priority to this base value."""
 
 
-def _priority(node: 'BloqInstance') -> int:
+def _priority(node: BloqInstance | DanglingT) -> int:
     from qualtran._infra.gate_with_registers import total_bits
     from qualtran._infra.quantum_graph import DanglingT
     from qualtran.bloqs.bookkeeping import Allocate, Free
@@ -45,7 +49,7 @@ def _priority(node: 'BloqInstance') -> int:
     return total_bits(signature.rights()) - total_bits(signature.lefts())
 
 
-def greedy_topological_sort(binst_graph: nx.DiGraph) -> Iterator['BloqInstance']:
+def greedy_topological_sort(binst_graph: nx.DiGraph) -> Iterator[BloqInstance | DanglingT]:
     """Stable greedy topological sorting for the bloq instance graph to minimize qubit counts.
 
     Topological sorting for the Bloq Instances graph which maintains a priority queue

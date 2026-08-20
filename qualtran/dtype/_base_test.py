@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Any, Iterable, List, Sequence
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 import attrs
 import numpy as np
@@ -101,7 +102,7 @@ class LegacyBQUInt(QDType):
         if val >= self.iteration_length:
             raise ValueError(f"Too-large classical value encountered in {debug_str}")
 
-    def to_bits(self, x: int) -> List[int]:
+    def to_bits(self, x: int) -> list[int]:
         """Yields individual bits corresponding to binary representation of x"""
         self.assert_valid_classical_val(x, debug_str='val')
         return QUInt(self.bitsize).to_bits(x)

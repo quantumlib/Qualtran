@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from collections import Counter
 
 from attrs import frozen
@@ -58,7 +60,7 @@ class SymmetricDifference(Bloq):
             assert self.n_lhs >= self.n_rhs, "lhs must be the larger set"
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('S', self.dtype, shape=(self.n_lhs,)),
@@ -68,7 +70,7 @@ class SymmetricDifference(Bloq):
             ]
         )
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # the forward pass, i.e. all bloqs that must be uncomputed
         counts_forward = Counter[Bloq]()
 

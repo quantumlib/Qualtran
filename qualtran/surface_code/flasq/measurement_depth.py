@@ -20,8 +20,11 @@ DAG, where each node is weighted by its measurement depth contribution.
 Also called 'reaction depth' in the paper.
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Callable, Dict, Mapping, Optional, Union
+from collections.abc import Callable, Mapping
+from typing import Any
 
 import attrs
 import networkx as nx
@@ -76,7 +79,7 @@ class MeasurementDepth:
         converter=_to_frozendict, default=frozendict()
     )
 
-    def __add__(self, other: "MeasurementDepth") -> "MeasurementDepth":
+    def __add__(self, other: Any) -> MeasurementDepth:
         """Adds two MeasurementDepth objects.
 
         Depths are summed, and unknown bloq counts are merged by summing.
@@ -97,7 +100,7 @@ class MeasurementDepth:
         # The constructor handles converting the merged dict back to frozendict
         return MeasurementDepth(depth=new_depth, bloqs_with_unknown_depth=merged_unknowns)
 
-    def __radd__(self, other):
+    def __radd__(self, other: Any) -> MeasurementDepth:
         """Handles reversed addition, e.g., sum([MeasurementDepth(...)])"""
         if other == 0:
             return self
@@ -120,13 +123,13 @@ class MeasurementDepth:
                     sorted_unknown = sorted(unknown_dict.items(), key=lambda item: str(item[0]))
                 except TypeError:  # pragma: no cover
                     # Fallback if keys somehow aren't comparable via string
-                    sorted_unknown = list(unknown_dict.items())  # type: ignore[assignment]
+                    sorted_unknown = list(unknown_dict.items())
                 unknown_str = "{" + ", ".join(f"{k!s}: {v!s}" for k, v in sorted_unknown) + "}"
                 str_items.append(f"bloqs_with_unknown_depth: {unknown_str}")
 
         return f"MeasurementDepth({', '.join(sorted(str_items))})"
 
-    def asdict(self) -> Dict[str, Union[SymbolicFloat, Mapping[Bloq, SymbolicInt]]]:
+    def asdict(self) -> dict[str, SymbolicFloat | Mapping[Bloq, SymbolicInt]]:
         """Returns a dictionary representation, filtering zero depth and empty unknowns."""
         # Use attrs.asdict, filtering out fields that are zero/empty
         d = attrs.asdict(
@@ -164,7 +167,7 @@ def _cbloq_measurement_depth(
     """
     binst_graph = cbloq._binst_graph.copy()
     # Use a mutable dict for efficient aggregation during the loop
-    total_unknown_bloqs_mut: Dict[Bloq, SymbolicInt] = {}
+    total_unknown_bloqs_mut: dict[Bloq, SymbolicInt] = {}
 
     # 1. Assign weights to edges based on the source node's measurement depth
     for node in binst_graph.nodes():
@@ -254,7 +257,7 @@ class TotalMeasurementDepth(CostKey[MeasurementDepth]):
             bloqs are flagged as unknown.
     """
 
-    rotation_depth: Optional[SymbolicFloat] = None
+    rotation_depth: SymbolicFloat | None = None
 
     def compute(
         self, bloq: Bloq, get_callee_cost: Callable[[Bloq], MeasurementDepth]
@@ -282,7 +285,7 @@ class TotalMeasurementDepth(CostKey[MeasurementDepth]):
                 return MeasurementDepth(depth=self.rotation_depth)
 
         # --- Recursive Case ---
-        cbloq: Optional[CompositeBloq] = None
+        cbloq: CompositeBloq | None = None
         if isinstance(bloq, CompositeBloq):
             # If it's already a CompositeBloq, analyze its graph directly
             logger.debug("Computing %s using provided CompositeBloq graph for %s", self, bloq)

@@ -48,7 +48,7 @@ from __future__ import annotations
 
 import argparse
 import pathlib
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -106,7 +106,7 @@ def load_and_filter(csv_path: pathlib.Path) -> pd.DataFrame:
 
 def search_dataframe(
     df: pd.DataFrame, physical_error_rate: float, target_logical_error_rate: float
-) -> Optional[pd.DataFrame]:
+) -> pd.DataFrame | None:
     """Find the row minimizing expected_volume for given error constraints.
 
     The lookup mirrors the "round up and round down" policy described in
@@ -202,7 +202,7 @@ def _configure_axes(ax: plt.Axes) -> None:
 
 
 def plot_cultivation_heatmap(
-    filtered_df: pd.DataFrame, output_path: Optional[pathlib.Path] = None, grid_res: int = 400
+    filtered_df: pd.DataFrame, output_path: pathlib.Path | None = None, grid_res: int = 400
 ) -> None:
     import matplotlib.colors as mcolors
     import matplotlib.pyplot as plt

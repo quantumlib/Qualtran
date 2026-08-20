@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Tuple
 
 import numpy as np
 import pytest
@@ -151,7 +150,7 @@ def test_scaled_chebyshev_poly_odd(bloq_autotester):
 
 @pytest.mark.slow
 def test_scaled_chebyshev_even_tensors():
-    from_gate = t4((XGate().tensor_contract() + Hadamard().tensor_contract()))
+    from_gate = t4(XGate().tensor_contract() + Hadamard().tensor_contract())
     bloq = _scaled_chebyshev_poly_even()
     from_tensors = gate_test(bloq)
     np.testing.assert_allclose(from_gate, from_tensors, atol=0.06)
@@ -180,7 +179,7 @@ class TestBlockEncoding(BlockEncoding):
     """Instance of `BlockEncoding` to block encode a matrix with one system qubit by adding one
     ancilla qubit and one resource qubit."""
 
-    matrix: Tuple[Tuple[complex, ...], ...] = field(
+    matrix: tuple[tuple[complex, ...], ...] = field(
         converter=lambda mat: tuple(tuple(row) for row in mat)
     )
     alpha: SymbolicFloat = 1
@@ -210,7 +209,7 @@ class TestBlockEncoding(BlockEncoding):
 
     def build_composite_bloq(
         self, bb: BloqBuilder, system: Soquet, ancilla: Soquet, resource: Soquet
-    ) -> Dict[str, SoquetT]:
+    ) -> dict[str, SoquetT]:
         bits = bb.join(np.array([system, ancilla, resource]))
         bits = bb.add(MatrixGate(3, self.matrix, atol=3e-8), q=bits)
         system, ancilla, resource = bb.split(bits)

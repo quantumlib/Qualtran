@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import cirq
 import numpy as np
 import pytest
@@ -29,7 +31,7 @@ class _TestThru(Bloq):
     n_bits: int
 
     @property
-    def signature(self) -> "Signature":
+    def signature(self) -> Signature:
         return Signature([Register("q", QAny(self.n_bits))])
 
     def __str__(self):
@@ -42,7 +44,7 @@ class _TestTwoIn(Bloq):
     n_bits_b: int
 
     @property
-    def signature(self) -> "Signature":
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register("a", QAny(self.n_bits_a), side=Side.LEFT),

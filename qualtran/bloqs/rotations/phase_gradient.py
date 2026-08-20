@@ -11,8 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
+from collections.abc import Iterator, Sequence
 from functools import cached_property
-from typing import Dict, Iterator, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import attrs
 import cirq
@@ -94,13 +97,13 @@ class PhaseGradientUnitary(GateWithRegisters):
         Gidney (2017).
     """
 
-    bitsize: 'SymbolicInt'
+    bitsize: SymbolicInt
     exponent: float = 1
     is_controlled: bool = False
     eps: float = 1e-10
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return (
             Signature.build_from_dtypes(ctrl=QBit(), phase_grad=self.phase_dtype)
             if self.is_controlled
@@ -135,7 +138,7 @@ class PhaseGradientUnitary(GateWithRegisters):
             return self
         return attrs.evolve(self, exponent=self.exponent * power)
 
-    def build_call_graph(self, ssa: SympySymbolAllocator) -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         gate = CZPowGate if self.is_controlled else ZPowGate
         if is_symbolic(self.bitsize):
             return {
@@ -146,7 +149,7 @@ class PhaseGradientUnitary(GateWithRegisters):
 
         return {
             gate(exponent=self.exponent / 2**i, eps=self.eps / self.bitsize): 1
-            for i in range(self.bitsize)
+            for i in range(int(self.bitsize))
         }
 
 
@@ -192,12 +195,12 @@ class PhaseGradientState(GateWithRegisters):
         Appendix A: Addition for controlled rotations
     """
 
-    bitsize: 'SymbolicInt'
+    bitsize: SymbolicInt
     exponent: float = -1
     eps: float = 1e-10
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('phase_grad', self.phase_dtype, side=Side.RIGHT)])
 
     @property
@@ -232,7 +235,7 @@ _PHASE_GRADIENT_STATE_DOC = BloqDocSpec(
 
 
 @attrs.frozen
-class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
+class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
     r"""Quantum-quantum addition into a phase gradient register using $b_{phase} - 2$ Toffolis
 
     $$
@@ -260,20 +263,20 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         Appendix A: Addition for controlled rotations
     """
 
-    x_bitsize: 'SymbolicInt'
-    phase_bitsize: 'SymbolicInt'
+    x_bitsize: SymbolicInt
+    phase_bitsize: SymbolicInt
     right_shift: int = 0
     sign: int = +1
-    controlled_by: Optional[int] = None
+    controlled_by: int | None = None
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         sign = '+' if self.sign > 0 else '-'
         if reg is None:
             return Text(f'pg{sign}=x>>{self.right_shift}' if self.right_shift else f'pg{sign}=x')
         return super().wire_symbol(reg, idx)
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return (
             Signature.build_from_dtypes(ctrl=QBit(), x=self.x_dtype, phase_grad=self.phase_dtype)
             if self.controlled_by is not None
@@ -288,7 +291,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     def phase_dtype(self) -> QFxp:
         return QFxp(self.phase_bitsize, self.phase_bitsize, signed=False)
 
-    def registers(self) -> Sequence[Union[int, Sequence[int]]]:
+    def registers(self) -> Sequence[int | Sequence[int]]:
         if isinstance(self.phase_bitsize, sympy.Expr):
             raise ValueError(f'Symbolic phase {self.phase_bitsize} not supported')
         if isinstance(self.x_bitsize, sympy.Expr):
@@ -297,7 +300,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
             return [2], [2] * self.x_bitsize, [2] * self.phase_bitsize
         return [2] * self.x_bitsize, [2] * self.phase_bitsize
 
-    def with_registers(self, *new_registers: Union[int, Sequence[int]]):
+    def with_registers(self, *new_registers: int | Sequence[int]):
         raise NotImplementedError("not needed.")
 
     @cached_method
@@ -307,7 +310,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         x_fxp = _fxp(x / 2**x_width, x_width).like(_fxp(0, self.phase_bitsize)).astype(float)
         return int(x_fxp.astype(float) * 2**self.phase_bitsize)
 
-    def apply(self, *args) -> Tuple[Union[int, np.integer, NDArray[np.integer]], ...]:
+    def apply(self, *args) -> tuple[int | np.integer | NDArray[np.integer], ...]:
         if self.controlled_by is not None:
             ctrl, x, phase_grad = args
             out = self.on_classical_vals(ctrl=ctrl, x=x, phase_grad=phase_grad)
@@ -317,7 +320,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         out = self.on_classical_vals(x=x, phase_grad=phase_grad)
         return out['x'], out['phase_grad']
 
-    def on_classical_vals(self, **kwargs) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, **kwargs) -> dict[str, ClassicalValT]:
         x, phase_grad = kwargs['x'], kwargs['phase_grad']
         if self.controlled_by is not None:
             ctrl = kwargs['ctrl']
@@ -332,19 +335,19 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         phase_grad_out = (phase_grad + self.sign * self.scaled_val(x)) % (2**self.phase_bitsize)
         return {'x': x, 'phase_grad': phase_grad_out}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         num_toffoli = self.phase_bitsize - 2
         if self.controlled_by is not None:
             return {Toffoli(): 2 * num_toffoli}
 
         return {Toffoli(): num_toffoli}
 
-    def adjoint(self) -> 'AddIntoPhaseGrad':
+    def adjoint(self) -> AddIntoPhaseGrad:
         return attrs.evolve(self, sign=-self.sign)
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         from qualtran.cirq_interop._cirq_to_bloq import _my_tensors_from_gate
 
         return _my_tensors_from_gate(self, self.signature, incoming=incoming, outgoing=outgoing)
@@ -359,7 +362,7 @@ def _add_into_phase_grad() -> AddIntoPhaseGrad:
 _ADD_INTO_PHASE_GRAD_DOC = BloqDocSpec(bloq_cls=AddIntoPhaseGrad, examples=(_add_into_phase_grad,))
 
 
-def _fxp(x: float, n: 'SymbolicInt') -> 'Fxp':
+def _fxp(x: float, n: SymbolicInt) -> Fxp:
     """When 0 <= x < 1, constructs an n-bit fixed point representation with nice properties.
 
     Specifically,
@@ -383,7 +386,7 @@ def _fxp(x: float, n: 'SymbolicInt') -> 'Fxp':
     )
 
 
-def _mul_via_repeated_add(x_fxp: 'Fxp', gamma_fxp: 'Fxp', out: int) -> 'Fxp':
+def _mul_via_repeated_add(x_fxp: Fxp, gamma_fxp: Fxp, out: int) -> Fxp:
     """Multiplication via repeated additions algorithm described in Appendix D5"""
 
     res = _fxp(0, out)
@@ -397,7 +400,7 @@ def _mul_via_repeated_add(x_fxp: 'Fxp', gamma_fxp: 'Fxp', out: int) -> 'Fxp':
 
 
 @attrs.frozen
-class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
+class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
     r"""Optimized quantum-quantum addition into a phase gradient register scaled by a constant $\gamma$.
 
     $$
@@ -424,14 +427,14 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
     """
 
     x_dtype: QFxp
-    phase_bitsize: 'SymbolicInt'
-    gamma: 'SymbolicFloat'
+    phase_bitsize: SymbolicInt
+    gamma: SymbolicFloat
     gamma_dtype: QFxp
 
     @classmethod
     def from_bitsize(
         cls, x_bitsize: int, phase_bitsize: int, gamma: float, gamma_bitsize: int
-    ) -> 'AddScaledValIntoPhaseReg':
+    ) -> AddScaledValIntoPhaseReg:
         return AddScaledValIntoPhaseReg(
             QFxp(x_bitsize, x_bitsize, signed=False),
             phase_bitsize,
@@ -448,7 +451,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
             raise ValueError(f'Symbolic phase bitsize {self.phase_bitsize} not allowed')
         return [2] * self.x_dtype.num_qubits, [2] * self.phase_bitsize
 
-    def with_registers(self, *new_registers: Union[int, Sequence[int]]):
+    def with_registers(self, *new_registers: int | Sequence[int]):
         raise NotImplementedError("not needed.")
 
     @cached_property
@@ -456,7 +459,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
         return QFxp(self.phase_bitsize, self.phase_bitsize, signed=False)
 
     @cached_property
-    def gamma_fxp(self) -> 'Fxp':
+    def gamma_fxp(self) -> Fxp:
         from fxpmath import Fxp
 
         return Fxp(abs(self.gamma), dtype=self.gamma_dtype.fxp_dtype_template().dtype)
@@ -518,17 +521,15 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
 
     def apply(
         self, x: int, phase_grad: int
-    ) -> Tuple[
-        Union[int, np.integer, NDArray[np.integer]], Union[int, np.integer, NDArray[np.integer]]
-    ]:
+    ) -> tuple[int | np.integer | NDArray[np.integer], int | np.integer | NDArray[np.integer]]:
         out = self.on_classical_vals(x=x, phase_grad=phase_grad)
         return out['x'], out['phase_grad']
 
-    def on_classical_vals(self, x: int, phase_grad: int) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, x: int, phase_grad: int) -> dict[str, ClassicalValT]:
         phase_grad_out = (phase_grad + self.scaled_val(x)) % 2**self.phase_bitsize
         return {'x': x, 'phase_grad': phase_grad_out}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         num_additions = (self.gamma_dtype.bitsize + 2) // 2
         if not isinstance(self.gamma, sympy.Basic):
             num_additions_naive = 0

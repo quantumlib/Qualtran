@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Tuple
+from __future__ import annotations
 
 import attrs
 
@@ -28,8 +28,8 @@ class ClassicallyControlled(_ControlledBase):
         ctrl_spec: Control value specification.
     """
 
-    subbloq: 'Bloq'
-    ctrl_spec: 'CtrlSpec'
+    subbloq: Bloq
+    ctrl_spec: CtrlSpec
 
     def __attrs_post_init__(self):
         for qcdtype in self.ctrl_spec.qdtypes:
@@ -40,7 +40,7 @@ class ClassicallyControlled(_ControlledBase):
 
     @classmethod
     def make_ctrl_system(
-        cls, bloq: 'Bloq', ctrl_spec: 'CtrlSpec'
-    ) -> Tuple['_ControlledBase', 'AddControlledT']:
+        cls, bloq: Bloq, ctrl_spec: CtrlSpec
+    ) -> tuple[_ControlledBase, AddControlledT]:
         cb = cls(subbloq=bloq, ctrl_spec=ctrl_spec)
         return cls._make_ctrl_system(cb)

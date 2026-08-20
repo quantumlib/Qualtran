@@ -12,8 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Callable, Iterable
 from functools import lru_cache
-from typing import Callable, Iterable, List, Optional, Tuple, Union
 
 import sympy
 from frozendict import frozendict
@@ -41,14 +41,14 @@ def analyze_logical_circuit(
     circuit_builder_func: Callable,
     circuit_builder_kwargs: frozendict,
     total_allowable_rotation_error: float,
-) -> Optional[frozendict]:
+) -> frozendict | None:
     """Builds the logical quantum circuit and analyzes its abstract properties.
 
     This function is cached based on its arguments. It calls the provided
     `circuit_builder_func` and handles two possible return types:
 
     1.  A `cirq.Circuit` object (or `None`).
-    2.  A tuple of `(cirq.Circuit, Dict[str, Any])` (or `None`). The dictionary
+    2.  A tuple of `(cirq.Circuit, dict[str, Any])` (or `None`). The dictionary
         contains keyword arguments that will be passed to
         `convert_circuit_for_flasq_analysis`. This is useful for circuits
         that require special handling during decomposition, like those with
@@ -95,7 +95,7 @@ def analyze_logical_circuit(
 
     if flasq_counts.total_rotations == 0:
         ind_rot_err = 1.0
-        rotation_depth_val: Union[float, sympy.Expr] = 0.0
+        rotation_depth_val: float | sympy.Expr = 0.0
     else:
         ind_rot_err = total_allowable_rotation_error / flasq_counts.total_rotations
         rotation_depth_val = get_rotation_depth(rotation_error=ind_rot_err)
@@ -124,7 +124,7 @@ def calculate_single_flasq_summary(
     code_distance: int,
     flasq_model_obj: FLASQCostModel,
     logical_timesteps_per_measurement: float,
-) -> Optional[FLASQSummary]:
+) -> FLASQSummary | None:
     """Applies a FLASQ cost model to logical circuit properties.
 
     Args:
@@ -167,7 +167,7 @@ def generate_circuit_specific_configs(
     total_cultivation_error: float,
     phys_error_rate: float,
     reference_code_distance: int,
-) -> Tuple[CoreParametersConfig, float]:
+) -> tuple[CoreParametersConfig, float]:
     """
     Derives circuit-specific core parameters for error budgeting.
 
@@ -225,9 +225,9 @@ def generate_configs_for_constrained_qec(
     phys_error_rate_list: Iterable[float],
     code_distance_list: Iterable[int],
     cultivation_data_decimal_precision: int = 8,
-    cultivation_data_uncertainty_cutoff: Optional[float] = 100,
+    cultivation_data_uncertainty_cutoff: float | None = 100,
     round_error_rate_up_to_simulated_cultivation_data: bool = True,
-) -> List[CoreParametersConfig]:
+) -> list[CoreParametersConfig]:
     """
     Generates CoreParametersConfig optimized for the constrained QEC approach.
 

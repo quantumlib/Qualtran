@@ -12,9 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import functools
 from functools import cached_property
-from typing import Dict
 
 import sympy
 from attrs import frozen
@@ -75,14 +76,14 @@ class FindECCPrivateKey(Bloq):
         Litinski. 2023. Figure 4 (a).
     """
 
-    n: 'SymbolicInt'
+    n: SymbolicInt
     base_point: ECPoint
     public_key: ECPoint
-    add_window_size: 'SymbolicInt' = 1
-    mul_window_size: 'SymbolicInt' = 1
+    add_window_size: SymbolicInt = 1
+    mul_window_size: SymbolicInt = 1
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([])
 
     @property
@@ -106,7 +107,7 @@ class FindECCPrivateKey(Bloq):
             mul_window_size=self.mul_window_size,
         )
 
-    def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder) -> dict[str, SoquetT]:
         x = bb.add(IntState(bitsize=self.n, val=self.base_point.x))
         y = bb.add(IntState(bitsize=self.n, val=self.base_point.y))
 
@@ -117,7 +118,7 @@ class FindECCPrivateKey(Bloq):
         bb.add(Free(QUInt(self.n), dirty=True), reg=y)
         return {}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         Rx = ssa.new_symbol('Rx')
         Ry = ssa.new_symbol('Ry')
         generic_point = ECPoint(Rx, Ry, mod=self.mod, curve_a=self.curve_a)

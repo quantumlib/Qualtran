@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import attrs
 
 # test_measurement_depth.py
@@ -70,7 +72,7 @@ class UnknownBloq(Bloq):
     def signature(self) -> Signature:
         return Signature.build(q=1)
 
-    def decompose_bloq(self) -> "CompositeBloq":
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeNotImplementedError(f"{self} is atomic.")
 
 
@@ -239,7 +241,7 @@ def test_total_measurement_depth_with_rotation_depth():
     cost_key = TotalMeasurementDepth(rotation_depth=custom_rotation_depth)
 
     # Test individual rotation gates
-    from qualtran.bloqs.basic_gates import Rx, Rz, XPowGate, ZPowGate  # type: ignore[attr-defined]
+    from qualtran.bloqs.basic_gates import Rx, Rz, XPowGate, ZPowGate
 
     rx_bloq = Rx(angle=sympy.Symbol("theta_rx"))
     rz_bloq = Rz(angle=sympy.Symbol("theta_rz"))
@@ -316,7 +318,7 @@ class TotalMeasurementDepthEdgeCasesTestSuite:
         """MeasurementDepth.__radd__ with non-zero non-MeasurementDepth delegates to __add__ (L95-96)."""
         md = MeasurementDepth(depth=5)
         # __add__ returns NotImplemented for non-MeasurementDepth, non-zero
-        result = md.__add__("bad")  # type: ignore[operator]
+        result = md.__add__("bad")
         assert result is NotImplemented
 
 

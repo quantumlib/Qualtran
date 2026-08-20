@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Dict
+from __future__ import annotations
 
 import attrs
 
@@ -32,7 +32,7 @@ class TestManyAllocOnce(Bloq):
     def signature(self) -> Signature:
         return Signature.build(x=self.n)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'Soquet') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, *, x: Soquet) -> dict[str, SoquetT]:
         x = bb.split(x)
         anc = bb.allocate()
         for i in range(self.n):
@@ -56,7 +56,7 @@ class TestManyAllocMany(Bloq):
     def signature(self) -> Signature:
         return Signature.build(x=self.n)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'Soquet') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, *, x: Soquet) -> dict[str, SoquetT]:
         x = bb.split(x)
         for i in range(self.n):
             anc = bb.allocate()
@@ -75,7 +75,7 @@ class _Inner(Bloq):
     def signature(self) -> Signature:
         return Signature.build(x=1)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'Soquet') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, *, x: Soquet) -> dict[str, SoquetT]:
         anc = bb.allocate()
         x, anc = bb.add(CNOT(), ctrl=x, target=anc)
         anc = bb.add(TGate(), q=anc)
@@ -97,7 +97,7 @@ class TestManyAllocAbstracted(Bloq):
     def signature(self) -> Signature:
         return Signature.build(x=self.n)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'Soquet') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, *, x: Soquet) -> dict[str, SoquetT]:
         x = bb.split(x)
         for i in range(self.n):
             x[i] = bb.add(_Inner(), x=x[i])

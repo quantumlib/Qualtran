@@ -13,8 +13,10 @@
 #  limitations under the License.
 
 # --- Consolidated Imports ---
+from __future__ import annotations
+
 import time
-from typing import Dict, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
@@ -93,7 +95,7 @@ def is_flasq_parseable(op: cirq.Operation) -> bool:
 
 def create_adder_circuit_and_decorations(
     bitsize: int,
-) -> Tuple[cirq.Circuit, Signature, Dict[str, "CirqQuregT"], Dict[str, "CirqQuregT"]]:
+) -> tuple[cirq.Circuit, Signature, dict[str, CirqQuregT], dict[str, CirqQuregT]]:
     """
     Creates a Cirq circuit for the Add bloq, decomposes it, and remaps ancillas.
 

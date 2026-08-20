@@ -12,8 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import cast, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import cast, TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen
@@ -77,26 +79,26 @@ class Split(_BookkeepingBloq):
         if value.is_symbolic():
             raise ValueError(f"{self} cannot have a symbolic data type.")
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f'{self} is atomic')
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         from qualtran.bloqs.bookkeeping.join import Join
 
         return Join(dtype=self.dtype)
 
-    def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
+    def as_cirq_op(self, qubit_manager, reg: CirqQuregT) -> tuple[None, dict[str, CirqQuregT]]:
         return None, {'reg': reg.reshape((self.dtype.num_qubits, 1))}
 
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: Wires) -> Operation:
         return None
 
-    def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, reg: int) -> dict[str, ClassicalValT]:
         return {'reg': np.asarray(self.dtype.to_bits(reg))}
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         eye = np.eye(2)
@@ -107,7 +109,7 @@ class Split(_BookkeepingBloq):
             for i in range(self.dtype.num_qubits)
         ]
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         if reg.shape:

@@ -22,12 +22,12 @@ import sys
 import webbrowser
 
 
-def run_command(cmd, cwd):
+def run_command(cmd: list[str], cwd: pathlib.Path) -> None:
     print(f"Running: {' '.join(cmd)} in {cwd}")
     subprocess.run(cmd, cwd=cwd, check=True)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Automate local preview build of Qualtran documentation."
     )

@@ -14,28 +14,18 @@
 
 """Functionality for the `Bloq.call_classically(...)` protocol."""
 
+from __future__ import annotations
+
 import abc
 import itertools
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
-    TYPE_CHECKING,
-    Union,
-)
+from collections.abc import Iterable, Mapping, Sequence
+from typing import Any, Self, TYPE_CHECKING
 
 import attrs
 import networkx as nx
 import numpy as np
 import sympy
 from numpy.typing import NDArray
-from typing_extensions import Self
 
 from qualtran import (
     Bloq,
@@ -54,8 +44,7 @@ from qualtran._infra.quantum_graph import _Soquet
 if TYPE_CHECKING:
     from qualtran import CompositeBloq, QCDType
 
-ClassicalValT = Union[int, np.integer, NDArray[np.integer]]
-ClassicalValRetT = Union[int, np.integer, NDArray[np.integer], 'ClassicalValDistribution']
+type ClassicalValT = int | np.integer | NDArray[np.integer]
 
 
 class QCDTypeDomainError(ValueError):
@@ -79,7 +68,7 @@ class QCDTypeDomainError(ValueError):
     """
 
 
-def _numpy_dtype_from_qlt_dtype(dtype: 'QCDType') -> Type:
+def _numpy_dtype_from_qlt_dtype(dtype: QCDType) -> type:
     # TODO: Move to a method on QCDType. https://github.com/quantumlib/Qualtran/issues/1437.
     from qualtran._infra.data_types import CBit, QAny, QBit, QInt, QUInt
 
@@ -119,7 +108,7 @@ def _empty_ndarray_from_reg(reg: Register) -> np.ndarray:
 
 
 def _get_in_vals(
-    binst: Union[DanglingT, BloqInstance], reg: Register, soq_assign: Dict[_Soquet, ClassicalValT]
+    binst: DanglingT | BloqInstance, reg: Register, soq_assign: dict[_Soquet, ClassicalValT]
 ) -> ClassicalValT:
     """Pluck out the correct values from `soq_assign` for `reg` on `binst`."""
     if not reg.shape:
@@ -147,8 +136,11 @@ class ClassicalValDistribution:
             This is the `p` parameter to `np.random.Generator.choice()`.
     """
 
-    a: Union[int, np.typing.ArrayLike]
-    p: Optional[np.typing.ArrayLike] = None
+    a: int | np.typing.ArrayLike
+    p: np.typing.ArrayLike | None = None
+
+
+type ClassicalValRetT = int | np.integer | NDArray[np.integer] | ClassicalValDistribution
 
 
 class _ClassicalValHandler(metaclass=abc.ABCMeta):
@@ -158,13 +150,15 @@ class _ClassicalValHandler(metaclass=abc.ABCMeta):
     choice of values."""
 
     @abc.abstractmethod
-    def get(self, binst: 'BloqInstance', distribution: ClassicalValDistribution) -> Any: ...
+    def get(
+        self, binst: DanglingT | BloqInstance, distribution: ClassicalValDistribution
+    ) -> Any: ...
 
 
 class _RandomClassicalValHandler(_ClassicalValHandler):
     """Returns a random classical value using a random number generator."""
 
-    def __init__(self, rng: 'np.random.Generator'):
+    def __init__(self, rng: np.random.Generator):
         self._gen = rng
 
     def get(self, binst, distribution: ClassicalValDistribution):
@@ -181,7 +175,7 @@ class _FixedClassicalValHandler(_ClassicalValHandler):
             to the fixed classical value.
     """
 
-    def __init__(self, binst_i_to_val: Dict[int, Any]):
+    def __init__(self, binst_i_to_val: dict[int, Any]):
         self._binst_i_to_val = binst_i_to_val
 
     def get(self, binst, distribution: ClassicalValDistribution):
@@ -191,7 +185,7 @@ class _FixedClassicalValHandler(_ClassicalValHandler):
 class _BannedClassicalValHandler(_ClassicalValHandler):
     """Used when random classical value is not able to be performed."""
 
-    def get(self, binst: 'BloqInstance', distribution: ClassicalValDistribution) -> Any:
+    def get(self, binst: BloqInstance, distribution: ClassicalValDistribution) -> Any:
         raise ValueError(
             f"{binst} has non-deterministic classical action.Cannot simulate with classical values."
         )
@@ -211,7 +205,7 @@ class MeasurementPhase:
     """
 
     reg_name: str
-    idx: Tuple[int, ...] = ()
+    idx: tuple[int, ...] = ()
 
 
 class ClassicalSimState:
@@ -245,10 +239,10 @@ class ClassicalSimState:
 
     def __init__(
         self,
-        signature: 'Signature',
+        signature: Signature,
         binst_graph: nx.DiGraph,
-        vals: Mapping[str, Union[sympy.Symbol, ClassicalValT]],
-        random_handler: '_ClassicalValHandler' = _BannedClassicalValHandler(),
+        vals: Mapping[str, sympy.Symbol | ClassicalValT],
+        random_handler: _ClassicalValHandler = _BannedClassicalValHandler(),
     ):
         self._signature = signature
         self._binst_graph = binst_graph
@@ -256,15 +250,15 @@ class ClassicalSimState:
         self._random_handler = random_handler
 
         # Keep track of each soquet's bit array. Initialize with LeftDangle
-        self.soq_assign: Dict[_Soquet, ClassicalValT] = {}
+        self.soq_assign: dict[_Soquet, ClassicalValT] = {}
         self._update_assign_from_vals(self._signature.lefts(), LeftDangle, dict(vals))
 
-        self.last_binst: Optional['BloqInstance'] = None
+        self.last_binst: BloqInstance | DanglingT | None = None
 
     @classmethod
     def from_cbloq(
-        cls, cbloq: 'CompositeBloq', vals: Mapping[str, Union[sympy.Symbol, ClassicalValT]]
-    ) -> 'ClassicalSimState':
+        cls, cbloq: CompositeBloq, vals: Mapping[str, sympy.Symbol | ClassicalValT]
+    ) -> ClassicalSimState:
         """Initiate a classical simulation from a CompositeBloq.
 
         Args:
@@ -281,8 +275,8 @@ class ClassicalSimState:
     def _update_assign_from_vals(
         self,
         regs: Iterable[Register],
-        binst: Union[DanglingT, BloqInstance],
-        vals: Union[Dict[str, Union[sympy.Symbol, ClassicalValT]], Dict[str, ClassicalValT]],
+        binst: DanglingT | BloqInstance,
+        vals: dict[str, sympy.Symbol | ClassicalValRetT | Any] | Mapping[str, Any],
     ) -> None:
         """Update `self.soq_assign` using `vals`.
 
@@ -324,14 +318,14 @@ class ClassicalSimState:
                 soq = _Soquet(binst, reg)
                 self.soq_assign[soq] = val
 
-    def _recurse_impl(self, cbloq: 'CompositeBloq', in_vals):
+    def _recurse_impl(self, cbloq: CompositeBloq, in_vals):
         """Overridable function to recursively simulate a composite bloq."""
         out_vals, _ = call_cbloq_classically(cbloq.signature, in_vals, cbloq._binst_graph)
         phase = None
 
         return out_vals, phase
 
-    def _recurse(self, binst: 'BloqInstance', in_vals) -> Self:
+    def _recurse(self, binst: BloqInstance, in_vals) -> Self:
         """Recursively simulate a composite bloq.
 
         This handles decomposing the bloq and using the results of the sub-simulation
@@ -355,7 +349,7 @@ class ClassicalSimState:
         self._update(binst, out_vals, bloq_phase)
         return self
 
-    def _update(self, binst: 'BloqInstance', out_vals, bloq_phase: Union[complex, None]) -> None:
+    def _update(self, binst: BloqInstance, out_vals, bloq_phase: complex | None) -> None:
         """Overridable method to update the current simulator state."""
         self._update_assign_from_vals(binst.bloq.signature.rights(), binst, out_vals)
 
@@ -417,7 +411,7 @@ class ClassicalSimState:
 
         return self
 
-    def finalize(self) -> Dict[str, 'ClassicalValT']:
+    def finalize(self) -> dict[str, ClassicalValT]:
         """Finish simulating a composite bloq and extract final values.
 
         Returns:
@@ -441,7 +435,7 @@ class ClassicalSimState:
         final_vals = {reg.name: _f_vals(reg) for reg in self._signature.rights()}
         return final_vals
 
-    def simulate(self) -> Dict[str, 'ClassicalValT']:
+    def simulate(self) -> dict[str, ClassicalValT]:
         """Simulate the composite bloq and return the final values."""
         try:
             while True:
@@ -479,12 +473,12 @@ class PhasedClassicalSimState(ClassicalSimState):
 
     def __init__(
         self,
-        signature: 'Signature',
+        signature: Signature,
         binst_graph: nx.DiGraph,
-        vals: Mapping[str, Union[sympy.Symbol, ClassicalValT]],
+        vals: Mapping[str, sympy.Symbol | ClassicalValT],
         *,
         phase: complex = 1.0,
-        random_handler: '_ClassicalValHandler',
+        random_handler: _ClassicalValHandler,
     ):
         super().__init__(
             signature=signature, binst_graph=binst_graph, vals=vals, random_handler=random_handler
@@ -495,11 +489,11 @@ class PhasedClassicalSimState(ClassicalSimState):
     @classmethod
     def from_cbloq(
         cls,
-        cbloq: 'CompositeBloq',
-        vals: Mapping[str, Union[sympy.Symbol, ClassicalValT]],
-        rng: Optional['np.random.Generator'] = None,
-        fixed_random_vals: Optional[Dict[int, Any]] = None,
-    ) -> 'PhasedClassicalSimState':
+        cbloq: CompositeBloq,
+        vals: Mapping[str, sympy.Symbol | ClassicalValT],
+        rng: np.random.Generator | None = None,
+        fixed_random_vals: dict[int, Any] | None = None,
+    ) -> PhasedClassicalSimState:
         """Initiate a classical simulation from a CompositeBloq.
 
         Args:
@@ -536,7 +530,9 @@ class PhasedClassicalSimState(ClassicalSimState):
         phase = sim.phase
         return final_vals, phase
 
-    def _update(self, binst: 'BloqInstance', out_vals, bloq_phase: Union[complex, None]) -> None:
+    def _update(
+        self, binst: BloqInstance, out_vals, bloq_phase: complex | MeasurementPhase | None
+    ) -> None:
         """Update the current simulator state, including phase tracking."""
         self._update_assign_from_vals(binst.bloq.signature.rights(), binst, out_vals)
 
@@ -569,12 +565,10 @@ class PhasedClassicalSimState(ClassicalSimState):
 
 def call_cbloq_classically(
     signature: Signature,
-    vals: Mapping[str, Union[sympy.Symbol, ClassicalValT]],
+    vals: Mapping[str, sympy.Symbol | ClassicalValT],
     binst_graph: nx.DiGraph,
-    random_handler: '_ClassicalValHandler' = _RandomClassicalValHandler(
-        rng=np.random.default_rng()
-    ),
-) -> Tuple[Dict[str, ClassicalValT], Dict[_Soquet, ClassicalValT]]:
+    random_handler: _ClassicalValHandler = _RandomClassicalValHandler(rng=np.random.default_rng()),
+) -> tuple[dict[str, ClassicalValT], dict[_Soquet, ClassicalValT]]:
     """Propagate `on_classical_vals` calls through a composite bloq's contents.
 
     While we're handling the plumbing, we also do error checking on the arguments; see
@@ -604,11 +598,11 @@ def _assert_valid_phase(p: complex, atol: float = 1e-8):
 
 
 def do_phased_classical_simulation(
-    bloq: 'Bloq',
-    vals: Mapping[str, 'ClassicalValT'],
-    rng: Optional['np.random.Generator'] = None,
-    fixed_random_vals: Optional[Dict[int, Any]] = None,
-) -> Tuple[Dict[str, 'ClassicalValT'], complex]:
+    bloq: Bloq,
+    vals: Mapping[str, ClassicalValT],
+    rng: np.random.Generator | None = None,
+    fixed_random_vals: dict[int, Any] | None = None,
+) -> tuple[dict[str, ClassicalValT], complex]:
     """Do a phased classical simulation of the bloq.
 
     This provides a simple interface to `PhasedClassicalSimState`. Advanced users
@@ -638,8 +632,8 @@ def do_phased_classical_simulation(
 
 
 def get_classical_truth_table(
-    bloq: 'Bloq',
-) -> Tuple[List[str], List[str], List[Tuple[Sequence[Any], Sequence[Any]]]]:
+    bloq: Bloq,
+) -> tuple[list[str], list[str], list[tuple[Sequence[Any], Sequence[Any]]]]:
     """Get a 'truth table' for a classical-reversible bloq.
 
     Args:
@@ -658,14 +652,14 @@ def get_classical_truth_table(
         if reg.shape:
             raise NotImplementedError()
 
-    in_names: List[str] = []
+    in_names: list[str] = []
     iters = []
     for reg in bloq.signature.lefts():
         in_names.append(reg.name)
         iters.append(reg.dtype.get_classical_domain())
-    out_names: List[str] = [reg.name for reg in bloq.signature.rights()]
+    out_names: list[str] = [reg.name for reg in bloq.signature.rights()]
 
-    truth_table: List[Tuple[Sequence[Any], Sequence[Any]]] = []
+    truth_table: list[tuple[Sequence[Any], Sequence[Any]]] = []
     for in_val_tuple in itertools.product(*iters):
         in_val_d = {name: val for name, val in zip(in_names, in_val_tuple)}
         out_val_tuple = bloq.call_classically(**in_val_d)
@@ -677,7 +671,7 @@ def get_classical_truth_table(
 def format_classical_truth_table(
     in_names: Sequence[str],
     out_names: Sequence[str],
-    truth_table: Sequence[Tuple[Sequence[Any], Sequence[Any]]],
+    truth_table: Sequence[tuple[Sequence[Any], Sequence[Any]]],
 ) -> str:
     """Get a formatted tabular representation of the classical truth table."""
     heading = '  '.join(in_names) + '  |  ' + '  '.join(out_names) + '\n'
@@ -690,7 +684,7 @@ def format_classical_truth_table(
 
 
 def add_ints(
-    a: ClassicalValT, b: ClassicalValT, *, num_bits: Optional[int] = None, is_signed: bool = False
+    a: ClassicalValT, b: ClassicalValT, *, num_bits: int | None = None, is_signed: bool = False
 ) -> ClassicalValT:
     r"""Classically performs addition modulo $2^n$ of two integers in a reversible way.
 

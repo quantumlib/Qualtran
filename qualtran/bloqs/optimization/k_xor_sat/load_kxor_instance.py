@@ -32,8 +32,11 @@ References:
     Theorem 4.17, proof para 2 for $U_j$.
 """
 
+from __future__ import annotations
+
+from collections import Counter
+from collections.abc import Sequence
 from functools import cached_property
-from typing import Counter, Sequence, Union
 
 import attrs
 import numpy as np
@@ -93,7 +96,7 @@ class LoadConstraintScopes(Bloq):
     inst: KXorInstance
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         registers: list[Register] = [
             Register('j', self.m_dtype),
             Register('U', QAny(self.scope_bitsize), side=Side.RIGHT),
@@ -135,7 +138,7 @@ class LoadConstraintScopes(Bloq):
             *scopes.T, target_bitsizes=(self.inst.index_bitsize,) * self.inst.k
         )
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', j: 'Soquet') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, j: Soquet) -> dict[str, SoquetT]:
         if self.inst.is_symbolic():
             raise DecomposeTypeError(f"cannot decompose symbolic {self}")
 
@@ -150,7 +153,7 @@ class LoadConstraintScopes(Bloq):
         )
         return {'j': j, 'U': U}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {self._qrom_bloq: 1}
 
 
@@ -210,7 +213,7 @@ class LoadUniqueScopeIndex(Bloq):
     inst: KXorInstance
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(j=self.m_dtype, U=QAny(self.scope_bitsize))
 
     @cached_property
@@ -225,7 +228,7 @@ class LoadUniqueScopeIndex(Bloq):
         bitsize = ceil(log2(m))
         return BQUInt(bitsize, m)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         counts = Counter[Bloq]()
 
         c = ssa.new_symbol("c")
@@ -266,7 +269,7 @@ class PRGAUniqueConstraintRHS(Bloq):
     is_controlled: bool = False
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(ctrl=QAny(self.n_ctrl), j=self.m_dtype, q=QBit())
 
     @property
@@ -285,15 +288,14 @@ class PRGAUniqueConstraintRHS(Bloq):
         return QFxp(self.angle_bitsize, self.angle_bitsize)
 
     @cached_property
-    def _qrom_angle_data(
-        self,
-    ) -> tuple[Union[HasLength, Sequence[int]], Union[HasLength, Sequence[int]]]:
+    def _qrom_angle_data(self) -> tuple[HasLength | Sequence[int], HasLength | Sequence[int]]:
         M = self.inst.max_rhs
         scopes = self.inst.batched_scopes
         if is_symbolic(M) or is_symbolic(scopes):
             m = self.inst.num_unique_constraints
             return HasLength(m), HasLength(m)
 
+        assert isinstance(scopes, tuple)
         b = [b for _, b in scopes]
         assert np.all(b == np.sort(b)), "data must be sorted!"
 
@@ -312,7 +314,7 @@ class PRGAUniqueConstraintRHS(Bloq):
                 target_bitsizes=self.angle_bitsize,
                 num_controls=self.n_ctrl,
             )
-
+        assert isinstance(data, (Sequence, np.ndarray))
         return QROM.build_from_data(
             data, target_bitsizes=(self.angle_bitsize,), num_controls=self.n_ctrl
         )
@@ -323,11 +325,11 @@ class PRGAUniqueConstraintRHS(Bloq):
         _, signs = self._qrom_angle_data
         if is_symbolic(signs):
             return self.inst.num_unique_constraints // 2
-
+        assert isinstance(signs, (Sequence, np.ndarray))
         assert np.all(signs == np.sort(signs)), "data must be sorted!"
         return int(np.searchsorted(signs, 0))
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         counts = Counter[Bloq]()
 
         # load the amplitudes
@@ -348,7 +350,7 @@ class PRGAUniqueConstraintRHS(Bloq):
 
         return counts
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
 
         return get_ctrl_system_1bit_cv_from_bloqs(

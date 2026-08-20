@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from io import BytesIO
-from typing import Union
 
 import numpy as np
 import sympy
@@ -21,7 +20,7 @@ from sympy.parsing import parse_expr
 from qualtran.protos import args_pb2
 
 
-def int_or_sympy_to_proto(val: Union[int, sympy.Expr]) -> args_pb2.IntOrSympy:
+def int_or_sympy_to_proto(val: int | sympy.Expr) -> args_pb2.IntOrSympy:
     return (
         args_pb2.IntOrSympy(sympy_expr=str(val))
         if isinstance(val, sympy.Expr)
@@ -29,7 +28,7 @@ def int_or_sympy_to_proto(val: Union[int, sympy.Expr]) -> args_pb2.IntOrSympy:
     )
 
 
-def int_or_sympy_from_proto(val: args_pb2.IntOrSympy) -> Union[int, sympy.Expr]:
+def int_or_sympy_from_proto(val: args_pb2.IntOrSympy) -> int | sympy.Expr:
     return val.int_val if val.HasField('int_val') else parse_expr(val.sympy_expr)
 
 

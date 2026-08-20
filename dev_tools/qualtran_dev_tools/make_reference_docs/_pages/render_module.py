@@ -15,7 +15,7 @@
 
 from collections.abc import Sequence
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import griffe
 from griffe import Kind
@@ -29,7 +29,9 @@ from .._page import MemberType, ModulePage, ModulePageMember
 from .._render_context import RenderContext
 
 
-def write_module_other_member(f: LinkingWriter, obj, pref_path, aliases_d) -> None:
+def write_module_other_member(
+    f: LinkingWriter, obj: Any, pref_path: str, aliases_d: dict[str, str]
+) -> None:
     first_line, rest = split_docstring(obj)
     f.write_nl(f'### `{obj.name}`\n')
     f.write_nl(get_aliases_str(pref_path, aliases_d=aliases_d))

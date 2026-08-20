@@ -12,8 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Any, cast, Dict
+from typing import Any, assert_type, cast
 
 import attrs
 import networkx as nx
@@ -21,7 +23,6 @@ import numpy as np
 import pytest
 import sympy
 from numpy.typing import NDArray
-from typing_extensions import assert_type
 
 import qualtran.testing as qlt_testing
 from qualtran import (
@@ -80,9 +81,7 @@ class TestTwoCNOT(Bloq):
     def signature(self) -> Signature:
         return Signature.build(q1=1, q2=1)
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', q1: 'Soquet', q2: 'Soquet'
-    ) -> Dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, q1: Soquet, q2: Soquet) -> dict[str, SoquetT]:
         q1, q2 = bb.add(CNOT(), ctrl=q1, target=q2)
         q1, q2 = bb.add(CNOT(), ctrl=q2, target=q1)
         return {'q1': q1, 'q2': q2}
@@ -204,8 +203,8 @@ def test_bloq_builder():
 
     # Using deprecated Soquet constructor (to be removed)
     assert initial_soqs == {
-        'x': _QVar(Soquet(LeftDangle, x_reg), bb=bb),  # type: ignore
-        'y': _QVar(Soquet(LeftDangle, y_reg), bb=bb),  # type: ignore
+        'x': _QVar(Soquet(LeftDangle, x_reg), bb=bb),  # type: ignore[arg-type, misc]
+        'y': _QVar(Soquet(LeftDangle, y_reg), bb=bb),  # type: ignore[arg-type, misc]
     }
 
     # Using private constructor
@@ -362,11 +361,8 @@ class TestMultiCNOT(Bloq):
         return Signature([Register('control', QBit()), Register('target', QBit(), shape=(2, 3))])
 
     def build_composite_bloq(
-        self,
-        bb: 'BloqBuilder',
-        control: 'Soquet',
-        target: NDArray['Soquet'],  # type: ignore[type-var]
-    ) -> Dict[str, SoquetT]:
+        self, bb: BloqBuilder, control: Soquet, target: NDArray[Soquet]  # type: ignore[type-var]
+    ) -> dict[str, SoquetT]:
         for i in range(2):
             for j in range(3):
                 control, target[i, j] = bb.add(CNOT(), ctrl=control, target=target[i, j])
@@ -427,11 +423,11 @@ def test_util_convenience_methods_errors():
 
     qs = np.asarray([bb.allocate(5), bb.allocate(5)])
     with pytest.raises(ValueError, match='.*expects a single Soquet'):
-        qs = bb.split(qs)  # type: ignore[arg-type]
+        qs = bb.split(qs)
 
     qs = bb.allocate(5)
     with pytest.raises(ValueError, match='.*expects a 1-d array'):
-        qs = bb.join(qs)  # type: ignore[arg-type]
+        qs = bb.join(qs)
 
     # but this works:
     qs = np.asarray([bb.allocate(), bb.allocate()])
@@ -439,7 +435,7 @@ def test_util_convenience_methods_errors():
 
     arr = np.asarray([bb.allocate(5), bb.allocate(5)])
     with pytest.raises(ValueError, match='.*expects a single Soquet'):
-        bb.free(arr)  # type: ignore[arg-type]
+        bb.free(arr)
 
 
 def test_test_serial_combo_decomp():
@@ -651,10 +647,10 @@ def test_add_and_partition():
 
 @attrs.frozen
 class TestSymbolicRegisterShape(Bloq):
-    n: 'SymbolicInt'
+    n: SymbolicInt
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('q', QBit(), shape=(self.n,))])
 
 
@@ -669,7 +665,7 @@ class LeftRightSoquets(Bloq):
     """Bloq that outputs a random bit for testing."""
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [Register('in', QBit(), side=Side.LEFT), Register('out', QBit(), side=Side.RIGHT)]
         )
@@ -721,7 +717,7 @@ def test_can_tell_individual_from_ndsoquet():
     assert hash(single_soq2_unwrap) == hash(s1)
     assert single_soq2_unwrap == s1
     with pytest.warns(DeprecationWarning, match=r'deprecated'):
-        assert isinstance(single_soq2_unwrap, Soquet)  # type: ignore[misc]
+        assert isinstance(single_soq2_unwrap, Soquet)
     assert isinstance(single_soq2_unwrap, _Soquet)
 
 

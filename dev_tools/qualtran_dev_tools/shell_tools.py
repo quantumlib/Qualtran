@@ -14,7 +14,7 @@
 
 import subprocess
 import sys
-from typing import Union
+from typing import Any
 
 BOLD = 1
 DIM = 2
@@ -48,13 +48,13 @@ def abbreviate_command_arguments_after_switches(cmd: tuple[str, ...]) -> tuple[s
 
 
 def run(
-    args: Union[str, list[str]],
+    args: str | list[str],
     *,
     log_run_to_stderr: bool = True,
     abbreviate_non_option_arguments: bool = False,
     check: bool = True,
     text: bool = True,
-    **subprocess_run_kwargs,
+    **subprocess_run_kwargs: Any,
 ) -> subprocess.CompletedProcess:
     """Call subprocess.run with an option to log executed command to stderr.
 
@@ -96,7 +96,7 @@ def run(
     )
 
 
-def output_of(args: Union[str, list[str]], **kwargs) -> str:
+def output_of(args: str | list[str], **kwargs: Any) -> str:
     """Invokes a subprocess and returns its output as a string.
 
     Args:

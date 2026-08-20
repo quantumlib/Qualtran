@@ -13,8 +13,10 @@
 #  limitations under the License.
 r"""Bloqs for PREPARE T for the first quantized chemistry Hamiltonian."""
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Dict, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import frozen
 
@@ -58,12 +60,10 @@ class PreparePowerTwoState(Bloq):
     def signature(self) -> Signature:
         return Signature.build(r=self.bitsize)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {Toffoli(): (self.bitsize - 2)}
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text(r'PREP 2^(r/2) |r⟩')
         return super().wire_symbol(reg, idx)
@@ -110,13 +110,13 @@ class PrepareTFirstQuantization(Bloq):
 
     def build_composite_bloq(
         self, bb: BloqBuilder, w: SoquetT, r: SoquetT, s: SoquetT
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         w = bb.add(PrepareUniformSuperposition(3), target=w)
         r = bb.add(PreparePowerTwoState(self.num_bits_p), r=r)
         s = bb.add(PreparePowerTwoState(self.num_bits_p), r=s)
         return {'w': w, 'r': r, 's': s}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # there is a cost for the uniform state preparation for the $w$
         # register. Adding a bloq is sort of overkill, should just tag the
         # correct cost on UniformSuperPosition bloq
@@ -124,9 +124,7 @@ class PrepareTFirstQuantization(Bloq):
         # Factor of two for PreparePowerTwoState for r and s registers.
         return {Toffoli(): 13, PreparePowerTwoState(bitsize=self.num_bits_p): 2}
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text(r'PREP T')
         return super().wire_symbol(reg, idx)

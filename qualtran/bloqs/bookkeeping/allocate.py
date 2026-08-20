@@ -11,8 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Dict, List, Tuple, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -62,20 +64,20 @@ class Allocate(_BookkeepingBloq):
     def signature(self) -> Signature:
         return Signature([Register('reg', self.dtype, side=Side.RIGHT)])
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f'{self} is atomic.')
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         from qualtran.bloqs.bookkeeping.free import Free
 
         return Free(self.dtype, self.dirty)
 
-    def on_classical_vals(self) -> Dict[str, int]:
+    def on_classical_vals(self) -> dict[str, int]:
         return {'reg': self.dtype.from_bits([0] * self.dtype.num_qubits)}
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         from qualtran.bloqs.basic_gates.z_basis import _ZERO
@@ -85,15 +87,15 @@ class Allocate(_BookkeepingBloq):
             for i in range(self.dtype.num_qubits)
         ]
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         assert reg.name == 'reg'
         return directional_text_box('alloc', Side.RIGHT)
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager'
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        self, qubit_manager: cirq.QubitManager
+    ) -> tuple[cirq.Operation | None, dict[str, CirqQuregT]]:
         shape = (*self.signature[0].shape, self.signature[0].bitsize)
         qubits = (
             qubit_manager.qborrow(self.signature.n_qubits())
@@ -102,7 +104,7 @@ class Allocate(_BookkeepingBloq):
         )
         return (None, {'reg': np.array(qubits).reshape(shape)})
 
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: Wires) -> Operation:
         return None
 
 

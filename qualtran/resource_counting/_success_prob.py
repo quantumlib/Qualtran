@@ -11,8 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import logging
-from typing import Callable
+from collections.abc import Callable
 
 from attrs import frozen
 
@@ -33,7 +35,7 @@ class SuccessProb(CostKey[float]):
     `my_static_costs` to provide their actual success probability.
     """
 
-    def compute(self, bloq: 'Bloq', get_callee_cost: Callable[['Bloq'], float]) -> float:
+    def compute(self, bloq: Bloq, get_callee_cost: Callable[[Bloq], float]) -> float:
         tot: float = 1.0
         callees = get_bloq_callee_counts(bloq)
         logger.info("Computing %s for %s from %d callee(s)", self, bloq, len(callees))

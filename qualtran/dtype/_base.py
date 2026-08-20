@@ -12,9 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import abc
 import warnings
-from typing import cast, Generic, Iterable, List, Sequence, Tuple, TypeVar
+from collections.abc import Iterable, Sequence
+from typing import cast, Generic, TypeVar
 
 import attrs
 import numpy as np
@@ -36,7 +39,7 @@ class BitEncoding(Generic[T], metaclass=abc.ABCMeta):
         by this type."""
 
     @abc.abstractmethod
-    def to_bits(self, x: T) -> List[int]:
+    def to_bits(self, x: T) -> list[int]:
         """Yields individual bits corresponding to binary representation of x"""
 
     def to_bits_array(self, x_array: NDArray) -> NDArray[np.uint8]:
@@ -105,7 +108,7 @@ class _BitEncodingShim(BitEncoding[T]):
 
     """
 
-    qdtype: 'QDType[T]'
+    qdtype: QDType[T]
 
     @property
     def bitsize(self) -> SymbolicInt:
@@ -114,7 +117,7 @@ class _BitEncodingShim(BitEncoding[T]):
     def get_domain(self) -> Iterable[T]:
         yield from self.qdtype.get_classical_domain()
 
-    def to_bits(self, x: T) -> List[int]:
+    def to_bits(self, x: T) -> list[int]:
         return self.qdtype.to_bits(x)
 
     def to_bits_array(self, x_array: NDArray) -> NDArray[np.uint8]:
@@ -138,8 +141,8 @@ class _BitEncodingShim(BitEncoding[T]):
 
 @attrs.frozen
 class ShapedQCDType:
-    qcdtype: 'QCDType'
-    shape: Tuple[int, ...] = attrs.field(
+    qcdtype: QCDType
+    shape: tuple[int, ...] = attrs.field(
         default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
     )
 
@@ -173,7 +176,7 @@ class QCDType(Generic[T], metaclass=abc.ABCMeta):
         by this type."""
         yield from self._bit_encoding.get_domain()
 
-    def to_bits(self, x: T) -> List[int]:
+    def to_bits(self, x: T) -> list[int]:
         """Yields individual bits corresponding to binary representation of x"""
         return self._bit_encoding.to_bits(x)
 

@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 import functools
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import matplotlib.pyplot as plt
@@ -38,7 +38,7 @@ class Range:
     end: rst.Real
 
     @staticmethod
-    def from_bounds(start, end) -> "Range":
+    def from_bounds(start, end) -> Range:
         """Creates a Range object from endpoints while paying attention to data type."""
         sides = [start, end]
         if any(isinstance(x, mpmath.mpf) for x in sides):
@@ -61,7 +61,7 @@ class Range:
     def width(self) -> rst.Real:
         return self.end - self.start
 
-    def shift(self, x: rst.Real) -> "Range":
+    def shift(self, x: rst.Real) -> Range:
         r"""horizontal shift by $x$."""
         return Range.from_bounds(self.start + x, self.end + x)
 
@@ -86,12 +86,12 @@ class Rectangle:
         """
         return self.x_bounds.contains(x, config) and self.y_bounds.contains(y, config)
 
-    def shift(self, dx: rst.Real, dy: rst.Real) -> "Rectangle":
+    def shift(self, dx: rst.Real, dy: rst.Real) -> Rectangle:
         """planar shift by (dx, dy)."""
         return Rectangle(self.x_bounds.shift(dx), self.y_bounds.shift(dy))
 
     @staticmethod
-    def make_square(bounds: Range) -> "Rectangle":
+    def make_square(bounds: Range) -> Rectangle:
         return Rectangle(bounds, bounds)
 
 
@@ -114,7 +114,7 @@ class EllipseParametricForm:
     z: rst.Real
     b: rst.Real
 
-    def to_ellipse(self, l_value: rst.Real) -> "Ellipse":
+    def to_ellipse(self, l_value: rst.Real) -> Ellipse:
         return Ellipse(
             [[self.e * l_value ** (-self.z), self.b], [self.b, self.e * l_value**self.z]]
         )
@@ -187,11 +187,11 @@ class Ellipse:
         z = config.log(d / e) / config.log(1 + config.sqrt(2))
         return EllipseParametricForm(e, z, self.D[0, 1])
 
-    def normalize(self, config: mc.MathConfig) -> "Ellipse":
+    def normalize(self, config: mc.MathConfig) -> Ellipse:
         r"""Scales the ellipse to have area = $\pi$."""
         return Ellipse(self.D / config.sqrt(self._det), self.center)
 
-    def rotate(self, theta: rst.Real, config: mc.MathConfig) -> "Ellipse":
+    def rotate(self, theta: rst.Real, config: mc.MathConfig) -> Ellipse:
         """Rotates the ellipse around its center by the given angle."""
         c, s = config.cos(theta), config.sin(theta)
         R = np.array([[c, -s], [s, c]])
@@ -205,7 +205,7 @@ class Ellipse:
         phi = config.arctan2(y, x) % (2 * np.pi)
         return phi / 2
 
-    def plot(self, ax: Optional[plt.Axes] = None, add_label: bool = True, **patch_args) -> plt.Axes:
+    def plot(self, ax: plt.Axes | None = None, add_label: bool = True, **patch_args) -> plt.Axes:
         import matplotlib.pyplot as plt
         from matplotlib import patches
 
@@ -248,7 +248,7 @@ class Ellipse:
         theta: rst.Real,
         center: np.ndarray,
         config: mc.MathConfig,
-    ) -> "Ellipse":
+    ) -> Ellipse:
         r"""Constructs an ellipse from its algebraic form.
 
         An axis aligned ellipse is represented by

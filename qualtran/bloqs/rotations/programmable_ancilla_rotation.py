@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from collections import Counter
 from functools import cached_property
 
@@ -43,7 +45,7 @@ class ZPowProgrammedAncilla(Bloq):
     def signature(self) -> Signature:
         return Signature([Register("q", QBit(), side=Side.RIGHT)])
 
-    def build_composite_bloq(self, bb: 'BloqBuilder') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder) -> dict[str, SoquetT]:
         q = bb.allocate(dtype=QBit())
         q = bb.add(Hadamard(), q=q)
         q = bb.add(ZPowGate(self.exponent, eps=self.eps), q=q)
@@ -117,7 +119,7 @@ class ZPowUsingProgrammedAncilla(Bloq):
         *,
         max_fail_probability: SymbolicFloat,
         eps: SymbolicFloat = 1e-11,
-    ) -> 'ZPowUsingProgrammedAncilla':
+    ) -> ZPowUsingProgrammedAncilla:
         r"""Applies the rotation `Z**t` except with some specified failure probability.
 
         As each round has success probability 1/2, to achieve a max failure probability $p$,

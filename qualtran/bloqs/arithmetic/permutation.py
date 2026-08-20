@@ -23,8 +23,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import cast, Iterable, Sequence, Set, TYPE_CHECKING, TypeAlias, Union
+from typing import cast, TYPE_CHECKING
 
 from attrs import field, frozen
 
@@ -52,10 +55,10 @@ if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
     from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
 
-SymbolicCycleT: TypeAlias = Union[CycleT, Shaped]
+type SymbolicCycleT = CycleT | Shaped
 
 
-def _convert_cycle(cycle) -> Union[tuple[int, ...], Shaped]:
+def _convert_cycle(cycle) -> tuple[int, ...] | Shaped:
     if isinstance(cycle, Shaped):
         return cycle
     return tuple(cycle)
@@ -93,7 +96,7 @@ class PermutationCycle(Bloq):
     """
 
     N: SymbolicInt
-    cycle: Union[tuple[int, ...], Shaped] = field(converter=_convert_cycle)
+    cycle: tuple[int, ...] | Shaped = field(converter=_convert_cycle)
     bitsize: SymbolicInt = field()
 
     @cached_property
@@ -104,11 +107,12 @@ class PermutationCycle(Bloq):
     def _default_bitsize(self):
         return bit_length(self.N - 1)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: SoquetT) -> dict[str, SoquetT]:
         if is_symbolic(self.cycle):
             raise DecomposeTypeError(f"cannot decompose symbolic {self}")
+        assert isinstance(self.cycle, tuple)
 
-        a: 'SoquetT' = bb.allocate(dtype=QBit())
+        a: SoquetT = bb.allocate(dtype=QBit())
 
         for k, x_k in enumerate(self.cycle):
             x, a = bb.add_t(EqualsAConstant(self.bitsize, x_k), x=x, target=a)
@@ -122,9 +126,7 @@ class PermutationCycle(Bloq):
 
         return {'x': x}
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         if is_symbolic(self.cycle):
             x = ssa.new_symbol('x')
             cycle_len = slen(self.cycle)
@@ -176,7 +178,7 @@ _PERMUTATION_CYCLE_DOC = BloqDocSpec(
 )
 
 
-def _convert_cycles(cycles) -> Union[tuple[SymbolicCycleT, ...], Shaped]:
+def _convert_cycles(cycles) -> tuple[SymbolicCycleT, ...] | Shaped:
     if isinstance(cycles, Shaped):
         return cycles
     return tuple(_convert_cycle(cycle) for cycle in cycles)
@@ -210,7 +212,7 @@ class Permutation(Bloq):
     """
 
     N: SymbolicInt
-    cycles: Union[tuple[SymbolicCycleT, ...], Shaped] = field(converter=_convert_cycles)
+    cycles: tuple[SymbolicCycleT, ...] | Shaped = field(converter=_convert_cycles)
     bitsize: SymbolicInt = field()
 
     @cached_property
@@ -267,18 +269,17 @@ class Permutation(Bloq):
         )
         return cls(N, cycles)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet) -> dict[str, SoquetT]:
         if is_symbolic(self.cycles):
             raise DecomposeTypeError(f"cannot decompose symbolic {self}")
+        assert isinstance(self.cycles, tuple)
 
         for cycle in self.cycles:
             x = bb.add(PermutationCycle(self.N, cycle, self.bitsize), x=x)
 
         return {'x': x}
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         if is_symbolic(self.cycles):
             # worst case cost: single cycle of length N
             cycle = Shaped((self.N,))

@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -33,6 +35,6 @@ class TestBloqWithCallGraph(Bloq):
     def signature(self) -> Signature:
         return Signature.build()
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         n = ssa.new_symbol('n')
         return {TestParallelCombo(): 1, TestSerialCombo(): 1, TestAtom(): n}

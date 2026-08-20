@@ -12,9 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import itertools
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Any, Iterable, List, Sequence, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -56,19 +59,19 @@ class _GFPoly(BitEncoding):
         for it in itertools.product(self.gf.gf_type.elements, repeat=(self.degree + 1)):
             yield Poly(self.gf.gf_type(it), field=self.gf.gf_type)
 
-    def to_gf_coefficients(self, f_x: 'galois.Poly') -> 'galois.Array':
+    def to_gf_coefficients(self, f_x: galois.Poly) -> galois.Array:
         """Returns a big-endian array of coefficients of the polynomial f(x)."""
         f_x_coeffs = self.gf.gf_type.Zeros(self.degree + 1)
         f_x_coeffs[self.degree - f_x.degree :] = f_x.coeffs
         return f_x_coeffs
 
-    def from_gf_coefficients(self, f_x: 'galois.Array') -> 'galois.Poly':
+    def from_gf_coefficients(self, f_x: galois.Array) -> galois.Poly:
         """Expects a big-endian array of coefficients that represent a polynomial f(x)."""
         import galois
 
         return galois.Poly(f_x, field=self.gf.gf_type)
 
-    def to_bits(self, x) -> List[int]:
+    def to_bits(self, x) -> list[int]:
         """Returns individual bits corresponding to binary representation of x"""
         import galois
 
@@ -79,7 +82,7 @@ class _GFPoly(BitEncoding):
     def from_bits(self, bits: Sequence[int]):
         """Combine individual bits to form x"""
         reshaped_bits = np.array(bits).reshape((int(self.degree) + 1, int(self.gf.bitsize)))
-        return self.from_gf_coefficients(self.gf.from_bits_array(reshaped_bits))  # type: ignore
+        return self.from_gf_coefficients(self.gf.from_bits_array(reshaped_bits))
 
     def assert_valid_val(self, val: Any, debug_str: str = 'val'):
         """Raises an exception if `val` is not a valid classical value for this type.
@@ -137,16 +140,16 @@ class QGFPoly(QDType):
     def bitsize(self) -> SymbolicInt:
         return self._bit_encoding.bitsize
 
-    def to_gf_coefficients(self, f_x: 'galois.Poly') -> 'galois.Array':
+    def to_gf_coefficients(self, f_x: galois.Poly) -> galois.Array:
         """Returns a big-endian array of coefficients of the polynomial f(x)."""
         return self._bit_encoding.to_gf_coefficients(f_x)
 
-    def from_gf_coefficients(self, f_x: 'galois.Array') -> 'galois.Poly':
+    def from_gf_coefficients(self, f_x: galois.Array) -> galois.Poly:
         """Expects a big-endian array of coefficients that represent a polynomial f(x)."""
         return self._bit_encoding.from_gf_coefficients(f_x)
 
     @cached_property
-    def _quint_equivalent(self) -> 'qdt.QUInt':
+    def _quint_equivalent(self) -> qdt.QUInt:
         from qualtran.dtype import QUInt
 
         return QUInt(self.num_qubits)

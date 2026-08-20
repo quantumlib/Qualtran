@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Optional
 
 import cirq
 
@@ -53,7 +52,7 @@ def custom_qroam_repr(self) -> str:
 
 
 # TODO: better way of customizing label
-SelectSwapQROM.__repr__ = custom_qroam_repr  # type: ignore[assignment]
+SelectSwapQROM.__repr__ = custom_qroam_repr  # type: ignore[method-assign]
 
 
 def custom_qrom_repr(self) -> str:
@@ -63,10 +62,10 @@ def custom_qrom_repr(self) -> str:
 
 
 # TODO: better way of customizing label
-QROM.__repr__ = custom_qrom_repr  # type: ignore[assignment]
+QROM.__repr__ = custom_qrom_repr  # type: ignore[method-assign]
 
 
-def custom_generalizations(bloq: Bloq) -> Optional[Bloq]:
+def custom_generalizations(bloq: Bloq) -> Bloq | None:
     if isinstance(bloq, CirqGateAsBloq):
         if isinstance(bloq.gate, single_qubit_clifford):
             return ArbitraryClifford(n=1)

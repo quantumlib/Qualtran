@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Dict, List
+from __future__ import annotations
 
 import numpy as np
 from attrs import frozen
@@ -28,12 +28,12 @@ class LargeBloq(Bloq):
     n_ops: int
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(select=self.n_select, target=1)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', select, target) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, select, target) -> dict[str, SoquetT]:
         sel = bb.split(select)
-        ancs: List[Soquet] = [None] * self.n_select  # type: ignore
+        ancs: list[Soquet] = [None] * self.n_select  # type: ignore[list-item]
         ancs[0] = sel[0]
 
         cvs = QUInt(self.n_select - 1).to_bits_array(np.arange(self.n_ops) % (self.n_select - 1))

@@ -42,8 +42,11 @@ with different costs.
    Barenco et. al. 1995.
 """
 
+from __future__ import annotations
+
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Dict, Iterable, Optional, Sequence, Tuple, Type, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import attrs
 import cirq
@@ -127,31 +130,29 @@ class ZPowGate(CirqGateAsBloqBase):
     eps: SymbolicFloat = 1e-11
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('q', QBit())])
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic")
 
     @classmethod
-    def qcall(
-        cls, q: 'QVar', *, exponent: SymbolicFloat = 1.0, eps: SymbolicFloat = 1e-11
-    ) -> 'QVar':
+    def qcall(cls, q: QVar, *, exponent: SymbolicFloat = 1.0, eps: SymbolicFloat = 1e-11) -> QVar:
         return q.bb.add(cls(exponent=exponent, eps=eps), q=q)
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.ZPowGate(exponent=self.exponent, global_shift=0)
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         if ctrl_spec != CtrlSpec():
             return super().get_ctrl_system(ctrl_spec)
 
         ctrl_bloq = CZPowGate(exponent=self.exponent, eps=self.eps)
 
         def add_ctrled(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            bb: BloqBuilder, ctrl_soqs: Sequence[SoquetT], in_soqs: dict[str, SoquetT]
+        ) -> tuple[Iterable[SoquetT], Iterable[SoquetT]]:
             (ctrl_soq,) = ctrl_soqs
             ctrl_soq, q = bb.add(ctrl_bloq, q=np.array([ctrl_soq, in_soqs['q']]))
             return (ctrl_soq,), (q,)
@@ -162,10 +163,10 @@ class ZPowGate(CirqGateAsBloqBase):
         g = self.cirq_gate**power
         return ZPowGate(exponent=g.exponent, eps=self.eps)
 
-    def adjoint(self) -> 'ZPowGate':
+    def adjoint(self) -> ZPowGate:
         return attrs.evolve(self, exponent=-self.exponent)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         return TextBox(f'Z^{self.exponent}')
@@ -221,17 +222,15 @@ class CZPowGate(Bloq):
     eps: SymbolicFloat = 1e-11
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('q', QBit(), shape=(2,))])
 
     @classmethod
-    def qcall(
-        cls, q: 'QVarT', *, exponent: SymbolicFloat = 1.0, eps: SymbolicFloat = 1e-11
-    ) -> 'QVar':
+    def qcall(cls, q: QVarT, *, exponent: SymbolicFloat = 1.0, eps: SymbolicFloat = 1e-11) -> QVar:
         bb = np.asarray(q).reshape(-1)[0].bb
         return bb.add(cls(exponent=exponent, eps=eps), q=q)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, q: SoquetT) -> dict[str, SoquetT]:
         from qualtran.bloqs.mcmt import And
 
         (q1, q2), anc = bb.add(And(), ctrl=q)
@@ -242,7 +241,7 @@ class CZPowGate(Bloq):
     def __pow__(self, power):
         return attrs.evolve(self, exponent=self.exponent * power)
 
-    def adjoint(self) -> 'CZPowGate':
+    def adjoint(self) -> CZPowGate:
         return attrs.evolve(self, exponent=-self.exponent)
 
     def __str__(self):
@@ -301,32 +300,32 @@ class XPowGate(CirqGateAsBloqBase):
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
 
-    exponent: Union[sympy.Expr, float] = 1.0
+    exponent: sympy.Expr | float = 1.0
     global_shift: float = 0.0
     eps: SymbolicFloat = 1e-11
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic")
 
     @classmethod
     def qcall(
         cls,
-        q: 'QVar',
+        q: QVar,
         *,
-        exponent: Union[sympy.Expr, float] = 1.0,
+        exponent: sympy.Expr | float = 1.0,
         global_shift: float = 0.0,
         eps: SymbolicFloat = 1e-11,
-    ) -> 'QVar':
+    ) -> QVar:
         return q.bb.add(cls(exponent=exponent, global_shift=global_shift, eps=eps), q=q)
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.XPowGate(exponent=self.exponent, global_shift=self.global_shift)
 
-    def adjoint(self) -> 'XPowGate':
+    def adjoint(self) -> XPowGate:
         return attrs.evolve(self, exponent=-self.exponent)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         return TextBox(f'X^{self.exponent}')
@@ -387,32 +386,32 @@ class YPowGate(CirqGateAsBloqBase):
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
 
-    exponent: Union[sympy.Expr, float] = 1.0
+    exponent: sympy.Expr | float = 1.0
     global_shift: float = 0.0
     eps: SymbolicFloat = 1e-11
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic")
 
     @classmethod
     def qcall(
         cls,
-        q: 'QVar',
+        q: QVar,
         *,
-        exponent: Union[sympy.Expr, float] = 1.0,
+        exponent: sympy.Expr | float = 1.0,
         global_shift: float = 0.0,
         eps: SymbolicFloat = 1e-11,
-    ) -> 'QVar':
+    ) -> QVar:
         return q.bb.add(cls(exponent=exponent, global_shift=global_shift, eps=eps), q=q)
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.YPowGate(exponent=self.exponent, global_shift=self.global_shift)
 
-    def adjoint(self) -> 'YPowGate':
+    def adjoint(self) -> YPowGate:
         return attrs.evolve(self, exponent=-self.exponent)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         return TextBox(f'Y^{self.exponent}')
@@ -474,26 +473,26 @@ class Rz(CirqGateAsBloqBase):
     eps: SymbolicFloat = 1e-11
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('q', QBit())])
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic")
 
     @classmethod
-    def qcall(cls, q: 'QVar', angle: SymbolicFloat, *, eps: SymbolicFloat = 1e-11) -> 'QVar':
+    def qcall(cls, q: QVar, angle: SymbolicFloat, *, eps: SymbolicFloat = 1e-11) -> QVar:
         return q.bb.add(cls(angle=angle, eps=eps), q=q)
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.rz(self.angle)
 
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: Wires) -> Operation:
         import pennylane as qml
 
         return qml.RZ(phi=self.angle, wires=wires)
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         if ctrl_spec != CtrlSpec():
             return super().get_ctrl_system(ctrl_spec)
 
@@ -507,10 +506,10 @@ class Rz(CirqGateAsBloqBase):
             ctrl_reg_name='ctrl',
         )
 
-    def adjoint(self) -> 'Rz':
+    def adjoint(self) -> Rz:
         return attrs.evolve(self, angle=-self.angle)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         return TextBox(str(self))
@@ -528,19 +527,19 @@ def _rz() -> Rz:
 
 _RZ_DOC = BloqDocSpec(bloq_cls=Rz, examples=[_rz], call_graph_example=None)
 
-_PowClsT = Union[Type[XPowGate], Type[YPowGate], Type[ZPowGate]]
+_PowClsT = type[XPowGate] | type[YPowGate] | type[ZPowGate]
 
 
 def _controlled_rp_circuit(
-    bb: 'BloqBuilder',
+    bb: BloqBuilder,
     /,
     *,
     single_q_pow_cls: _PowClsT,
     angle: SymbolicFloat,
     eps: SymbolicFloat,
-    ctrl: 'Soquet',
-    q: 'Soquet',
-) -> Dict[str, 'SoquetT']:
+    ctrl: Soquet,
+    q: Soquet,
+) -> dict[str, SoquetT]:
     from qualtran.bloqs.basic_gates import CNOT
 
     t = angle / np.pi
@@ -590,16 +589,14 @@ class CRz(Bloq):
     eps: SymbolicFloat = 1e-11
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(ctrl=1, q=1)
 
     @classmethod
-    def qcall(cls, ctrl: 'QVar', q: 'QVar', angle: SymbolicFloat, *, eps: SymbolicFloat = 1e-11):
+    def qcall(cls, ctrl: QVar, q: QVar, angle: SymbolicFloat, *, eps: SymbolicFloat = 1e-11):
         return ctrl.bb.add(cls(angle=angle, eps=eps), ctrl=ctrl, q=q)
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', ctrl: 'Soquet', q: 'Soquet'
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, ctrl: Soquet, q: Soquet) -> dict[str, SoquetT]:
         return _controlled_rp_circuit(
             bb, single_q_pow_cls=ZPowGate, angle=self.angle, eps=self.eps, ctrl=ctrl, q=q
         )
@@ -656,31 +653,29 @@ class Rx(CirqGateAsBloqBase):
         Nielsen and Chuang. 2010. Chapter 4.2, pp. 174-177.
     """
 
-    angle: Union[sympy.Expr, float]
+    angle: sympy.Expr | float
     eps: SymbolicFloat = 1e-11
 
     @classmethod
-    def qcall(
-        cls, q: 'QVar', angle: Union[sympy.Expr, float], *, eps: SymbolicFloat = 1e-11
-    ) -> 'QVar':
+    def qcall(cls, q: QVar, angle: sympy.Expr | float, *, eps: SymbolicFloat = 1e-11) -> QVar:
         return q.bb.add(cls(angle=angle, eps=eps), q=q)
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic")
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.rx(self.angle)
 
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: Wires) -> Operation:
         import pennylane as qml
 
         return qml.RX(phi=self.angle, wires=wires)
 
-    def adjoint(self) -> 'Rx':
+    def adjoint(self) -> Rx:
         return attrs.evolve(self, angle=-self.angle)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         return TextBox(str(self))
@@ -727,31 +722,29 @@ class Ry(CirqGateAsBloqBase):
         Nielsen and Chuang. 2010. Chapter 4.2, pp. 174-177.
     """
 
-    angle: Union[sympy.Expr, float]
+    angle: sympy.Expr | float
     eps: SymbolicFloat = 1e-11
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic")
 
     @classmethod
-    def qcall(
-        cls, q: 'QVar', angle: Union[sympy.Expr, float], *, eps: SymbolicFloat = 1e-11
-    ) -> 'QVar':
+    def qcall(cls, q: QVar, angle: sympy.Expr | float, *, eps: SymbolicFloat = 1e-11) -> QVar:
         return q.bb.add(cls(angle=angle, eps=eps), q=q)
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.ry(self.angle)
 
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: Wires) -> Operation:
         import pennylane as qml
 
         return qml.RY(phi=self.angle, wires=wires)
 
-    def adjoint(self) -> 'Ry':
+    def adjoint(self) -> Ry:
         return attrs.evolve(self, angle=-self.angle)
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         if ctrl_spec != CtrlSpec():
             return super().get_ctrl_system(ctrl_spec)
 
@@ -765,7 +758,7 @@ class Ry(CirqGateAsBloqBase):
             ctrl_reg_name='ctrl',
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         return TextBox(str(self))
@@ -805,16 +798,14 @@ class CRy(Bloq):
     eps: SymbolicFloat = 1e-11
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(ctrl=1, q=1)
 
     @classmethod
-    def qcall(cls, ctrl: 'QVar', q: 'QVar', angle: SymbolicFloat, *, eps: SymbolicFloat = 1e-11):
+    def qcall(cls, ctrl: QVar, q: QVar, angle: SymbolicFloat, *, eps: SymbolicFloat = 1e-11):
         return ctrl.bb.add(cls(angle=angle, eps=eps), ctrl=ctrl, q=q)
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', ctrl: 'Soquet', q: 'Soquet'
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, ctrl: Soquet, q: Soquet) -> dict[str, SoquetT]:
         return _controlled_rp_circuit(
             bb, single_q_pow_cls=YPowGate, angle=self.angle, eps=self.eps, ctrl=ctrl, q=q
         )

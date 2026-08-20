@@ -13,8 +13,6 @@
 #  limitations under the License.
 """Some utility functions for chemistry tutorials"""
 
-from typing import Optional, Tuple
-
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.optimize
@@ -35,7 +33,7 @@ def linear(x: NDArray[np.float64], a: float, c: float) -> NDArray[np.float64]:
     return a * x + c
 
 
-def fit_linear(x: NDArray[np.float64], y: NDArray[np.float64]) -> Tuple[float, float]:
+def fit_linear(x: NDArray[np.float64], y: NDArray[np.float64]) -> tuple[float, float]:
     """Fit a line given x and y values.
 
     Args:
@@ -77,7 +75,7 @@ def plot_linear_log_log(
     ax: plt.Axes,
     xs: NDArray[np.float64],
     ys: NDArray[np.float64],
-    label: Optional[str] = None,
+    label: str | None = None,
     color: str = 'C0',
 ):
     """Fit a power law to the input data set and plot on existing axis.

@@ -11,24 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import importlib
 import logging
 import warnings
+from collections.abc import Mapping, Sequence
 from functools import lru_cache
-from typing import (
-    Any,
-    cast,
-    Dict,
-    List,
-    Mapping,
-    Optional,
-    Protocol,
-    Sequence,
-    Tuple,
-    TYPE_CHECKING,
-    TypeAlias,
-    Union,
-)
+from typing import Any, cast, Protocol, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -65,11 +55,11 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-BloqKey: TypeAlias = str
+type BloqKey = str
 
 
 @lru_cache
-def _get_safe_loadables() -> Dict[str, type[Any]]:
+def _get_safe_loadables() -> dict[str, type[Any]]:
     from qualtran import Adjoint, Controlled, CtrlSpec, Register
 
     # Classes that appear inside serialized bloq arguments but are absent from
@@ -99,7 +89,7 @@ def _get_safe_import_names() -> frozenset[str]:
 
 def eval_carg_nodes(
     cargs: Sequence[CArgNode], *, safe: bool = True
-) -> Tuple[List[Any], Dict[str, Any]]:
+) -> tuple[list[Any], dict[str, Any]]:
     """Evaluate a sequence of `CArgNode`
 
     Returns:
@@ -108,8 +98,8 @@ def eval_carg_nodes(
     """
     if len(cargs) > 1_000 and safe:
         raise ValueError("Too many arguments for safe=True loading.")
-    args: List[Any] = []
-    kwargs: Dict[str, Any] = {}
+    args: list[Any] = []
+    kwargs: dict[str, Any] = {}
     kwarg_only = False
     for arg in cargs:
         if arg.key is None:
@@ -151,7 +141,7 @@ def eval_symbol_node(node: CObjectNode, *, safe: bool) -> sympy.Symbol:
     return sympy.Symbol(args[0])
 
 
-def eval_side_node(node: CObjectNode, *, safe: bool) -> 'qualtran.Side':
+def eval_side_node(node: CObjectNode, *, safe: bool) -> qualtran.Side:
     """Evaluate a CObjectNode where `name` is `"Side"` to a `qualtran.Side`"""
     from qualtran import Side
 
@@ -179,7 +169,7 @@ def _get_singleton_evaluator(o: object) -> _EvalProtocol:
     return _eval_node
 
 
-_CVALUE_EVALUATORS: Dict[str, _EvalProtocol] = {
+_CVALUE_EVALUATORS: dict[str, _EvalProtocol] = {
     'True': _get_singleton_evaluator(True),
     'False': _get_singleton_evaluator(False),
     'None': _get_singleton_evaluator(None),
@@ -193,12 +183,10 @@ _CVALUE_EVALUATORS: Dict[str, _EvalProtocol] = {
 @attrs.frozen
 class UnevaluatedCValue:
     name: str
-    cargs: Sequence[Tuple[Optional[str], Any]] = attrs.field(
-        converter=tuple[Tuple[Optional[str], Any]]
-    )
+    cargs: Sequence[tuple[str | None, Any]] = attrs.field(converter=tuple[tuple[str | None, Any]])
 
 
-def _eval_imported(name: str, args: Sequence[Any], kwargs: Dict[str, Any]):
+def _eval_imported(name: str, args: Sequence[Any], kwargs: dict[str, Any]):
     """Import and instantiate a class by its fully-qualified dotted name.
 
     This is inherently unsafe. Callers must gate access (e.g. via the
@@ -247,7 +235,7 @@ def eval_cvalue_node(node: CValueNode, *, safe: bool = True) -> Any:
 
         # This is where our safe journey ends; anything left is returned unevaluated (no import).
         if safe:
-            uneval_cargs: list[tuple[Optional[str], Any]] = [(None, arg) for arg in args]
+            uneval_cargs: list[tuple[str | None, Any]] = [(None, arg) for arg in args]
             uneval_cargs.extend((k, v) for k, v in kwargs.items())
             return UnevaluatedCValue(name=node.name, cargs=uneval_cargs)
 
@@ -259,7 +247,7 @@ def eval_cvalue_node(node: CValueNode, *, safe: bool = True) -> Any:
     raise TypeError(f"Unknown AST node type: {type(node)}")
 
 
-def _resolve_cobject_dtype(cobject: CObjectNode, *, safe: bool = True) -> 'qualtran.QCDType':
+def _resolve_cobject_dtype(cobject: CObjectNode, *, safe: bool = True) -> qualtran.QCDType:
     """Resolve a CObjectNode to a QCDType instance.
 
     Resolution priority:
@@ -293,7 +281,7 @@ def _resolve_cobject_dtype(cobject: CObjectNode, *, safe: bool = True) -> 'qualt
 
 def eval_qdtype_node(
     dt: QDTypeNode, *, safe: bool = True
-) -> Tuple['qualtran.QCDType', Sequence[int]]:
+) -> tuple[qualtran.QCDType, Sequence[int]]:
     """Evaluate a QDTypeNode to a (QCDType, shape) pair."""
     resolved_dt = _resolve_cobject_dtype(dt.dtype, safe=safe)
     if dt.shape is not None:
@@ -301,9 +289,7 @@ def eval_qdtype_node(
     return resolved_dt, ()
 
 
-def eval_qsignature(
-    entries: Sequence[QSignatureEntry], *, safe: bool = True
-) -> 'qualtran.Signature':
+def eval_qsignature(entries: Sequence[QSignatureEntry], *, safe: bool = True) -> qualtran.Signature:
     registers = []
     for entry in entries:
         # One dtype: THRU register.
@@ -347,7 +333,7 @@ class _PlaceholderBloq(Bloq):
     signature: Signature
 
 
-def eval_qdef_extern_node(qdef: QDefExternNode, *, safe: bool = True) -> 'qualtran.Bloq':
+def eval_qdef_extern_node(qdef: QDefExternNode, *, safe: bool = True) -> qualtran.Bloq:
     """Evaluate an extern node by loading in the bloq using Python."""
     signature: Signature = eval_qsignature(qdef.qsignature, safe=safe)
 
@@ -371,7 +357,7 @@ def eval_qdef_extern_node(qdef: QDefExternNode, *, safe: bool = True) -> 'qualtr
     return bloq
 
 
-def eval_qcast_node(qdef: QCastNode, *, safe: bool = True) -> 'qualtran.Bloq':
+def eval_qcast_node(qdef: QCastNode, *, safe: bool = True) -> qualtran.Bloq:
     """Evaluate a qcast node by constructing a QCast bloq from its signature."""
     from qualtran.bloqs.bookkeeping.qcast import QCast
 
@@ -382,11 +368,11 @@ def eval_qcast_node(qdef: QCastNode, *, safe: bool = True) -> 'qualtran.Bloq':
 
 def eval_bloq_maybe_aliased(
     key: BloqKey,
-    qdefs: Dict[BloqKey, QDefNode],
-    qlocals: Mapping[BloqKey, Union[BloqKey, 'SoquetT']],
-    bloqs: Dict[BloqKey, Bloq],
+    qdefs: dict[BloqKey, QDefNode],
+    qlocals: Mapping[BloqKey, BloqKey | SoquetT],
+    bloqs: dict[BloqKey, Bloq],
     safe: bool = True,
-) -> 'qualtran.Bloq':
+) -> qualtran.Bloq:
     """Recursively load bloqs.
 
     You must kick this off by calling `eval_qdef_impl_node`. Each QCallNode will try to eval the
@@ -428,7 +414,7 @@ def eval_bloq_maybe_aliased(
     raise ValueError(f"Could not resolve {key}")
 
 
-def eval_qarg_value(val: NestedQArgValue, qlocals: Mapping[str, 'qualtran.SoquetT']):
+def eval_qarg_value(val: NestedQArgValue, qlocals: Mapping[str, qualtran.SoquetT]):
     if isinstance(val, QArgValueNode):
         if val.idx:
             return cast(np.ndarray, qlocals[val.name])[val.idx]
@@ -438,7 +424,7 @@ def eval_qarg_value(val: NestedQArgValue, qlocals: Mapping[str, 'qualtran.Soquet
     return [eval_qarg_value(v, qlocals) for v in val]
 
 
-def eval_qarg_nodes(qargs: Sequence[QArgNode], qlocals: Mapping[str, 'qualtran.SoquetT']):
+def eval_qarg_nodes(qargs: Sequence[QArgNode], qlocals: Mapping[str, qualtran.SoquetT]):
     qkwargs = {}
     for qarg in qargs:
         qkwargs[qarg.key] = eval_qarg_value(qarg.value, qlocals)
@@ -446,8 +432,8 @@ def eval_qarg_nodes(qargs: Sequence[QArgNode], qlocals: Mapping[str, 'qualtran.S
 
 
 def _eval_qdef_impl_node(
-    qdef: QDefImplNode, qdefs: Dict[BloqKey, QDefNode], bloqs: Dict[BloqKey, Bloq], *, safe: bool
-) -> 'qualtran.CompositeBloq':
+    qdef: QDefImplNode, qdefs: dict[BloqKey, QDefNode], bloqs: dict[BloqKey, Bloq], *, safe: bool
+) -> qualtran.CompositeBloq:
     """Evaluate a QDefImplNode, which defines a bloq implementation through a series of statements.
 
     This uses `qualtran.BloqBuilder` to build a `qualtran.CompositeBloq` by processing
@@ -469,18 +455,18 @@ def _eval_qdef_impl_node(
     logger.info("Evaluating qdef impl %s", qdef.bloq_key)
 
     signature: Signature = eval_qsignature(qdef.qsignature, safe=safe)
-    qlocals: Dict[str, Union['SoquetT', BloqKey]] = {}
+    qlocals: dict[str, SoquetT | BloqKey] = {}
     bb, initial_qlocals = BloqBuilder.from_signature(signature)
     qlocals.update(initial_qlocals)
-    subbloq_aliases: Dict[Bloq, str] = {}
+    subbloq_aliases: dict[Bloq, str] = {}
 
     stmt: StatementNode
-    cbloq: Optional[CompositeBloq] = None  # filled in on QReturnNode
+    cbloq: CompositeBloq | None = None  # filled in on QReturnNode
     for stmt in qdef.body:
         logger.debug("STMT: %s", stmt)
 
         if isinstance(stmt, AliasAssignmentNode):
-            qlocals[stmt.alias] = stmt.bloq_key  # type: ignore[assignment]
+            qlocals[stmt.alias] = stmt.bloq_key
             bloq = eval_bloq_maybe_aliased(stmt.bloq_key, qdefs, qlocals, bloqs, safe=safe)
             subbloq_aliases[bloq] = stmt.alias
 
@@ -531,11 +517,11 @@ def _eval_qdef_impl_node(
 
 def eval_qdef_impl_node(
     qdef: QDefImplNode,
-    qdefs: Dict[BloqKey, QDefNode],
-    bloqs: Dict[BloqKey, Bloq],
+    qdefs: dict[BloqKey, QDefNode],
+    bloqs: dict[BloqKey, Bloq],
     *,
     safe: bool = True,
-) -> 'qualtran.CompositeBloq':
+) -> qualtran.CompositeBloq:
     # Wrapper to un-roll error messages.
     # See `_eval_qdef_impl_node` for details about this function.
     try:
@@ -546,7 +532,7 @@ def eval_qdef_impl_node(
         raise
 
 
-def eval_module(m: L1Module, *, safe: bool = True) -> Dict[BloqKey, 'qualtran.Bloq']:
+def eval_module(m: L1Module, *, safe: bool = True) -> dict[BloqKey, qualtran.Bloq]:
     """Evaluate a parsed L1Module.
 
     This will call `eval_qdef_impl_node` or `eval_qdef_extern_node` on each qdef in the
@@ -554,8 +540,8 @@ def eval_module(m: L1Module, *, safe: bool = True) -> Dict[BloqKey, 'qualtran.Bl
     in a depth-first traversal.
     """
 
-    qdefs: Dict[BloqKey, QDefNode] = {qdef.bloq_key: qdef for qdef in m.qdefs}
-    bloqs: Dict[BloqKey, Bloq] = {}
+    qdefs: dict[BloqKey, QDefNode] = {qdef.bloq_key: qdef for qdef in m.qdefs}
+    bloqs: dict[BloqKey, Bloq] = {}
     for qdef in m.qdefs:
         bk = qdef.bloq_key
 

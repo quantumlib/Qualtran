@@ -12,8 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Dict, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -77,10 +79,10 @@ class HammingWeightPhasing(GateWithRegisters):
     eps: SymbolicFloat = 1e-10
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=QUInt(self.bitsize))
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         soqs['x'], junk, out = bb.add(HammingWeightCompute(self.bitsize), x=soqs['x'])
         out = bb.split(out)
         for i in range(len(out)):
@@ -93,12 +95,12 @@ class HammingWeightPhasing(GateWithRegisters):
         )
         return soqs
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text(f'HWP_{self.bitsize}(Z^{self.exponent})')
         return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             HammingWeightCompute(self.bitsize): 1,
             HammingWeightCompute(self.bitsize).adjoint(): 1,
@@ -163,7 +165,7 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
     eps: float = 1e-10
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(
             x=QUInt(self.bitsize), phase_grad=QFxp(self.b_grad, self.b_grad)
         )
@@ -177,7 +179,7 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
         )
 
     @cached_property
-    def b_grad(self) -> 'SymbolicInt':
+    def b_grad(self) -> SymbolicInt:
         return self.phase_oracle.b_grad
 
     @cached_property
@@ -185,14 +187,14 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
         return self.phase_oracle.gamma_dtype
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', *, x: 'SoquetT', phase_grad: 'SoquetT'
-    ) -> Dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, *, x: SoquetT, phase_grad: SoquetT
+    ) -> dict[str, SoquetT]:
         x, junk, out = bb.add(HammingWeightCompute(self.bitsize), x=x)
         out, phase_grad = bb.add(self.phase_oracle, out=out, phase_grad=phase_grad)
         x = bb.add(HammingWeightCompute(self.bitsize).adjoint(), x=x, junk=junk, out=out)
         return {'x': x, 'phase_grad': phase_grad}
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text(f'HWPG_{self.bitsize}(Z^{self.exponent})')
         return super().wire_symbol(reg, idx)

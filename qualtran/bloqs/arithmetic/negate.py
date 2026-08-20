@@ -11,8 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import sympy
 from attrs import frozen
@@ -67,15 +69,15 @@ class Negate(Bloq):
         Operator "Unary Minus". Last accessed 17 July 2024.
     """
 
-    dtype: Union[QUInt, QInt, QMontgomeryUInt]
+    dtype: QUInt | QInt | QMontgomeryUInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('x', self.dtype)])
 
-    def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, x: ClassicalValT) -> dict[str, ClassicalValT]:
         n = self.dtype.num_qubits
-        if isinstance(n, sympy.Expr):
+        if isinstance(self.dtype.bitsize, sympy.Expr):
             raise ValueError(f'Cannot simulate symbolic bloq {self}')
         # Two's complement negation: -x == (~x + 1) mod 2^n
         # Work in unsigned space, then re-interpret in the dtype.
@@ -94,7 +96,7 @@ class Negate(Bloq):
 
         return {'x': result}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: SoquetT) -> dict[str, SoquetT]:
         x = bb.add(BitwiseNot(self.dtype), x=x)  # ~x
         x = bb.add(AddK(self.dtype, k=1), x=x)  # -x
         return {'x': x}
@@ -117,7 +119,7 @@ def _negate_symb() -> Negate:
 _NEGATE_DOC = BloqDocSpec(bloq_cls=Negate, examples=[_negate, _negate_symb])
 
 
-def _get_negate_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+def _get_negate_classical_sim_test_cases() -> list[ClassicalSimTestCase]:
     """Test cases for the `Negate` bloq.
 
     These specify concrete (non-symbolic) bloq instances with specific

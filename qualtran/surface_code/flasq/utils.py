@@ -16,12 +16,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from functools import lru_cache
-from typing import Any, Mapping, TYPE_CHECKING, Union
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 import sympy
-from frozendict import frozendict  # type: ignore[import-untyped]
+from frozendict import frozendict
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -29,7 +30,7 @@ if TYPE_CHECKING:
 
 def _to_frozendict(val: Mapping[Any, Any]) -> frozendict:
     """Helper to convert mappings to frozendict while satisfying mypy."""
-    return frozendict(val)  # type: ignore[arg-type]
+    return frozendict(val)
 
 
 @lru_cache(maxsize=None)
@@ -52,10 +53,10 @@ def _get_cached_lambdified_evaluator(
 
 @lru_cache(maxsize=None)
 def substitute_until_fixed_point(
-    expression: Union[sympy.Expr, int, float],
-    resolver: frozendict[Union[sympy.Symbol, str], Any],
+    expression: sympy.Expr | int | float,
+    resolver: frozendict[sympy.Symbol | str, Any],
     try_make_number: bool = True,
-) -> Union[sympy.Expr, int, float]:
+) -> sympy.Expr | int | float:
     """Iteratively substitutes symbols in a sympy expression until a fixed point.
 
     Args:

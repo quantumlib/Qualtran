@@ -12,8 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Iterable, List, Sequence
 
 import attrs
 import numpy as np
@@ -37,7 +37,7 @@ class _UInt(BitEncoding[int]):
     def get_domain(self) -> Iterable[int]:
         return range(2**self.bitsize)
 
-    def to_bits(self, x: int) -> List[int]:
+    def to_bits(self, x: int) -> list[int]:
         self.assert_valid_val(x)
         return [int(x) for x in f'{int(x):0{self.bitsize}b}']
 
@@ -73,7 +73,7 @@ class _UInt(BitEncoding[int]):
             return np.vectorize(self.from_bits, signature='(n)->()')(bits_array)
 
         basis = 2 ** np.arange(self.bitsize - 1, 0 - 1, -1, dtype=np.uint64)
-        return np.sum(basis * bitstrings, axis=1, dtype=np.uint64)  # type: ignore[return-value]
+        return np.sum(basis * bitstrings, axis=1, dtype=np.uint64)
 
     def assert_valid_val(self, val: int, debug_str: str = 'val') -> None:
         if not isinstance(val, (int, np.integer)):

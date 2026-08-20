@@ -95,6 +95,4 @@ class BlockEncoding(Bloq):
         r"""Returns the signal / ancilla flag state $|G\rangle."""
 
 
-_BLOCK_ENCODING_DOC = BloqDocSpec(
-    bloq_cls=BlockEncoding, examples=[]  # type: ignore[type-abstract]
-)
+_BLOCK_ENCODING_DOC = BloqDocSpec(bloq_cls=BlockEncoding, examples=[])

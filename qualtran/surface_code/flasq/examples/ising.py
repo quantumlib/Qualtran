@@ -14,14 +14,14 @@
 
 """Ising model Trotter circuit builder for FLASQ analysis examples."""
 
+from collections.abc import Generator, Iterator
 from functools import lru_cache
-from typing import Generator, List, Tuple
 
 import cirq
 
 
 def ising_zz_layer(
-    qubits: Tuple[cirq.GridQubit, ...],
+    qubits: tuple[cirq.GridQubit, ...],
     rows: int,
     cols: int,
     j_coupling: float,
@@ -65,7 +65,9 @@ def ising_zz_layer(
         index = r * cols + c
         return qubits[index]
 
-    def yield_interaction_set(interactions: List[Tuple[cirq.GridQubit, cirq.GridQubit]]):
+    def yield_interaction_set(
+        interactions: list[tuple[cirq.GridQubit, cirq.GridQubit]],
+    ) -> Iterator[cirq.Moment]:
         """Helper function to generate the 3 moments for a specific set of interactions."""
         if not interactions:
             return
@@ -135,7 +137,7 @@ def ising_zz_layer(
 
 
 def ising_x_layer(
-    qubits: Tuple[cirq.GridQubit, ...], h_field: float, time_slice: float
+    qubits: tuple[cirq.GridQubit, ...], h_field: float, time_slice: float
 ) -> Generator[cirq.Moment, None, None]:
     """Generates the X field layer for one Trotter step slice.
 

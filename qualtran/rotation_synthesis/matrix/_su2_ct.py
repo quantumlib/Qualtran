@@ -12,9 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import functools
 import itertools
-from typing import cast, Mapping, Optional, Sequence, Union
+from collections.abc import Mapping, Sequence
+from typing import cast
 
 import attrs
 import numpy as np
@@ -48,17 +51,17 @@ class SU2CliffordT:
     """
 
     matrix: np.ndarray = attrs.field(converter=np.asarray)
-    gates: Optional[tuple[str, ...]] = None
+    gates: tuple[str, ...] | None = None
 
     def __mul__(self, other):
         assert not isinstance(other, SU2CliffordT)
         return SU2CliffordT(self.matrix * other, self.gates)
 
-    def __matmul__(self, other: "SU2CliffordT") -> "SU2CliffordT":
+    def __matmul__(self, other: SU2CliffordT) -> SU2CliffordT:
         res = self.matrix @ other.matrix
         for v in res.flat:
             assert v.is_divisible_by(_zw.SQRT_2)
-        gates: Optional[tuple[str, ...]] = None
+        gates: tuple[str, ...] | None = None
         if self.gates is not None and other.gates is not None:
             gates = other.gates + self.gates
         return SU2CliffordT([[v // _zw.SQRT_2 for v in r] for r in res], gates)
@@ -82,7 +85,7 @@ class SU2CliffordT:
     def __eq__(self, other):
         return np.all(self.matrix == other.matrix)
 
-    def numpy(self, config: Optional[mc.MathConfig] = None) -> np.ndarray:
+    def numpy(self, config: mc.MathConfig | None = None) -> np.ndarray:
         """Returns the numpy representation of the unitary.
         Args:
             config: An optional MathConfig used to convert the matrix entries to complex
@@ -100,10 +103,10 @@ class SU2CliffordT:
         result = result / sqrt_det
         return result
 
-    def adjoint(self) -> "SU2CliffordT":
+    def adjoint(self) -> SU2CliffordT:
         return SU2CliffordT(self.matrix.T.conj())
 
-    def scale_down(self) -> Union["SU2CliffordT", None]:
+    def scale_down(self) -> SU2CliffordT | None:
         for v in self.matrix.flat:
             if not v.is_divisible_by(_zw.LAMBDA_KLIUCHNIKOV):
                 return None
@@ -120,7 +123,7 @@ class SU2CliffordT:
         return real
 
     @staticmethod
-    def from_sequence(seq: Sequence[str]) -> "SU2CliffordT":
+    def from_sequence(seq: Sequence[str]) -> SU2CliffordT:
         """Creates an SU2CliffordT from a Clifford+T gate sequence."""
         u = ISqrt2
         for g in seq:
@@ -145,7 +148,7 @@ class SU2CliffordT:
     @staticmethod
     def from_parametric_form(
         pf: tuple[_zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2],
-    ) -> "SU2CliffordT":
+    ) -> SU2CliffordT:
         res = np.array([_zw.Zero] * 4).reshape((2, 2))
         for a, m in zip(pf, PARAMETRIC_FORM_BASES):
             res += m * _zw.ZW.from_pair(a, _zsqrt2.Zero, False)
@@ -161,8 +164,8 @@ class SU2CliffordT:
 
     @classmethod
     def from_pair(
-        cls: type["SU2CliffordT"], p: _zw.ZW, q: _zw.ZW, pick_phase: bool = False
-    ) -> "SU2CliffordT":
+        cls: type[SU2CliffordT], p: _zw.ZW, q: _zw.ZW, pick_phase: bool = False
+    ) -> SU2CliffordT:
         """Creates an SU2CliffordT instance from a pair of ZW rst.
 
         The matrix is constructed as [[p, -q.conj()], [q, p.conj()]].
@@ -212,7 +215,7 @@ class SU2CliffordT:
         _, _, n1 = self.matrix[1, 0].to_zsqrt2()
         return n0 == n1
 
-    def rescale(self) -> 'SU2CliffordT':
+    def rescale(self) -> SU2CliffordT:
         r"""Rescales the matrix such that its determinant is minimized.
 
         The determinant of the unitary can be written as $2\lambda^n$ where $\lambda=2+\sqrt{l}$

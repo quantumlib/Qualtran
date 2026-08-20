@@ -18,11 +18,14 @@ A musical score is one where time proceeds from left to right and each horizonta
 represents a qubit or register of qubits.
 """
 
+from __future__ import annotations
+
 import abc
 import heapq
 import json
+from collections.abc import Callable, Iterable
 from enum import Enum
-from typing import Any, Callable, cast, Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Any, cast
 
 import attrs
 import networkx as nx
@@ -78,7 +81,7 @@ class HLineFlavor(Enum):
     CLASSICAL = 2
 
     @classmethod
-    def from_qcdtype(cls, qcdtype: QCDType) -> 'HLineFlavor':
+    def from_qcdtype(cls, qcdtype: QCDType) -> HLineFlavor:
         if isinstance(qcdtype, QDType):
             return cls.QUANTUM
         if isinstance(qcdtype, CDType):
@@ -101,10 +104,10 @@ class HLine:
 
     y: int
     seq_x_start: int
-    seq_x_end: Optional[int] = None
+    seq_x_end: int | None = None
     flavor: HLineFlavor = HLineFlavor.QUANTUM
 
-    def json_dict(self) -> Dict[str, Any]:
+    def json_dict(self) -> dict[str, Any]:
         d = attrs.asdict(self)
         d['flavor'] = str(d['flavor'])
         return d
@@ -116,8 +119,8 @@ class LineManager:
     def __init__(self, max_n_lines: int = 100):
         self.available = list(range(max_n_lines))
         heapq.heapify(self.available)
-        self.hlines: Set[HLine] = set()
-        self._reserved: List[Tuple[List[int], Callable]] = []
+        self.hlines: set[HLine] = set()
+        self._reserved: list[tuple[list[int], Callable]] = []
 
     def new_y(self, binst: BloqInstance, reg: Register, idx=None):
         """Allocate a new y position (i.e. a new qubit or register)."""
@@ -146,9 +149,7 @@ class LineManager:
                 kept.append((ys, until))
         self._reserved = kept
 
-    def maybe_reserve(
-        self, binst: Union[DanglingT, BloqInstance], reg: Register, idx: Tuple[int, ...]
-    ):
+    def maybe_reserve(self, binst: DanglingT | BloqInstance, reg: Register, idx: tuple[int, ...]):
         """Override this method to provide custom control over line allocation.
 
         After a new y position is allocated and after a y position is freed, this method
@@ -164,7 +165,7 @@ class LineManager:
 
     def new(
         self, binst: BloqInstance, reg: Register, seq_x: int, topo_gen: int
-    ) -> Union[RegPosition, NDArray[RegPosition]]:  # type: ignore[type-var]
+    ) -> RegPosition | NDArray[RegPosition]:  # type: ignore[type-var]
         """Allocate a position or positions for `reg`.
 
         `binst` and `reg` can optionally modify the allocation strategy.
@@ -194,9 +195,9 @@ class LineManager:
 
     def free(
         self,
-        binst: Union[DanglingT, BloqInstance],
+        binst: DanglingT | BloqInstance,
         reg: Register,
-        arr: Union[RegPosition, NDArray[RegPosition]],  # type: ignore[type-var]
+        arr: RegPosition | NDArray[RegPosition],  # type: ignore[type-var]
     ):
         """De-allocate a position or positions for `reg`.
 
@@ -220,8 +221,8 @@ class LineManager:
 
 
 def _get_in_vals(
-    binst: Union[DanglingT, BloqInstance], reg: Register, soq_assign: Dict[_Soquet, RegPosition]
-) -> Union[RegPosition, NDArray[RegPosition]]:  # type: ignore[type-var]
+    binst: DanglingT | BloqInstance, reg: Register, soq_assign: dict[_Soquet, RegPosition]
+) -> RegPosition | NDArray[RegPosition]:  # type: ignore[type-var]
     """Pluck out the correct values from `soq_assign` for `reg` on `binst`."""
     if not reg.shape:
         return soq_assign[_Soquet(binst, reg)]
@@ -236,9 +237,9 @@ def _get_in_vals(
 
 def _update_assign_from_vals(
     regs: Iterable[Register],
-    binst: Union[DanglingT, BloqInstance],
-    vals: Dict[str, RegPosition],
-    soq_assign: Dict[_Soquet, RegPosition],
+    binst: DanglingT | BloqInstance,
+    vals: dict[str, RegPosition],
+    soq_assign: dict[_Soquet, RegPosition],
     seq_x: int,
     topo_gen: int,
     manager: LineManager,
@@ -250,7 +251,7 @@ def _update_assign_from_vals(
     """
     for reg in regs:
         try:
-            arr: Union[RegPosition, NDArray[RegPosition]] = vals[reg.name]  # type: ignore[type-var]
+            arr: RegPosition | NDArray[RegPosition] = vals[reg.name]  # type: ignore[type-var]
         except KeyError:
             arr = manager.new(
                 binst=cast(BloqInstance, binst), reg=reg, seq_x=seq_x, topo_gen=topo_gen
@@ -276,7 +277,7 @@ def _update_assign_from_vals(
 def _binst_assign_line(
     binst: BloqInstance,
     pred_cxns: Iterable[Connection],
-    soq_assign: Dict[_Soquet, RegPosition],
+    soq_assign: dict[_Soquet, RegPosition],
     seq_x: int,
     topo_gen: int,
     manager: LineManager,
@@ -325,8 +326,8 @@ def _binst_assign_line(
 
 
 def _cbloq_musical_score(
-    signature: Signature, binst_graph: nx.DiGraph, manager: Optional[LineManager] = None
-) -> Tuple[Dict[str, RegPosition], Dict[_Soquet, RegPosition], LineManager]:
+    signature: Signature, binst_graph: nx.DiGraph, manager: LineManager | None = None
+) -> tuple[dict[str, RegPosition], dict[_Soquet, RegPosition], LineManager]:
     """Assign musical score positions through a composite bloq's contents.
 
     Args:
@@ -343,7 +344,7 @@ def _cbloq_musical_score(
 
     # Keep track of each soquet's position. Initialize by implicitly allocating new positions.
     # We introduce the convention that `LeftDangle`s are a seq_x=-1 and topo_gen=0
-    soq_assign: Dict[_Soquet, RegPosition] = {}
+    soq_assign: dict[_Soquet, RegPosition] = {}
     topo_gen = 0
     _update_assign_from_vals(
         signature.lefts(), LeftDangle, {}, soq_assign, seq_x=-1, topo_gen=topo_gen, manager=manager
@@ -390,11 +391,11 @@ class WireSymbol(metaclass=abc.ABCMeta):
     def draw(self, ax, x, y) -> None:
         """Draw this symbol using matplotlib."""
 
-    def adjoint(self) -> 'WireSymbol':
+    def adjoint(self) -> WireSymbol:
         """Return a symbol that is the adjoint of this."""
         return self
 
-    def json_dict(self) -> Dict[str, Any]:
+    def json_dict(self) -> dict[str, Any]:
         return {'symb_cls': self.__class__.__name__, 'symb_attributes': attrs.asdict(self)}
 
 
@@ -419,7 +420,7 @@ class TextBox(WireSymbol):
             bbox={'boxstyle': 'round', 'fc': 'white'},
         )
 
-    def adjoint(self) -> 'TextBox':
+    def adjoint(self) -> TextBox:
         return TextBox(_text_adjoint(self.text))
 
 
@@ -440,7 +441,7 @@ class Text(WireSymbol):
             bbox={'lw': 0, 'fc': 'white'},
         )
 
-    def adjoint(self) -> 'Text':
+    def adjoint(self) -> Text:
         return Text(_text_adjoint(self.text), self.fontsize)
 
 
@@ -480,7 +481,7 @@ class LarrowTextBox(WireSymbol):
             bbox={'boxstyle': 'larrow', 'fc': 'white'},
         )
 
-    def adjoint(self) -> 'WireSymbol':
+    def adjoint(self) -> WireSymbol:
         return RarrowTextBox(text=self.text)
 
 
@@ -574,9 +575,9 @@ class MusicalScoreData:
 
     max_x: int
     max_y: int
-    soqs: List[SoqData]
-    hlines: List[HLine]
-    vlines: List[VLine]
+    soqs: list[SoqData]
+    hlines: list[HLine]
+    vlines: list[VLine]
 
     def json_dict(self):
         return attrs.asdict(self, recurse=False)
@@ -592,7 +593,7 @@ def _make_ident(binst: BloqInstance, me: _Soquet):
     return f'{binst.i},{soqi}'
 
 
-def get_musical_score_data(bloq: Bloq, manager: Optional[LineManager] = None) -> MusicalScoreData:
+def get_musical_score_data(bloq: Bloq, manager: LineManager | None = None) -> MusicalScoreData:
     """Get the musical score data for a (composite) bloq.
 
     This will first walk through the compute graph to assign each soquet

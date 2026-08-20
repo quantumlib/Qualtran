@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Dict, Union
 
 import sympy
 from attrs import frozen
@@ -28,13 +29,13 @@ class InteriorAlloc(Bloq):
     This means the maximum number of qubits used is larger than the sum of the register bitsizes.
     """
 
-    n: Union[int, sympy.Symbol]
+    n: int | sympy.Symbol
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(x=self.n, y=self.n)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet, y: Soquet) -> dict[str, SoquetT]:
         middle = bb.allocate(self.n)
         x, middle = bb.add(Swap(self.n), x=x, y=middle)
         middle, y = bb.add(Swap(self.n), x=middle, y=y)

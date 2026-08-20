@@ -11,14 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import numpy as np
 
 
 def fft_complementary_polynomial(
-    P: Union[Sequence[float], Sequence[complex]], tolerance: float = 1e-4, num_modes: int = 500
-):
+    P: Sequence[float] | Sequence[complex], tolerance: float = 1e-4, num_modes: int = 500
+) -> np.ndarray:
     """Computes the Q polynomial given P
 
     Computes polynomial $Q$ of degree at-most that of $P$, satisfying

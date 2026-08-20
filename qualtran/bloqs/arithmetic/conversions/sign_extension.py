@@ -11,15 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, QInt, QIntOnesComp, Register, Side, Signature
 from qualtran.bloqs.mcmt import MultiTargetCNOT
-from qualtran.symbolics import is_symbolic
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, Soquet, SoquetT
@@ -47,8 +48,8 @@ class SignExtend(Bloq):
         y (RIGHT): the output register of type `out_dtype`
     """
 
-    inp_dtype: Union[QInt, QIntOnesComp]
-    out_dtype: Union[QInt, QIntOnesComp]
+    inp_dtype: QInt | QIntOnesComp
+    out_dtype: QInt | QIntOnesComp
 
     def __attrs_post_init__(self):
         if not isinstance(self.inp_dtype, type(self.out_dtype)):
@@ -56,14 +57,14 @@ class SignExtend(Bloq):
                 f"Expected same input and output base types, got: {self.inp_dtype}, {self.out_dtype}"
             )
 
-        if not is_symbolic(self.extend_bitsize) and self.extend_bitsize <= 0:
+        if self.extend_bitsize <= 0:
             raise ValueError(
                 f"input bitsize {self.inp_dtype.num_qubits} must be smaller than "
                 f"output bitsize {self.out_dtype.num_qubits}"
             )
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('x', self.inp_dtype, side=Side.LEFT),
@@ -75,10 +76,10 @@ class SignExtend(Bloq):
     def extend_bitsize(self):
         return self.out_dtype.num_qubits - self.inp_dtype.num_qubits
 
-    def adjoint(self) -> 'SignTruncate':
+    def adjoint(self) -> SignTruncate:
         return SignTruncate(self.out_dtype, self.inp_dtype)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet) -> dict[str, SoquetT]:
         extend_ys = bb.allocate(self.extend_bitsize)
         xs = bb.split(x)
 
@@ -91,10 +92,10 @@ class SignExtend(Bloq):
 
         return {'y': y}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {MultiTargetCNOT(self.extend_bitsize): 1}
 
-    def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, x: ClassicalValT) -> dict[str, ClassicalValT]:
         return {'y': x}
 
 
@@ -130,8 +131,8 @@ class SignTruncate(Bloq):
         y (RIGHT): the output register of type `out_dtype`
     """
 
-    inp_dtype: Union[QInt, QIntOnesComp]
-    out_dtype: Union[QInt, QIntOnesComp]
+    inp_dtype: QInt | QIntOnesComp
+    out_dtype: QInt | QIntOnesComp
 
     def __attrs_post_init__(self):
         if not isinstance(self.inp_dtype, type(self.out_dtype)):
@@ -139,14 +140,14 @@ class SignTruncate(Bloq):
                 f"Expected same input and output base types, got: {self.inp_dtype}, {self.out_dtype}"
             )
 
-        if not is_symbolic(self.truncate_bitsize) and self.truncate_bitsize <= 0:
+        if self.truncate_bitsize <= 0:
             raise ValueError(
                 f"input bitsize {self.inp_dtype.num_qubits} must be larger than "
                 f"output bitsize {self.out_dtype.num_qubits}"
             )
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('x', self.inp_dtype, side=Side.LEFT),
@@ -158,10 +159,10 @@ class SignTruncate(Bloq):
     def truncate_bitsize(self):
         return self.inp_dtype.num_qubits - self.out_dtype.num_qubits
 
-    def adjoint(self) -> 'SignExtend':
+    def adjoint(self) -> SignExtend:
         return SignExtend(self.out_dtype, self.inp_dtype)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet) -> dict[str, SoquetT]:
         xs = bb.split(x)
         bits_to_drop, xs = xs[: self.truncate_bitsize], xs[self.truncate_bitsize :]
 
@@ -173,10 +174,10 @@ class SignTruncate(Bloq):
 
         return {'y': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {MultiTargetCNOT(self.truncate_bitsize): 1}
 
-    def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, x: ClassicalValT) -> dict[str, ClassicalValT]:
         bits = self.inp_dtype.to_bits(int(x))
 
         bits_to_drop = bits[: self.truncate_bitsize]

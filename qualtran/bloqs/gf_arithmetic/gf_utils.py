@@ -11,22 +11,23 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Sequence, Union
+from collections.abc import Sequence
 
+import numpy as np
+import sympy
 from galois import Poly
 
 from qualtran import QGF
-from qualtran.symbolics import is_symbolic, SymbolicInt
+from qualtran.symbolics import SymbolicInt
 
 
-def qgf_converter(x: Union[QGF, int, Poly, SymbolicInt, Sequence[int]]) -> QGF:
+def qgf_converter(x: QGF | int | Poly | SymbolicInt | Sequence[int]) -> QGF:
     if isinstance(x, QGF):
         return x
-    if isinstance(x, int):
-        return QGF(2, x)
-    if is_symbolic(x):
+    if isinstance(x, (int, sympy.Expr)):
         return QGF(2, x)
     if isinstance(x, Poly):
         return QGF(2, x.degree, x)
+    assert isinstance(x, (Sequence, np.ndarray))
     p = Poly.Degrees(x)
     return QGF(2, p.degree, p)

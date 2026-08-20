@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
 from typing import cast
 
@@ -71,13 +73,13 @@ class ZPowConstViaPhaseGradient(Bloq):
     phase_grad_bitsize: SymbolicInt
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(q=QBit(), phase_grad=self.phase_grad_dtype)
 
     @classmethod
     def from_precision(
         cls, exponent: SymbolicFloat, *, eps: SymbolicFloat
-    ) -> 'ZPowConstViaPhaseGradient':
+    ) -> ZPowConstViaPhaseGradient:
         r"""Apply a ZPow(t) with precision `eps`.
 
         Uses a phase gradient of size $\ceil(\log(2\pi / \epsilon)$.

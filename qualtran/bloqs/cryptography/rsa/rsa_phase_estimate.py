@@ -12,9 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import math
 from functools import cached_property
-from typing import Dict, Optional
 
 import attrs
 import numpy as np
@@ -57,20 +58,20 @@ class RSAPhaseEstimate(Bloq):
         Beauregard. 2003. Fig 1.
     """
 
-    n: 'SymbolicInt'
-    mod: 'SymbolicInt'
-    base: 'SymbolicInt'
+    n: SymbolicInt
+    mod: SymbolicInt
+    base: SymbolicInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([])
 
     @classmethod
     def make_for_shor(
         cls,
-        big_n: 'SymbolicInt',
-        g: Optional['SymbolicInt'] = None,
-        rs: Optional[np.random.RandomState] = None,
+        big_n: SymbolicInt,
+        g: SymbolicInt | None = None,
+        rs: np.random.RandomState | None = None,
     ):
         """Factory method that sets up the modular exponentiation for a factoring run.
 
@@ -100,11 +101,11 @@ class RSAPhaseEstimate(Bloq):
         if not is_symbolic(self.n, self.mod):
             assert self.n == int(math.ceil(math.log2(self.mod)))
 
-    def _CtrlModMul(self, k: 'SymbolicInt'):
+    def _CtrlModMul(self, k: SymbolicInt):
         """Helper method to return a `CModMulK` with attributes forwarded."""
         return CModMulK(QUInt(self.n), k=k, mod=self.mod)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder) -> dict[str, SoquetT]:
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
         exponent = [bb.add(PlusState()) for _ in range(2 * self.n)]
@@ -119,7 +120,7 @@ class RSAPhaseEstimate(Bloq):
         bb.add(Free(QUInt(self.n), dirty=True), reg=x)
         return {}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         k = ssa.new_symbol('k')
         return {MeasureQFT(n=self.n): 1, self._CtrlModMul(k=k): 2 * self.n}
 
@@ -127,7 +128,7 @@ class RSAPhaseEstimate(Bloq):
 _K = sympy.Symbol('k_exp')
 
 
-def _generalize_k(b: Bloq) -> Optional[Bloq]:
+def _generalize_k(b: Bloq) -> Bloq | None:
     if isinstance(b, CModMulK):
         return attrs.evolve(b, k=_K)
 

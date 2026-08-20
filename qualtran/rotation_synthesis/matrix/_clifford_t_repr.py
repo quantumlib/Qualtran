@@ -13,7 +13,8 @@
 #  limitations under the License.
 
 import math
-from typing import cast, Mapping, Optional
+from collections.abc import Mapping
+from typing import cast
 
 import cirq
 import numpy as np
@@ -55,7 +56,7 @@ _T_list = [
 
 def _xz_sequence(
     matrix: _su2_ct.SU2CliffordT, use_hs: bool = True, prv: str = 'placeholder'
-) -> Optional[tuple[str, ...]]:
+) -> tuple[str, ...] | None:
     if matrix.det() == 2:
         return clifford(matrix)
     cliffords = [_su2_ct.ISqrt2]
@@ -215,7 +216,7 @@ def _to_quirk_name(name: str, allow_global_phase: bool = False) -> str:
 
 
 def to_cirq(
-    matrix: _su2_ct.SU2CliffordT, fmt: str, q: Optional[cirq.Qid] = None
+    matrix: _su2_ct.SU2CliffordT, fmt: str, q: cirq.Qid | None = None
 ) -> tuple[cirq.Operation]:
     """Returns a representation of the matrix as a sequence of Cirq operations.
 

@@ -14,8 +14,6 @@
 
 """Hamming Weight Phasing (HWP) circuit builder for FLASQ analysis examples."""
 
-from typing import List, Optional, Tuple
-
 import cirq
 import numpy as np
 
@@ -27,9 +25,9 @@ def build_hwp_circuit(
     n_qubits_data: int,
     angle: float,
     *,
-    data_qubit_manager: Optional[cirq.QubitManager] = None,
-    ancilla_qubit_manager: Optional[cirq.QubitManager] = None,
-) -> Tuple[HammingWeightPhasing, cirq.Circuit, List[cirq.Qid]]:
+    data_qubit_manager: cirq.QubitManager | None = None,
+    ancilla_qubit_manager: cirq.QubitManager | None = None,
+) -> tuple[HammingWeightPhasing, cirq.Circuit, list[cirq.Qid]]:
     """Builds a circuit for Hamming Weight Phasing.
 
     Args:
@@ -69,8 +67,8 @@ def build_hwp_circuit(
 
 
 def build_parallel_rz_circuit(
-    n_qubits_data: int, angle: float, *, data_qubit_manager: Optional[cirq.QubitManager] = None
-) -> Tuple[cirq.Circuit, List[cirq.Qid]]:
+    n_qubits_data: int, angle: float, *, data_qubit_manager: cirq.QubitManager | None = None
+) -> tuple[cirq.Circuit, list[cirq.Qid]]:
     """Builds a circuit for applying Rz gates to many qubits in parallel.
 
     Args:

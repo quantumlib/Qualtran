@@ -14,7 +14,7 @@
 import multiprocessing.connection
 import time
 from collections.abc import Callable
-from typing import Any, Optional
+from typing import Any
 
 from attrs import define
 
@@ -61,7 +61,7 @@ class ExecuteWithTimeout:
         """
         self.queued.append((func, kwargs))
 
-    def _submit_from_queue(self):
+    def _submit_from_queue(self) -> None:
         # helper method that takes an item from the queue, launches a process,
         # and records it in the `pending` attribute. This must only be called
         # if we're allowed to spawn a new process.
@@ -73,7 +73,7 @@ class ExecuteWithTimeout:
         p.start()
         self.pending.append(_Pending(p=p, recv=recv, start_time=start_time, kwargs=kwargs))
 
-    def _scan_pendings(self) -> Optional[_Pending]:
+    def _scan_pendings(self) -> _Pending | None:
         # helper method that goes through the currently pending tasks, terminates the ones
         # that have been going on too long, and accounts for ones that have finished.
         # Returns the `_Pending` of the killed or completed job or `None` if each pending
@@ -93,7 +93,7 @@ class ExecuteWithTimeout:
 
         return None
 
-    def next_result(self) -> tuple[dict[str, Any], Optional[Any]]:
+    def next_result(self) -> tuple[dict[str, Any], Any | None]:
         """Get the next available result.
 
         This call is blocking, but should never take longer than `self.timeout`. This should
@@ -126,7 +126,9 @@ class ExecuteWithTimeout:
         return (finished.kwargs, result)
 
 
-def report_on_tensors(name: str, cls_name: str, bloq: Bloq, cxn) -> None:
+def report_on_tensors(
+    name: str, cls_name: str, bloq: Bloq, cxn: multiprocessing.connection.Connection
+) -> None:
     """Get timing information for tensor functionality.
 
     This should be used with `ExecuteWithTimeout`. The resultant

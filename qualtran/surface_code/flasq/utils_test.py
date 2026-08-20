@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 import sympy
-from frozendict import frozendict  # type: ignore[import-untyped]
+from frozendict import frozendict
 
 from qualtran.surface_code.flasq.utils import substitute_until_fixed_point
 

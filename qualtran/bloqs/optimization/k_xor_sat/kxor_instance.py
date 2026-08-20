@@ -23,10 +23,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import itertools
 from collections import defaultdict
+from collections.abc import Sequence
 from functools import cached_property
-from typing import cast, Sequence, TypeAlias, Union
+from typing import cast
 
 import numpy as np
 import sympy
@@ -35,13 +38,14 @@ from numpy.typing import NDArray
 
 from qualtran.symbolics import bit_length, ceil, HasLength, is_symbolic, log2, slen, SymbolicInt
 
-Scope: TypeAlias = Union[tuple[int, ...], HasLength]
+type Scope = tuple[int, ...] | HasLength
 """A subset of variables"""
 
 
 def _sort_scope(S: Scope) -> Scope:
     if is_symbolic(S):
         return S
+    assert isinstance(S, tuple)
     return tuple(sorted(S))
 
 
@@ -112,7 +116,7 @@ class KXorInstance:
 
     n: SymbolicInt
     k: SymbolicInt
-    constraints: Union[tuple[Constraint, ...], HasLength]
+    constraints: tuple[Constraint, ...] | HasLength
     max_rhs: SymbolicInt = field()
 
     @max_rhs.default
@@ -121,7 +125,10 @@ class KXorInstance:
 
         This is a classical preprocessing step. Time $m$.
         """
-        if is_symbolic(self.constraints) or is_symbolic(*self.constraints):
+        if is_symbolic(self.constraints):
+            return 2
+        assert isinstance(self.constraints, tuple)
+        if is_symbolic(*self.constraints):
             # user did not provide a value, assume some small constant
             return 2
 
@@ -176,11 +183,12 @@ class KXorInstance:
         assert isinstance(self.constraints, tuple)
         return is_symbolic(*self.constraints)
 
-    def subset(self, indices: Union[Sequence[int], HasLength]) -> 'KXorInstance':
+    def subset(self, indices: Sequence[int] | HasLength) -> KXorInstance:
         """Pick a subset of clauses defined by the set of indices provided."""
         if self.is_symbolic() or is_symbolic(indices):
             return evolve(self, constraints=HasLength(slen(indices)))
         assert isinstance(self.constraints, tuple)
+        assert isinstance(indices, Sequence)
 
         constraints = tuple(self.constraints[i] for i in indices)
         return evolve(self, constraints=constraints)
@@ -198,7 +206,7 @@ class KXorInstance:
         return slen(self.batched_scopes)
 
     @cached_property
-    def batched_scopes(self) -> Union[tuple[tuple[Scope, int], ...], HasLength]:
+    def batched_scopes(self) -> tuple[tuple[Scope, int], ...] | HasLength:
         r"""Group all the constraints by Scope, and add up the $b$ values.
 
         A scope is a subset of variables of size $k$.
@@ -244,6 +252,7 @@ class KXorInstance:
         The bitsize `r` is picked as `ceil(log(n))` for an n-variable instance.
         """
         assert not is_symbolic(S)
+        assert isinstance(S, tuple)
 
         bitsize = self.index_bitsize
 

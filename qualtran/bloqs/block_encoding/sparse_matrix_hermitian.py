@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import abc
 from collections import Counter
 from functools import cached_property
@@ -163,6 +165,18 @@ class SparseMatrixHermitian(BlockEncoding):
         return 0
 
     @cached_property
+    def target_registers(self) -> tuple[Register, ...]:
+        return (Register("i", QAny(self.system_bitsize)),)
+
+    @cached_property
+    def selection_registers(self) -> tuple[Register, ...]:
+        return (Register("q", QBit()), Register("j", QAny(self.system_bitsize)))
+
+    @cached_property
+    def junk_registers(self) -> tuple[Register, ...]:
+        return ()
+
+    @cached_property
     def epsilon(self) -> SymbolicFloat:
         return self.eps
 
@@ -227,7 +241,7 @@ class SparseMatrixHermitian(BlockEncoding):
 
         return {"system": system, "ancilla": ancilla}
 
-    def adjoint(self) -> 'SparseMatrixHermitian':
+    def adjoint(self) -> SparseMatrixHermitian:
         return self
 
 

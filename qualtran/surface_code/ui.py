@@ -12,7 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Any, Dict, List, Sequence, Tuple
+from __future__ import annotations
+
+from collections.abc import Iterator, Sequence
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -38,7 +41,9 @@ from qualtran.surface_code import (
 )
 
 
-def get_objects(modules, object_type):
+def get_objects(
+    modules: Sequence[Any], object_type: type | tuple[type, ...]
+) -> Iterator[tuple[str, Any]]:
     """Get all objects of a given type from a list of modules."""
     for module in modules:
         for obj_name in dir(module):
@@ -362,10 +367,10 @@ def create_qubit_pie_chart(
     physical_error_rate: float,
     error_budget: float,
     estimation_model: str,
-    algorithm: 'AlgorithmSummary',
+    algorithm: AlgorithmSummary,
     magic_factory: MagicStateFactory,
     magic_count: int,
-    n_logical_gates: 'GateCounts',
+    n_logical_gates: GateCounts,
 ) -> go.Figure:
     """Create a pie chart of the physical qubit utilization."""
     if estimation_model == _GIDNEY_FOWLER_MODEL:
@@ -411,7 +416,7 @@ def create_qubit_pie_chart(
         return fig
 
 
-def format_duration(duration: Sequence[float]) -> Tuple[str, Sequence[float]]:
+def format_duration(duration: Sequence[float]) -> tuple[str, Sequence[float]]:
     """Returns a tuple of the format (unit, duration)
 
     Finds the best unit to report `duration` and assumes that `duration` is initially in us.
@@ -439,13 +444,13 @@ def create_runtime_plot(
     physical_error_rate: float,
     error_budget: float,
     estimation_model: str,
-    algorithm: 'AlgorithmSummary',
+    algorithm: AlgorithmSummary,
     qec: QECScheme,
     magic_factory: MagicStateFactory,
     magic_count: int,
     rotation_model: rotation_cost_model.RotationCostModel,
-    n_logical_gates: 'GateCounts',
-) -> Tuple[Dict[str, Any], go.Figure]:
+    n_logical_gates: GateCounts,
+) -> tuple[dict[str, Any], go.Figure]:
     """Creates the runtime figure and decides whether to display it or not.
 
     Currently displays the runtime plot for the Beverland model only.
@@ -589,7 +594,7 @@ def update(
     )
 
 
-def total_magic(estimation_model: str, n_logical_gates: 'GateCounts') -> Tuple[List[str], str]:
+def total_magic(estimation_model: str, n_logical_gates: GateCounts) -> tuple[list[str], str]:
     """Compute the number of magic states needed for the algorithm and their type."""
     total_t = n_logical_gates.total_t_count()
     total_ccz = total_t / 4
@@ -600,14 +605,14 @@ def total_magic(estimation_model: str, n_logical_gates: 'GateCounts') -> Tuple[L
 
 
 def min_num_factories(
-    logical_error_model: 'LogicalErrorModel',
+    logical_error_model: LogicalErrorModel,
     error_budget: float,
     estimation_model: str,
-    algorithm: 'AlgorithmSummary',
+    algorithm: AlgorithmSummary,
     rotation_model: rotation_cost_model.RotationCostModel,
     magic_factory: MagicStateFactory,
-    n_logical_gates: 'GateCounts',
-) -> Tuple[Dict[str, Any], int]:
+    n_logical_gates: GateCounts,
+) -> tuple[dict[str, Any], int]:
     if estimation_model == _GIDNEY_FOWLER_MODEL:
         return {'display': 'none'}, 1
     c_min = beverland_et_al_model.minimum_time_steps(
@@ -627,11 +632,11 @@ def compute_duration(
     physical_error_rate: float,
     error_budget: float,
     estimation_model: str,
-    algorithm: 'AlgorithmSummary',
+    algorithm: AlgorithmSummary,
     rotation_model: rotation_cost_model.RotationCostModel,
     magic_count: int,
-    n_logical_gates: 'GateCounts',
-) -> Tuple[Dict[str, Any], str]:
+    n_logical_gates: GateCounts,
+) -> tuple[dict[str, Any], str]:
     """Compute the duration of running the algorithm and whether to display the result or not.
 
     Currently displays the result only for GidneyFowler (arxiv:1812.01238).

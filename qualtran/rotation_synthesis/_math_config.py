@@ -15,7 +15,8 @@
 """A module that defines various mathematical config"""
 
 import math
-from typing import Callable, cast
+from collections.abc import Callable
+from typing import cast
 
 import attrs
 import mpmath

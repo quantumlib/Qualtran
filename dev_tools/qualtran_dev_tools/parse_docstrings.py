@@ -14,7 +14,7 @@
 
 import inspect
 import re
-from typing import Union
+from typing import Any
 
 from attrs import frozen
 from sphinx.ext.napoleon import Config, GoogleDocstring
@@ -29,7 +29,7 @@ class Reference:
     extra: str
 
     @property
-    def text(self):
+    def text(self) -> str:
         return f'[{self.title}]({self.url}). {self.extra}'
 
 
@@ -40,7 +40,7 @@ class UnparsedReference:
     text: str
 
 
-ReferenceT = Union[Reference, UnparsedReference]
+ReferenceT = Reference | UnparsedReference
 
 
 def parse_reference(ref_text: str) -> ReferenceT:
@@ -71,7 +71,7 @@ def parse_references(full_reference_text: str) -> list[ReferenceT]:
 class _GoogleDocstringToMarkdown(GoogleDocstring):
     """Subclass of sphinx's parser to emit Markdown from Google-style docstrings."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.references: list[ReferenceT] = []
         super().__init__(*args, **kwargs)
 
@@ -82,7 +82,7 @@ class _GoogleDocstringToMarkdown(GoogleDocstring):
     def _parse_parameters_section(self, section: str) -> list[str]:
         """Sphinx method to emit a 'Parameters' section."""
 
-        def _template(name, desc_lines):
+        def _template(name: str, desc_lines: list[str]) -> str:
             desc = ' '.join(desc_lines)
             return f' - `{name}`: {desc}'
 
@@ -102,7 +102,7 @@ class _GoogleDocstringToMarkdown(GoogleDocstring):
         return ['#### References', '\n'.join(f' - {ref.text}' for ref in my_refs), '']
 
     def _parse_registers_section(self, section: str) -> list[str]:
-        def _template(name, desc_lines):
+        def _template(name: str, desc_lines: list[str]) -> str:
             desc = ' '.join(desc_lines)
             return f' - `{name}`: {desc}'
 

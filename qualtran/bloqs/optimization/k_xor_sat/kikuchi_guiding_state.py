@@ -19,6 +19,8 @@ References:
     Section 4.4.1, Theorem 4.15.
 """
 
+from __future__ import annotations
+
 from functools import cached_property
 
 from attrs import evolve, field, frozen
@@ -87,7 +89,7 @@ class SimpleGuidingState(PrepareOracle):
     eps: SymbolicFloat = field(default=1e-6, kw_only=True)
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(S=QAny(self.target_bitsize))
 
     @property
@@ -113,6 +115,7 @@ class SimpleGuidingState(PrepareOracle):
             )
         else:
             assert not is_symbolic(self.inst.batched_scopes)
+            assert isinstance(self.inst.batched_scopes, tuple)
 
             bloq = SparseStatePreparationViaRotations.from_coefficient_map(
                 N,
@@ -123,7 +126,7 @@ class SimpleGuidingState(PrepareOracle):
         bloq = evolve(bloq, target_bitsize=self.target_bitsize)
         return bloq
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {self._state_prep_bloq: 1}
 
 
@@ -175,12 +178,10 @@ class ProbabilisticUncompute(Bloq):
     bitsize: SymbolicInt
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(q=QAny(self.bitsize), flag=QBit())
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', q: 'Soquet', flag: 'Soquet'
-    ) -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, q: Soquet, flag: Soquet) -> dict[str, SoquetT]:
         q = bb.add(OnEach(self.bitsize, Hadamard()), q=q)
         q, flag = bb.add(
             XGate().controlled(CtrlSpec(qdtypes=QAny(self.bitsize), cvs=0)), ctrl=q, q=flag
@@ -244,7 +245,7 @@ class GuidingState(PrepareOracle):
         return self.coeff_good
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('T', QAny(self.target_bitsize)),
@@ -310,10 +311,11 @@ class GuidingState(PrepareOracle):
         return QUInt(self.inst.index_bitsize)
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', T: 'Soquet', ancilla: 'Soquet'
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, T: Soquet, ancilla: Soquet
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.c):
             raise DecomposeTypeError(f"cannot decompose {self} with symbolic c=l/k={self.c}")
+        c = int(self.c)
 
         partition_ancilla = Partition(
             self.ancilla_bitsize,
@@ -331,7 +333,7 @@ class GuidingState(PrepareOracle):
             (Register('S', dtype=QAny(self.simple_guiding_state.target_bitsize), shape=(self.c,)),),
         )
         S = bb.add(partition_T_to_S, x=T)
-        for i in range(self.c):
+        for i in range(c):
             S[i] = bb.add(self.simple_guiding_state, S=S[i])
         T = bb.add(partition_T_to_S.adjoint(), S=S)
 
@@ -378,7 +380,7 @@ class GuidingState(PrepareOracle):
 
         return {'T': T, 'ancilla': ancilla}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             self.simple_guiding_state: self.c,
             SortInPlace(self.ell, self._index_dtype): 1,

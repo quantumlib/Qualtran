@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Tuple
 
 import attrs
 import numpy as np
@@ -50,13 +51,13 @@ from qualtran.resource_counting.classify_bloqs import (
 class TestBundleOfBloqs(Bloq):
     """A fake bloq which just defines a call graph"""
 
-    bloqs: Tuple[BloqCountT, ...]
+    bloqs: tuple[BloqCountT, ...]
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build()
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return dict(self.bloqs)
 
 
@@ -69,7 +70,7 @@ class TestBundleOfBloqs(Bloq):
         (((QROM.build_from_data([4, 10, 11, 34]), 8),), 'data_loading'),
         (((And(), 4),), 'multi_control_pauli'),
         # https://github.com/python/mypy/issues/5313
-        (((ReflectionUsingPrepare(PrepareIdentity.from_bitsizes((3, 3, 2))), 100),), 'reflection'),  # type: ignore[arg-type]
+        (((ReflectionUsingPrepare(PrepareIdentity.from_bitsizes((3, 3, 2))), 100),), 'reflection'),
         (((LessThanConstant(8, 3), 10),), 'arithmetic'),
     ),
 )
@@ -97,7 +98,7 @@ def test_dont_return_zeros():
         (QROM.build_from_data([4, 10, 11, 34]), 'data_loading'),
         (And(), 'multi_control_pauli'),
         # https://github.com/python/mypy/issues/5313
-        (ReflectionUsingPrepare(PrepareIdentity.from_bitsizes((3, 3, 2))), 'reflection'),  # type: ignore[arg-type]
+        (ReflectionUsingPrepare(PrepareIdentity.from_bitsizes((3, 3, 2))), 'reflection'),
         (LessThanConstant(8, 3).adjoint(), 'arithmetic'),
     ),
 )

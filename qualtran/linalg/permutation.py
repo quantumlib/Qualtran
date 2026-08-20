@@ -11,9 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Iterator, Sequence, TypeAlias
+from collections.abc import Iterator, Sequence
 
-CycleT: TypeAlias = tuple[int, ...]
+type CycleT = tuple[int, ...]
 
 
 def decompose_permutation_into_cycles(permutation: Sequence[int]) -> Iterator[CycleT]:

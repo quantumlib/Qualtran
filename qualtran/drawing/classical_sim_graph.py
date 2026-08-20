@@ -14,7 +14,9 @@
 
 """Classes for drawing classical data flows with Graphviz."""
 
-from typing import Dict, TYPE_CHECKING
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import pydot
 
@@ -36,7 +38,7 @@ class ClassicalSimGraphDrawer(PrettyGraphDrawer):
         vals: Input classical values to propagate through the composite bloq.
     """
 
-    def __init__(self, bloq: Bloq, vals: Dict[str, 'ClassicalValT']):
+    def __init__(self, bloq: Bloq, vals: dict[str, ClassicalValT]):
         super().__init__(bloq=bloq)
         from qualtran.simulation.classical_sim import call_cbloq_classically
 

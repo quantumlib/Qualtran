@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import abc
 from typing import TYPE_CHECKING
 
@@ -46,14 +48,12 @@ class MagicStateFactory(metaclass=abc.ABCMeta):
         """The number of physical qubits used by the magic state factory."""
 
     @abc.abstractmethod
-    def n_cycles(
-        self, n_logical_gates: 'GateCounts', logical_error_model: 'LogicalErrorModel'
-    ) -> int:
+    def n_cycles(self, n_logical_gates: GateCounts, logical_error_model: LogicalErrorModel) -> int:
         """The number of cycles (time) required to produce the requested number of magic states."""
 
     @abc.abstractmethod
     def factory_error(
-        self, n_logical_gates: 'GateCounts', logical_error_model: 'LogicalErrorModel'
+        self, n_logical_gates: GateCounts, logical_error_model: LogicalErrorModel
     ) -> float:
         """The total error expected from distilling magic states with a given physical error rate.
 

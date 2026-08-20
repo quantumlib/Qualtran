@@ -18,6 +18,8 @@ QPIC is not a dependency of Qualtran and must be manually installed by users via
 `pip install qpic`.
 """
 
+from __future__ import annotations
+
 import os
 import pathlib
 import re
@@ -25,7 +27,7 @@ import shutil
 import subprocess
 import tempfile
 from collections import defaultdict
-from typing import Dict, List, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from qualtran import DanglingT, LeftDangle, QBit, RightDangle, Side
 from qualtran._infra.quantum_graph import _Soquet
@@ -101,16 +103,16 @@ class QpicWireManager:
     """
 
     def __init__(self):
-        self._soq_to_wire_name_tuple: Dict[_Soquet, Tuple[str, int]] = {}
-        self._alloc_wires_with_prefix: Dict[str, Set[int]] = defaultdict(set)
+        self._soq_to_wire_name_tuple: dict[_Soquet, tuple[str, int]] = {}
+        self._alloc_wires_with_prefix: dict[str, set[int]] = defaultdict(set)
 
-    def _wire_name_tuple_for_soq(self, soq: _Soquet) -> Tuple[str, int]:
+    def _wire_name_tuple_for_soq(self, soq: _Soquet) -> tuple[str, int]:
         prefix = _wire_name_prefix_for_soq(soq)
         allocated_suffixes = self._alloc_wires_with_prefix[prefix]
         next_i = next(i for i in range(len(allocated_suffixes) + 1) if i not in allocated_suffixes)
         return prefix, next_i
 
-    def _wire_name_tuple_to_str(self, wire_name: Tuple[str, int]) -> str:
+    def _wire_name_tuple_to_str(self, wire_name: tuple[str, int]) -> str:
         prefix, i = wire_name
         return prefix + '_' + str(i) if i else prefix
 
@@ -149,7 +151,7 @@ class QpicCircuit:
         # don't have any incoming or outgoing edges.
         self.empty_wire = None
 
-    def add_left_wires_for_signature(self, signature: 'Signature') -> None:
+    def add_left_wires_for_signature(self, signature: Signature) -> None:
         for reg in signature.lefts():
             for idx in reg.all_idxs():
                 self._alloc_wire_for_soq(_Soquet(LeftDangle, reg, idx))
@@ -157,7 +159,7 @@ class QpicCircuit:
         # corresponding to their QDType, which takes up horizontal space.
         self.wires += ['LABEL length=10']
 
-    def add_right_wires_for_signature(self, signature: 'Signature') -> None:
+    def add_right_wires_for_signature(self, signature: Signature) -> None:
         add_space = False
         for reg in signature.rights():
             if reg.side & Side.LEFT:
@@ -171,10 +173,10 @@ class QpicCircuit:
             self.gates += ['LABEL length=10']
 
     @property
-    def data(self) -> List[str]:
+    def data(self) -> list[str]:
         return self.wires + self.gates
 
-    def _add_soq(self, soq: _Soquet) -> Tuple[str, Optional[str]]:
+    def _add_soq(self, soq: _Soquet) -> tuple[str, str | None]:
         symbol = _soq_to_symb(soq)
         suffix = ''
         wire = self.wire_manager.soq_to_wirename(self.soq_map[soq])
@@ -202,7 +204,7 @@ class QpicCircuit:
         self.soq_map.pop(soq)
 
     @classmethod
-    def _dtype_label_for_wire(cls, wire_name: str, dtype: 'QCDType') -> List[str]:
+    def _dtype_label_for_wire(cls, wire_name: str, dtype: QCDType) -> list[str]:
         if dtype != QBit():
             dtype_str = _format_label_text(str(dtype), scale=0.5)
             return [f'{wire_name} / {dtype_str}']
@@ -229,12 +231,12 @@ class QpicCircuit:
             # by the Bloq.
             self.wires += [f'{wire_name} W off']
 
-    def add_connection(self, cxn: 'Connection'):
+    def add_connection(self, cxn: Connection):
         if cxn.left not in self.soq_map:
             self._alloc_wire_for_soq(cxn.left)
         self.soq_map[cxn.right] = self.soq_map[cxn.left]
 
-    def _add_bloq_with_no_wire(self, bloq: 'Bloq'):
+    def _add_bloq_with_no_wire(self, bloq: Bloq):
         """Add bloq, like GlobalPhase, which doesn't have any incoming & outgoing wires."""
         if not self.empty_wire:
             self.empty_wire = '_empty_wire'
@@ -243,7 +245,7 @@ class QpicCircuit:
         width = _gate_width_for_text(gate_text)
         self.gates += [f'{self.empty_wire} G:width={width}:shape=8 {gate_text}']
 
-    def add_bloq(self, bloq: 'Bloq', pred: List['Connection'], succ: List['Connection']) -> None:
+    def add_bloq(self, bloq: Bloq, pred: list[Connection], succ: list[Connection]) -> None:
         controls, targets, wire_dtype_labels = [], [], []
 
         if not (pred or succ):
@@ -272,7 +274,7 @@ class QpicCircuit:
         self.gates += wire_dtype_labels
 
 
-def get_qpic_data(bloq: 'Bloq', file_path: Union[None, pathlib.Path, str] = None) -> List[str]:
+def get_qpic_data(bloq: Bloq, file_path: None | pathlib.Path | str = None) -> list[str]:
     """Get the input data that can be used to draw a latex diagram for `bloq` using `qpic`.
 
     Args:
@@ -304,8 +306,8 @@ def _to_snake_case(name):
 
 
 def qpic_input_to_diagram(
-    qpic_file: Union[pathlib.Path, str],
-    output_file: Union[None, pathlib.Path, str] = None,
+    qpic_file: pathlib.Path | str,
+    output_file: None | pathlib.Path | str = None,
     output_type: str = 'pdf',
 ) -> str:
     r"""Invoke `qpic` script to generate output diagram of type qpic/tex/pdf/png.
@@ -381,7 +383,7 @@ def qpic_input_to_diagram(
 
 
 def qpic_diagram_for_bloq(
-    bloq: 'Bloq', base_file_path: Union[None, pathlib.Path, str] = None, output_type: str = 'pdf'
+    bloq: Bloq, base_file_path: None | pathlib.Path | str = None, output_type: str = 'pdf'
 ) -> str:
     r"""Generate latex diagram for `bloq` by invoking `qpic`. Assumes qpic is already installed.
 

@@ -14,8 +14,6 @@
 
 # pylint: disable=unbalanced-tuple-unpacking
 
-from typing import List, Set  # CHANGED: Added for backward-compatible types
-
 import cirq
 import numpy as np
 
@@ -34,8 +32,8 @@ from qualtran.surface_code.flasq.naive_grid_qubit_manager import NaiveGridQubitM
 # Helper function to check internal state
 def _check_internal_state(
     manager: NaiveGridQubitManager,
-    expected_allocated: Set[cirq.Qid],
-    expected_free: List[cirq.Qid],
+    expected_allocated: set[cirq.Qid],
+    expected_free: list[cirq.Qid],
     expected_generated: int,
 ):
     assert manager._allocated_qubits == expected_allocated
@@ -138,7 +136,7 @@ def test_qfree_single_qubit(negative):
     assert len(q) == 3
     q_to_free = q[1]  # GridQubit(-1, 1) or (0, 1)
     manager.qfree([q_to_free])
-    expected_allocated: Set[Qid] = {q[0], q[2]}
+    expected_allocated: set[Qid] = {q[0], q[2]}
     expected_free = [q_to_free]
     _check_internal_state(manager, expected_allocated, expected_free, 3)
 
@@ -149,7 +147,7 @@ def test_qfree_all_qubits(negative):
     manager = NaiveGridQubitManager(max_cols=3, negative=negative)
     q = manager.qalloc(3)
     manager.qfree(q)
-    expected_allocated: Set[cirq.Qid] = set()
+    expected_allocated: set[cirq.Qid] = set()
     expected_free = q
     _check_internal_state(manager, expected_allocated, expected_free, 3)
 

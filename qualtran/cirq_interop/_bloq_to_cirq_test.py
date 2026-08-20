@@ -11,7 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Dict, List, Tuple, TYPE_CHECKING
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import attrs
 import cirq
@@ -40,14 +42,14 @@ class SwapTwoBitsTest(Bloq):
 
     def as_cirq_op(
         self, qubit_manager: cirq.QubitManager, x: CirqQuregT, y: CirqQuregT
-    ) -> Tuple[cirq.Operation, Dict[str, CirqQuregT]]:
+    ) -> tuple[cirq.Operation, dict[str, CirqQuregT]]:
         (x,) = x
         (y,) = y
         return cirq.SWAP(x, y), {'x': np.array([x]), 'y': np.array([y])}
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         from qualtran.bloqs.basic_gates import TwoBitSwap
 
         return TwoBitSwap().my_tensors(incoming=incoming, outgoing=outgoing)
@@ -73,8 +75,8 @@ class SwapTest(Bloq):
         return Signature.build(x=self.n, y=self.n)
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: Soquet, y: Soquet, **kwargs
-    ) -> Dict[str, SoquetT]:
+        self, bb: BloqBuilder, x: Soquet, y: Soquet, **kwargs
+    ) -> dict[str, SoquetT]:
         xs = bb.split(x)
         ys = bb.split(y)
         for i in range(self.n):
@@ -91,8 +93,8 @@ class SwapTestWithOnlyTensorData(Bloq):
         return Signature.build(x=self.n, y=self.n)
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         from qualtran.simulation.tensor._dense import _order_incoming_outgoing_indices

@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import re
 from functools import cached_property
 
@@ -40,11 +42,14 @@ from qualtran._infra.quantum_graph import _Soquet
 from qualtran.bloqs.arithmetic.addition import Add
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.for_testing import TestAtom, TestParallelCombo, TestTwoBitOp
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.testing import (
     assert_bloq_example_decompose,
     assert_bloq_example_make,
+    assert_bloq_example_qtyping,
     assert_connections_compatible,
     assert_consistent_classical_action,
+    assert_equivalent_bloq_example_counts,
     assert_registers_match_dangling,
     assert_registers_match_parent,
     assert_soquets_belong_to_registers,
@@ -53,6 +58,8 @@ from qualtran.testing import (
     BloqCheckResult,
     check_bloq_example_decompose,
     check_bloq_example_make,
+    check_bloq_example_qtyping,
+    check_equivalent_bloq_example_counts,
 )
 
 
@@ -96,10 +103,10 @@ def test_assert_registers_match_parent():
     @frozen
     class BadRegBloq(Bloq):
         @cached_property
-        def signature(self) -> 'Signature':
+        def signature(self) -> Signature:
             return Signature.build(x=2, y=3)
 
-        def decompose_bloq(self) -> 'CompositeBloq':
+        def decompose_bloq(self) -> CompositeBloq:
             # !! order of registers swapped.
             bb, soqs = BloqBuilder.from_signature(Signature.build(y=3, x=2))
             x, y = bb.add(BadRegBloq(), x=soqs['x'], y=soqs['y'])
@@ -194,7 +201,7 @@ def test_check_bloq_decompose_na():
 @frozen
 class TestMissingDecomp(Bloq):
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([])
 
 
@@ -245,3 +252,129 @@ def test_assert_valid_classical_action_valid_invalid_bloq():
     b = BloqWithInvalidClassicaAction(QInt(bitsize))
     with pytest.raises(AssertionError):
         assert_consistent_classical_action(b, a=valid_range, b=valid_range)
+
+
+@frozen
+class TestTypedDecomp(Bloq):
+    dtype_a: QDType
+    dtype_b: QDType
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build_from_dtypes(q1=self.dtype_a, q2=self.dtype_b)
+
+    def decompose_bloq(self) -> CompositeBloq:
+        cxns, signature = _manually_make_test_cbloq_typed_cxns(self.dtype_a, self.dtype_b)
+        return CompositeBloq(cxns, signature=signature)
+
+
+def test_check_bloq_example_qtyping() -> None:
+    @bloq_example
+    def _na() -> TestAtom:
+        return TestAtom()
+
+    res, msg = check_bloq_example_qtyping(_na)
+    assert res is BloqCheckResult.NA
+    with pytest.raises(BloqCheckException) as raises_ctx:
+        assert_bloq_example_qtyping(_na)
+    assert raises_ctx.value.check_result is BloqCheckResult.NA
+
+    @bloq_example
+    def _pass() -> TestTypedDecomp:
+        return TestTypedDecomp(QInt(4), QInt(4))
+
+    res, msg = check_bloq_example_qtyping(_pass)
+    assert res is BloqCheckResult.PASS
+    assert_bloq_example_qtyping(_pass)
+
+    @bloq_example
+    def _unverified() -> TestTypedDecomp:
+        return TestTypedDecomp(QInt(4), QUInt(4))
+
+    res, msg = check_bloq_example_qtyping(_unverified)
+    assert res is BloqCheckResult.UNVERIFIED
+    with pytest.raises(BloqCheckException) as raises_ctx:
+        assert_bloq_example_qtyping(_unverified)
+    assert raises_ctx.value.check_result is BloqCheckResult.UNVERIFIED
+
+    @bloq_example
+    def _fail() -> TestTypedDecomp:
+        return TestTypedDecomp(QUInt(4), QFxp(4, 2))
+
+    res, msg = check_bloq_example_qtyping(_fail)
+    assert res is BloqCheckResult.FAIL
+    with pytest.raises(BloqCheckException) as raises_ctx:
+        assert_bloq_example_qtyping(_fail)
+    assert raises_ctx.value.check_result is BloqCheckResult.FAIL
+
+
+@frozen
+class TestCountsAgree(Bloq):
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(reg=1)
+
+    def decompose_bloq(self) -> CompositeBloq:
+        bb, soqs = BloqBuilder.from_signature(self.signature)
+        reg = soqs['reg']
+        reg = bb.add(TestAtom(), q=reg)
+        return bb.finalize(reg=reg)
+
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        return {TestAtom(): 1}
+
+
+@frozen
+class TestCountsDisagree(Bloq):
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(reg=1)
+
+    def decompose_bloq(self) -> CompositeBloq:
+        bb, soqs = BloqBuilder.from_signature(self.signature)
+        reg = soqs['reg']
+        reg = bb.add(TestAtom(), q=reg)
+        return bb.finalize(reg=reg)
+
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        return {TestAtom(): 2}
+
+
+def test_check_equivalent_bloq_example_counts() -> None:
+    @bloq_example
+    def _missing() -> TestMissingDecomp:
+        return TestMissingDecomp()
+
+    res, msg = check_equivalent_bloq_example_counts(_missing)
+    assert res is BloqCheckResult.MISSING
+    with pytest.raises(BloqCheckException) as raises_ctx:
+        assert_equivalent_bloq_example_counts(_missing)
+    assert raises_ctx.value.check_result is BloqCheckResult.MISSING
+
+    @bloq_example
+    def _unverified_counts() -> TestParallelCombo:
+        return TestParallelCombo()
+
+    res, msg = check_equivalent_bloq_example_counts(_unverified_counts)
+    assert res is BloqCheckResult.UNVERIFIED
+    with pytest.raises(BloqCheckException) as raises_ctx:
+        assert_equivalent_bloq_example_counts(_unverified_counts)
+    assert raises_ctx.value.check_result is BloqCheckResult.UNVERIFIED
+
+    @bloq_example
+    def _agree() -> TestCountsAgree:
+        return TestCountsAgree()
+
+    res, msg = check_equivalent_bloq_example_counts(_agree)
+    assert res is BloqCheckResult.PASS
+    assert_equivalent_bloq_example_counts(_agree)
+
+    @bloq_example
+    def _disagree() -> TestCountsDisagree:
+        return TestCountsDisagree()
+
+    res, msg = check_equivalent_bloq_example_counts(_disagree)
+    assert res is BloqCheckResult.FAIL
+    with pytest.raises(BloqCheckException) as raises_ctx:
+        assert_equivalent_bloq_example_counts(_disagree)
+    assert raises_ctx.value.check_result is BloqCheckResult.FAIL

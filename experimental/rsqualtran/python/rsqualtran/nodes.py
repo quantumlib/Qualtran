@@ -14,7 +14,8 @@
 """The Qualtran-L1 AST Nodes backed by Rust PyO3 classes."""
 
 import abc
-from typing import Optional, Sequence, Tuple, TypeAlias, Union
+from collections.abc import Sequence
+from typing import TypeAlias
 
 import attrs
 
@@ -108,7 +109,7 @@ class LiteralNode(CValueNode):
 
     _rsqlt_cls = _rsqlt.LiteralNode
 
-    def __new__(cls, value: Union[int, float, str]):
+    def __new__(cls, value: int | float | str):
         if not isinstance(value, (int, float, str)):
             raise TypeError(f"LiteralNode value must be int, float, or str, got {type(value)}")
         return _rsqlt.LiteralNode(value)
@@ -132,7 +133,7 @@ class CArgNode(L1ASTNode):
 
     _rsqlt_cls = _rsqlt.CArgNode
 
-    def __new__(cls, key: Optional[str], value: CValueNode):
+    def __new__(cls, key: str | None, value: CValueNode):
         if key is not None and not isinstance(key, str):
             raise TypeError(f"CArgNode key must be str or None, got {type(key)}")
         if not isinstance(value, CValueNode._rsqlt_cls):
@@ -160,7 +161,7 @@ class QDTypeNode(L1ASTNode):
 
     _rsqlt_cls = _rsqlt.QDTypeNode
 
-    def __new__(cls, dtype: CObjectNode, shape: Optional[Sequence[int]]):
+    def __new__(cls, dtype: CObjectNode, shape: Sequence[int] | None):
         if not isinstance(dtype, _rsqlt.CObjectNode):
             raise TypeError(f"QDTypeNode dtype must be CObjectNode, got {type(dtype)}")
         shape_list = list(shape) if shape is not None else None
@@ -179,8 +180,8 @@ class QSignatureEntry(L1ASTNode):
     def __new__(
         cls,
         name: str,
-        dtype: Union[QDTypeNode, Tuple[Optional[QDTypeNode], Optional[QDTypeNode]]],
-        annotation: Optional[CValueNode] = None,
+        dtype: QDTypeNode | tuple[QDTypeNode | None, QDTypeNode | None],
+        annotation: CValueNode | None = None,
     ):
         if not isinstance(name, str):
             raise TypeError(f"QSignatureEntry name must be str, got {type(name)}")
@@ -239,7 +240,7 @@ class LValueNode(L1ASTNode):
     _rsqlt_cls = None
 
     name: str
-    annotation: Optional[CValueNode] = None
+    annotation: CValueNode | None = None
 
     def __str__(self):
         if self.annotation:
@@ -281,7 +282,7 @@ class QArgValueNode(L1ASTNode):
         return _rsqlt.QArgValueNode(name, idx_list)
 
 
-NestedQArgValue: TypeAlias = Union[QArgValueNode, Sequence["NestedQArgValue"]]
+NestedQArgValue: TypeAlias = QArgValueNode | Sequence["NestedQArgValue"]
 
 
 class QArgNode(L1ASTNode):
@@ -289,7 +290,7 @@ class QArgNode(L1ASTNode):
 
     _rsqlt_cls = _rsqlt.QArgNode
 
-    def __new__(cls, key: str, value: NestedQArgValue, annotation: Optional[CValueNode] = None):
+    def __new__(cls, key: str, value: NestedQArgValue, annotation: CValueNode | None = None):
         if not isinstance(key, str):
             raise TypeError(f"QArgNode key must be str, got {type(key)}")
         if annotation is not None and not isinstance(annotation, CValueNode._rsqlt_cls):
@@ -318,9 +319,9 @@ class QCallNode(StatementNode):
     def __new__(
         cls,
         bloq_key: str,
-        lvalues: Sequence[Union[LValueNode, str]],
+        lvalues: Sequence[LValueNode | str],
         qargs: Sequence[QArgNode],
-        annotation: Optional[CValueNode] = None,
+        annotation: CValueNode | None = None,
     ):
         if not isinstance(bloq_key, str):
             raise TypeError(f"QCallNode bloq_key must be str, got {type(bloq_key)}")
@@ -375,7 +376,7 @@ class QDefNode(L1ASTNode, metaclass=_NodeMeta):
 
     @property
     @abc.abstractmethod
-    def cobject_from(self) -> Optional[CObjectNode]: ...
+    def cobject_from(self) -> CObjectNode | None: ...
 
 
 class QDefImplNode(QDefNode):
@@ -388,7 +389,7 @@ class QDefImplNode(QDefNode):
         bloq_key: str,
         qsignature: Sequence[QSignatureEntry],
         body: Sequence[StatementNode],
-        cobject_from: Optional[CObjectNode],
+        cobject_from: CObjectNode | None,
     ):
         if not isinstance(bloq_key, str):
             raise TypeError(f"QDefImplNode bloq_key must be str, got {type(bloq_key)}")
@@ -414,10 +415,7 @@ class QDefExternNode(QDefNode):
     _rsqlt_cls = _rsqlt.QDefExternNode
 
     def __new__(
-        cls,
-        bloq_key: str,
-        qsignature: Sequence[QSignatureEntry],
-        cobject_from: Optional[CObjectNode],
+        cls, bloq_key: str, qsignature: Sequence[QSignatureEntry], cobject_from: CObjectNode | None
     ):
         if not isinstance(bloq_key, str):
             raise TypeError(f"QDefExternNode bloq_key must be str, got {type(bloq_key)}")
@@ -453,7 +451,7 @@ class QCastNode(QDefNode):
         return _rsqlt.QCastNode(bloq_key, qsig_list)
 
     @property
-    def cobject_from(self) -> Optional[CObjectNode]:
+    def cobject_from(self) -> CObjectNode | None:
         return None
 
 
@@ -465,7 +463,7 @@ class QStructNode(L1ASTNode):
 
     symbol_id: str
     qfields: Sequence[QStructEntry] = attrs.field(converter=tuple[QStructEntry])
-    cobject_from: Optional[CObjectNode]
+    cobject_from: CObjectNode | None
 
 
 class L1Module(L1ASTNode):

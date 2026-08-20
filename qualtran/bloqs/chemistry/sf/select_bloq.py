@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -54,7 +56,7 @@ class SelectSingleFactorization(Bloq):
         n = (self.num_spin_orb // 2 - 1).bit_length()
         return Signature.build(p=n, q=n, spin=1, succ_pq=1, succ_l=1)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {Toffoli(): 2 * (self.num_spin_orb - 2)}
 
 

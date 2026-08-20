@@ -20,7 +20,7 @@ from .bloq_finder import get_bloq_examples
 
 
 @pytest.mark.slow
-def test_get_all_call_graph():
+def test_get_all_call_graph() -> None:
     # This test generates a union of the call graphs of every bloq example in the library.
     # This test makes sure that there aren't any bloq examples with broken call graphs.
     bes = get_bloq_examples()

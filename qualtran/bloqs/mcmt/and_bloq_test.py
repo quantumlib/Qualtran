@@ -12,9 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import itertools
 from functools import cached_property
-from typing import Dict
 
 import cirq
 import numpy as np
@@ -189,12 +190,10 @@ def test_notebook():
 @frozen
 class AndIdentity(Bloq):
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(q0=1, q1=1)
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', q0: 'SoquetT', q1: 'SoquetT'
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, q0: SoquetT, q1: SoquetT) -> dict[str, SoquetT]:
         assert BloqBuilder.is_single(q0)
         assert BloqBuilder.is_single(q1)
         qs, trg = bb.add(And(), ctrl=[q0, q1])

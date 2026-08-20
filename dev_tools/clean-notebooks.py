@@ -18,7 +18,7 @@ from qualtran_dev_tools.clean_notebooks import clean_notebooks
 from qualtran_dev_tools.git_tools import get_git_root
 
 
-def parse_args():
+def parse_args() -> None:
     p = argparse.ArgumentParser()
     p.add_argument('--apply', action=argparse.BooleanOptionalAction, default=False)
     args = p.parse_args()

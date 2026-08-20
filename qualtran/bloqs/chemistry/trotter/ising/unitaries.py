@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Dict, Optional, Tuple
 
 import attrs
 
@@ -42,12 +43,12 @@ class IsingXUnitary(Bloq):
     def signature(self) -> Signature:
         return Signature.build(system=self.nsites)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("U_X")
         return super().wire_symbol(reg, idx)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', system: 'Soquet') -> Dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: BloqBuilder, system: Soquet) -> dict[str, Soquet]:
         system = bb.split(system)
         for iq in range(self.nsites):
             system[iq] = bb.add(Rx(self.angle), q=system[iq])
@@ -75,12 +76,12 @@ class IsingZZUnitary(Bloq):
     def signature(self) -> Signature:
         return Signature.build(system=self.nsites)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("U_ZZ")
         return super().wire_symbol(reg, idx)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', system: 'Soquet') -> Dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: BloqBuilder, system: Soquet) -> dict[str, Soquet]:
         system = bb.split(system)
         for iq_a in range(self.nsites):
             iq_b = (iq_a + 1) % self.nsites

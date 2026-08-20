@@ -12,7 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Callable, List
+from __future__ import annotations
+
+from collections.abc import Callable
 
 import attrs
 
@@ -31,9 +33,9 @@ from qualtran.resource_counting.generalizers import generalize_rotation_angle
 class TestCostKey(CostKey[int]):
     def __init__(self):
         # For testing, keep a log of all the bloqs for which we called 'compute' on.
-        self._log: List[Bloq] = []
+        self._log: list[Bloq] = []
 
-    def compute(self, bloq: 'Bloq', get_callee_cost: Callable[['Bloq'], int]) -> int:
+    def compute(self, bloq: Bloq, get_callee_cost: Callable[[Bloq], int]) -> int:
         self._log.append(bloq)
 
         total = 1

@@ -12,7 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 import attrs
 from numpy.typing import NDArray
@@ -43,8 +44,8 @@ class QAny(QDType[Any]):
     def get_classical_domain(self) -> Iterable[Any]:
         raise TypeError(f"Ambiguous domain for {self}. Please use a more specific type.")
 
-    def assert_valid_classical_val(self, val: Any, debug_str: str = 'val'):
+    def assert_valid_classical_val(self, val: Any, debug_str: str = 'val') -> None:
         pass
 
-    def assert_valid_classical_val_array(self, val_array: NDArray, debug_str: str = 'val'):
+    def assert_valid_classical_val_array(self, val_array: NDArray, debug_str: str = 'val') -> None:
         pass

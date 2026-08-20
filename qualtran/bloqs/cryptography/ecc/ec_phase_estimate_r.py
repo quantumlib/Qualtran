@@ -12,9 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import functools
 from functools import cached_property
-from typing import Dict, Union
 
 import numpy as np
 import sympy
@@ -59,17 +60,17 @@ class ECPhaseEstimateR(Bloq):
         mul_window_size: The number of bits in the modular multiplication window.
     """
 
-    n: 'SymbolicInt'
+    n: SymbolicInt
     point: ECPoint
-    add_window_size: 'SymbolicInt' = 1
-    mul_window_size: 'SymbolicInt' = 1
+    add_window_size: SymbolicInt = 1
+    mul_window_size: SymbolicInt = 1
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('x', QUInt(self.n)), Register('y', QUInt(self.n))])
 
     @property
-    def ec_add(self) -> Union[functools.partial[ECAddR], functools.partial[ECWindowAddR]]:
+    def ec_add(self) -> functools.partial[ECAddR] | functools.partial[ECWindowAddR]:
         if self.add_window_size == 1:
             return functools.partial(ECAddR, n=self.n)
         return functools.partial(
@@ -83,7 +84,7 @@ class ECPhaseEstimateR(Bloq):
     def num_windows(self) -> int:
         return self.n // self.add_window_size
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet, y: Soquet) -> dict[str, SoquetT]:
         if isinstance(self.n, sympy.Expr):
             raise DecomposeTypeError("Cannot decompose symbolic `n`.")
         ctrl = [bb.add(PlusState()) for _ in range(self.n)]
@@ -105,7 +106,7 @@ class ECPhaseEstimateR(Bloq):
         bb.add(MeasureQFT(n=self.n), x=ctrl)
         return {'x': x, 'y': y}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {self.ec_add(R=self.point): self.num_windows, MeasureQFT(n=self.n): 1}
 
     def __str__(self) -> str:

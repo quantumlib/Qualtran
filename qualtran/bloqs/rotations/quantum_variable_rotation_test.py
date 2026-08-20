@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Iterator
+from collections.abc import Iterator
+from typing import TYPE_CHECKING
 
 import attrs
 import cirq
@@ -132,7 +133,8 @@ def test_qvr_phase_gradient_cost_reg_greater_than_b_grad(normalize: bool):
     # TODO: This test is broken due to Cirq compatibility issues:
     #       https://github.com/quantumlib/Qualtran/issues/1763
     #       It can cause a SIGKILL
-    return pytest.xfail("Broken Cirq simulation")
+    if not TYPE_CHECKING:
+        pytest.xfail("Broken Cirq simulation")
     # pylint: disable=unreachable
     n, gamma, eps = (9, (2**20 - 1) / 2**20, 1e-1)
     # Note that `gamma` is of the form `0.111111111` and thus has worst case complexity

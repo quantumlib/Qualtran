@@ -14,7 +14,8 @@
 
 from __future__ import annotations
 
-from typing import Callable, Iterator, Optional, TYPE_CHECKING
+from collections.abc import Callable, Iterator
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import matplotlib.pyplot as plt
@@ -97,12 +98,7 @@ class MixedDiagonal(_protocol.ApproxProblem):
                 break
 
     def plot(
-        self,
-        n: int,
-        ax: Optional[plt.Axes] = None,
-        show_legend: bool = True,
-        *,
-        offset: bool = False,
+        self, n: int, ax: plt.Axes | None = None, show_legend: bool = True, *, offset: bool = False
     ) -> plt.Axes:
         import matplotlib.pyplot as plt
         from matplotlib import patches

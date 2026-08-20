@@ -13,12 +13,12 @@
 #  limitations under the License.
 
 from collections import Counter
+from collections.abc import Sequence
 from functools import cached_property
-from typing import cast, Dict, List, Sequence, Tuple, Union
+from typing import cast, Self
 
 from attrs import field, frozen, validators
 from numpy.typing import NDArray
-from typing_extensions import Self
 
 from qualtran import (
     Bloq,
@@ -85,7 +85,7 @@ class Product(BlockEncoding):
         Dalzell et al. (2023). Ch. 10.2.
     """
 
-    block_encodings: Tuple[BlockEncoding, ...] = field(
+    block_encodings: tuple[BlockEncoding, ...] = field(
         converter=lambda x: x if isinstance(x, tuple) else tuple(x), validator=validators.min_len(1)
     )
 
@@ -151,11 +151,11 @@ class Product(BlockEncoding):
         anc_bits = self.ancilla_bitsize - (n - 1)
         ret = []
         for u in reversed(self.block_encodings):
-            partition: List[Tuple[Register, List[Union[str, Unused]]]] = [
+            partition: list[tuple[Register, list[str | Unused]]] = [
                 (Register("system", dtype=QAny(u.system_bitsize)), ["system"])
             ]
             if is_symbolic(u.ancilla_bitsize) or u.ancilla_bitsize > 0:
-                regs: List[Union[str, Unused]] = ["ancilla"]
+                regs: list[str | Unused] = ["ancilla"]
                 if (
                     is_symbolic(anc_bits)
                     or is_symbolic(u.ancilla_bitsize)
@@ -174,7 +174,7 @@ class Product(BlockEncoding):
     def _multCX(self, bitsize) -> Bloq:
         return XGate().controlled(ctrl_spec=CtrlSpec(QAny(bitsize), cvs=0))
 
-    def _multCX_autopart(self, *, used_bits: int, total_bits: int) -> Bloq:
+    def _multCX_autopart(self, *, used_bits: SymbolicInt, total_bits: SymbolicInt) -> Bloq:
         if used_bits <= 0:
             raise ValueError("used_bits must be > 0")
         if used_bits > total_bits:
@@ -214,7 +214,7 @@ class Product(BlockEncoding):
 
     def build_composite_bloq(
         self, bb: BloqBuilder, system: SoquetT, **soqs: SoquetT
-    ) -> Dict[str, SoquetT]:
+    ) -> dict[str, SoquetT]:
         if (
             is_symbolic(self.system_bitsize)
             or is_symbolic(self.ancilla_bitsize)
@@ -267,7 +267,7 @@ class Product(BlockEncoding):
         if self.resource_bitsize > 0:
             out["resource"] = res_soq
         if self.ancilla_bitsize > 0:
-            anc_soqs: Dict[str, SoquetT] = dict()
+            anc_soqs: dict[str, SoquetT] = dict()
             if n - 1 > 0:
                 anc_soqs["flag_bits"] = flag_bits_soq
             if anc_bits > 0:

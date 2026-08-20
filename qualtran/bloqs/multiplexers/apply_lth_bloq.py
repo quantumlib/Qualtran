@@ -12,8 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import cast, Iterable, Optional, Sequence, Set, Tuple, Union
+from typing import cast
 
 import cirq
 import numpy as np
@@ -39,7 +42,7 @@ from qualtran.symbolics import ceil, log2
 
 
 @frozen
-class ApplyLthBloq(UnaryIterationGate, SelectOracle):  # type: ignore[misc]
+class ApplyLthBloq(UnaryIterationGate, SelectOracle):
     r"""A SELECT operation that executes one of a list of bloqs $U_l$ based on a quantum index:
 
     $$
@@ -64,13 +67,13 @@ class ApplyLthBloq(UnaryIterationGate, SelectOracle):  # type: ignore[misc]
         Babbush et al. (2018). Section III.A. and Figure 7.
     """
 
-    # type ignore needed here for Bloq as NDArray parameter
+    # Need type ignore here for Bloq as NDArray parameter.
     ops: NDArray[Bloq] = field(  # type: ignore[type-var]
         converter=lambda x: np.array(x) if isinstance(x, Iterable) else x,
         eq=lambda d: tuple(d.flat),
     )
-    selection_regs: Optional[Tuple[Register, ...]] = None
-    control_val: Optional[int] = None
+    selection_regs: tuple[Register, ...] | None = None
+    control_val: int | None = None
 
     def __attrs_post_init__(self):
         if np.prod(self.ops.shape) <= 1:
@@ -81,11 +84,11 @@ class ApplyLthBloq(UnaryIterationGate, SelectOracle):  # type: ignore[misc]
             raise ValueError("All ops must have only THRU registers.")
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return () if self.control_val is None else (Register('control', QBit()),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         if self.selection_regs is None:
             return tuple(
                 Register(
@@ -97,17 +100,17 @@ class ApplyLthBloq(UnaryIterationGate, SelectOracle):  # type: ignore[misc]
         return self.selection_regs
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
-        return tuple(self.ops.flat[0].signature)  # type: ignore
+    def target_registers(self) -> tuple[Register, ...]:
+        return tuple(self.ops.flat[0].signature)  # type: ignore[call-overload]
 
-    def nth_operation_callgraph(self, **kwargs: int) -> Set[BloqCountT]:
+    def nth_operation_callgraph(self, **kwargs: int) -> set[BloqCountT]:
         return {(self.ops[tuple(kwargs.values())].controlled(), 1)}
 
     def nth_operation(
         self,
         context: cirq.DecompositionContext,
         control: cirq.Qid,
-        **kwargs: Union[int, Sequence[cirq.Qid]],
+        **kwargs: int | Sequence[cirq.Qid],
     ) -> cirq.OP_TREE:
         selection_indices = list(cast(int, kwargs[reg.name]) for reg in self.selection_registers)
         targets = {
@@ -117,7 +120,7 @@ class ApplyLthBloq(UnaryIterationGate, SelectOracle):  # type: ignore[misc]
         target_qubits = merge_qubits(bloq.signature, **targets)
         return bloq.controlled().on(control, *target_qubits)
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 
         return get_ctrl_system_1bit_cv(
@@ -127,7 +130,7 @@ class ApplyLthBloq(UnaryIterationGate, SelectOracle):  # type: ignore[misc]
             get_ctrl_bloq_and_ctrl_reg_name=lambda cv: (evolve(self, control_val=cv), 'control'),
         )
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         from qualtran.bloqs.mcmt.specialized_ctrl import (
             AdjointWithSpecializedCtrl,
             SpecializeOnCtrlBit,

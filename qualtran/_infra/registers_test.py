@@ -325,7 +325,7 @@ def test_register_shape_error():
 
 def test_register_invalid_dtype():
     with pytest.raises(ValueError, match="dtype must be a QCDType"):
-        Register("my_reg", 5)  # type: ignore
+        Register("my_reg", 5)  # type: ignore[arg-type]
 
 
 def test_register_adjoint_side():

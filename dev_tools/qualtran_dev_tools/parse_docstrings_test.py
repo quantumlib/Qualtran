@@ -29,7 +29,7 @@ class ClassWithDocstrings:
     """
 
 
-def test_get_markdown_docstring_lines():
+def test_get_markdown_docstring_lines() -> None:
     lines = get_markdown_docstring_lines(ClassWithDocstrings)
     assert lines == [
         '## `ClassWithDocstrings`',
@@ -46,7 +46,7 @@ def test_get_markdown_docstring_lines():
 
 
 @pytest.mark.slow
-def test_parse_all_references():
+def test_parse_all_references() -> None:
     bloq_classes = get_bloq_classes()
     references = {bloq_cls: get_references(bloq_cls) for bloq_cls in bloq_classes}
     for bloq_cls, refs in references.items():

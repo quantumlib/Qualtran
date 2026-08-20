@@ -12,8 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import itertools
-from typing import Any, Iterable, List, NamedTuple, Optional, Union
+from collections.abc import Iterable
+from typing import Any, NamedTuple
 
 from frozendict import frozendict
 
@@ -40,8 +43,8 @@ class CoreParametersConfig(NamedTuple):
     phys_error_rate: float
     cultivation_error_rate: float
     vcult_factor: float
-    cultivation_data_source_distance: Optional[int] = None
-    target_t_error: Optional[float] = None
+    cultivation_data_source_distance: int | None = None
+    target_t_error: float | None = None
 
     @classmethod
     def from_cultivation_analysis(
@@ -49,7 +52,7 @@ class CoreParametersConfig(NamedTuple):
         physical_error_rate: float,
         target_individual_t_gate_error: float,
         reference_code_distance: int,
-    ) -> "CoreParametersConfig":
+    ) -> CoreParametersConfig:
         """Creates a config from cultivation simulation data.
 
         Looks up the cultivation row that minimises expected volume while
@@ -104,11 +107,11 @@ def _ensure_iterable(value: Any, treat_frozendict_as_single_item: bool = False) 
 
 
 def generate_configs_for_specific_cultivation_assumptions(
-    code_distance_list: Union[int, Iterable[int]],
-    phys_error_rate_list: Union[float, Iterable[float]],
+    code_distance_list: int | Iterable[int],
+    phys_error_rate_list: float | Iterable[float],
     cultivation_error_rate: float,
     vcult_factor: float,
-) -> List[CoreParametersConfig]:
+) -> list[CoreParametersConfig]:
     """
     Generates a list of CoreParametersConfig objects for fixed cultivation
     error rate and V_CULT_FACTOR, sweeping over code distances and physical error rates.
@@ -140,17 +143,17 @@ def generate_configs_for_specific_cultivation_assumptions(
 
 
 def generate_configs_from_cultivation_data(
-    code_distance_list: Union[int, Iterable[int]],
-    phys_error_rate_list: Union[float, Iterable[float]],
-    cultivation_data_source_distance_list: Union[int, Iterable[int], None] = None,
+    code_distance_list: int | Iterable[int],
+    phys_error_rate_list: float | Iterable[float],
+    cultivation_data_source_distance_list: int | Iterable[int] | None = None,
     cultivation_data_decimal_precision: int = 8,
     cultivation_data_slack_factor: float = 0.995,
-    cultivation_data_uncertainty_cutoff: Optional[
-        float
-    ] = 100,  # Default value from cultivation_analysis
-    cultivation_data_sampling_frequency: Optional[int] = None,
+    cultivation_data_uncertainty_cutoff: (
+        float | None
+    ) = 100,  # Default value from cultivation_analysis
+    cultivation_data_sampling_frequency: int | None = None,
     round_error_rate_up_to_simulated_cultivation_data: bool = True,
-) -> List[CoreParametersConfig]:
+) -> list[CoreParametersConfig]:
     """
     Generates CoreParametersConfig objects by deriving cultivation_error_rate and
     vcult_factor from cultivation analysis data.
@@ -231,12 +234,9 @@ def generate_configs_from_cultivation_data(
                 raise ValueError(
                     "cultivation_data_sampling_frequency must be None or a positive integer."
                 )
-            if not cult_df.empty:
-                # Sample every k-th row from the tail of the already sorted/filtered cult_df
-                indices = range(len(cult_df) - 1, -1, -k)
-                rows_to_process = cult_df.iloc[list(indices)]
-            else:
-                rows_to_process = cult_df  # empty
+            # Sample every k-th row from the tail of the already sorted/filtered cult_df
+            indices = range(len(cult_df) - 1, -1, -k)
+            rows_to_process = cult_df.iloc[list(indices)]
         for _, row in rows_to_process.iterrows():
             derived_cult_error_rate = row["t_gate_cultivation_error_rate"]
             expected_volume = row["expected_volume"]

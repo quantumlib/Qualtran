@@ -25,19 +25,9 @@ to the and of its control registers. `And` will output the result into a fresh r
 from __future__ import annotations
 
 import itertools
+from collections.abc import Iterable, Iterator, Sequence
 from functools import cached_property
-from typing import (
-    cast,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import cast, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -92,8 +82,8 @@ class And(GateWithRegisters):
         [Verifying Measurement Based Uncomputation](https://algassert.com/post/1903). Gidney, C. 2019.
     """
 
-    cv1: Union[int, sympy.Expr] = 1
-    cv2: Union[int, sympy.Expr] = 1
+    cv1: int | sympy.Expr = 1
+    cv2: int | sympy.Expr = 1
     uncompute: bool = False
 
     @cached_property
@@ -105,7 +95,7 @@ class And(GateWithRegisters):
             ]
         )
 
-    def adjoint(self) -> 'And':
+    def adjoint(self) -> And:
         return attrs.evolve(self, uncompute=not self.uncompute)
 
     @classmethod
@@ -116,7 +106,7 @@ class And(GateWithRegisters):
         cv1=1,
         cv2=1,
         uncompute: bool = False,
-        **maybe_target: 'QVar',
+        **maybe_target: QVar,
     ):
         ctrl = np.asarray(ctrl)
         bb = ctrl.item(0).bb
@@ -126,12 +116,12 @@ class And(GateWithRegisters):
         else:
             return bb.add(bloq, ctrl=ctrl)
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic.")
 
     def on_classical_vals(
-        self, *, ctrl: NDArray[np.uint8], target: Optional[int] = None
-    ) -> Dict[str, ClassicalValT]:
+        self, *, ctrl: NDArray[np.uint8], target: int | None = None
+    ) -> dict[str, ClassicalValT]:
         out = 1 if tuple(ctrl) == (self.cv1, self.cv2) else 0
         if not self.uncompute:
             return {'ctrl': ctrl, 'target': out}
@@ -144,8 +134,8 @@ class And(GateWithRegisters):
         return {'ctrl': ctrl}
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         # Fill in our tensor using "and" logic.
@@ -175,7 +165,7 @@ class And(GateWithRegisters):
             )
         ]
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         if reg.name == 'target':
@@ -219,7 +209,7 @@ class And(GateWithRegisters):
             yield [cirq.H(target), cirq.S(target)]
         yield pre_post_ops
 
-    def to_clifford_t_circuit(self) -> 'cirq.FrozenCircuit':
+    def to_clifford_t_circuit(self) -> cirq.FrozenCircuit:
         """Decomposes a single `And` gate on 2 controls and 1 target in terms of Clifford+T gates.
 
         * And(cv).on(c1, c2, target) uses 4 T-gates and assumes target is in |0> state.
@@ -277,8 +267,8 @@ _AND_DOC = BloqDocSpec(bloq_cls=And, examples=(_and_bloq,))
 
 
 def _to_tuple_or_has_length(
-    x: Union[HasLength, Iterable[SymbolicInt]],
-) -> Union[HasLength, Tuple[SymbolicInt, ...]]:
+    x: HasLength | Iterable[SymbolicInt],
+) -> HasLength | tuple[SymbolicInt, ...]:
     if isinstance(x, HasLength):
         if is_symbolic(x.n):
             return x
@@ -303,7 +293,7 @@ class MultiAnd(Bloq):
         target [right]: The output bit.
     """
 
-    cvs: Union[HasLength, Tuple[SymbolicInt, ...]] = field(converter=_to_tuple_or_has_length)
+    cvs: HasLength | tuple[SymbolicInt, ...] = field(converter=_to_tuple_or_has_length)
 
     @cvs.validator
     def _validate_cvs(self, field, val):
@@ -315,7 +305,7 @@ class MultiAnd(Bloq):
         return self.cvs.n if isinstance(self.cvs, HasLength) else len(self.cvs)
 
     @property
-    def concrete_cvs(self) -> Tuple[SymbolicInt, ...]:
+    def concrete_cvs(self) -> tuple[SymbolicInt, ...]:
         if isinstance(self.cvs, HasLength):
             raise ValueError(f"{self.cvs} is symbolic")
         return self.cvs
@@ -330,14 +320,14 @@ class MultiAnd(Bloq):
             ]
         )
 
-    def on_classical_vals(self, ctrl: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
+    def on_classical_vals(self, ctrl: NDArray[np.uint8]) -> dict[str, NDArray[np.uint8]]:
         accumulate_and = np.bitwise_and.accumulate(
             np.equal(ctrl, np.asarray(self.cvs)).astype(np.uint8)
         )
         junk, target = accumulate_and[1:-1], accumulate_and[-1]
         return {'ctrl': ctrl, 'junk': junk, 'target': target}
 
-    def __pow__(self, power: int) -> "Bloq":
+    def __pow__(self, power: int) -> Bloq:
         if power == 1:
             return self
         if power == -1:
@@ -347,7 +337,7 @@ class MultiAnd(Bloq):
     def _decompose_via_tree(
         self,
         controls: NDArray[cirq.Qid],  # type: ignore[type-var]
-        control_values: Tuple[SymbolicInt, ...],
+        control_values: tuple[SymbolicInt, ...],
         ancillas: NDArray[cirq.Qid],  # type: ignore[type-var]
         target: cirq.Qid,
     ) -> Iterator[cirq.OP_TREE]:
@@ -373,10 +363,10 @@ class MultiAnd(Bloq):
         )
         yield self._decompose_via_tree(control, self.concrete_cvs, ancilla, *target)
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         return decompose_from_cirq_style_method(self)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         if reg.name == 'ctrl':
@@ -392,8 +382,8 @@ class MultiAnd(Bloq):
     def __str__(self):
         return f'MultiAnd(n={self.n_ctrls})'
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        cost: 'MutableBloqCountDictT' = {And(): self.n_ctrls - 1}
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        cost: MutableBloqCountDictT = {And(): self.n_ctrls - 1}
         if not (
             is_symbolic(self.cvs)
             or is_symbolic(*self.concrete_cvs)

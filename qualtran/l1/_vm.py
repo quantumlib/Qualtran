@@ -11,9 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import abc
 from collections import Counter
-from typing import Any, Dict, Iterable, List
+from collections.abc import Iterable
+from typing import Any
 
 import attrs
 import numpy as np
@@ -23,7 +26,7 @@ from qualtran import Bloq, CompositeBloq, Register
 
 
 def _mock_return_values(regs: Iterable[Register]):
-    soqdict: Dict[str, Any] = {}
+    soqdict: dict[str, Any] = {}
 
     # Initialize multi-dimensional dictionary values.
     for reg in regs:
@@ -41,7 +44,7 @@ def _mock_return_values(regs: Iterable[Register]):
 @attrs.mutable
 class StackFrame:
     bloq_str: str
-    qlocals: Dict[str, Any] = attrs.field(factory=dict)
+    qlocals: dict[str, Any] = attrs.field(factory=dict)
 
 
 class Problem(metaclass=abc.ABCMeta):
@@ -51,7 +54,7 @@ class Problem(metaclass=abc.ABCMeta):
 
 @attrs.frozen
 class UnsupportedAtomicBloqProblem(Problem):
-    bloq: 'Bloq'
+    bloq: Bloq
 
     def get_summary(self) -> str:
         return f' {self.bloq!r} is not a supported atomic bloq.'
@@ -59,12 +62,12 @@ class UnsupportedAtomicBloqProblem(Problem):
 
 @attrs.mutable(kw_only=True)
 class StandardQualtranArchitectureAgnosticVirtualMachine:
-    frames: List[StackFrame] = attrs.field(factory=list)
-    problems: List[Problem] = attrs.field(factory=list)
+    frames: list[StackFrame] = attrs.field(factory=list)
+    problems: list[Problem] = attrs.field(factory=list)
     n_calls: int = 0
     n_atoms: int = 0
 
-    def qcall(self, cbloq: 'CompositeBloq', **soqs):
+    def qcall(self, cbloq: CompositeBloq, **soqs):
         self.frames.append(StackFrame(bloq_str=str(cbloq)))
         self.n_calls += 1
         qlt_testing.assert_valid_cbloq(cbloq)
@@ -72,10 +75,10 @@ class StandardQualtranArchitectureAgnosticVirtualMachine:
             self.execute(binst.bloq, **in_soqs)
         self.frames.pop(-1)
 
-    def qatom(self, bloq: 'Bloq', **soqs):
+    def qatom(self, bloq: Bloq, **soqs):
         self.n_atoms += 1
 
-    def execute(self, bloq: 'Bloq', **soqs):
+    def execute(self, bloq: Bloq, **soqs):
         if isinstance(bloq, CompositeBloq):
             return self.qcall(bloq, **soqs)
 
@@ -88,7 +91,7 @@ class StandardQualtranArchitectureAgnosticVirtualMachine:
 
         raise TypeError(f"Unexpected `execute` type: {bloq}.")
 
-    def bloq_in_isa(self, bloq: 'Bloq'):
+    def bloq_in_isa(self, bloq: Bloq):
         import qualtran.bloqs.basic_gates as bg
         from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
         from qualtran.bloqs.mcmt.and_bloq import And

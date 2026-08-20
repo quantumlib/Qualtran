@@ -12,9 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from collections import Counter
 from functools import cached_property
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import frozen
 
@@ -39,7 +41,7 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
-def _adjoint_final_soqs(cbloq: 'CompositeBloq', new_signature: Signature) -> Dict[str, '_SoquetT']:
+def _adjoint_final_soqs(cbloq: CompositeBloq, new_signature: Signature) -> dict[str, _SoquetT]:
     """`CompositeBloq.final_soqs()` but backwards."""
     if LeftDangle not in cbloq._binst_graph:
         return {}
@@ -49,7 +51,7 @@ def _adjoint_final_soqs(cbloq: 'CompositeBloq', new_signature: Signature) -> Dic
     )
 
 
-def _adjoint_cbloq(cbloq: 'CompositeBloq') -> 'CompositeBloq':
+def _adjoint_cbloq(cbloq: CompositeBloq) -> CompositeBloq:
     """Automatically derive the adjoint of `cbloq`.
 
     The adjoint of a composite bloq is another composite bloq where the order of
@@ -73,7 +75,7 @@ def _adjoint_cbloq(cbloq: 'CompositeBloq') -> 'CompositeBloq':
     bb, _ = BloqBuilder.from_signature(new_signature)
     old_i_soqs = [_reg_to_soq(RightDangle, reg) for reg in old_signature.rights()]
     new_i_soqs = [bb._reg_to_qvar(LeftDangle, reg) for reg in new_signature.lefts()]
-    soq_map: List[Tuple[_SoquetT, QVarT]] = list(zip(old_i_soqs, new_i_soqs))
+    soq_map: list[tuple[_SoquetT, QVarT]] = list(zip(old_i_soqs, new_i_soqs))
     for binst, preds, succs in bloqnections:
         # Instead of get_me returning the right element of a predecessor connection,
         # it's the left element of a successor connection.
@@ -140,20 +142,18 @@ class Adjoint(GateWithRegisters):
         subbloq: The bloq to wrap.
     """
 
-    subbloq: 'Bloq'
+    subbloq: Bloq
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         """The signature is the adjoint of `subbloq`'s signature."""
         return self.subbloq.signature.adjoint()
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         """The decomposition is the adjoint of `subbloq`'s decomposition."""
         return self.subbloq.decompose_bloq().adjoint()
 
-    def _circuit_diagram_info_(
-        self, args: 'cirq.CircuitDiagramInfoArgs'
-    ) -> 'cirq.CircuitDiagramInfo':
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         import cirq
 
         sub_info = cirq.circuit_diagram_info(self.subbloq, args, default=NotImplemented)
@@ -162,11 +162,11 @@ class Adjoint(GateWithRegisters):
         sub_info.exponent *= -1
         return sub_info
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         """The 'double adjoint' brings you back to the original bloq."""
         return self.subbloq
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         """The call graph takes the adjoint of each of the bloqs in `subbloq`'s call graph."""
         sub_cg = self.subbloq.build_call_graph(ssa=ssa)
         counts = Counter['Bloq']()
@@ -185,9 +185,7 @@ class Adjoint(GateWithRegisters):
     def _pkg_(cls) -> str:
         return 'qualtran'
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         # Note: since we pass are passed a soquet which has the 'new' side, we flip it before
         # delegating and then flip back. Subbloqs only have to answer this protocol
         # if the provided soquet is facing the correct direction.

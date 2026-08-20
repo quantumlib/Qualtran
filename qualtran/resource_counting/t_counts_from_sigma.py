@@ -11,14 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import warnings
-from typing import Mapping
+from collections.abc import Mapping
 
 from qualtran import Bloq, Controlled
 from qualtran.symbolics import ceil, SymbolicInt
 
 
-def t_counts_from_sigma(sigma: Mapping['Bloq', SymbolicInt]) -> SymbolicInt:
+def t_counts_from_sigma(sigma: Mapping[Bloq, SymbolicInt]) -> SymbolicInt:
     """Aggregates T-counts from a sigma dictionary by summing T-costs for all rotation bloqs."""
     warnings.warn("This function is deprecated. Use `get_cost_value`.", DeprecationWarning)
     # TODO: remove dependence on cirq.has_stabilizer_effect.

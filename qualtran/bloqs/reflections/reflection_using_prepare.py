@@ -12,8 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
+from collections.abc import Iterator, Sequence
 from functools import cached_property
-from typing import Iterator, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import attrs
 import cirq
@@ -87,17 +90,17 @@ class ReflectionUsingPrepare(GateWithRegisters):
         Babbush et al. 2018. Figure 1.
     """
 
-    prepare_gate: Union['PrepareOracle', 'BlackBoxPrepare']
-    control_val: Optional[int] = None
+    prepare_gate: PrepareOracle | BlackBoxPrepare
+    control_val: int | None = None
     global_phase: complex = 1
     eps: float = 1e-11
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return () if self.control_val is None else (Register('control', QBit()),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return self.prepare_gate.selection_registers
 
     @cached_property
@@ -108,10 +111,10 @@ class ReflectionUsingPrepare(GateWithRegisters):
     def reflection_around_zero(
         cls,
         bitsizes: Sequence[SymbolicInt],
-        control_val: Optional[int] = None,
+        control_val: int | None = None,
         global_phase: complex = 1,
         eps: float = 1e-11,
-    ) -> 'ReflectionUsingPrepare':
+    ) -> ReflectionUsingPrepare:
         """Build a reflection around zero bloq.
 
         Args:
@@ -132,7 +135,7 @@ class ReflectionUsingPrepare(GateWithRegisters):
     def decompose_from_registers(
         self,
         context: cirq.DecompositionContext,
-        **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
+        **quregs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         qm = context.qubit_manager
         # 0. Allocate new ancillas, if needed.
@@ -174,10 +177,10 @@ class ReflectionUsingPrepare(GateWithRegisters):
         wire_symbols += ['R_L'] * total_bits(self.selection_registers)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         n_phase_control = sum(reg.total_bits() for reg in self.selection_registers)
         cvs = HasLength(n_phase_control) if is_symbolic(n_phase_control) else [0] * n_phase_control
-        costs: 'MutableBloqCountDictT' = {
+        costs: MutableBloqCountDictT = {
             self.prepare_gate: 1,
             self.prepare_gate.adjoint(): 1,
             MultiControlZ(cvs): 1,
@@ -193,10 +196,10 @@ class ReflectionUsingPrepare(GateWithRegisters):
             costs[phase_op] = 1
         return costs
 
-    def adjoint(self) -> 'ReflectionUsingPrepare':
+    def adjoint(self) -> ReflectionUsingPrepare:
         return self
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 
         return get_ctrl_system_1bit_cv(

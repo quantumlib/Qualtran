@@ -11,8 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
+from collections.abc import Iterator
 from functools import cached_property
-from typing import Iterator
 
 import attrs
 import cirq
@@ -24,7 +26,7 @@ from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
 from qualtran.bloqs.basic_gates import Hadamard
 from qualtran.bloqs.basic_gates.swap import Swap
 from qualtran.resource_counting import BloqCountDictT, MutableBloqCountDictT, SympySymbolAllocator
-from qualtran.symbolics.types import is_symbolic
+from qualtran.symbolics.types import is_symbolic, SymbolicInt
 
 
 @attrs.frozen
@@ -70,11 +72,11 @@ class QFTPhaseGradient(GateWithRegisters):
         [Turning Gradients into Additions into QFTs](https://algassert.com/post/1620)
     """
 
-    bitsize: int
+    bitsize: SymbolicInt
     with_reverse: bool = True
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(
             q=QUInt(self.bitsize), phase_grad=QFxp(self.bitsize, self.bitsize)
         )
@@ -99,7 +101,7 @@ class QFTPhaseGradient(GateWithRegisters):
             for i in range(self.bitsize // 2):
                 yield cirq.SWAP(q[i], q[-i - 1])
 
-    def build_call_graph(self, ssa: SympySymbolAllocator) -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         if is_symbolic(self.bitsize):
             # TODO: The T-gate cost here is an upper bound constructed off of the recurrence
             # relation for the QFT as used in decompose_from_registers above.
@@ -111,7 +113,7 @@ class QFTPhaseGradient(GateWithRegisters):
 
         if self.bitsize == 1:
             return {Hadamard(): 1}
-        ret: 'MutableBloqCountDictT' = {
+        ret: MutableBloqCountDictT = {
             QFTPhaseGradient(self.bitsize // 2): 1,
             QFTPhaseGradient(self.bitsize - (self.bitsize // 2)): 1,
             PlusEqualProduct(

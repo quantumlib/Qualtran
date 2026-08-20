@@ -11,20 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import abc
+from collections.abc import Iterable, Mapping, Sequence
 from functools import cached_property
-from typing import (
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -89,15 +81,15 @@ class _ZVector(Bloq, metaclass=abc.ABCMeta):
     def state(self) -> bool: ...
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('q', QBit(), side=Side.RIGHT if self.state else Side.LEFT)])
 
     def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic")
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         side = outgoing if self.state else incoming
@@ -105,7 +97,7 @@ class _ZVector(Bloq, metaclass=abc.ABCMeta):
             qtn.Tensor(data=_ONE if self.bit else _ZERO, inds=[(side['q'], 0)], tags=[str(self)])
         ]
 
-    def on_classical_vals(self, *, q: Optional[int] = None) -> Dict[str, int]:
+    def on_classical_vals(self, *, q: int | None = None) -> dict[str, int]:
         """Return or consume 1 or 0 depending on `self.state` and `self.bit`.
 
         If `self.state`, we return a bit in the `q` register. Otherwise,
@@ -120,10 +112,8 @@ class _ZVector(Bloq, metaclass=abc.ABCMeta):
         return {}
 
     def as_cirq_op(
-        self,
-        qubit_manager: 'cirq.QubitManager',
-        **cirq_quregs: 'CirqQuregT',  # type: ignore[type-var]
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
+        self, qubit_manager: cirq.QubitManager, **cirq_quregs: CirqQuregT
+    ) -> tuple[cirq.Operation | None, dict[str, CirqQuregT]]:
         if not self.state:
             raise ValueError(f"There is no Cirq equivalent for {self}")
 
@@ -141,9 +131,7 @@ class _ZVector(Bloq, metaclass=abc.ABCMeta):
         s = '1' if self.bit else '0'
         return f'|{s}>' if self.state else f'<{s}|'
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         s = '1' if self.bit else '0'
@@ -162,7 +150,7 @@ class ZeroState(_ZVector):
     def state(self) -> bool:
         return True
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return ZeroEffect()
 
     def __str__(self):
@@ -190,7 +178,7 @@ class ZeroEffect(_ZVector):
     def state(self) -> bool:
         return False
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return ZeroState()
 
     def __str__(self):
@@ -218,7 +206,7 @@ class OneState(_ZVector):
     def state(self) -> bool:
         return True
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return OneEffect()
 
     def __str__(self):
@@ -246,7 +234,7 @@ class OneEffect(_ZVector):
     def state(self) -> bool:
         return False
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return OneState()
 
     def __str__(self):
@@ -270,22 +258,22 @@ class ZGate(Bloq):
     """
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(q=1)
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return self
 
     @classmethod
-    def qcall(cls, q: 'QVar'):
+    def qcall(cls, q: QVar):
         return q.bb.add(cls(), q=q)
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic")
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         return [
@@ -294,16 +282,16 @@ class ZGate(Bloq):
             )
         ]
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, **vals: ClassicalValT) -> dict[str, ClassicalValT]:
         # Diagonal, but causes phases: see `basis_state_phase`
         return vals
 
-    def basis_state_phase(self, q: int) -> Optional[complex]:
+    def basis_state_phase(self, q: int) -> complex | None:
         if q == 1:
             return -1
         return 1
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         if ctrl_spec != CtrlSpec():
             # Delegate to the general superclass behavior
             return super().get_ctrl_system(ctrl_spec=ctrl_spec)
@@ -311,8 +299,8 @@ class ZGate(Bloq):
         bloq = CZ()
 
         def add_controlled(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            bb: BloqBuilder, ctrl_soqs: Sequence[SoquetT], in_soqs: dict[str, SoquetT]
+        ) -> tuple[Iterable[SoquetT], Iterable[SoquetT]]:
             (ctrl_soq,) = ctrl_soqs
             ctrl_soq, q2 = bb.add(bloq, q1=ctrl_soq, q2=in_soqs['q'])
             return (ctrl_soq,), (q2,)
@@ -320,21 +308,19 @@ class ZGate(Bloq):
         return bloq, add_controlled
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+        self, qubit_manager: cirq.QubitManager, q: CirqQuregT
+    ) -> tuple[cirq.Operation, dict[str, CirqQuregT]]:
         import cirq
 
         (q,) = q
         return cirq.Z(q), {'q': np.asarray([q])}
 
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: Wires) -> Operation:
         import pennylane as qml
 
         return qml.Z(wires=wires)
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
 
@@ -360,23 +346,23 @@ class CZ(Bloq):
     """
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(q1=1, q2=1)
 
     @classmethod
-    def qcall(cls, q1: "QVar", q2: "QVar"):
+    def qcall(cls, q1: QVar, q2: QVar):
         bb = q1.bb
         return bb.add(cls(), q1=q1, q2=q2)
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic")
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return self
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         unitary = np.diag(np.array([1, 1, 1, -1], dtype=np.complex128)).reshape((2, 2, 2, 2))
@@ -385,38 +371,38 @@ class CZ(Bloq):
         return [qtn.Tensor(data=unitary, inds=inds, tags=[str(self)])]
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', q1: 'CirqQuregT', q2: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+        self, qubit_manager: cirq.QubitManager, q1: CirqQuregT, q2: CirqQuregT
+    ) -> tuple[cirq.Operation, dict[str, CirqQuregT]]:
         import cirq
 
         (q1,) = q1
         (q2,) = q2
         return cirq.CZ(q1, q2), {'q1': np.array([q1]), 'q2': np.array([q2])}
 
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: Wires) -> Operation:
         import pennylane as qml
 
         return qml.CZ(wires=wires)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         if reg.name == 'q1' or reg.name == 'q2':
             return Circle()
         raise ValueError(f'Unknown wire symbol register name: {reg.name}')
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
 
         return get_ctrl_system_1bit_cv_from_bloqs(
             self, ctrl_spec, current_ctrl_bit=1, bloq_with_ctrl=self, ctrl_reg_name='q1'
         )
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, **vals: ClassicalValT) -> dict[str, ClassicalValT]:
         # Diagonal, but causes phases: see `basis_state_phase`
         return vals
 
-    def basis_state_phase(self, q1: int, q2: int) -> Optional[complex]:
+    def basis_state_phase(self, q1: int, q2: int) -> complex | None:
         if q1 == 1 and q2 == 1:
             return -1
         return 1
@@ -441,24 +427,24 @@ class MeasureZ(Bloq):
     """
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [Register('q', QBit(), side=Side.LEFT), Register('c', CBit(), side=Side.RIGHT)]
         )
 
-    def on_classical_vals(self, q: int) -> Mapping[str, 'ClassicalValRetT']:
+    def on_classical_vals(self, q: int) -> Mapping[str, ClassicalValRetT]:
         return {'c': q}
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic.")
 
     @classmethod
-    def qcall(cls, q: 'QVar') -> 'QVar':
+    def qcall(cls, q: QVar) -> QVar:
         return q.bb.add(cls(), q=q)
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         from qualtran.simulation.tensor import DiscardInd
@@ -476,8 +462,8 @@ class MeasureZ(Bloq):
         return [t, DiscardInd((meas_result, 0))]
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'  # type: ignore[type-var]
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
+        self, qubit_manager: cirq.QubitManager, **cirq_quregs: CirqQuregT
+    ) -> tuple[cirq.Operation | None, dict[str, CirqQuregT]]:
 
         import cirq
 
@@ -528,25 +514,21 @@ class IntState(Bloq):
         return _QConst(val=self.val, qdtype=QUInt(self.bitsize), state=True)
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return self._impl.signature
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         return self._impl.build_composite_bloq(bb, **soqs)
 
     def on_classical_vals(
-        self, **vals: Union['sympy.Symbol', 'ClassicalValT']
-    ) -> Mapping[str, 'ClassicalValRetT']:
+        self, **vals: sympy.Symbol | ClassicalValT
+    ) -> Mapping[str, ClassicalValRetT]:
         return self._impl.on_classical_vals(**vals)
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         return self._impl.build_call_graph(ssa)
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         return self._impl.wire_symbol(reg, idx)
 
     def __str__(self) -> str:
@@ -596,25 +578,21 @@ class IntEffect(Bloq):
         return _QConst(val=self.val, qdtype=QUInt(self.bitsize), state=False)
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return self._impl.signature
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         return self._impl.build_composite_bloq(bb, **soqs)
 
     def on_classical_vals(
-        self, **vals: Union['sympy.Symbol', 'ClassicalValT']
-    ) -> Mapping[str, 'ClassicalValRetT']:
+        self, **vals: sympy.Symbol | ClassicalValT
+    ) -> Mapping[str, ClassicalValRetT]:
         return self._impl.on_classical_vals(**vals)
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         return self._impl.build_call_graph(ssa)
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         return self._impl.wire_symbol(reg, idx)
 
     def __str__(self) -> str:

@@ -12,7 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from __future__ import annotations
+
+from collections.abc import Iterable, Sequence
+from typing import TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -45,7 +48,7 @@ if TYPE_CHECKING:
 
 
 @frozen
-class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
+class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):
     """Performs result += a * b.
 
     Args:
@@ -73,13 +76,13 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
                 f"bitsizes {self.a_bitsize} + {self.b_bitsize}"
             )
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("result -= a*b") if self.is_adjoint else Text("result += a*b")
         return super().wire_symbol(reg, idx)
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(a=self.a_dtype, b=self.b_dtype, result=self.result_dtype)
 
     @property
@@ -94,25 +97,25 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     def result_dtype(self):
         return QUInt(self.result_bitsize)
 
-    def registers(self) -> Sequence[Union[int, Sequence[int]]]:
+    def registers(self) -> Sequence[int | Sequence[int]]:
         if is_symbolic(self.a_bitsize):
             raise ValueError(f'Symbolic bitsize {self.a_bitsize} not supported')
         if is_symbolic(self.b_bitsize):
             raise ValueError(f'Symbolic bitsize {self.b_bitsize} not supported')
         if is_symbolic(self.result_bitsize):
             raise ValueError(f'Symbolic bitsize {self.result_bitsize} not supported')
-        return [2] * self.a_bitsize, [2] * self.b_bitsize, [2] * self.result_bitsize
+        return [2] * int(self.a_bitsize), [2] * int(self.b_bitsize), [2] * int(self.result_bitsize)
 
-    def adjoint(self) -> 'PlusEqualProduct':
+    def adjoint(self) -> PlusEqualProduct:
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def apply(self, a: int, b: int, result: int) -> Union[int, Iterable[int]]:
+    def apply(self, a: int, b: int, result: int) -> int | Iterable[int]:
         return a, b, (result + a * b * ((-1) ** self.is_adjoint)) % (2**self.result_bitsize)
 
-    def with_registers(self, *new_registers: Union[int, Sequence[int]]):
+    def with_registers(self, *new_registers: int | Sequence[int]):
         raise NotImplementedError("Not needed.")
 
-    def on_classical_vals(self, a: int, b: int, result: int) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, a: int, b: int, result: int) -> dict[str, ClassicalValT]:
         result_out = (result + a * b * ((-1) ** self.is_adjoint)) % (2**self.result_bitsize)
         return {'a': a, 'b': b, 'result': result_out}
 
@@ -123,18 +126,18 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
             raise ValueError(f'Symbolic bitsize {self.b_bitsize} not supported')
         if is_symbolic(self.result_bitsize):
             raise ValueError(f'Symbolic bitsize {self.result_bitsize} not supported')
-        wire_symbols = ['a'] * self.a_bitsize + ['b'] * self.b_bitsize
-        wire_symbols += ['c-=a*b' if self.is_adjoint else 'c+=a*b'] * self.result_bitsize
+        wire_symbols = ['a'] * int(self.a_bitsize) + ['b'] * int(self.b_bitsize)
+        wire_symbols += ['c-=a*b' if self.is_adjoint else 'c+=a*b'] * int(self.result_bitsize)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         from qualtran.cirq_interop._cirq_to_bloq import _my_tensors_from_gate
 
         return _my_tensors_from_gate(self, self.signature, incoming=incoming, outgoing=outgoing)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # TODO: The T-complexity here is approximate.
         return {TGate(): 8 * smax(self.a_bitsize, self.b_bitsize) ** 2}
 
@@ -181,7 +184,7 @@ class Square(Bloq):
             ]
         )
 
-    def on_classical_vals(self, **vals: int) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, **vals: int) -> dict[str, ClassicalValT]:
         if self.uncompute:
             a, result = vals["a"], vals["result"]
             assert result == a**2
@@ -189,12 +192,12 @@ class Square(Bloq):
         a = vals["a"]
         return {'a': a, 'result': a**2}
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("a^2")
         return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
@@ -202,14 +205,14 @@ class Square(Bloq):
         return {Toffoli(): num_toff}
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot get tensors for symbolic {self=}")
 
-        n = self.bitsize
+        n = int(self.bitsize)
         N = 2**self.bitsize
         data = np.zeros((N, N, N**2), dtype=np.complex128)
         for x in range(N):
@@ -224,7 +227,7 @@ class Square(Bloq):
         data = data.reshape((2,) * (4 * n))
         return [qtn.Tensor(data=data, inds=inds, tags=[str(self)])]
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return Square(self.bitsize, not self.uncompute)
 
 
@@ -277,12 +280,12 @@ class SumOfSquares(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('SOS')
         return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         num_toff = self.k * self.bitsize**2 - self.bitsize
         if self.k % 3 == 0:
             num_toff -= 1
@@ -332,12 +335,12 @@ class Product(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('a*b')
         return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
@@ -395,12 +398,12 @@ class ScaleIntByReal(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('r*i')
         return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # Eq. D8, we are assuming dA(r_bitsize) and dB(i_bitsize) are inputs and
         # the user has ensured these are large enough for their desired
         # precision.
@@ -454,12 +457,12 @@ class MultiplyTwoReals(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('a*b')
         return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # Eq. D13, there it is suggested keeping both registers the same size is optimal.
         num_toff = self.bitsize**2 - self.bitsize - 1
         return {Toffoli(): num_toff}
@@ -515,12 +518,12 @@ class SquareRealNumber(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('a^2')
         return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # Bottom of page 74
         num_toff = self.bitsize**2 // 2 - 4
         return {Toffoli(): num_toff}
@@ -573,12 +576,12 @@ class InvertRealNumber(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('1/a')
         return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # initial approximation: Figure 4
         num_int = self.bitsize - self.num_frac
         # Newton-Raphson: Eq. (1)

@@ -12,9 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from collections import defaultdict
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Dict, Iterable, Optional, Sequence, Tuple
 
 import attrs
 import networkx as nx
@@ -43,10 +45,10 @@ class BigBloq(Bloq):
     bitsize: int
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(x=self.bitsize)
 
-    def build_call_graph(self, ssa: Optional['SympySymbolAllocator']) -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator | None) -> BloqCountDictT:
         return {SubBloq(unrelated_param=0.5): sympy.log(self.bitsize)}
 
 
@@ -55,10 +57,10 @@ class DecompBloq(Bloq):
     bitsize: int
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(x=self.bitsize)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet) -> dict[str, SoquetT]:
         qs = bb.split(x)
         for i in range(self.bitsize):
             qs[i] = bb.add(SubBloq(unrelated_param=i / 12), q=qs[i])
@@ -71,18 +73,18 @@ class SubBloq(Bloq):
     unrelated_param: float
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(q=1)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {TGate(): 3}
 
 
-def get_big_bloq_counts_graph_1(bloq: Bloq) -> Tuple[nx.DiGraph, Dict[Bloq, SymbolicInt]]:
+def get_big_bloq_counts_graph_1(bloq: Bloq) -> tuple[nx.DiGraph, dict[Bloq, SymbolicInt]]:
     ss = SympySymbolAllocator()
     n_c = ss.new_symbol('n_c')
 
-    def generalize(bloq: Bloq) -> Optional[Bloq]:
+    def generalize(bloq: Bloq) -> Bloq | None:
         if isinstance(bloq, ArbitraryClifford):
             return attrs.evolve(bloq, n=n_c)
 
@@ -148,11 +150,11 @@ class OnlyCallGraphBloqShim(Bloq):
     callees: Sequence[BloqCountT] = field(converter=_to_tuple, factory=tuple)
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([])
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        counts: 'MutableBloqCountDictT' = defaultdict(int)
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        counts: MutableBloqCountDictT = defaultdict(int)
         for bloq, count in self.callees:
             counts[bloq] += count
         return counts

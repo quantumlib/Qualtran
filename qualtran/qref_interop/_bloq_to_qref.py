@@ -24,8 +24,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterable
 from functools import singledispatch
-from typing import Any, cast, Iterable, Optional, Union
+from typing import Any, cast
 
 import networkx as nx
 import sympy
@@ -69,7 +70,7 @@ def _is_symbol_or_int(expression):
         return expression.isidentifier()
 
 
-def _extract_common_bloq_attributes(bloq: Bloq, name: Optional[str] = None) -> dict[str, Any]:
+def _extract_common_bloq_attributes(bloq: Bloq, name: str | None = None) -> dict[str, Any]:
     """Extract common bloq attributes such as name, type and ports.
 
     There are several Bloq classes, however, they all share common set of attributes.
@@ -131,10 +132,10 @@ def _bloq_instance_name(instance: BloqInstance) -> str:
 
 @singledispatch
 def bloq_to_qref(
-    obj: Union[Bloq, CompositeBloq, BloqInstance],
+    obj: Bloq | CompositeBloq | BloqInstance,
     *,
     from_callgraph: bool = False,
-    decomposition_rules: Union[bool, Iterable[type[Bloq]]] = False,
+    decomposition_rules: bool | Iterable[type[Bloq]] = False,
 ) -> SchemaV1:
     """Converts a Qualtran Bloq into a QREF SchemaV1.
 
@@ -163,10 +164,10 @@ def bloq_to_qref(
 
 
 def _routine_with_decomposition(
-    obj: Union[Bloq, CompositeBloq, BloqInstance],
-    preserve: Optional[set[type[Bloq]]],
+    obj: Bloq | CompositeBloq | BloqInstance,
+    preserve: set[type[Bloq]] | None,
     *,
-    name: Optional[str] = None,
+    name: str | None = None,
 ) -> RoutineV1:
     """Convert a Qualtran bloq into a QREF RoutineV1, selectively decomposing.
 
@@ -220,7 +221,7 @@ def _routine_with_decomposition(
 
 
 @singledispatch
-def bloq_to_routine(obj: Any, name: Optional[str] = None) -> RoutineV1:
+def bloq_to_routine(obj: Any, name: str | None = None) -> RoutineV1:
     """Import object from Qualtran by converting it into corresponding QREF RoutineV1 object.
 
     Args:
@@ -238,7 +239,7 @@ def bloq_to_routine(obj: Any, name: Optional[str] = None) -> RoutineV1:
 
 
 @bloq_to_routine.register
-def _composite_bloq_to_routine(bloq: CompositeBloq, name: Optional[str] = None) -> RoutineV1:
+def _composite_bloq_to_routine(bloq: CompositeBloq, name: str | None = None) -> RoutineV1:
     """Import CompositeBloq from Qualtran.
 
     See `import_from_qualtran` for more info.
@@ -254,7 +255,7 @@ def _composite_bloq_to_routine(bloq: CompositeBloq, name: Optional[str] = None) 
 
 
 @bloq_to_routine.register
-def _bloq_to_routine(bloq: Bloq, name: Optional[str] = None) -> RoutineV1:
+def _bloq_to_routine(bloq: Bloq, name: str | None = None) -> RoutineV1:
     """Import Bloq (other than CompositeBloq) from Qualtran.
 
     See `import_from_qualtran` for moe info.
@@ -335,7 +336,7 @@ def _ports_from_register(reg: Register) -> Iterable[PortV1]:
             #   required number of single ports.
             PortV1(
                 name=expanded_name,
-                direction=direction,  # type: ignore
+                direction=direction,  # type: ignore[arg-type]
                 size=reg.bitsize if isinstance(reg.bitsize, int) else str(reg.bitsize),
             )
             for flat_name, direction in _names_and_dir_from_register(reg)
@@ -382,7 +383,7 @@ def _import_connection(connection: QualtranConnection) -> dict[str, Any]:
     }
 
 
-def _ensure_primitive_type(value: Any) -> Union[int, float, str, None]:
+def _ensure_primitive_type(value: Any) -> int | float | str | None:
     """Ensure given value is of primitive type (e.g. is not a sympy expression)."""
     return value if value is None or not is_symbolic(value) else str(value)
 
@@ -436,7 +437,7 @@ def _extract_symbols_from_port_sizes(ports: list[PortV1]) -> list[str]:
     return [str(symbol) for symbol in symbols]
 
 
-def _wrap_in_repetition(routine: RoutineV1, count: Union[int, str]) -> RoutineV1:
+def _wrap_in_repetition(routine: RoutineV1, count: int | str) -> RoutineV1:
     """Returns a routine with a repetition containing a single child.
     The repetition used is a constant sequence with count specified by input parameter.
     """
@@ -465,13 +466,13 @@ def _call_graph_to_routine_map(call_graph: nx.DiGraph) -> dict[Bloq, RoutineV1]:
     return nodes_to_routine_map
 
 
-def bloq_to_routine_from_callgraph(bloq: Union[Bloq, CompositeBloq]) -> RoutineV1:
+def bloq_to_routine_from_callgraph(bloq: Bloq | CompositeBloq) -> RoutineV1:
     """Creates a QREF routine based on the information coming from a bloq's call graph."""
     call_graph = bloq.call_graph()[0]
     nodes_to_routine_map = _call_graph_to_routine_map(call_graph)
 
     for routine in nodes_to_routine_map.values():
-        routine.ports = []  # type: ignore
+        routine.ports = []  # type: ignore[assignment]
         routine.connections = []
 
     for edge in list(call_graph.edges)[::-1]:

@@ -116,7 +116,7 @@ def test_kaliski_iteration_decomposition():
             inputs = {'u': u, 'v': v, 'r': r, 's': s, 'm': 0, 'f': f, 'is_terminal': 0}
             res = b.call_classically(**inputs)
             assert res == cb.call_classically(**inputs), f'{inputs=}'
-            u, v, r, s, _, f, _ = res  # type: ignore
+            u, v, r, s, _, f, _ = res
 
     qlt_testing.assert_valid_bloq_decomposition(b)
     qlt_testing.assert_equivalent_bloq_counts(b, generalizer=(ignore_alloc_free, ignore_split_join))
@@ -152,24 +152,24 @@ def test_kaliski_steps():
 
             res = steps[0].call_classically(v=v, m=m, f=f, is_terminal=is_terminal)
             assert res == csteps[0].call_classically(v=v, m=m, f=f, is_terminal=is_terminal)
-            v, m, f, is_terminal = res  # type: ignore
+            v, m, f, is_terminal = res
 
             res = steps[1].call_classically(u=u, v=v, b=b, a=a, m=m, f=f)
             assert res == csteps[1].call_classically(u=u, v=v, b=b, a=a, m=m, f=f)
-            u, v, b, a, m, f = res  # type: ignore
+            u, v, b, a, m, f = res
 
             res = steps[2].call_classically(u=u, v=v, b=b, a=a, m=m, f=f)
             assert res == csteps[2].call_classically(u=u, v=v, b=b, a=a, m=m, f=f)
-            u, v, b, a, m, f = res  # type: ignore
+            u, v, b, a, m, f = res
 
             res = steps[3].call_classically(u=u, v=v, r=r, s=s, a=a)
             assert res == csteps[3].call_classically(u=u, v=v, r=r, s=s, a=a)
-            u, v, r, s, a = res  # type: ignore
+            u, v, r, s, a = res
 
             res = steps[4].call_classically(u=u, v=v, r=r, s=s, b=b, f=f)
             assert res == csteps[4].call_classically(u=u, v=v, r=r, s=s, b=b, f=f)
-            u, v, r, s, b, f = res  # type: ignore
+            u, v, r, s, b, f = res
 
             res = steps[5].call_classically(u=u, v=v, r=r, s=s, b=b, a=a, m=m, f=f)
             assert res == csteps[5].call_classically(u=u, v=v, r=r, s=s, b=b, a=a, m=m, f=f)
-            u, v, r, s, b, a, m, f = res  # type: ignore
+            u, v, r, s, b, a, m, f = res

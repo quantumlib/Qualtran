@@ -11,7 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Dict, TYPE_CHECKING
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import attrs
 import cirq
@@ -88,14 +90,14 @@ class TestHammingWeightPhasingViaPhaseGradient(GateWithRegisters):
     eps: float
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(x=self.bitsize)
 
     @property
     def b_grad(self) -> SymbolicInt:
         return HammingWeightPhasingViaPhaseGradient(self.bitsize, self.exponent, self.eps).b_grad
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, *, x: SoquetT) -> dict[str, SoquetT]:
         b_grad = self.b_grad
         phase_grad = bb.add(PhaseGradientState(b_grad))
         x, phase_grad = bb.add(

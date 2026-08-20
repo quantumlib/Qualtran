@@ -11,23 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import abc
 from collections import Counter
+from collections.abc import Iterable, Mapping, Sequence
 from functools import cached_property
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Protocol,
-    Sequence,
-    Tuple,
-    TYPE_CHECKING,
-    TypeAlias,
-    Union,
-)
+from typing import Any, Protocol, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -50,14 +40,14 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT, MeasurementPhase
 
-ControlBit: TypeAlias = int
+type ControlBit = int
 """A control bit, either 0 or 1."""
 
-_CVInLeafT: TypeAlias = Union[int, np.integer, NDArray[np.integer], Shaped]
-_CVInType: TypeAlias = Union[_CVInLeafT, Sequence['_CVInType']]
+type _CVInLeafT = int | np.integer | NDArray[np.integer] | Shaped
+type _CVInType = _CVInLeafT | Sequence['_CVInType']
 
 
-def _cvs_convert(cvs: _CVInType) -> Tuple[Union[NDArray[np.integer], Shaped], ...]:
+def _cvs_convert(cvs: _CVInType) -> tuple[NDArray[np.integer] | Shaped, ...]:
     if isinstance(cvs, Shaped):
         return (cvs,)
     if isinstance(cvs, (int, np.integer)):
@@ -112,12 +102,10 @@ class CtrlSpec:
             of the ctrl register is implied to be `cv.shape`).
     """
 
-    qdtypes: Tuple[QCDType, ...] = attrs.field(
+    qdtypes: tuple[QCDType, ...] = attrs.field(
         default=QBit(), converter=lambda qt: (qt,) if isinstance(qt, QCDType) else tuple(qt)
     )
-    cvs: Tuple[Union[NDArray[np.integer], Shaped], ...] = attrs.field(
-        default=1, converter=_cvs_convert
-    )
+    cvs: tuple[NDArray[np.integer] | Shaped, ...] = attrs.field(default=1, converter=_cvs_convert)
 
     def __attrs_post_init__(self):
         assert len(self.qdtypes) == len(self.cvs)
@@ -127,7 +115,7 @@ class CtrlSpec:
         return len(self.qdtypes)
 
     @cached_property
-    def shapes(self) -> Tuple[Tuple[SymbolicInt, ...], ...]:
+    def shapes(self) -> tuple[tuple[SymbolicInt, ...], ...]:
         """Tuple of shapes of control registers represented by this CtrlSpec."""
         return tuple(cv.shape for cv in self.cvs)
 
@@ -137,7 +125,7 @@ class CtrlSpec:
         shapes = self.shapes
         if is_symbolic(*shapes):
             raise ValueError(f"cannot get concrete shapes: found symbolic {self.shapes}")
-        return shapes  # type: ignore
+        return shapes  # type: ignore[return-value]
 
     @cached_property
     def num_bits(self) -> SymbolicInt:
@@ -159,7 +147,7 @@ class CtrlSpec:
     def is_symbolic(self):
         return is_symbolic(*self.qdtypes) or is_symbolic(*self.cvs)
 
-    def activation_function_dtypes(self) -> Sequence[Tuple[QCDType, Tuple[SymbolicInt, ...]]]:
+    def activation_function_dtypes(self) -> Sequence[tuple[QCDType, tuple[SymbolicInt, ...]]]:
         """The data types that serve as input to the 'activation function'.
 
         The activation function takes in (quantum) inputs of these types and shapes and determines
@@ -171,7 +159,7 @@ class CtrlSpec:
         """
         return [(qdtype, cv.shape) for qdtype, cv in zip(self.qdtypes, self.cvs)]
 
-    def is_active(self, *vals: 'ClassicalValT') -> bool:
+    def is_active(self, *vals: ClassicalValT) -> bool:
         """A classical implementation of the 'activation function'.
 
         The activation function takes in (quantum) data and determines whether
@@ -203,7 +191,7 @@ class CtrlSpec:
                 return False
         return True
 
-    def wire_symbol(self, i: int, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, i: int, reg: Register, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         from qualtran.drawing import Circle, TextBox
 
         cvs = self.cvs[i]
@@ -211,6 +199,7 @@ class CtrlSpec:
         if is_symbolic(cvs):
             # control value is not given
             return TextBox('ctrl')
+        assert isinstance(cvs, np.ndarray)
 
         # Return a circle for bits; a box otherwise.
         cv = cvs[idx]
@@ -220,10 +209,10 @@ class CtrlSpec:
             return TextBox(f'{cv}')
 
     @cached_property
-    def __cvs_tuple(self) -> Tuple[Union[tuple[int, ...], Shaped], ...]:
+    def __cvs_tuple(self) -> tuple[tuple[int, ...] | Shaped, ...]:
         """Serialize the control values for hashing and equality checking."""
 
-        def _serialize(cvs) -> Union[tuple[int, ...], Shaped]:
+        def _serialize(cvs) -> tuple[int, ...] | Shaped:
             if isinstance(cvs, Shaped):
                 return cvs
             return tuple(cvs.reshape(-1))
@@ -243,7 +232,7 @@ class CtrlSpec:
     def __hash__(self):
         return hash((self.qdtypes, self.shapes, self.__cvs_tuple))
 
-    def to_cirq_cv(self) -> 'cirq.SumOfProducts':
+    def to_cirq_cv(self) -> cirq.SumOfProducts:
         """Convert CtrlSpec to cirq.SumOfProducts representation of control values."""
         import cirq
 
@@ -264,11 +253,11 @@ class CtrlSpec:
     @classmethod
     def from_cirq_cv(
         cls,
-        cirq_cv: 'cirq.ops.AbstractControlValues',
+        cirq_cv: cirq.ops.AbstractControlValues,
         *,
-        qdtypes: Optional[Sequence[QCDType]] = None,
-        shapes: Optional[Sequence[Tuple[int, ...]]] = None,
-    ) -> 'CtrlSpec':
+        qdtypes: Sequence[QCDType] | None = None,
+        shapes: Sequence[tuple[int, ...]] | None = None,
+    ) -> CtrlSpec:
         """Construct a CtrlSpec from cirq.SumOfProducts representation of control values."""
         conjunctions = [*cirq_cv.expand()]
         if len(conjunctions) > 1:
@@ -292,7 +281,7 @@ class CtrlSpec:
         for dtype, shape in zip(qdtypes, shapes):
             full_shape = shape + (dtype.num_bits,)
             curr_cvs_bits = np.array(cv[idx : idx + int(np.prod(full_shape))]).reshape(full_shape)
-            curr_cvs = np.apply_along_axis(dtype.from_bits, -1, curr_cvs_bits)  # type: ignore
+            curr_cvs = np.apply_along_axis(dtype.from_bits, -1, curr_cvs_bits)  # type: ignore[call-overload]
             bloq_cvs.append(curr_cvs)
         return CtrlSpec(tuple(qdtypes), tuple(bloq_cvs))
 
@@ -334,11 +323,11 @@ class AddControlledT(Protocol):
     """
 
     def __call__(
-        self, bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-    ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]: ...
+        self, bb: BloqBuilder, ctrl_soqs: Sequence[SoquetT], in_soqs: dict[str, SoquetT]
+    ) -> tuple[Iterable[SoquetT], Iterable[SoquetT]]: ...
 
 
-def _get_nice_ctrl_reg_names(reg_names: List[str], n: int) -> Tuple[str, ...]:
+def _get_nice_ctrl_reg_names(reg_names: list[str], n: int) -> tuple[str, ...]:
     """Get `n` names for the ctrl registers that don't overlap with (existing) `reg_names`."""
     if n == 1 and 'ctrl' not in reg_names:
         # Special case for nicer register name if we just have one control register
@@ -349,7 +338,7 @@ def _get_nice_ctrl_reg_names(reg_names: List[str], n: int) -> Tuple[str, ...]:
         i = 1
     else:
         i = 0
-    names: List[str] = []
+    names: list[str] = []
     while len(names) < n:
         while True:
             i += 1
@@ -368,12 +357,12 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def subbloq(self) -> 'Bloq':
+    def subbloq(self) -> Bloq:
         """The bloq being controlled."""
 
     @property
     @abc.abstractmethod
-    def ctrl_spec(self) -> 'CtrlSpec':
+    def ctrl_spec(self) -> CtrlSpec:
         """The specification of how the `subbloq` is controlled."""
 
     @cached_property
@@ -381,7 +370,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         return self.signature.thru_registers_only
 
     @staticmethod
-    def _make_ctrl_system(cb: '_ControlledBase') -> Tuple['_ControlledBase', 'AddControlledT']:
+    def _make_ctrl_system(cb: _ControlledBase) -> tuple[_ControlledBase, AddControlledT]:
         """A static method to create the adder function from an implementation of this class.
 
         Classes implementing this interface can use this static method to create a factory
@@ -392,8 +381,8 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         ctrl_reg_names = cb.ctrl_reg_names
 
         def add_controlled(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            bb: BloqBuilder, ctrl_soqs: Sequence[SoquetT], in_soqs: dict[str, SoquetT]
+        ) -> tuple[Iterable[SoquetT], Iterable[SoquetT]]:
             in_soqs |= dict(zip(ctrl_reg_names, ctrl_soqs))
             new_out_d = bb.add_d(cb, **in_soqs)
 
@@ -416,18 +405,18 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         return _get_nice_ctrl_reg_names(reg_names, n)
 
     @cached_property
-    def ctrl_regs(self) -> Tuple[Register, ...]:
+    def ctrl_regs(self) -> tuple[Register, ...]:
         return tuple(
             Register(name=self.ctrl_reg_names[i], dtype=qdtype, shape=shape, side=Side.THRU)
             for i, (qdtype, shape) in enumerate(self.ctrl_spec.activation_function_dtypes())
         )
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         # Prepend register(s) corresponding to `ctrl_spec`.
         return Signature(self.ctrl_regs + tuple(self.subbloq.signature))
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Mapping[str, 'ClassicalValRetT']:
+    def on_classical_vals(self, **vals: ClassicalValT) -> Mapping[str, ClassicalValRetT]:
         """Classical action of controlled bloqs.
 
         This involves conditionally doing the classical action of `subbloq`. All implementers
@@ -449,9 +438,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
         return vals
 
-    def basis_state_phase(
-        self, **vals: 'ClassicalValT'
-    ) -> Union[complex, 'MeasurementPhase', None]:
+    def basis_state_phase(self, **vals: ClassicalValT) -> complex | MeasurementPhase | None:
         """Phasing action of controlled bloqs.
 
         This involves conditionally doing the phasing action of `subbloq`. All implementers
@@ -515,8 +502,8 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         raise ValueError(f"Cannot handle non-thru registers in {self}.")
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         from qualtran.simulation.tensor._dense import _order_incoming_outgoing_indices
@@ -527,7 +514,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         data = self._tensor_data().reshape((2,) * len(inds))
         return [qtn.Tensor(data=data, inds=inds, tags=[str(self)])]
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         from qualtran.drawing import Text
 
         if reg is None:
@@ -552,8 +539,8 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         return f'C({self.subbloq!s})'
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        self, qubit_manager: cirq.QubitManager, **cirq_quregs: CirqQuregT
+    ) -> tuple[cirq.Operation | None, dict[str, CirqQuregT]]:
         ctrl_regs = {reg_name: cirq_quregs.pop(reg_name) for reg_name in self.ctrl_reg_names}
         ctrl_qubits = [q for reg in ctrl_regs.values() for q in reg.reshape(-1)]
         sub_op, cirq_quregs = self.subbloq.as_cirq_op(qubit_manager, **cirq_quregs)
@@ -563,14 +550,12 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
             cirq_quregs | ctrl_regs,
         )
 
-    def _circuit_diagram_info_(
-        self, args: 'cirq.CircuitDiagramInfoArgs'
-    ) -> 'cirq.CircuitDiagramInfo':
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         import cirq
 
         from qualtran.cirq_interop._bloq_to_cirq import _wire_symbol_to_cirq_diagram_info
 
-        if isinstance(self.subbloq, cirq.Gate):
+        if isinstance(self.subbloq, GateWithRegisters):
             sub_info = cirq.circuit_diagram_info(self.subbloq, args, None)
             if sub_info is not None:
                 cv_info = cirq.circuit_diagram_info(self.ctrl_spec.to_cirq_cv())
@@ -600,8 +585,8 @@ class Controlled(_ControlledBase):
         ctrl_spec: The specification for how to control the bloq.
     """
 
-    subbloq: 'Bloq'
-    ctrl_spec: 'CtrlSpec'
+    subbloq: Bloq
+    ctrl_spec: CtrlSpec
 
     def __attrs_post_init__(self):
         for qdtype in self.ctrl_spec.qdtypes:
@@ -614,8 +599,8 @@ class Controlled(_ControlledBase):
 
     @classmethod
     def make_ctrl_system(
-        cls, bloq: 'Bloq', ctrl_spec: 'CtrlSpec'
-    ) -> Tuple['_ControlledBase', 'AddControlledT']:
+        cls, bloq: Bloq, ctrl_spec: CtrlSpec
+    ) -> tuple[_ControlledBase, AddControlledT]:
         """A factory method for creating both the Controlled and the adder function.
 
         See `Bloq.get_ctrl_system`.
@@ -623,12 +608,10 @@ class Controlled(_ControlledBase):
         cb = cls(subbloq=bloq, ctrl_spec=ctrl_spec)
         return cls._make_ctrl_system(cb)
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         return Bloq.decompose_bloq(self)
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', **initial_soqs: 'SoquetT'
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **initial_soqs: SoquetT) -> dict[str, SoquetT]:
         if not self._thru_registers_only:
             raise DecomposeTypeError(f"Cannot handle non-thru registers in {self.subbloq}")
 
@@ -640,7 +623,7 @@ class Controlled(_ControlledBase):
         else:
             cbloq = self.subbloq.decompose_bloq()
 
-        ctrl_soqs: List['SoquetT'] = [initial_soqs[creg_name] for creg_name in self.ctrl_reg_names]
+        ctrl_soqs: list[SoquetT] = [initial_soqs[creg_name] for creg_name in self.ctrl_reg_names]
         soq_map = bb.initial_soq_map(cbloq.signature.lefts())
 
         for binst, _in_soqs, old_out_soqs in cbloq.iter_bloqsoqs():
@@ -655,7 +638,7 @@ class Controlled(_ControlledBase):
         fsoqs |= dict(zip(self.ctrl_reg_names, ctrl_soqs))
         return fsoqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         try:
             sub_cg = self.subbloq.build_call_graph(ssa=ssa)
         except DecomposeTypeError as e1:
@@ -674,7 +657,7 @@ class Controlled(_ControlledBase):
                 counts[bloq.controlled(self.ctrl_spec)] += n
         return counts
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return self.subbloq.adjoint().controlled(ctrl_spec=self.ctrl_spec)
 
     @classmethod
@@ -683,8 +666,8 @@ class Controlled(_ControlledBase):
 
 
 def make_ctrl_system_with_correct_metabloq(
-    bloq: 'Bloq', ctrl_spec: 'CtrlSpec'
-) -> Tuple['_ControlledBase', 'AddControlledT']:
+    bloq: Bloq, ctrl_spec: CtrlSpec
+) -> tuple[_ControlledBase, AddControlledT]:
     """The default fallback for `Bloq.make_ctrl_system`.
 
     This intelligently selects the correct implementation of `_ControlledBase` based

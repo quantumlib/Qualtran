@@ -42,7 +42,7 @@ def test_cast_classical_sim():
 
     bloq = TestCastToFrom(bitsize=8)
     b_float = 2 / 2**8
-    (a, b) = bloq.call_classically(a=7, b=qfxp.to_fixed_width_int(b_float))
+    a, b = bloq.call_classically(a=7, b=qfxp.to_fixed_width_int(b_float))
     assert a == 7
     assert b == int(b)
     assert qfxp.float_from_fixed_width_int(int(b)) == 9 / 2**8
@@ -50,7 +50,7 @@ def test_cast_classical_sim():
     c = Cast(qfxp, qint)
     val = 1.2
     val_as_int = qfxp.to_fixed_width_int(val)
-    assert c.call_classically(reg=val_as_int) == (val_as_int,)  # type: ignore
+    assert c.call_classically(reg=val_as_int) == (val_as_int,)
 
 
 def test_cast_unsiged_signed():

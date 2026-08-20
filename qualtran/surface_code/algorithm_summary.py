@@ -12,7 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Optional, TYPE_CHECKING
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from attrs import frozen
 
@@ -42,10 +44,10 @@ class AlgorithmSummary:
 
     n_algo_qubits: int
     n_logical_gates: GateCounts
-    n_rotation_layers: Optional[int] = None
+    n_rotation_layers: int | None = None
 
     @staticmethod
-    def from_bloq(bloq: 'Bloq') -> 'AlgorithmSummary':
+    def from_bloq(bloq: Bloq) -> AlgorithmSummary:
         gate_count = get_cost_value(bloq, _QEC_COUNT)
         qubit_count = int(get_cost_value(bloq, _QUBIT_COUNT))
         return AlgorithmSummary(n_algo_qubits=qubit_count, n_logical_gates=gate_count)

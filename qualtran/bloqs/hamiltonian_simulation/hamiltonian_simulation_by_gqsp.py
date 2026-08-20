@@ -11,9 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from collections import Counter
 from functools import cached_property
-from typing import cast, Dict, Tuple, TYPE_CHECKING, Union
+from typing import cast, TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen
@@ -115,7 +117,7 @@ class HamiltonianSimulationByGQSP(Bloq):
         return degree_jacobi_anger_approximation(self.t * self.alpha, precision=self.precision / 2)
 
     @cached_property
-    def approx_cos(self) -> Union[NDArray[np.complex128], Shaped]:
+    def approx_cos(self) -> NDArray[np.complex128] | Shaped:
         r"""polynomial approximation for $$e^{i\theta} \mapsto e^{it\cos(\theta)}$$"""
         if self.is_symbolic():
             return Shaped((2 * self.degree + 1,))
@@ -138,17 +140,17 @@ class HamiltonianSimulationByGQSP(Bloq):
         )
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return self.gqsp.signature
 
     def __add_prepare(
         self,
-        bb: 'BloqBuilder',
-        gqsp_soqs: Dict[str, 'SoquetT'],
-        state_prep_ancilla_soqs: Dict[str, 'SoquetT'],
+        bb: BloqBuilder,
+        gqsp_soqs: dict[str, SoquetT],
+        state_prep_ancilla_soqs: dict[str, SoquetT],
         *,
         adjoint: bool = False,
-    ) -> Tuple[Dict[str, 'SoquetT'], Dict[str, 'SoquetT']]:
+    ) -> tuple[dict[str, SoquetT], dict[str, SoquetT]]:
         prepare = self.walk_operator.prepare
 
         selection_registers = {reg.name: gqsp_soqs[reg.name] for reg in prepare.selection_registers}
@@ -162,8 +164,8 @@ class HamiltonianSimulationByGQSP(Bloq):
         }
         return gqsp_soqs, prepare_out_soqs
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        state_prep_ancilla: Dict[str, 'SoquetT'] = {
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
+        state_prep_ancilla: dict[str, SoquetT] = {
             reg.name: bb.allocate(reg.total_bits())
             for reg in self.walk_operator.prepare.junk_registers
         }
@@ -182,7 +184,7 @@ class HamiltonianSimulationByGQSP(Bloq):
 
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         counts = Counter[Bloq]()
 
         d = self.degree

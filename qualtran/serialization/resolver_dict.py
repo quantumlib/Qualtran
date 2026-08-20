@@ -12,8 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Type
-
 import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.bitwise
 import qualtran.bloqs.arithmetic.comparison
@@ -481,6 +479,6 @@ RESOLVER_DICT = {
 }
 
 
-def add_to_resolver_dict(*bloqs: Type[Bloq]):
+def add_to_resolver_dict(*bloqs: type[Bloq]):
     """Adds given Bloqs to the resolver dict using fully qualified Bloq names as keys."""
     RESOLVER_DICT.update({bloq.__module__ + '.' + bloq.__qualname__: bloq for bloq in bloqs})

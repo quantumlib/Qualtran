@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
 import sympy
@@ -74,16 +75,16 @@ class ECAddR(Bloq):
         Jaques et al. 2020. `DistinctEllipticCurveClassicalPointAddition`.
     """
 
-    n: 'SymbolicInt'
+    n: SymbolicInt
     R: ECPoint
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [Register('ctrl', QBit()), Register('x', QUInt(self.n)), Register('y', QUInt(self.n))]
         )
 
-    def on_classical_vals(self, ctrl, x, y) -> Dict[str, Union['ClassicalValT', sympy.Expr]]:
+    def on_classical_vals(self, ctrl, x, y) -> dict[str, ClassicalValT | sympy.Expr]:
         if ctrl == 0:
             return {'ctrl': ctrl, 'x': x, 'y': y}
 
@@ -91,7 +92,7 @@ class ECAddR(Bloq):
         result: ECPoint = A + self.R
         return {'ctrl': 1, 'x': result.x, 'y': result.y}
 
-    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         if reg.name == 'ctrl':
@@ -143,13 +144,13 @@ class ECWindowAddR(Bloq):
         Litinski. 2013. Section 1, eq. (3) and (4).
     """
 
-    n: 'SymbolicInt'
+    n: SymbolicInt
     R: ECPoint
-    add_window_size: 'SymbolicInt'
-    mul_window_size: 'SymbolicInt' = 1
+    add_window_size: SymbolicInt
+    mul_window_size: SymbolicInt = 1
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('ctrl', QBit(), shape=(self.add_window_size,)),
@@ -198,8 +199,8 @@ class ECWindowAddR(Bloq):
         )
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'Soquet', y: 'Soquet'
-    ) -> Dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, ctrl: SoquetT, x: Soquet, y: Soquet
+    ) -> dict[str, SoquetT]:
         ctrl = bb.join(np.array(ctrl))
 
         ctrl, a, b, lam_r, *junk = bb.add(self.qrom, selection=ctrl)
@@ -233,7 +234,7 @@ class ECWindowAddR(Bloq):
 
         return {'ctrl': bb.split(ctrl), 'x': x, 'y': y}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             self.qrom: 1,
             # TODO(https://github.com/quantumlib/Qualtran/issues/1476): make ECAdd accept SymbolicInt.
@@ -241,7 +242,7 @@ class ECWindowAddR(Bloq):
             self.qrom.adjoint(): 1,
         }
 
-    def on_classical_vals(self, ctrl, x, y) -> Dict[str, Union['ClassicalValT', sympy.Expr]]:
+    def on_classical_vals(self, ctrl, x, y) -> dict[str, ClassicalValT | sympy.Expr]:
         # TODO(https://github.com/quantumlib/Qualtran/issues/1476): make ECAdd accept SymbolicInt.
         dtype = QMontgomeryUInt(self.n, self.R.mod)
         A = ECPoint(
@@ -258,9 +259,7 @@ class ECWindowAddR(Bloq):
             'y': dtype.uint_to_montgomery(int(result.y)),
         }
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text(f'ECWindowAddR({self.n=})')
         if reg.name == 'ctrl':

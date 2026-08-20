@@ -12,7 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Dict, Optional, Tuple, TYPE_CHECKING, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -72,8 +74,8 @@ class Subtract(Bloq):
         Page 9.
     """
 
-    a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
-    b_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
+    a_dtype: QInt | QUInt | QMontgomeryUInt = field()
+    b_dtype: QInt | QUInt | QMontgomeryUInt = field()
 
     @b_dtype.default
     def b_dtype_default(self):
@@ -83,7 +85,7 @@ class Subtract(Bloq):
     def _a_dtype_validate(self, field, val):
         if not isinstance(val, (QInt, QUInt, QMontgomeryUInt)):
             raise ValueError("Only QInt, QUInt and QMontgomeryUInt types are supported.")
-        if isinstance(val.num_qubits, sympy.Expr):
+        if isinstance(val.bitsize, sympy.Expr):
             return
         if val.bitsize > self.b_dtype.bitsize:
             raise ValueError("a_dtype bitsize must be less than or equal to b_dtype bitsize")
@@ -106,9 +108,7 @@ class Subtract(Bloq):
     def signature(self):
         return Signature([Register("a", self.a_dtype), Register("b", self.b_dtype)])
 
-    def _dtype_as_unsigned(
-        self, dtype: Union[QInt, QUInt, QMontgomeryUInt]
-    ) -> Union[QUInt, QMontgomeryUInt]:
+    def _dtype_as_unsigned(self, dtype: QInt | QUInt | QMontgomeryUInt) -> QUInt | QMontgomeryUInt:
         return dtype if not isinstance(dtype, QInt) else QUInt(dtype.bitsize)
 
     @property
@@ -119,9 +119,7 @@ class Subtract(Bloq):
     def b_dtype_as_unsigned(self):
         return self._dtype_as_unsigned(self.b_dtype)
 
-    def on_classical_vals(
-        self, a: 'ClassicalValT', b: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, a: ClassicalValT, b: ClassicalValT) -> dict[str, ClassicalValT]:
         unsigned = isinstance(self.a_dtype, (QUInt, QMontgomeryUInt))
         b_bitsize = self.b_dtype.bitsize
         N = 2**b_bitsize
@@ -137,9 +135,7 @@ class Subtract(Bloq):
         half_n = N >> 1
         return {'a': a, 'b': int((a - b + half_n) % N) - half_n}
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         from qualtran.drawing import directional_text_box
 
         if reg is None:
@@ -151,7 +147,7 @@ class Subtract(Bloq):
         else:
             raise ValueError()
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         delta = self.b_dtype.bitsize - self.a_dtype.bitsize
         costs = {
             OnEach(self.b_dtype.bitsize, XGate()): 3,
@@ -164,7 +160,7 @@ class Subtract(Bloq):
                 costs[MultiTargetCNOT(delta)] = 2
         return costs
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, a: Soquet, b: Soquet) -> dict[str, SoquetT]:
         delta = self.b_dtype.bitsize - self.a_dtype.bitsize
         n_bits = self.b_dtype.bitsize
         if delta:
@@ -256,7 +252,7 @@ class SubtractFrom(Bloq):
         b: A dtype.bitsize-sized input/output register (register b above).
     """
 
-    dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
+    dtype: QInt | QUInt | QMontgomeryUInt = field()
 
     @dtype.validator
     def _dtype_validate(self, field, val):
@@ -267,9 +263,7 @@ class SubtractFrom(Bloq):
     def signature(self):
         return Signature([Register("a", self.dtype), Register("b", self.dtype)])
 
-    def on_classical_vals(
-        self, a: 'ClassicalValT', b: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, a: ClassicalValT, b: ClassicalValT) -> dict[str, ClassicalValT]:
         return {
             'a': a,
             'b': add_ints(
@@ -280,9 +274,7 @@ class SubtractFrom(Bloq):
             ),
         }
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         from qualtran.drawing import directional_text_box
 
         if reg is None:
@@ -294,10 +286,10 @@ class SubtractFrom(Bloq):
         else:
             raise ValueError()
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {BitwiseNot(self.dtype): 2, Add(self.dtype, self.dtype): 1}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, a: Soquet, b: Soquet) -> dict[str, SoquetT]:
         b = bb.add(BitwiseNot(self.dtype), x=b)  # a, -1 - b
         a, b = bb.add_t(Add(self.dtype, self.dtype), a=a, b=b)  # a, a - 1 - b
         b = bb.add(BitwiseNot(self.dtype), x=b)  # a, -1 - (a - 1 - b) = a, -a + b

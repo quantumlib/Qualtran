@@ -13,6 +13,8 @@
 #  limitations under the License.
 r"""Bloqs implementing unitary evolution under the interacting part of the Hubbard Hamiltonian."""
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -62,7 +64,7 @@ class Interaction(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('system', QAny(self.length), shape=(2,))])
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # Page 13 paragraph 1.
         return {Rz(angle=self.angle * self.hubb_u, eps=self.eps): self.length**2}
 
@@ -105,7 +107,7 @@ class InteractionHWP(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('system', QAny(self.length), shape=(2,))])
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             HammingWeightPhasing(self.length**2 // 2, self.angle * self.hubb_u, eps=self.eps): 2
         }

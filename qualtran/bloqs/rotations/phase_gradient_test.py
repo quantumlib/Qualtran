@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Optional
 
 import cirq
 import numpy as np
@@ -78,7 +77,7 @@ def test_phase_gradient_gate(n: int, exponent, controlled):
 
 
 @pytest.mark.parametrize("controlled_by", [None, 0, 1])
-def test_add_into_phase_grad_classical_sim(controlled_by: Optional[int]):
+def test_add_into_phase_grad_classical_sim(controlled_by: int | None):
     from qualtran.bloqs.rotations.phase_gradient import _fxp
 
     x_bit, phase_bit = 4, 7
@@ -105,7 +104,7 @@ def test_add_into_phase_grad_classical_sim(controlled_by: Optional[int]):
 
 
 @pytest.mark.parametrize("controlled_by", [None, 0, 1])
-def test_add_into_phase_grad_unitary(controlled_by: Optional[int]):
+def test_add_into_phase_grad_unitary(controlled_by: int | None):
     from qualtran.bloqs.rotations.phase_gradient import _fxp
 
     x_bit, phase_bit = 4, 7

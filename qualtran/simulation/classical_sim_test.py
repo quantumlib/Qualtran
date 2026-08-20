@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import itertools
-from typing import Dict, Union
 
 import attrs
 import networkx as nx
@@ -25,6 +26,7 @@ from numpy.typing import NDArray
 from qualtran import (
     Bloq,
     BloqBuilder,
+    BloqInstance,
     BQUInt,
     CBit,
     LeftDangle,
@@ -95,12 +97,12 @@ def test_dtype_validation():
 @frozen
 class ApplyClassicalTest(Bloq):
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [Register('x', QBit(), shape=(5,)), Register('z', QBit(), shape=(5,), side=Side.RIGHT)]
         )
 
-    def on_classical_vals(self, *, x: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
+    def on_classical_vals(self, *, x: NDArray[np.uint8]) -> dict[str, NDArray[np.uint8]]:
         const = np.array([1, 0, 1, 0, 1], dtype=np.uint8)
         z = np.logical_xor(x, const).astype(np.uint8)
         return {'x': x, 'z': z}
@@ -195,8 +197,8 @@ def test_step():
     sim.step()
     assert sim.last_binst is not None and sim.last_binst is LeftDangle
     sim.step()
-    assert sim.last_binst is not None and sim.last_binst.bloq_is(ApplyClassicalTest)
-    assert sim.last_binst is not None and sim.last_binst.i == 0
+    assert isinstance(sim.last_binst, BloqInstance) and sim.last_binst.bloq_is(ApplyClassicalTest)
+    assert sim.last_binst.i == 0
 
     final_vals = sim.step().finalize()
     np.testing.assert_array_equal(final_vals['x'], xarr)
@@ -315,12 +317,12 @@ class ClassicalDistributionTest(Bloq):
     """Bloq that outputs a random bit for testing."""
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [Register('q', QBit(), side=Side.LEFT), Register('c', CBit(), side=Side.RIGHT)]
         )
 
-    def on_classical_vals(self, *, q: int) -> Dict[str, ClassicalValRetT]:
+    def on_classical_vals(self, *, q: int) -> dict[str, ClassicalValRetT]:
         return {'c': ClassicalValDistribution(2)}
 
 
@@ -328,7 +330,7 @@ class ClassicalDistributionTest(Bloq):
 class ClassicalDistributionWithPhaseTest(ClassicalDistributionTest):
     """Bloq that outputs a random bit with phase for testing."""
 
-    def basis_state_phase(self, q: int) -> Union[complex, MeasurementPhase]:
+    def basis_state_phase(self, q: int) -> complex | MeasurementPhase:
         if q == 0:
             return 1
         return MeasurementPhase(reg_name='c')
@@ -387,10 +389,10 @@ class ComposedPhasing(Bloq):
     n: int = 0
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('x', QBit(), side=Side.RIGHT)])
 
-    def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder) -> dict[str, SoquetT]:
         from qualtran.bloqs.basic_gates import OneState, ZGate
 
         x = bb.add(OneState())

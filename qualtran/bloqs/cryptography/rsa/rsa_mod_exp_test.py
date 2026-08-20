@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import cast, Optional
+from typing import cast
 
 import attrs
 import numpy as np
@@ -70,7 +70,7 @@ def test_mod_exp_consistent_counts():
     ssa = SympySymbolAllocator()
     my_k = ssa.new_symbol('k')
 
-    def generalize(b: Bloq) -> Optional[Bloq]:
+    def generalize(b: Bloq) -> Bloq | None:
         if isinstance(b, CModMulK):
             # Symbolic k in `CModMulK`.
             return attrs.evolve(b, k=my_k)

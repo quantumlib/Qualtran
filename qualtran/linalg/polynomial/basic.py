@@ -11,14 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Sequence
+from collections.abc import Sequence
 
 import numpy as np
 from numpy.typing import NDArray
 
 
 def evaluate_polynomial_of_unitary_matrix(
-    P: Sequence[complex], U: NDArray, *, offset: int = 0
+    P: NDArray[np.number] | Sequence[complex], U: NDArray, *, offset: int = 0
 ) -> NDArray:
     r"""Computes $U^{\mathsf{offset}} P(U)$ for a polynomial P and unitary U.
 

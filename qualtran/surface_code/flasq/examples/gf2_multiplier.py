@@ -15,7 +15,6 @@
 """GF(2) multiplication circuit builder for FLASQ analysis examples."""
 
 from dataclasses import dataclass
-from typing import Dict
 
 import cirq
 import numpy as np
@@ -31,8 +30,8 @@ class CircuitAndData:
 
     circuit: cirq.Circuit
     signature: Signature
-    in_quregs: Dict[str, CirqQuregT]
-    out_quregs: Dict[str, CirqQuregT]
+    in_quregs: dict[str, CirqQuregT]
+    out_quregs: dict[str, CirqQuregT]
 
 
 def build_quadratic_mult_circuit(bitsize: int) -> CircuitAndData:

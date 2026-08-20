@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 import re
-from typing import Optional, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from griffe import Function, Object, Parameter, ParameterKind
 
@@ -48,14 +48,14 @@ def format_parameter(p: Parameter) -> str:
         raise ValueError(p.kind)
 
 
-def camel_to_snake(name) -> str:
+def camel_to_snake(name: str) -> str:
     # Turn an UpperCamelCaseName into lower_snake_case
     # .. we want to make it look like we're calling methods on instances of the class.
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     return s1.lower()
 
 
-def get_obj_instance_name(obj) -> str:
+def get_obj_instance_name(obj: Any) -> str:
     # Get prototypical object instance names for a given class.
 
     # First, check if we have a bespoke name
@@ -67,7 +67,7 @@ def get_obj_instance_name(obj) -> str:
     return camel_to_snake(obj.name)
 
 
-def write_property_method_signature(f, obj, obj2: Function) -> None:
+def write_property_method_signature(f: Any, obj: Any, obj2: Function) -> None:
     assert obj2.returns, obj2
     obj_instance_name = get_obj_instance_name(obj)
     method_signature = f'{obj_instance_name}.{obj2.name} -> {obj2.returns}'
@@ -75,11 +75,11 @@ def write_property_method_signature(f, obj, obj2: Function) -> None:
 
 
 def write_generic_method_signature(
-    f,
-    obj,
+    f: Any,
+    obj: Any,
     obj2: Function,
-    first_arg_name: Optional[str] = 'self',
-    caller_name=get_obj_instance_name,
+    first_arg_name: str | None = 'self',
+    caller_name: Any = get_obj_instance_name,
 ) -> None:
     parameters = list(obj2.parameters)
     if first_arg_name is not None:

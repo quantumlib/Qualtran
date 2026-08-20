@@ -11,18 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Callable, Optional, TYPE_CHECKING
+from __future__ import annotations
+
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from qualtran import Bloq
 
-GeneralizerT = Callable[['Bloq'], Optional['Bloq']]
+GeneralizerT = Callable[['Bloq'], 'Bloq | None']
 
 
-def _make_composite_generalizer(*funcs: 'GeneralizerT') -> 'GeneralizerT':
+def _make_composite_generalizer(*funcs: GeneralizerT) -> GeneralizerT:
     """Return a generalizer that calls each `*funcs` generalizers in order."""
 
-    def _composite_generalize(b: Optional['Bloq']) -> Optional['Bloq']:
+    def _composite_generalize(b: Bloq | None) -> Bloq | None:
         for func in funcs:
             if b is None:
                 return None

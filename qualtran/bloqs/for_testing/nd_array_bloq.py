@@ -20,8 +20,9 @@ are classically simulable (X, CNOT, Toffoli) so ``call_classically`` can be used
 verification.
 """
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Dict
 
 import numpy as np
 from attrs import frozen
@@ -76,8 +77,8 @@ class TestNDGrid(Bloq):
         )
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', grid: 'SoquetT', ctrl: 'SoquetT', flag: Soquet
-    ) -> Dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, grid: SoquetT, ctrl: SoquetT, flag: Soquet
+    ) -> dict[str, SoquetT]:
         # Step 1: X on grid[0, 0]
         grid[0, 0] = bb.add(XGate(), q=grid[0, 0])
 
@@ -102,7 +103,7 @@ class TestNDGrid(Bloq):
 
     def on_classical_vals(
         self, grid: NDArray[np.integer], ctrl: NDArray[np.integer], flag: int
-    ) -> Dict[str, ClassicalValT]:
+    ) -> dict[str, ClassicalValT]:
         # Work on copies so we don't mutate the caller's arrays.
         g = grid.copy()
         c = ctrl.copy()
@@ -146,8 +147,8 @@ class TestND3Grid(Bloq):
         return Signature([Register('cube', QBit(), shape=(2, 2, 2)), Register('aux', QBit())])
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', cube: 'SoquetT', aux: Soquet
-    ) -> Dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, cube: SoquetT, aux: Soquet
+    ) -> dict[str, SoquetT]:
         # Step 1
         cube[0, 0, 0] = bb.add(XGate(), q=cube[0, 0, 0])
         # Step 2
@@ -165,7 +166,7 @@ class TestND3Grid(Bloq):
 
         return {'cube': cube, 'aux': aux}
 
-    def on_classical_vals(self, cube: NDArray[np.integer], aux: int) -> Dict[str, ClassicalValT]:
+    def on_classical_vals(self, cube: NDArray[np.integer], aux: int) -> dict[str, ClassicalValT]:
         c = cube.copy()
         a = int(aux)
 

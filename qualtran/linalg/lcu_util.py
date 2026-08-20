@@ -15,29 +15,30 @@
 """Utility methods for LCU circuits as implemented in https://github.com/quantumlib/OpenFermion"""
 
 import math
-from typing import Optional, overload, Sequence
+from collections.abc import Iterator, Sequence
+from typing import Any, overload, TypeVar
 
 from qualtran.symbolics import ceil, is_symbolic, log2, SymbolicFloat, SymbolicInt
 
+T = TypeVar('T', int, float)
 
-def _partial_sums(vals):
+
+def _partial_sums(vals: Sequence[T]) -> Iterator[T]:
     """Adds up the items in the input, yielding partial sums along the way."""
-    total = 0
+    total: Any = 0
     for v in vals:
         yield total
         total += v
     yield total
 
 
-def _differences(weights):
+def _differences(weights: Sequence[T]) -> Iterator[T]:
     """Iterates over the input yielding differences between adjacent items."""
-    previous_weight = None
-    have_previous_weight = False
+    previous_weight: T | None = None
     for w in weights:
-        if have_previous_weight:
+        if previous_weight is not None:
             yield w - previous_weight
         previous_weight = w
-        have_previous_weight = True
 
 
 def _discretize_probability_distribution(
@@ -191,8 +192,8 @@ def sub_bit_prec_from_epsilon(
 
 def preprocess_probabilities_for_reversible_sampling(
     unnormalized_probabilities: Sequence[float],
-    epsilon: Optional[float] = None,
-    sub_bit_precision: Optional[int] = None,
+    epsilon: float | None = None,
+    sub_bit_precision: int | None = None,
 ) -> tuple[list[int], list[int], int]:
     r"""Prepares data used to perform efficient reversible roulette selection.
 

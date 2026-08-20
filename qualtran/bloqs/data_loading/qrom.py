@@ -14,8 +14,11 @@
 
 """Quantum read-only memory."""
 
+from __future__ import annotations
+
 import numbers
-from typing import cast, Iterable, Iterator, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from collections.abc import Iterable, Iterator, Sequence
+from typing import cast, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -43,7 +46,7 @@ def _to_tuple(x: Iterable[NDArray]) -> Sequence[NDArray]:
 
 
 @attrs.frozen
-class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
+class QROM(QROMBase, UnaryIterationGate):
     r"""Bloq to load `data[l]` in the target register when the selection stores an index `l`.
 
     See docstrings of `QROMBase` for an overview of the QROM primitive and the various attributes.
@@ -86,10 +89,10 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
     def build_from_data(
         cls,
         *data: ArrayLike,
-        target_bitsizes: Optional[Union[SymbolicInt, Tuple[SymbolicInt, ...]]] = None,
-        target_shapes: Tuple[Tuple[SymbolicInt, ...], ...] = (),
+        target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
+        target_shapes: tuple[tuple[SymbolicInt, ...], ...] = (),
         num_controls: SymbolicInt = 0,
-    ) -> 'QROM':
+    ) -> QROM:
         return cls._build_from_data(
             *data,
             target_bitsizes=target_bitsizes,
@@ -100,13 +103,13 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
     @classmethod
     def build_from_bitsize(
         cls,
-        data_len_or_shape: Union[SymbolicInt, Tuple[SymbolicInt, ...]],
-        target_bitsizes: Union[SymbolicInt, Tuple[SymbolicInt, ...]],
+        data_len_or_shape: SymbolicInt | tuple[SymbolicInt, ...],
+        target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...],
         *,
-        target_shapes: Tuple[Tuple[SymbolicInt, ...], ...] = (),
-        selection_bitsizes: Tuple[SymbolicInt, ...] = (),
+        target_shapes: tuple[tuple[SymbolicInt, ...], ...] = (),
+        selection_bitsizes: tuple[SymbolicInt, ...] = (),
         num_controls: SymbolicInt = 0,
-    ) -> 'QROM':
+    ) -> QROM:
         return cls._build_from_bitsize(
             data_len_or_shape,
             target_bitsizes,
@@ -117,15 +120,15 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
 
     def _load_nth_data(
         self,
-        selection_idx: Tuple[int, ...],
-        ctrl_qubits: Tuple[cirq.Qid, ...] = (),
+        selection_idx: tuple[int, ...],
+        ctrl_qubits: tuple[cirq.Qid, ...] = (),
         **target_regs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         for i, d in enumerate(self.data):
             target = target_regs.get(f'target{i}_', np.array([]))
             target_bitsize, target_shape = self.target_bitsizes[i], self.target_shapes[i]
             assert all(isinstance(x, (int, numbers.Integral)) for x in target_shape)
-            for idx in np.ndindex(cast(Tuple[int, ...], target_shape)):
+            for idx in np.ndindex(cast(tuple[int, ...], target_shape)):
                 data_to_load = int(d[selection_idx + idx])
                 yield (
                     XorK(QUInt(target_bitsize), data_to_load)
@@ -163,7 +166,7 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
             return super().decompose_from_registers(context=context, **quregs)
         raise DecomposeTypeError(f"Cannot decompose symbolic {self} with no data.")
 
-    def _break_early(self, selection_index_prefix: Tuple[int, ...], l: int, r: int):
+    def _break_early(self, selection_index_prefix: tuple[int, ...], l: int, r: int):
         if not self.has_data():
             return False
 
@@ -187,7 +190,7 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
 
         return _wire_symbol_to_cirq_diagram_info(self, args)
 
-    def my_static_costs(self, cost_key: "CostKey"):
+    def my_static_costs(self, cost_key: CostKey):
         from qualtran.resource_counting import QubitCount
 
         if isinstance(cost_key, QubitCount):
@@ -198,7 +201,7 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
     def __str__(self):
         return f'QROM({self.data_shape}, {self.target_shapes}, {self.target_bitsizes})'
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('QROM')
         name = reg.name
@@ -218,20 +221,18 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
             return Circle()
         raise ValueError(f'Unrecognized register name {name}')
 
-    def nth_operation_callgraph(self, **kwargs: int) -> Set['BloqCountT']:
+    def nth_operation_callgraph(self, **kwargs: int) -> set[BloqCountT]:
         selection_idx = tuple(kwargs[reg.name] for reg in self.selection_registers)
         ret = 0
         for i, d in enumerate(self.data):
             _target_bitsize, target_shape = self.target_bitsizes[i], self.target_shapes[i]
             assert all(isinstance(x, (int, numbers.Integral)) for x in target_shape)
-            for idx in np.ndindex(cast(Tuple[int, ...], target_shape)):
+            for idx in np.ndindex(cast(tuple[int, ...], target_shape)):
                 data_to_load = int(d[selection_idx + idx])
                 ret += data_to_load.bit_count()
         return {(CNOT(), ret)}
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         if self.has_data():
             return super().build_call_graph(ssa=ssa)
         n_and = prod(self.data_shape) - 2 + self.num_controls
@@ -240,7 +241,7 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
         ) * prod(self.data_shape)
         return {And(): n_and, And().adjoint(): n_and, CNOT(): n_cnot}
 
-    def adjoint(self) -> 'QROM':
+    def adjoint(self) -> QROM:
         return self
 
 

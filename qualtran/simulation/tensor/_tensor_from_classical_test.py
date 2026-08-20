@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import numpy as np
 import pytest
 import quimb.tensor as qtn
@@ -37,19 +39,19 @@ def test_tensor_consistent_with_classical(bloq: Bloq):
 
 class TestClassicalBloq(Bloq):
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(a=1, b=1, c=1)
 
     def on_classical_vals(
-        self, a: 'ClassicalValT', b: 'ClassicalValT', c: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+        self, a: ClassicalValT, b: ClassicalValT, c: ClassicalValT
+    ) -> dict[str, ClassicalValT]:
         if a == 1 and b == 1:
             c = c ^ 1
         return {'a': a, 'b': b, 'c': c}
 
     def my_tensors(
-        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
-    ) -> list['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         return my_tensors_from_classical_action(self, incoming, outgoing)
 
 

@@ -12,7 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Sequence
+from __future__ import annotations
+
+from collections.abc import Sequence
 
 import cirq
 import numpy as np
@@ -54,9 +56,7 @@ class NoisyPauliRotation(cirq.Gate):
     def _mixture_(self):
         return tuple(zip(self._probabilities, self._unitaries))
 
-    def _circuit_diagram_info_(
-        self, args: 'cirq.CircuitDiagramInfoArgs'
-    ) -> cirq.CircuitDiagramInfo:
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         return cirq.CircuitDiagramInfo(wire_symbols=tuple(self.pauli_string))
 
 

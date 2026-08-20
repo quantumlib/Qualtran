@@ -14,7 +14,6 @@
 
 import abc
 from functools import cached_property
-from typing import Tuple
 
 from qualtran import BloqDocSpec, GateWithRegisters, Register, Signature
 
@@ -39,15 +38,15 @@ class SelectOracle(GateWithRegisters):
 
     @property
     @abc.abstractmethod
-    def control_registers(self) -> Tuple[Register, ...]: ...
+    def control_registers(self) -> tuple[Register, ...]: ...
 
     @property
     @abc.abstractmethod
-    def selection_registers(self) -> Tuple[Register, ...]: ...
+    def selection_registers(self) -> tuple[Register, ...]: ...
 
     @property
     @abc.abstractmethod
-    def target_registers(self) -> Tuple[Register, ...]: ...
+    def target_registers(self) -> tuple[Register, ...]: ...
 
     @cached_property
     def signature(self) -> Signature:

@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 import itertools
-from typing import Optional
 
 import numpy as np
 import pytest
@@ -96,7 +95,7 @@ def test_conversion_roundtrip(x: rings.ZW):
     assert x == rings.ZW.from_pair(*x.to_zsqrt2())
 
 
-def _create_random_elements(n: int, seed: Optional[int] = None):
+def _create_random_elements(n: int, seed: int | None = None):
     rng = np.random.default_rng(seed)
     return [rings.ZW(c) for c in rng.integers(-10, 10, size=(n, 4))]
 

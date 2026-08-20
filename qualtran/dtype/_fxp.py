@@ -12,7 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Iterable, List, Sequence, TYPE_CHECKING, Union
+from __future__ import annotations
+
+from collections.abc import Iterable, Sequence
+from typing import TYPE_CHECKING
 
 import attrs
 
@@ -74,7 +77,7 @@ class _Fxp(BitEncoding[int]):
         # Use the classical domain for the underlying raw integer encoding.
         yield from self._int_encoding.get_domain()
 
-    def to_bits(self, x: int) -> List[int]:
+    def to_bits(self, x: int) -> list[int]:
         # Use the underlying raw integer encoding.
         return self._int_encoding.to_bits(x)
 
@@ -82,16 +85,12 @@ class _Fxp(BitEncoding[int]):
         # Use the underlying raw integer encoding.
         return self._int_encoding.from_bits(bits)
 
-    def assert_valid_val(self, val: int, debug_str: str = 'val'):
+    def assert_valid_val(self, val: int, debug_str: str = 'val') -> None:
         # Verify using the underlying raw integer encoding.
         self._int_encoding.assert_valid_val(val, debug_str)
 
     def to_fixed_width_int(
-        self,
-        x: Union[float, 'fxpmath.Fxp'],
-        *,
-        require_exact: bool = False,
-        complement: bool = True,
+        self, x: float | fxpmath.Fxp, *, require_exact: bool = False, complement: bool = True
     ) -> int:
         """Returns the interpretation of the binary representation of `x` as an integer.
 
@@ -122,7 +121,7 @@ class _Fxp(BitEncoding[int]):
         else:
             return f'_Fxp({self.bitsize}, {self.num_frac})'
 
-    def fxp_dtype_template(self) -> 'fxpmath.Fxp':
+    def fxp_dtype_template(self) -> fxpmath.Fxp:
         """A template of the `fxpmath.Fxp` data type for classical values.
 
         To construct an `fxpmath.Fxp` with this config, one can use:
@@ -162,15 +161,15 @@ class _Fxp(BitEncoding[int]):
             overflow='wrap',
         )
 
-    def _get_domain_fxp(self) -> Iterable['fxpmath.Fxp']:
+    def _get_domain_fxp(self) -> Iterable[fxpmath.Fxp]:
         import fxpmath
 
         for x in self._int_encoding.get_domain():
             yield fxpmath.Fxp(x / 2**self.num_frac, like=self.fxp_dtype_template())
 
     def _fxp_to_bits(
-        self, x: Union[float, 'fxpmath.Fxp'], require_exact: bool = True, complement: bool = True
-    ) -> List[int]:
+        self, x: float | fxpmath.Fxp, require_exact: bool = True, complement: bool = True
+    ) -> list[int]:
         """Yields individual bits corresponding to binary representation of `x`.
 
         Args:
@@ -196,7 +195,7 @@ class _Fxp(BitEncoding[int]):
             bits[0] = sign
         return bits
 
-    def _from_bits_to_fxp(self, bits: Sequence[int]) -> 'fxpmath.Fxp':
+    def _from_bits_to_fxp(self, bits: Sequence[int]) -> fxpmath.Fxp:
         import fxpmath
 
         if is_symbolic(self.num_frac):
@@ -205,7 +204,7 @@ class _Fxp(BitEncoding[int]):
         fxp_bin = "0b" + bits_bin[: -int(self.num_frac)] + "." + bits_bin[-int(self.num_frac) :]
         return fxpmath.Fxp(fxp_bin, like=self.fxp_dtype_template())
 
-    def _assert_valid_val(self, val: Union[float, 'fxpmath.Fxp'], debug_str: str = 'val'):
+    def _assert_valid_val(self, val: float | fxpmath.Fxp, debug_str: str = 'val') -> None:
         import fxpmath
 
         fxp_val = val if isinstance(val, fxpmath.Fxp) else fxpmath.Fxp(val)
@@ -279,11 +278,7 @@ class QFxp(QDType[int]):
         return is_symbolic(self.bitsize, self.num_frac)
 
     def to_fixed_width_int(
-        self,
-        x: Union[float, 'fxpmath.Fxp'],
-        *,
-        require_exact: bool = False,
-        complement: bool = True,
+        self, x: float | fxpmath.Fxp, *, require_exact: bool = False, complement: bool = True
     ) -> int:
         """Returns the interpretation of the binary representation of `x` as an integer.
 
@@ -328,7 +323,7 @@ class QFxp(QDType[int]):
         else:
             return f'QFxp({self.bitsize}, {self.num_frac})'
 
-    def fxp_dtype_template(self) -> 'fxpmath.Fxp':
+    def fxp_dtype_template(self) -> fxpmath.Fxp:
         """A template of the `Fxp` data type for classical values.
 
         To construct an `Fxp` with this config, one can use:

@@ -12,17 +12,15 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Union
-
 import mpmath
 import numpy as np
 from typing_extensions import TypeIs
 
 # mypy has a bug where it doesn't understand numbers.* https://github.com/python/mypy/issues/3186
 # So we define our own types
-Real = Union[float, np.floating, mpmath.ctx_mp_python.mpf]
-Integral = Union[int, np.integer]
-Complex = Union[complex, np.complexfloating, mpmath.ctx_mp_python.mpc]
+Real = float | np.floating | mpmath.ctx_mp_python.mpf
+Integral = int | np.integer
+Complex = complex | np.complexfloating | mpmath.ctx_mp_python.mpc
 
 
 def is_int(x) -> TypeIs[Integral]:
