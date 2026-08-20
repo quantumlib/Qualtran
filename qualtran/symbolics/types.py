@@ -111,9 +111,6 @@ def shape(x: np.ndarray | Shaped):
     return x.shape
 
 
-T = TypeVar('T')
-
-
 @overload
 def is_symbolic(arg: sympy.Expr | Shaped | HasLength, /) -> Literal[True]: ...
 
