@@ -19,7 +19,7 @@ from __future__ import annotations
 import abc
 import numbers
 from functools import cached_property
-from typing import cast, TypeVar
+from typing import cast, Self
 
 import attrs
 import numpy as np
@@ -29,8 +29,6 @@ from numpy.typing import ArrayLike, NDArray
 from qualtran import BloqDocSpec, BQUInt, QAny, Register, Side
 from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.symbolics import bit_length, is_symbolic, shape, Shaped, SymbolicInt
-
-QROM_T = TypeVar('QROM_T', bound='QROMBase')
 
 
 def _data_or_shape_to_tuple(data_or_shape: tuple[NDArray | Shaped, ...]) -> tuple:
@@ -221,12 +219,12 @@ class QROMBase(metaclass=abc.ABCMeta):
 
     @classmethod
     def _build_from_data(
-        cls: type[QROM_T],
+        cls,
         *data: ArrayLike,
         target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
         target_shapes: tuple[tuple[SymbolicInt, ...], ...] = (),
         num_controls: SymbolicInt = 0,
-    ) -> QROM_T:
+    ) -> Self:
         _data = [np.array(d, dtype=int) for d in data]
         if target_bitsizes is None:
             target_bitsizes = tuple(max(int(np.max(d)).bit_length(), 1) for d in data)
@@ -243,7 +241,7 @@ class QROMBase(metaclass=abc.ABCMeta):
             num_controls=num_controls,
         )
 
-    def with_data(self: QROM_T, *data: ArrayLike) -> QROM_T:
+    def with_data(self, *data: ArrayLike) -> Self:
         _data = tuple([np.array(d, dtype=int) for d in data])
         assert all(shape(d1) == shape(d2) for d1, d2 in zip(_data, self.data_or_shape))
         assert len(_data) == len(self.target_bitsizes)
@@ -252,14 +250,14 @@ class QROMBase(metaclass=abc.ABCMeta):
 
     @classmethod
     def _build_from_bitsize(
-        cls: type[QROM_T],
+        cls,
         data_len_or_shape: SymbolicInt | tuple[SymbolicInt, ...],
         target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...],
         *,
         target_shapes: tuple[tuple[SymbolicInt, ...], ...] = (),
         selection_bitsizes: tuple[SymbolicInt, ...] = (),
         num_controls: SymbolicInt = 0,
-    ) -> QROM_T:
+    ) -> Self:
         data_shape: tuple[SymbolicInt, ...] = (
             (data_len_or_shape,)
             if isinstance(data_len_or_shape, (int, numbers.Number, sympy.Basic))

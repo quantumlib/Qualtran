@@ -16,7 +16,7 @@ from __future__ import annotations
 import numbers
 from collections import defaultdict
 from functools import cached_property
-from typing import cast, TYPE_CHECKING, TypeVar
+from typing import cast, Self, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -45,8 +45,6 @@ from qualtran.symbolics import ceil, is_symbolic, log2, prod, SymbolicFloat, Sym
 if TYPE_CHECKING:
     from qualtran import Bloq, BloqBuilder, QDType, SoquetT
     from qualtran.resource_counting import BloqCountDictT, CostKey, SympySymbolAllocator
-
-SelSwapQROM_T = TypeVar('SelSwapQROM_T', bound='SelectSwapQROM')
 
 
 def find_optimal_log_block_size(
@@ -209,8 +207,8 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):
         return qroam.with_log_block_sizes(log_block_sizes=log_block_sizes)
 
     def with_log_block_sizes(
-        self: SelSwapQROM_T, log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None
-    ) -> SelSwapQROM_T:
+        self, log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None
+    ) -> Self:
         if log_block_sizes is None:
             return self
         if isinstance(log_block_sizes, (int, sympy.Basic, numbers.Number)):
