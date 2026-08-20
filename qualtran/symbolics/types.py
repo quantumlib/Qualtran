@@ -15,7 +15,7 @@
 """Python types to support propagating symbolic compile-time classical parameters."""
 
 from collections.abc import Sized
-from typing import Any, Literal, overload, TypeVar
+from typing import Any, Literal, overload
 
 import numpy as np
 import sympy
