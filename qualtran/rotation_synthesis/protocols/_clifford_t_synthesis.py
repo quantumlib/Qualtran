@@ -40,7 +40,7 @@ def _solve(
     relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
     verbose: bool = False,
 ) -> Optional[Union[list[channels.Channel], tuple[list[channels.Channel], list[channels.Channel]]]]:
-    """Iterates over lattice points that satisfy the geometric constraints defined by the protocol.
+    """Iterates over lattice points that satisify the geometric constraints defined by the protocol.
 
     Each valid point gets added to the collector which decides whether to terminate or not.
 
@@ -554,18 +554,21 @@ def mixed_magnitude_approx(
     alpha, theta, beta = rsad.su_unitary_to_zxz_angles(unitary, config)
 
     rz_prob_approx = mixed_diagonal_protocol(
-        theta=-theta / 2, eps=eps, max_n=max_n, config=config, verbose=verbose
+        theta=-theta / 2,
+        eps=eps,
+        max_n=max_n,
+        config=config,
+        relative_norm_solver=relative_norm_solver,
+        verbose=verbose,
     )
     if rz_prob_approx is None:
         return None
 
-    rz_under_rotation = rz_prob_approx.c1.to_matrix()
-    rz_over_rotation = rz_prob_approx.c2.to_matrix()
     rx_under_rotation = channels.UnitaryChannel.from_unitaries(
-        _su2_ct.HSqrt2, rz_under_rotation, _su2_ct.HSqrt2.adjoint()
+        _su2_ct.HSqrt2, rz_prob_approx.c1, _su2_ct.HSqrt2.adjoint()
     )
     rx_over_rotation = channels.UnitaryChannel.from_unitaries(
-        _su2_ct.HSqrt2, rz_over_rotation, _su2_ct.HSqrt2.adjoint()
+        _su2_ct.HSqrt2, rz_prob_approx.c2, _su2_ct.HSqrt2.adjoint()
     )
 
     zxz_under_rotation = rsad.su_unitary_to_zxz_angles(
@@ -581,6 +584,7 @@ def mixed_magnitude_approx(
             eps=eps,
             max_n=max_n,
             config=config,
+            relative_norm_solver=relative_norm_solver,
             verbose=verbose,
         ),
         diagonal_unitary_approx(
@@ -588,6 +592,7 @@ def mixed_magnitude_approx(
             eps=eps,
             max_n=max_n,
             config=config,
+            relative_norm_solver=relative_norm_solver,
             verbose=verbose,
         ),
     )
@@ -598,6 +603,7 @@ def mixed_magnitude_approx(
             eps=eps,
             max_n=max_n,
             config=config,
+            relative_norm_solver=relative_norm_solver,
             verbose=verbose,
         ),
         diagonal_unitary_approx(
@@ -605,6 +611,7 @@ def mixed_magnitude_approx(
             eps=eps,
             max_n=max_n,
             config=config,
+            relative_norm_solver=relative_norm_solver,
             verbose=verbose,
         ),
     )
@@ -614,12 +621,27 @@ def mixed_magnitude_approx(
 
     prob_channel = channels.ProbabilisticChannel(
         c1=channels.UnitaryChannel.from_unitaries(
-            z_under_rotations[0].to_matrix(), rx_under_rotation, z_under_rotations[1].to_matrix()
+            z_under_rotations[0], rx_under_rotation, z_under_rotations[1]
         ),
         c2=channels.UnitaryChannel.from_unitaries(
-            z_over_rotations[0].to_matrix(), rx_over_rotation, z_over_rotations[1].to_matrix()
+            z_over_rotations[0], rx_over_rotation, z_over_rotations[1]
         ),
         probability=rz_prob_approx.probability,
     )
+
+    theta_under = config.arccos(abs(rx_under_rotation.to_matrix().numpy(config)[0, 0]))
+    theta_over = config.arccos(abs(rx_over_rotation.to_matrix().numpy(config)[0, 0]))
+    e1 = (
+        prob_channel.c1.diamond_norm_distance_to_unitary(
+            rsad.rz(alpha, config) @ rsad.rx(theta_under * 2, config) @ rsad.rz(beta, config),
+            config,
+        )
+        * prob_channel.probability
+    )
+    e2 = prob_channel.c2.diamond_norm_distance_to_unitary(
+        rsad.rz(alpha, config) @ rsad.rx(theta_over * 2, config) @ rsad.rz(beta, config), config
+    ) * (1 - prob_channel.probability)
+    e3 = rz_prob_approx.diamond_norm_distance_to_rz(-theta / 2, config)
+    print(e1 + e2 + e3)
 
     return prob_channel
