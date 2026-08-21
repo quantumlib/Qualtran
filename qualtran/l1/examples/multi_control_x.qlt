@@ -1,0 +1,124 @@
+# Qualtran-L1
+# 1.0.0
+
+qdef MultiControlX(3)
+from qualtran.bloqs.mcmt.MultiControlX((1, 0, 1))
+[
+    controls: QBit[3],
+    target: QBit @ oplus,
+] {
+    ctrl, q              = C(X)             [ctrl=[controls[0], controls[1], controls[2]], q=target]
+                           return           [controls=[ctrl[0], ctrl[1], ctrl[2]], target=q]
+}
+
+
+qdef C(X)
+from qualtran.bloqs.mcmt.ControlledViaAnd(qualtran.bloqs.basic_gates.XGate, qualtran.CtrlSpec(qdtypes=(QBit), cvs=(NDArr(shape=(3), data=(1, 0, 1)))))
+[
+    ctrl: QBit[3],
+    q: QBit @ oplus,
+] {
+    ctrl_0, junk, target = CtrlSpecAnd      [ctrl_0=[ctrl[0], ctrl[1], ctrl[2]]]
+    ctrl2, target2       = CNOT             [ctrl=target, target=q]
+    ctrl_02              = Adj(CtrlSpecAnd) [ctrl_0=[ctrl_0[0], ctrl_0[1], ctrl_0[2]], junk=junk, target=ctrl2]
+                           return           [ctrl=[ctrl_02[0], ctrl_02[1], ctrl_02[2]], q=target2]
+}
+
+
+qdef CtrlSpecAnd
+from qualtran.bloqs.mcmt.CtrlSpecAnd(qualtran.CtrlSpec(qdtypes=(QBit), cvs=(NDArr(shape=(3), data=(1, 0, 1)))))
+[
+    ctrl_0: QBit[3],
+    junk: | -> QAny(1),
+    target: | -> QBit,
+] {
+    x                    = Partition        [ctrl_0=[ctrl_0[0], ctrl_0[1], ctrl_0[2]]]
+    reg                  = Split            [reg=x]             
+    ctrl, junk, target   = MultiAnd(n=3)    [ctrl=[reg[0], reg[1], reg[2]]]
+    reg2                 = Join             [reg=[ctrl[0], ctrl[1], ctrl[2]]]
+    ctrl_02              = Partition(variant=1)[x=reg2]            
+    reg3                 = Join(variant=1)  [reg=[junk[0]]]     
+                           return           [ctrl_0=[ctrl_02[0], ctrl_02[1], ctrl_02[2]], junk=reg3, target=target]
+}
+
+
+extern qdef CNOT
+from qualtran.bloqs.basic_gates.CNOT
+[ctrl: QBit @ dot, target: QBit @ oplus]
+
+qdef Adj(CtrlSpecAnd)
+from qualtran.Adjoint(qualtran.bloqs.mcmt.CtrlSpecAnd(qualtran.CtrlSpec(qdtypes=(QBit), cvs=(NDArr(shape=(3), data=(1, 0, 1))))))
+[
+    ctrl_0: QBit[3],
+    junk: QAny(1) -> |,
+    target: QBit -> |,
+] {
+    reg                  = Split(variant=1) [reg=junk]          
+    x                    = Partition        [ctrl_0=[ctrl_0[0], ctrl_0[1], ctrl_0[2]]]
+    reg2                 = Split            [reg=x]             
+    ctrl                 = Adj(MultiAnd(n=3))[ctrl=[reg2[0], reg2[1], reg2[2]], junk=[reg[0]], target=target]
+    reg3                 = Join             [reg=[ctrl[0], ctrl[1], ctrl[2]]]
+    ctrl_02              = Partition(variant=1)[x=reg3]            
+                           return           [ctrl_0=[ctrl_02[0], ctrl_02[1], ctrl_02[2]]]
+}
+
+
+qcast Partition
+[x: | -> QAny(3), ctrl_0: QBit[3] -> |]
+
+qcast Split
+[reg: QAny(3) -> QBit[3]]
+
+qdef MultiAnd(n=3)
+from qualtran.bloqs.mcmt.MultiAnd((1, 0, 1))
+[
+    ctrl: QBit[3],
+    junk: | -> QBit[1],
+    target: | -> QBit,
+] {
+    ctrl2, target        = And10            [ctrl=[ctrl[0], ctrl[1]]]
+    ctrl3, target2       = And              [ctrl=[target, ctrl[2]]]
+                           return           [ctrl=[ctrl2[0], ctrl2[1], ctrl3[1]], junk=[ctrl3[0]], target=target2]
+}
+
+
+qcast Join
+[reg: QBit[3] -> QAny(3)]
+
+qcast Partition(variant=1)
+[x: QAny(3) -> |, ctrl_0: | -> QBit[3]]
+
+qcast Join(variant=1)
+[reg: QBit[1] -> QAny(1)]
+
+qcast Split(variant=1)
+[reg: QAny(1) -> QBit[1]]
+
+qdef Adj(MultiAnd(n=3))
+from qualtran.Adjoint(qualtran.bloqs.mcmt.MultiAnd((1, 0, 1)))
+[
+    ctrl: QBit[3],
+    junk: QBit[1] -> |,
+    target: QBit -> |,
+] {
+    ctrl2                = And_adj          [ctrl=[junk[0], ctrl[2]], target=target]
+    ctrl3                = And10_adj        [ctrl=[ctrl[0], ctrl[1]], target=ctrl2[0]]
+                           return           [ctrl=[ctrl3[0], ctrl3[1], ctrl2[1]]]
+}
+
+
+extern qdef And10
+from qualtran.bloqs.mcmt.And(1, 0, False)
+[ctrl: QBit[2], target: | -> QBit]
+
+extern qdef And
+from qualtran.bloqs.mcmt.And(1, 1, False)
+[ctrl: QBit[2], target: | -> QBit]
+
+extern qdef And_adj
+from qualtran.bloqs.mcmt.And(1, 1, True)
+[ctrl: QBit[2], target: QBit -> |]
+
+extern qdef And10_adj
+from qualtran.bloqs.mcmt.And(1, 0, True)
+[ctrl: QBit[2], target: QBit -> |]

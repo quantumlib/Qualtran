@@ -1,0 +1,47 @@
+# Qualtran-L1
+# 1.0.0
+
+qdef CompositeALU
+from qualtran.bloqs.arithmetic.CompositeALU(QInt(72))
+[
+    a: QInt(72),
+    b: QInt(72),
+] {
+    reg_a                = Split(QInt(72))  [reg=a]             
+    reg_b                = Split(QInt(72))  [reg=b]             
+    ctrl1, target1       = CNOT             [ctrl=reg_a[71], target=reg_b[71]]
+    a_z                  = Z                [q=ctrl1]           
+    b_s                  = S                [q=target1]         
+    reg_cz               = CZ               [q=[a_z, b_s]]      
+    reg_ccz              = CCZ              [q=[reg_cz[0], reg_cz[1], reg_a[70]]]
+    reg_a_out            = Join(QInt(72))   [reg=[reg_a[0], reg_a[1], reg_a[2], reg_a[3], reg_a[4], reg_a[5], reg_a[6], reg_a[7], reg_a[8], reg_a[9], reg_a[10], reg_a[11], reg_a[12], reg_a[13], reg_a[14], reg_a[15], reg_a[16], reg_a[17], reg_a[18], reg_a[19], reg_a[20], reg_a[21], reg_a[22], reg_a[23], reg_a[24], reg_a[25], reg_a[26], reg_a[27], reg_a[28], reg_a[29], reg_a[30], reg_a[31], reg_a[32], reg_a[33], reg_a[34], reg_a[35], reg_a[36], reg_a[37], reg_a[38], reg_a[39], reg_a[40], reg_a[41], reg_a[42], reg_a[43], reg_a[44], reg_a[45], reg_a[46], reg_a[47], reg_a[48], reg_a[49], reg_a[50], reg_a[51], reg_a[52], reg_a[53], reg_a[54], reg_a[55], reg_a[56], reg_a[57], reg_a[58], reg_a[59], reg_a[60], reg_a[61], reg_a[62], reg_a[63], reg_a[64], reg_a[65], reg_a[66], reg_a[67], reg_a[68], reg_a[69], reg_ccz[2], reg_ccz[0]]]
+    reg_b_out            = Join(QInt(72))   [reg=[reg_b[0], reg_b[1], reg_b[2], reg_b[3], reg_b[4], reg_b[5], reg_b[6], reg_b[7], reg_b[8], reg_b[9], reg_b[10], reg_b[11], reg_b[12], reg_b[13], reg_b[14], reg_b[15], reg_b[16], reg_b[17], reg_b[18], reg_b[19], reg_b[20], reg_b[21], reg_b[22], reg_b[23], reg_b[24], reg_b[25], reg_b[26], reg_b[27], reg_b[28], reg_b[29], reg_b[30], reg_b[31], reg_b[32], reg_b[33], reg_b[34], reg_b[35], reg_b[36], reg_b[37], reg_b[38], reg_b[39], reg_b[40], reg_b[41], reg_b[42], reg_b[43], reg_b[44], reg_b[45], reg_b[46], reg_b[47], reg_b[48], reg_b[49], reg_b[50], reg_b[51], reg_b[52], reg_b[53], reg_b[54], reg_b[55], reg_b[56], reg_b[57], reg_b[58], reg_b[59], reg_b[60], reg_b[61], reg_b[62], reg_b[63], reg_b[64], reg_b[65], reg_b[66], reg_b[67], reg_b[68], reg_b[69], reg_b[70], reg_ccz[1]]]
+                           return           [a=reg_a_out, b=reg_b_out]
+}
+
+
+qcast Split(QInt(72))
+[reg: QInt(72) -> QBit[72]]
+
+qcast Join(QInt(72))
+[reg: QBit[72] -> QInt(72)]
+
+extern qdef CNOT
+from qualtran.bloqs.basic_gates.CNOT
+[ctrl: QBit @ dot, target: QBit @ oplus]
+
+extern qdef Z
+from qualtran.bloqs.basic_gates.ZGate
+[q: QBit]
+
+extern qdef S
+from qualtran.bloqs.basic_gates.SGate
+[q: QBit]
+
+extern qdef CZ
+from qualtran.bloqs.basic_gates.CZGate
+[q: QBit[2]]
+
+extern qdef CCZ
+from qualtran.bloqs.basic_gates.CCZGate
+[q: QBit[3]]

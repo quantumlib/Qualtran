@@ -33,6 +33,7 @@ from qualtran import (
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.drawing import directional_text_box, Text, WireSymbol
+from qualtran.simulation.classical_sim import QCDTypeDomainError
 
 if TYPE_CHECKING:
     import cirq
@@ -79,7 +80,7 @@ class Free(_BookkeepingBloq):
 
     def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
         if reg != 0 and not self.dirty:
-            raise ValueError(f"Tried to free a non-zero register: {reg} with {self.dirty=}")
+            raise QCDTypeDomainError(f"Tried to free a non-zero register: {reg} with {self.dirty=}")
         return {}
 
     def my_tensors(
@@ -108,6 +109,9 @@ class Free(_BookkeepingBloq):
 
     def as_pl_op(self, wires: 'Wires') -> 'Operation':
         return None
+
+    def __str__(self):
+        return f'Free({self.dtype})'
 
 
 @bloq_example

@@ -1,0 +1,160 @@
+#  Copyright 2026 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+import numpy as np
+
+from qualtran import BloqBuilder, QVar
+from qualtran.bloqs.basic_gates import (
+    CHadamard,
+    CRy,
+    CRz,
+    CSwap,
+    CYGate,
+    Discard,
+    Identity,
+    MeasureX,
+    MeasureZ,
+    OnEach,
+    Rx,
+    Ry,
+    Rz,
+    SGate,
+    SU2RotationGate,
+    Swap,
+    TGate,
+    TwoBitCSwap,
+    TwoBitSwap,
+    XGate,
+    XPowGate,
+    YGate,
+    YPowGate,
+    ZeroState,
+    ZPowGate,
+)
+
+
+def test_qcalls():
+    bb = BloqBuilder()
+
+    # Allocate qubits
+    q0 = bb.add(ZeroState())
+    q1 = bb.add(ZeroState())
+    q2 = bb.add(ZeroState())
+
+    # 1. Hadamard & CHadamard
+    q0, q1 = CHadamard.qcall(q0, q1)
+
+    # 2. SGate & TGate
+    q0 = SGate.qcall(q0)
+    q1 = TGate.qcall(q1, is_adjoint=True)
+
+    # 3. Rotations
+    q0 = ZPowGate.qcall(q0, exponent=0.5)
+    q1 = XPowGate.qcall(q1, exponent=0.25)
+    q2 = YPowGate.qcall(q2, exponent=0.125)
+
+    # 4. Rz, Rx, Ry, CRz, CRy
+    q0 = Rz.qcall(q0, angle=np.pi / 4)
+    q1 = Rx.qcall(q1, angle=np.pi / 8)
+    q2 = Ry.qcall(q2, angle=np.pi / 16)
+    q0, q1 = CRz.qcall(q0, q1, angle=np.pi / 2)
+    q1, q2 = CRy.qcall(q1, q2, angle=np.pi / 4)
+
+    # 5. SU2RotationGate
+    q0 = SU2RotationGate.qcall(q0, theta=0.1, phi=0.2, lambd=0.3)
+
+    # 6. YGate & CYGate & XGate
+    q0 = YGate.qcall(q0)
+    q0, q1 = CYGate.qcall(q0, q1)
+
+    # 7. Swap gates
+    q0, q1 = TwoBitSwap.qcall(q0, q1)
+    q0, q1, q2 = TwoBitCSwap.qcall(q0, q1, q2)
+
+    # 8. Measure & Effects
+    c0 = MeasureZ.qcall(q0)
+    c1 = MeasureX.qcall(q1)
+
+    # Discards
+    Discard.qcall(c0)
+    Discard.qcall(c1)
+
+
+def test_templated_and_parameterized_qcalls():
+    bb = BloqBuilder()
+
+    # Allocate multi-qubit registers
+    qvar_x: 'QVar' = bb.add_register("x", bitsize=4)  # type: ignore[assignment]
+    qvar_y: 'QVar' = bb.add_register("y", bitsize=4)  # type: ignore[assignment]
+
+    # 1. Identity
+    qvar_x = Identity.qcall(qvar_x)
+
+    # 2. OnEach
+    qvar_x = OnEach.qcall(qvar_x, gate=XGate())
+
+    # 4. Swap & CSwap on registers
+    qvar_x, qvar_y = Swap.qcall(qvar_x, qvar_y)
+
+    # CSwap needs a control qubit
+    ctrl = bb.add(ZeroState())
+    ctrl, qvar_x, qvar_y = CSwap.qcall(ctrl, qvar_x, qvar_y)
+
+
+def test_bloq_builder_qcall_helpers():
+    bb = BloqBuilder()
+
+    # Allocate qubits
+    q0 = bb.add(ZeroState())
+    q1 = bb.add(ZeroState())
+    q2 = bb.add(ZeroState())
+
+    # 1. Clifford & Single Qubit Gate Helpers
+    q0 = bb.Y(q0)
+    q0, q1 = bb.CY(q0, q1)
+    q0, q1 = bb.CH(q0, q1)
+    q0 = bb.T(q0)
+    q0 = bb.T(q0, is_adjoint=True)
+    q1 = bb.S(q1)
+    q1 = bb.S(q1, is_adjoint=True)
+
+    # 2. Parametric Rotation Helpers
+    q0 = bb.rx(q0, angle=np.pi / 4)
+    q1 = bb.ry(q1, angle=np.pi / 8)
+    q2 = bb.rz(q2, angle=np.pi / 16)
+    q0, q1 = bb.crz(q0, q1, angle=np.pi / 2)
+    q1, q2 = bb.cry(q1, q2, angle=np.pi / 4)
+    q0 = bb.su2_rotation(q0, theta=0.1, phi=0.2, lambd=0.3)
+
+    # 3. Power Gate Helpers
+    q0 = bb.z_pow(q0, exponent=0.5)
+    q0, q1 = bb.cz_pow(q0, q1, exponent=0.25)
+    q1 = bb.x_pow(q1, exponent=0.125)
+    q2 = bb.y_pow(q2, exponent=0.0625)
+
+    # 4. Multi-qubit Register Swaps
+    qvar_x: 'QVar' = bb.add_register("x", bitsize=4)  # type: ignore[assignment]
+    qvar_y: 'QVar' = bb.add_register("y", bitsize=4)  # type: ignore[assignment]
+    qvar_x, qvar_y = bb.swap(qvar_x, qvar_y)
+    qvar_x = bb.identity(qvar_x)
+
+    ctrl = bb.add(ZeroState())
+    _ctrl, _qvar_x, _qvar_y = bb.cswap(ctrl, qvar_x, qvar_y)
+
+    # 5. Measurement & Discards
+    c0 = bb.measure_z(q0)
+    c1 = bb.measure_x(q1)
+    bb.discard(c0)
+    bb.discard(c1)
+    bb.discard_q(q2)

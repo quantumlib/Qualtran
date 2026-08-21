@@ -83,6 +83,7 @@ def test_cirq_gate_as_bloq_for_trivial_gates():
 
 
 def test_cirq_gate_as_bloq_tensor_contract_for_and_gate():
+    pytest.importorskip('quimb')
     and_gate = And()
     bb = BloqBuilder()
     ctrl = [bb.add(OneState()) for _ in range(2)]
@@ -114,6 +115,7 @@ def test_bloq_decompose():
 
 
 def test_cirq_circuit_to_cbloq():
+    pytest.importorskip('quimb')
     qubits = cirq.LineQubit.range(6)
     circuit = cirq.testing.random_circuit(qubits, n_moments=7, op_density=1.0, random_state=52)
 
@@ -224,9 +226,7 @@ def test_cirq_gate_as_bloq_for_left_only_gates():
     bloq = CirqGateAsBloq(gate=LeftOnlyGate())
     cbloq = qlt_testing.assert_valid_bloq_decomposition(bloq)
 
-    assert (
-        cbloq.debug_text()
-        == """\
+    assert cbloq.debug_text() == """\
 CNOT<0>
   LeftDangle.q[0] -> ctrl
   LeftDangle.q[1] -> target
@@ -239,7 +239,6 @@ cirq.reset<1>
 cirq.reset<2>
   CNOT<0>.target -> q
   q -> RightDangle.q[1]"""
-    )
 
 
 def test_gwr_for_left_only_gates():
@@ -294,6 +293,7 @@ def test_cirq_optree_to_cbloq_op_conversion_method():
     When provided, op_conversion_method should be called for each operation
     instead of the default _extract_bloq_from_op.
     """
+    pytest.importorskip('quimb')
     qubits = cirq.LineQubit.range(3)
     circuit = cirq.Circuit(cirq.H(qubits[0]), cirq.CNOT(qubits[0], qubits[1]), cirq.T(qubits[2]))
 

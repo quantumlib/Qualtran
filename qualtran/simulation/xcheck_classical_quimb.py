@@ -27,8 +27,8 @@ if TYPE_CHECKING:
 def _add_classical_kets(
     bb: BloqBuilder, registers: Iterable[Register], vals: Dict[str, 'ClassicalValT']
 ) -> Dict[str, 'SoquetT']:
-    """Use `bb` to add `IntState` for all the `vals`."""
-    from qualtran.bloqs.basic_gates import IntState
+    """Use `bb` to add `QUIntState` for all the `vals`."""
+    from qualtran.bloqs.basic_gates import QUIntState
 
     soqs: Dict[str, 'SoquetT'] = {}
     for reg in registers:
@@ -36,9 +36,9 @@ def _add_classical_kets(
             reg_vals = np.asarray(vals[reg.name])
             soq = np.empty(reg.shape, dtype=object)
             for idx in reg.all_idxs():
-                soq[idx] = bb.add(IntState(val=reg_vals[idx], bitsize=reg.bitsize))
+                soq[idx] = bb.add(QUIntState(val=reg_vals[idx], bitsize=reg.bitsize))
         else:
-            soq = bb.add(IntState(val=cast(int, vals[reg.name]), bitsize=reg.bitsize))
+            soq = bb.add(QUIntState(val=cast(int, vals[reg.name]), bitsize=reg.bitsize))
 
         soqs[reg.name] = soq
     return soqs
@@ -50,8 +50,8 @@ def _add_classical_bras(
     vals: Dict[str, 'ClassicalValT'],
     soqs: Dict[str, 'SoquetT'],
 ) -> None:
-    """Use `bb` to add `IntEffect` on `soqs` for all the `vals`."""
-    from qualtran.bloqs.basic_gates import IntEffect
+    """Use `bb` to add `QUIntEffect` on `soqs` for all the `vals`."""
+    from qualtran.bloqs.basic_gates import QUIntEffect
 
     for reg in registers:
         if reg.shape:
@@ -60,10 +60,10 @@ def _add_classical_bras(
             if not BloqBuilder.is_ndarray(reg_name):
                 raise ValueError(f'soqs {reg.name} must be a numpy array: {soqs[reg.name]}')
             for idx in reg.all_idxs():
-                bb.add(IntEffect(val=reg_vals[idx], bitsize=reg.bitsize), val=reg_name[idx])
+                bb.add(QUIntEffect(val=reg_vals[idx], bitsize=reg.bitsize), val=reg_name[idx])
         else:
             bb.add(
-                IntEffect(val=cast(int, vals[reg.name]), bitsize=reg.bitsize), val=soqs[reg.name]
+                QUIntEffect(val=cast(int, vals[reg.name]), bitsize=reg.bitsize), val=soqs[reg.name]
             )
 
 

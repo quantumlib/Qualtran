@@ -11,9 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import itertools
 from collections import Counter
 from functools import cached_property
-from typing import Dict, Iterator, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Iterator, List, Optional, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -34,6 +35,7 @@ from qualtran import (
     QInt,
     QMontgomeryUInt,
     QUInt,
+    QVar,
     Register,
     Side,
     Signature,
@@ -45,15 +47,16 @@ from qualtran.bloqs.bookkeeping import Always
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 from qualtran.cirq_interop import decompose_from_cirq_style_method
-from qualtran.drawing import directional_text_box, Text
+from qualtran.drawing import directional_text_box, Text, TextBox
 from qualtran.resource_counting.generalizers import ignore_split_join
-from qualtran.simulation.classical_sim import add_ints
+from qualtran.simulation.classical_sim import add_ints, QCDTypeDomainError
 from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.simulation.verification import ClassicalSimTestCase
 
 
 @frozen
@@ -63,6 +66,12 @@ class Add(Bloq):
     This computes `a + b` and stores the result in `b`. Specifically it
     implements $U|a\rangle|b\rangle \rightarrow |a\rangle|a+b\rangle$
     using $n - 1$ Toffoli gates.
+
+    Note:
+        For different-bitsize operands, the narrower `a` is zero-extended (not
+        sign-extended) into `b`. So mixed-width signed (`QInt`) addition with a
+        negative `a` computes `(a mod 2**a_dtype.bitsize) + b`, not the true
+        signed `a + b`. Equal-width signed and any-width unsigned addition are exact.
 
     Args:
         a_dtype: Quantum datatype used to represent the integer a.
@@ -111,6 +120,12 @@ class Add(Bloq):
     @property
     def signature(self):
         return Signature([Register("a", self.a_dtype), Register("b", self.b_dtype)])
+
+    @classmethod
+    def qcall(cls, a: 'QVar', b: 'QVar'):
+        bloq = cls(a_dtype=a.dtype, b_dtype=b.dtype)  # type: ignore[arg-type]
+        bb = a.bb
+        return bb.add(bloq, a=a, b=b)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         return decompose_from_cirq_style_method(self)
@@ -252,7 +267,7 @@ _ADD_DOC = BloqDocSpec(
 
 
 @frozen
-class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
+class OutOfPlaceAdder(GateWithRegisters):
     r"""An n-bit addition gate.
 
     Implements $U|a\rangle|b\rangle 0\rangle \rightarrow |a\rangle|b\rangle|a+b\rangle$
@@ -294,34 +309,22 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
             ]
         )
 
-    def registers(self) -> Sequence[Union[int, Sequence[int]]]:
-        if not isinstance(self.bitsize, int):
-            raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
-        return [2] * self.bitsize, [2] * self.bitsize, [2] * self.out_bitsize
-
-    def apply(self, a: int, b: int, c: int) -> Tuple[int, int, int]:
-        return a, b, c + a + b
-
     def adjoint(self) -> 'OutOfPlaceAdder':
         return evolve(self, is_adjoint=not self.is_adjoint)
 
     def on_classical_vals(
         self, *, a: 'ClassicalValT', b: 'ClassicalValT', c: Optional['ClassicalValT'] = None
     ) -> Dict[str, 'ClassicalValT']:
-        if isinstance(self.bitsize, sympy.Expr):
-            raise ValueError(f'Classical simulation is not support for symbolic bloq {self}')
+        if is_symbolic(self.bitsize):
+            raise ValueError(f'Classical simulation is not supported for symbolic bloq {self}')
+        expected_c = add_ints(int(a), int(b), num_bits=self.out_bitsize, is_signed=False)
         if self.is_adjoint:
-            assert c is not None
+            if c != expected_c:
+                raise QCDTypeDomainError(
+                    f"Inconsistent `c` found for uncomputing `OutOfPlaceAdder`: {a=}, {b=}, {c=}. Expected c={expected_c}"
+                )
             return {'a': a, 'b': b}
-        assert c is None
-        return {
-            'a': a,
-            'b': b,
-            'c': add_ints(int(a), int(b), num_bits=self.out_bitsize, is_signed=False),
-        }
-
-    def with_registers(self, *new_registers: Union[int, Sequence[int]]):
-        raise NotImplementedError("no need to implement with_registers.")
+        return {'a': a, 'b': b, 'c': expected_c}
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs
@@ -423,12 +426,18 @@ class AddK(Bloq):
     def __attrs_post_init__(self):
         if not isinstance(self.dtype, (QInt, QUInt, QMontgomeryUInt)):
             raise NotImplementedError(
-                "Only QInt, QUInt and QMontgomeryUInt types are supported for composite addition."
+                f"Only QInt, QUInt and QMontgomeryUInt types are supported for composite addition, not {self.dtype}"
             )
 
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build_from_dtypes(x=self.dtype)
+
+    @classmethod
+    def qcall(cls, x: 'QVar', *, k: 'SymbolicInt') -> 'QVar':
+        bb = x.bb
+        dtype = x.dtype
+        return bb.add(cls(dtype=dtype, k=k), x=x)  # type: ignore[arg-type]
 
     def on_classical_vals(
         self, x: 'ClassicalValT', **vals: 'ClassicalValT'
@@ -480,6 +489,15 @@ class AddK(Bloq):
 
         return counts
 
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        if reg.name == 'x':
+            return TextBox(f'+={self.k}')
+        raise ValueError(f"Unknown register {reg}")
+
     def __str__(self):
         return f'AddK(k={self.k})'
 
@@ -504,3 +522,94 @@ def _add_k_large() -> AddK:
 
 
 _ADD_K_DOC = BloqDocSpec(bloq_cls=AddK, examples=[_add_k, _add_k_small, _add_k_large])
+
+
+def _get_add_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+    """Test cases for the `Add` bloq."""
+    from qualtran.simulation.verification import ClassicalSimTestCase
+
+    cases: list[ClassicalSimTestCase] = []
+    # Equal bitsize unsigned.
+    for bs in [2, 3, 4]:
+        cases.append(ClassicalSimTestCase(bloq=Add(QUInt(bs)), name=f"Add(QUInt({bs}))"))
+    # Different bitsize unsigned.
+    for a_bs, b_bs in [(2, 3), (2, 4), (3, 4)]:
+        cases.append(
+            ClassicalSimTestCase(
+                bloq=Add(QUInt(a_bs), QUInt(b_bs)), name=f"Add(QUInt({a_bs}), QUInt({b_bs}))"
+            )
+        )
+    # Equal bitsize signed.
+    for bs in [3, 4]:
+        cases.append(ClassicalSimTestCase(bloq=Add(QInt(bs)), name=f"Add(QInt({bs}))"))
+    # NOTE: Different-bitsize *signed* addition is intentionally not tested here.
+    # `Add`'s ripple-carry decomposition zero-extends (not sign-extends) the
+    # narrower `a` operand into the wider `b` register, so for a negative `a` the
+    # circuit computes `(a mod 2**a_bitsize) + b` rather than the true signed
+    # `a + b`. The reference `on_classical_vals` (via `add_ints`) correctly
+    # computes the signed sum, so the two legitimately disagree. Mixed-width
+    # signed addition must be done by first widening `a` with `SignExtend`
+    # (see `qualtran.bloqs.arithmetic.SignExtend`) and then using an equal-width
+    # `Add`. Equal-width signed addition is exact (two's-complement) and is
+    # covered above.
+    # Montgomery unsigned.
+    for bs in [3, 4]:
+        cases.append(
+            ClassicalSimTestCase(bloq=Add(QMontgomeryUInt(bs)), name=f"Add(QMontgomeryUInt({bs}))")
+        )
+    return cases
+
+
+def _get_out_of_place_adder_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+    """Test cases for the `OutOfPlaceAdder` bloq."""
+    from qualtran.simulation.verification import ClassicalSimTestCase
+
+    cases: list[ClassicalSimTestCase] = []
+    for bitsize in [2, 3, 4]:
+        for is_adjoint in [False, True]:
+            for include_msb in [True, False]:
+                cases.append(
+                    ClassicalSimTestCase(
+                        bloq=OutOfPlaceAdder(
+                            bitsize=bitsize,
+                            is_adjoint=is_adjoint,
+                            include_most_significant_bit=include_msb,
+                        ),
+                        name=(
+                            f"OutOfPlaceAdder(bitsize={bitsize}, "
+                            f"is_adjoint={is_adjoint}, "
+                            f"include_most_significant_bit={include_msb})"
+                        ),
+                    )
+                )
+    return cases
+
+
+def _get_add_k_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+    """Test cases for the `AddK` bloq.
+
+    These specify concrete (non-symbolic) bloq instances with specific
+    compile-time parameter combinations. Runtime quantum inputs are
+    generated automatically by the verification framework.
+    """
+    from qualtran.simulation.verification import ClassicalSimTestCase
+
+    cases: list[ClassicalSimTestCase] = []
+    # Unsigned.
+    for bs, k in itertools.product([3, 4, 5], [1, 3, 7]):
+        cases.append(
+            ClassicalSimTestCase(bloq=AddK(QUInt(bs), k=k), name=f"AddK(QUInt({bs}), k={k})")
+        )
+    # Signed.
+    for bs, k in itertools.product([4, 5], [-3, 2]):
+        cases.append(
+            ClassicalSimTestCase(bloq=AddK(QInt(bs), k=k), name=f"AddK(QInt({bs}), k={k})")
+        )
+    # Montgomery unsigned.
+    for bs, k in itertools.product([4, 5], [1, 3]):
+        cases.append(
+            ClassicalSimTestCase(
+                bloq=AddK(QMontgomeryUInt(bs), k=k), name=f"AddK(QMontgomeryUInt({bs}), k={k})"
+            )
+        )
+    return cases

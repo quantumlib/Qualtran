@@ -39,6 +39,7 @@ from qualtran import (
     Side,
 )
 from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
+from qualtran.simulation.classical_sim import do_phased_classical_simulation
 from qualtran.symbolics import is_symbolic
 
 if TYPE_CHECKING:
@@ -121,10 +122,14 @@ def assert_connections_compatible(cbloq: CompositeBloq):
         lr = cxn.left.reg
         rr = cxn.right.reg
 
-        if not is_symbolic(lr.dtype.num_qubits) and lr.dtype.num_qubits <= 0:
-            raise BloqError(f"{cxn} has an invalid number of qubits: {lr.dtype}")
-        if not is_symbolic(rr.dtype.num_qubits) and rr.dtype.num_qubits <= 0:
-            raise BloqError(f"{cxn} has an invalid number of qubits: {rr.dtype}")
+        if not is_symbolic(lr.dtype.num_qubits) and lr.dtype.num_bits <= 0:
+            raise BloqError(
+                f"{cxn} has an invalid number of bits: {lr.dtype} with {lr.dtype.num_bits}"
+            )
+        if not is_symbolic(rr.dtype.num_qubits) and rr.dtype.num_bits <= 0:
+            raise BloqError(
+                f"{cxn} has an invalid number of bits: {rr.dtype} with {rr.dtype.num_bits}"
+            )
 
         if not check_dtypes_consistent(lr.dtype, rr.dtype):
             raise BloqError(f"{cxn}'s QDTypes are incompatible: {lr.dtype} -> {rr.dtype}")
@@ -276,7 +281,10 @@ def execute_notebook(name: str):
     Args:
         name: The name of the notebook without extension.
     """
-    import nbformat
+    import pytest
+
+    nbformat = pytest.importorskip('nbformat')
+    _nbconvert = pytest.importorskip('nbconvert')
     from nbconvert.preprocessors import ExecutePreprocessor
 
     # Assumes that the notebook is in the same path from where the function was called,
@@ -471,7 +479,7 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
     # which isn't much of a check at all.
     #
     # To determine whether we have an independent source of bloq counts, we test whether
-    # the `build_call_graph` method was overriden or not. This is not foolproof! The override
+    # the `build_call_graph` method was overridden or not. This is not foolproof! The override
     # could itself rely on the decomposition, and we wouldn't actually have two independent sources
     # of data to compare against each other.
     if bloq.build_call_graph.__qualname__.startswith('Bloq.'):
@@ -573,7 +581,12 @@ def assert_bloq_example_serializes(bloq_ex: BloqExample) -> None:
     Raises:
         BloqCheckException: if any assertions are violated.
     """
-    from qualtran.serialization.bloq import bloqs_from_proto, bloqs_to_proto
+    try:
+        from qualtran.serialization.bloq import bloqs_from_proto, bloqs_to_proto
+    except ModuleNotFoundError as e:
+        raise BloqCheckException.na(
+            'Serialization check is only applicable when protobuf is installed.'
+        ) from e
 
     bloq = bloq_ex.make()
 
@@ -713,4 +726,30 @@ def assert_consistent_classical_action(
         decomposed_res = cb.call_classically(**call_with)
         np.testing.assert_equal(
             bloq_res, decomposed_res, err_msg=f'{bloq=} {call_with=} {bloq_res=} {decomposed_res=}'
+        )
+
+
+def assert_consistent_phased_classical_action(
+    bloq: Bloq,
+    **parameter_ranges: Union[NDArray, Sequence[int], Sequence[Union[Sequence[int], NDArray]]],
+):
+    """Check that the bloq has a phased classical action consistent with its decomposition.
+
+    Args:
+        bloq: bloq to test.
+        parameter_ranges: named arguments giving ranges for each of the registers of the bloq.
+    """
+    cb = bloq.decompose_bloq()
+    parameter_names = tuple(parameter_ranges.keys())
+    for vals in itertools.product(*[parameter_ranges[p] for p in parameter_names]):
+        call_with = {p: v for p, v in zip(parameter_names, vals)}
+        bloq_res, bloq_phase = do_phased_classical_simulation(bloq, call_with)
+        decomposed_res, decomposed_phase = do_phased_classical_simulation(cb, call_with)
+        np.testing.assert_equal(
+            bloq_res, decomposed_res, err_msg=f'{bloq=} {call_with=} {bloq_res=} {decomposed_res=}'
+        )
+        np.testing.assert_equal(
+            bloq_phase,
+            decomposed_phase,
+            err_msg=f'{bloq=} {call_with=} {bloq_phase=} {decomposed_phase=}',
         )

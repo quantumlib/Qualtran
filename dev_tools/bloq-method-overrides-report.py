@@ -11,14 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import ForwardRef, Set, Type
+from typing import Set, TYPE_CHECKING
 
 from qualtran_dev_tools.bloq_finder import get_bloq_classes
 
 from qualtran import Bloq
 
+if TYPE_CHECKING:
+    from qualtran.resource_counting import BloqCountT
 
-def _call_graph(bc: Type[Bloq]):
+
+def _call_graph(bc: type[Bloq]):
     """Check that a bloq class overrides the right call graph methods.
 
     - Override `build_call_graph` with canonical type annotations.
@@ -31,7 +34,7 @@ def _call_graph(bc: Type[Bloq]):
 
     bloq_counts = getattr(bc, 'bloq_counts')
     if bloq_counts.__qualname__ != 'Bloq.bloq_counts':
-        print(f'{bc}.bloq_counts should not be overriden.')
+        print(f'{bc}.bloq_counts should not be overridden.')
 
     bcg = getattr(bc, 'build_call_graph')
     annot = bcg.__annotations__
@@ -42,7 +45,7 @@ def _call_graph(bc: Type[Bloq]):
         )
     if annot['ssa'] != 'SympySymbolAllocator':
         print(f"{bc}.build_call_graph `ssa: 'SympySymbolAllocator'`")
-    if annot['return'] != Set[ForwardRef('BloqCountT')]:  # type: ignore[misc]
+    if annot['return'] != Set['BloqCountT']:  # type: ignore[misc]
         print(f"{bc}.build_call_graph -> 'BloqCountT'")
 
 

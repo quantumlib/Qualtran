@@ -15,8 +15,8 @@ r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian with a quan
 
 Here we consider the simulation setup from [Quantum computation of stopping
 power for inertial fusion target design](https://arxiv.org/abs/2308.12352),
-which is concerned with the dyamics on a (quantum) projectile traversing a
-medium, which is modelled using a first quantizated representation. The main
+which is concerned with the dynamics of a (quantum) projectile traversing a
+medium, which is modelled using a first quantized representation. The main
 modifications are that we need to add the Hamiltonian terms for the projectile
 and allow for a different (larger) set of momenta for the projectile.
 
@@ -69,5 +69,27 @@ will only concern ourselves with the additional block encoding costs of
 including this quantum projectile.  Again, state preparation costs are currently
 ignored as this is logarithmic in the size of the basis set.
 """
+
+from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_nu import (
+    PrepareMuUnaryEncodedOneHotWithProj,
+    PrepareNuStateWithProj,
+)
+from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_t import (
+    PreparePowerTwoStateWithProj,
+    PrepareTFirstQuantizationWithProj,
+)
+from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_uv import (
+    PrepareUVFirstQuantizationWithProj,
+)
+from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare import (
+    ControlledMultiplexedCSwap3D,
+    PrepareTUVSuperpositions,
+)
+from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_t import (
+    SelectTFirstQuantizationWithProj,
+)
+from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_uv import (
+    SelectUVFirstQuantizationWithProj,
+)
 
 from .select_and_prepare import PrepareFirstQuantizationWithProj, SelectFirstQuantizationWithProj

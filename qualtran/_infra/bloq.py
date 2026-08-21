@@ -65,7 +65,9 @@ if TYPE_CHECKING:
 def _decompose_from_build_composite_bloq(bloq: 'Bloq') -> 'CompositeBloq':
     from qualtran import BloqBuilder
 
-    bb, initial_soqs = BloqBuilder.from_signature(bloq.signature, add_registers_allowed=False)
+    bb, initial_soqs = BloqBuilder.from_signature(
+        bloq.signature, add_registers_allowed=False, bloq_key=bloq.__class__.__name__
+    )
     out_soqs = bloq.build_composite_bloq(bb=bb, **initial_soqs)
     if not isinstance(out_soqs, dict):
         raise ValueError(
@@ -197,7 +199,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
         Raises:
             qualtran.DecomposeNotImplementedError: If there is no decomposition defined; namely:
-                if `build_composite_bloq` is not overriden with a decomposition.
+                if `build_composite_bloq` is not overridden with a decomposition.
             qualtran.DecomposeTypeError: If the bloq should not be decomposed, either because
                 it is considered 'atomic' (like `XGate` or similar basic gates), or because
                 the specific choice of parameters preclude decomposition.
@@ -207,7 +209,7 @@ class Bloq(metaclass=abc.ABCMeta):
     def as_composite_bloq(self) -> 'CompositeBloq':
         """Wrap this Bloq into a size-1 CompositeBloq.
 
-        This method is overriden so if this Bloq is already a CompositeBloq, it will
+        This method is overridden so if this Bloq is already a CompositeBloq, it will
         be returned.
         """
         from qualtran import BloqBuilder
@@ -544,7 +546,7 @@ class Bloq(metaclass=abc.ABCMeta):
         """The `TComplexity` for this bloq.
 
         By default, this will recurse into this bloq's decomposition but this
-        method can be overriden with a known value.
+        method can be overridden with a known value.
         """
         from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 
@@ -555,7 +557,7 @@ class Bloq(metaclass=abc.ABCMeta):
     ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
         """Override this method to support conversion to a Cirq operation.
 
-        If this method is not overriden, the default implementation will wrap this bloq
+        If this method is not overridden, the default implementation will wrap this bloq
         in a `BloqAsCirqGate` shim.
 
         Args:
@@ -582,7 +584,7 @@ class Bloq(metaclass=abc.ABCMeta):
     def as_pl_op(self, wires: 'Wires') -> 'Operation':
         """Override this method to support conversion to a PennyLane operation.
 
-        If this method is not overriden, the default implementation will wrap this bloq
+        If this method is not overridden, the default implementation will wrap this bloq
         in a `FromBloq` shim.
 
         Args:
@@ -692,6 +694,11 @@ class Bloq(metaclass=abc.ABCMeta):
 
         return directional_text_box(text=pretty_str, side=reg.side)
 
+    def draw(self, type: str = 'graph'):  # pylint: disable=redefined-builtin
+        from qualtran.drawing import show_bloq
+
+        return show_bloq(self, type=type)
+
     def __str__(self):
         return self.__class__.__name__
 
@@ -703,7 +710,7 @@ class Bloq(metaclass=abc.ABCMeta):
     def _class_name_in_pkg_(cls) -> str:
         """The bloq class's name with its package.
 
-        The Qualtran standard library contains a heirarchy of packages under
+        The Qualtran standard library contains a hierarchy of packages under
         `qualtran.bloqs.*`. Each bloq class is defined in a module (i.e. the
         "*.py" file) and re-exported one level up.
         """

@@ -18,12 +18,13 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import attrs
 import filelock
 import nbconvert
 import nbformat
+import zmq
 from attrs import frozen
 from nbconvert.preprocessors import ExecutePreprocessor
 from nbformat import NotebookNode
@@ -31,7 +32,7 @@ from nbformat import NotebookNode
 from .git_tools import get_git_root
 
 
-def get_nb_rel_paths(sourceroot: Path) -> List[Tuple[Path, Path]]:
+def get_nb_rel_paths(sourceroot: Path) -> list[tuple[Path, Path]]:
     """List all checked-in *.ipynb files within `sourceroot`.
 
     Returns a tuple of the relative path and the path it's relative to (aka sourceroot)
@@ -101,7 +102,7 @@ class _NBInOutPaths:
         return self.md_needs_reexport() or self.nb_needs_reexport()
 
 
-def _make_link_replacements() -> List[Tuple[str, str]]:
+def _make_link_replacements() -> list[tuple[str, str]]:
     """Helper function to make a list of link replacements."""
     top_level = [
         'Bloq',
@@ -154,10 +155,26 @@ def execute_and_export_notebook(paths: _NBInOutPaths) -> Optional[Exception]:
     executor = ExecutePreprocessor(timeout=600, kernel_name="python3", record_timing=False)
     # Must manually lock the creation of the jupyter client to avoid a race condition.
     # https://github.com/jupyter/jupyter_client/issues/487#issuecomment-956206611
-    executor.km = executor.create_kernel_manager()
-    with filelock.FileLock("jupyter_kernel.lock", timeout=300):
-        asyncio.run(executor.async_start_new_kernel())
-        asyncio.run(executor.async_start_new_kernel_client())
+    for attempt in range(6):
+        try:
+            executor.km = executor.create_kernel_manager()
+            with filelock.FileLock("jupyter_kernel.lock", timeout=300):
+                asyncio.run(executor.async_start_new_kernel())
+                asyncio.run(executor.async_start_new_kernel_client())
+            break
+        except (RuntimeError, zmq.error.ZMQError) as e:
+            try:
+                executor._cleanup_kernel()
+            except Exception:
+                pass
+
+            if attempt == 5:
+                print(f'{paths.nb_in} kernel failed to start after 6 attempts!')
+                print(e)
+                return e
+
+            print(f"Kernel startup failed for {paths.nb_in} (Attempt {attempt+1}). Retrying...")
+            time.sleep(random.uniform(2, 6))
 
     print(f"Executing {paths.nb_in.stem}")
     try:
@@ -233,7 +250,7 @@ def execute_and_export_notebooks(
         output_md: Whether to save the executed notebooks as markdown
         only_out_of_date: Only re-execute and re-export notebooks whose output files
             are out of date.
-        n_workers: If set to 1, do not use parallelization. If set to `None` (the detault),
+        n_workers: If set to 1, do not use parallelization. If set to `None` (the default),
             `multiprocessing.Pool()` will be used, which uses the number of processors as
             a default. Otherwise, this argument is passed to
             `multiprocessing.Pool(n_workers)` to execute notebooks in parallel on this many

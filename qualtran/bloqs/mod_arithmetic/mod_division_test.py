@@ -80,14 +80,14 @@ def test_kaliski_symbolic_cost():
     # The toffoli cost from Litinski https://arxiv.org/abs/2306.08585 is 26n^2 + 2n.
     # The cost of Kaliski is 2*n*(cost of an iteration) + (cost of computing $p - x$)
     #
-    #   - The cost of of computing  $p-x$ in Litinski is 2n (Neg -> Add(p)). In our
+    #   - The cost of computing $p-x$ in Litinski is 2n (Neg -> Add(p)). In our
     #       construction this is just $n-1$ (BitwiseNot -> Add(p+1)).
     #   - The cost of an iteration in Litinski $13n$ since they ignore constants.
     #       Our construction is exactly the same but we also count the constants
-    #       which amout to $3$. for a total cost of $13n + 4$.
+    #       which amount to $3$. for a total cost of $13n + 4$.
     # For example the cost of ModDbl is 2n+1. In their figure 8, they report
     # it as just $2n$. ModDbl gets executed within the 2n loop so its contribution
-    # to the overal cost should be 4n^2 + 2n instead of just 4n^2.
+    # to the overall cost should be 4n^2 + 2n instead of just 4n^2.
     assert total_toff == 26 * n**2 + 9 * n - 1
 
 
@@ -142,7 +142,7 @@ def test_kaliski_steps():
             step, generalizer=(ignore_alloc_free, ignore_split_join)
         )
 
-    # check that for all inputs all 2n iteration work when excuted directly on the 6 steps
+    # check that for all inputs all 2n iteration work when executed directly on the 6 steps
     # and their decompositions.
     for x in range(mod):
         u, v, r, s, f = mod, x, 0, 1, 1

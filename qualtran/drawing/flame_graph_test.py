@@ -96,7 +96,7 @@ def test_get_flame_graph_data_prep_uniform():
             'PrepareUniformSuperposition[12][0](T:124);LessThanConstant[2][3](T:8);And(T:4)\t4',
             'PrepareUniformSuperposition[12][0](T:124);Rz(1.2309594173407745)(T:52)\t52',
             'PrepareUniformSuperposition[12][0](T:124);Rz(1.2309594173407745)(T:52)\t52',
-            'PrepareUniformSuperposition[12][0](T:124);And(T:4)\t4',
+            'PrepareUniformSuperposition[12][0](T:124);And00(T:4)\t4',
         ]
     )
     assert len(data) == len(should_be)

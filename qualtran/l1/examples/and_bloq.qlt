@@ -1,0 +1,6 @@
+# Qualtran-L1
+# 1.0.0
+
+extern qdef And
+from qualtran.bloqs.mcmt.And(1, 1, False)
+[ctrl: QBit[2], target: | -> QBit]

@@ -43,7 +43,7 @@ Usage as a script:
     python dev_tools/autogenerate-bloqs-notebooks-v2.py
 """
 
-from typing import Iterable, List
+from collections.abc import Iterable
 
 from qualtran_dev_tools.bloq_finder import get_bloqdocspecs
 from qualtran_dev_tools.jupyter_autogen import NotebookSpecV2, render_notebook
@@ -85,7 +85,7 @@ def render_notebooks():
         render_notebook(nbspec)
 
 
-def _get_toc_section_lines(caption: str, entries: List[str], maxdepth: int = 2) -> List[str]:
+def _get_toc_section_lines(caption: str, entries: list[str], maxdepth: int = 2) -> list[str]:
     """Helper function to get the lines for a section of the table-of-contents."""
     return (
         ['.. toctree::', f'    :maxdepth: {maxdepth}', f'    :caption: {caption}:', '']

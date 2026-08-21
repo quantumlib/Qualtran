@@ -22,9 +22,22 @@ The `Toffoli` bloq is similar to the `And` bloq. Toffoli will flip the target bi
 to the and of its control registers. `And` will output the result into a fresh register.
 """
 
+from __future__ import annotations
+
 import itertools
 from functools import cached_property
-from typing import cast, Dict, Iterable, Iterator, List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import (
+    cast,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 import attrs
 import cirq
@@ -53,7 +66,7 @@ from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.drawing import Circle, directional_text_box, Text, WireSymbol
 from qualtran.resource_counting import BloqCountDictT, MutableBloqCountDictT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import generalize_cvs, ignore_cliffords
-from qualtran.simulation.classical_sim import ClassicalValT
+from qualtran.simulation.classical_sim import ClassicalValT, QCDTypeDomainError
 from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
@@ -96,7 +109,15 @@ class And(GateWithRegisters):
         return attrs.evolve(self, uncompute=not self.uncompute)
 
     @classmethod
-    def qcall(cls, ctrl: 'QVarT', *, cv1=1, cv2=1, uncompute: bool = False, **maybe_target: 'QVar'):
+    def qcall(
+        cls,
+        ctrl: QVarT | Sequence[QVarT],
+        *,
+        cv1=1,
+        cv2=1,
+        uncompute: bool = False,
+        **maybe_target: 'QVar',
+    ):
         ctrl = np.asarray(ctrl)
         bb = ctrl.item(0).bb
         bloq = cls(cv1=cv1, cv2=cv2, uncompute=uncompute)
@@ -117,7 +138,7 @@ class And(GateWithRegisters):
 
         # Uncompute
         if target != out:
-            raise ValueError(
+            raise QCDTypeDomainError(
                 f"Inconsistent `target` found for uncomputing `And`: {ctrl=}, {target=}. Expected target={out}"
             )
         return {'ctrl': ctrl}
@@ -165,8 +186,9 @@ class And(GateWithRegisters):
         return Circle(filled)
 
     def __str__(self):
-        dag = '†' if self.uncompute else ''
-        return f'And{dag}'
+        cvs = '' if (self.cv1, self.cv2) == (1, 1) else f'{self.cv1}{self.cv2}'
+        suffix = '_adj' if self.uncompute else ''
+        return f'And{cvs}{suffix}'
 
     def decompose_from_registers(
         self,
@@ -255,7 +277,7 @@ _AND_DOC = BloqDocSpec(bloq_cls=And, examples=(_and_bloq,))
 
 
 def _to_tuple_or_has_length(
-    x: Union[HasLength, Iterable[SymbolicInt]]
+    x: Union[HasLength, Iterable[SymbolicInt]],
 ) -> Union[HasLength, Tuple[SymbolicInt, ...]]:
     if isinstance(x, HasLength):
         if is_symbolic(x.n):

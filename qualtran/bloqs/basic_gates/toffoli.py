@@ -65,6 +65,12 @@ class Toffoli(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('ctrl', QBit(), shape=(2,)), Register('target', QBit())])
 
+    @classmethod
+    def qcall(cls, ctrl1, ctrl2, target):
+        bb = ctrl1.bb
+        (ctrl1, ctrl2), target = bb.add(cls(), ctrl=[ctrl1, ctrl2], target=target)
+        return ctrl1, ctrl2, target
+
     def adjoint(self) -> 'Bloq':
         return self
 

@@ -29,6 +29,7 @@ from qualtran import (
     CtrlSpec,
     DecomposeTypeError,
     GateWithRegisters,
+    QVar,
     Register,
     Signature,
     Soquet,
@@ -78,6 +79,10 @@ class TwoBitSwap(Bloq):
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic.")
+
+    @classmethod
+    def qcall(cls, x: 'QVar', y: 'QVar'):
+        return x.bb.add(cls(), x=x, y=y)
 
     def as_cirq_op(
         self,
@@ -154,6 +159,10 @@ class TwoBitCSwap(Bloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(ctrl=1, x=1, y=1)
+
+    @classmethod
+    def qcall(cls, ctrl: 'QVar', x: 'QVar', y: 'QVar'):
+        return ctrl.bb.add(cls(), ctrl=ctrl, x=x, y=y)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic.")
@@ -251,6 +260,12 @@ class Swap(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(x=self.bitsize, y=self.bitsize)
 
+    @classmethod
+    def qcall(cls, x: 'QVar', y: 'QVar') -> Tuple['QVar', 'QVar']:
+        if x.dtype.num_qubits != y.dtype.num_qubits:
+            raise ValueError(f"Bitsizes of registers must match: {x.dtype} vs {y.dtype}")
+        return x.bb.add(cls(bitsize=x.dtype.num_qubits), x=x, y=y)
+
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x: 'Soquet', y: 'Soquet'
     ) -> Dict[str, 'SoquetT']:
@@ -344,6 +359,12 @@ class CSwap(GateWithRegisters):
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
+
+    @classmethod
+    def qcall(cls, ctrl: 'QVar', x: 'QVar', y: 'QVar'):
+        if x.dtype.num_qubits != y.dtype.num_qubits:
+            raise ValueError(f"Bitsizes of registers must match: {x.dtype} vs {y.dtype}")
+        return ctrl.bb.add(cls(bitsize=x.dtype.num_qubits), ctrl=ctrl, x=x, y=y)
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'Soquet', y: 'Soquet'

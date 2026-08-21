@@ -13,7 +13,10 @@
 #  limitations under the License.
 
 from qualtran.bloqs.phase_estimation.kaiser_window_state import KaiserWindowState
-from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
-from qualtran.bloqs.phase_estimation.qpe_window_state import RectangularWindowState
+from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState, LPRSInterimPrep
+from qualtran.bloqs.phase_estimation.qpe_window_state import (
+    QPEWindowStateBase,
+    RectangularWindowState,
+)
 from qualtran.bloqs.phase_estimation.qubitization_qpe import QubitizationQPE
 from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE

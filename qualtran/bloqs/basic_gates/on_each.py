@@ -15,7 +15,7 @@
 """Classes to apply single qubit bloq to multiple qubits."""
 
 from functools import cached_property
-from typing import Dict, Optional, Tuple
+from typing import cast, Dict, Optional, Tuple, TYPE_CHECKING
 
 import attrs
 import sympy
@@ -26,6 +26,7 @@ from qualtran import (
     DecomposeTypeError,
     QAny,
     QDType,
+    QVar,
     Register,
     Signature,
     Soquet,
@@ -35,6 +36,10 @@ from qualtran.drawing import Text, WireSymbol
 from qualtran.drawing.musical_score import TextBox
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.symbolics import SymbolicInt
+
+if TYPE_CHECKING:
+    from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.simulation.verification import ClassicalSimTestCase
 
 
 @attrs.frozen
@@ -71,6 +76,10 @@ class OnEach(Bloq):
         )
         return Signature([reg])
 
+    @classmethod
+    def qcall(cls, q: 'QVar', *, gate: Bloq) -> 'QVar':
+        return q.bb.add(cls(n=q.dtype.num_qubits, gate=gate, target_dtype=q.dtype), q=q)  # type: ignore[arg-type]
+
     def build_composite_bloq(self, bb: BloqBuilder, *, q: Soquet) -> Dict[str, SoquetT]:
         if isinstance(self.n, sympy.Expr):
             raise DecomposeTypeError(f'Cannote decompose {self} with symbolic bitsize {self.n}')
@@ -78,6 +87,20 @@ class OnEach(Bloq):
         for i in range(self.n):
             qs[i] = bb.add(self.gate, q=qs[i])
         return {'q': bb.join(qs, self.target_dtype)}
+
+    def on_classical_vals(self, q: int) -> Dict[str, 'ClassicalValT']:
+        n = self.n
+        if isinstance(n, sympy.Expr):
+            raise ValueError(f'Cannot simulate symbolic bloq {self}')
+        dtype = self.signature[0].dtype
+        bits = dtype.to_bits(q)
+        out_bits = list(bits)
+        for i in range(n):
+            out = self.gate.on_classical_vals(q=bits[i])
+            if out is NotImplemented:
+                return NotImplemented
+            out_bits[i] = int(cast(int, out['q']))
+        return {'q': dtype.from_bits(out_bits)}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {self.gate: self.n}
@@ -97,3 +120,37 @@ class OnEach(Bloq):
 
     def __str__(self):
         return f'{self.gate}(oneach={self.n})'
+
+
+def _get_on_each_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+    """Test cases for the `OnEach` bloq.
+
+    These specify concrete (non-symbolic) bloq instances with specific
+    compile-time parameter combinations. Runtime quantum inputs are
+    generated automatically by the verification framework.
+    """
+    from qualtran import QInt, QUInt
+    from qualtran.bloqs.basic_gates import XGate
+    from qualtran.simulation.verification import ClassicalSimTestCase
+
+    cases: list[ClassicalSimTestCase] = []
+    for n in [2, 3, 4]:
+        # Default dtype (QAny)
+        cases.append(
+            ClassicalSimTestCase(bloq=OnEach(n=n, gate=XGate()), name=f"OnEach(XGate, n={n})")
+        )
+        # Unsigned
+        cases.append(
+            ClassicalSimTestCase(
+                bloq=OnEach(n=n, gate=XGate(), target_dtype=QUInt(n)),
+                name=f"OnEach(XGate, n={n}, QUInt)",
+            )
+        )
+        # Signed
+        cases.append(
+            ClassicalSimTestCase(
+                bloq=OnEach(n=n, gate=XGate(), target_dtype=QInt(n)),
+                name=f"OnEach(XGate, n={n}, QInt)",
+            )
+        )
+    return cases

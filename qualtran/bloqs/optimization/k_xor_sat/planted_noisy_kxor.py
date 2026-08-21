@@ -119,7 +119,7 @@ class AliceTheorem:
     def __attrs_post_init__(self):
         assert self.k % 2 == 0, "k must be even"
         assert self.ell % self.k == 0, "l must be a multiple of k"
-        assert self.n >= self.k * self.ell, "n must be atleast lk"
+        assert self.n >= self.k * self.ell, "n must be at least lk"
         assert 0 <= self.kappa <= 1
         assert 0 < self.eps <= self.kappa / (2 + self.kappa)
         assert self.fail_prob < 1, f"fail. prob. {self.fail_prob} = 3 n^(eps l) must be less than 1"
@@ -217,7 +217,7 @@ class PlantedNoisyKXOR(Bloq):
     $\zeta$ is picked to be $1 / \ln n$.
 
     Args:
-        inst_guide: The subset of contraints $\mathcal{I}_\text{guide}$ for the guided state.
+        inst_guide: The subset of constraints $\mathcal{I}_\text{guide}$ for the guided state.
         inst_solve: The subset of constraints $\mathcal{I}$ for eigenvalue estimation.
         ell: Kikuchi parameter $\ell$.
         rho: the planted advantage $\rho$ in the planted case.
@@ -355,7 +355,6 @@ class PlantedNoisyKXOR(Bloq):
         eigenvalue_threshold = 0.995 * self.rho * self.sparsity
 
         kappa = 0.99 * self.rho
-        eps = 0.005
 
         # Thm 4.18 proof para 3
         # kappa' <= (1 - alpha) lambda

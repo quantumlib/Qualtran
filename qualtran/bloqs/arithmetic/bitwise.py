@@ -26,21 +26,24 @@ from qualtran import (
     DecomposeTypeError,
     QAny,
     QDType,
+    QInt,
     QMontgomeryUInt,
     QUInt,
+    QVar,
     Register,
     Signature,
     Soquet,
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import CNOT, OnEach, XGate
-from qualtran.drawing import TextBox, WireSymbol
+from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.simulation.verification import ClassicalSimTestCase
 
 
 @frozen
@@ -95,9 +98,9 @@ class XorK(Bloq):
         return {XGate(): num_flips}
 
     def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
-        if isinstance(self.k, sympy.Expr):
-            raise ValueError(f"cannot classically simulate with symbolic {self.k=}")
-
+        if self.is_symbolic():
+            raise ValueError(f"cannot classically simulate with symbolic {self}")
+        assert isinstance(self.k, int)
         k: 'ClassicalValT' = self.k
         if isinstance(x, np.integer):
             k = np.array(k, dtype=x.dtype)[()]
@@ -107,7 +110,7 @@ class XorK(Bloq):
         self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return TextBox("")
+            return Text("")
 
         return TextBox(f"⊕{self.k}")
 
@@ -144,8 +147,16 @@ class Xor(Bloq):
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=self.dtype, y=self.dtype)
 
-    def adjoint(self) -> 'Xor':
-        return self
+    @classmethod
+    def qcall(cls, x: 'QVar', y: 'QVar'):
+        xdtype = x.dtype
+        ydtype = y.dtype
+        if not xdtype == ydtype:
+            raise ValueError(
+                f"Cannot determine the dtype for Xor from soquets of type {xdtype} and {ydtype}"
+            )
+        assert isinstance(xdtype, QDType), xdtype
+        return x.bb.add(cls(dtype=xdtype), x=x, y=y)
 
     def build_composite_bloq(self, bb: BloqBuilder, x: Soquet, y: Soquet) -> dict[str, SoquetT]:
         if not isinstance(self.dtype.num_qubits, int):
@@ -162,9 +173,14 @@ class Xor(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {CNOT(): self.dtype.num_qubits}
 
+    def adjoint(self) -> 'Xor':
+        return self
+
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT'
     ) -> dict[str, 'ClassicalValT']:
+        if is_symbolic(self.dtype):
+            raise ValueError(f"cannot classically simulate with symbolic {self.dtype=}")
         return {'x': x, 'y': x ^ y}
 
     def wire_symbol(
@@ -210,26 +226,36 @@ class BitwiseNot(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build_from_dtypes(x=self.dtype)
 
+    @classmethod
+    def qcall(cls, x: 'QVar') -> 'QVar':
+        return x.bb.add(cls(dtype=x.dtype), x=x)  # type: ignore[arg-type]
+
     def adjoint(self) -> 'BitwiseNot':
         return self
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> dict[str, 'SoquetT']:
+        if is_symbolic(self.dtype):
+            raise DecomposeTypeError(f"cannot decompose symbolic {self}")
         x = bb.add(OnEach(self.dtype.num_qubits, XGate(), self.dtype), q=x)
         return {'x': x}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {XGate(): self.dtype.num_qubits}
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return TextBox("")
+            return Text("")
 
         return TextBox("~x")
 
     def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
-        x = -x - 1
-        if isinstance(self.dtype, (QUInt, QMontgomeryUInt)):
-            x %= 2**self.dtype.bitsize
-        return {'x': x}
+        if is_symbolic(self.dtype):
+            raise ValueError(f"cannot classically simulate with symbolic {self.dtype=}")
+        if isinstance(self.dtype, QInt):
+            return {'x': ~x}
+        return {'x': ~x % (2**self.dtype.num_qubits)}
 
     def __str__(self):
         return f'BitwiseNot({self.dtype.num_bits})'
@@ -249,3 +275,60 @@ def _bitwise_not_symb() -> BitwiseNot:
 
 
 _BITWISE_NOT_DOC = BloqDocSpec(bloq_cls=BitwiseNot, examples=(_bitwise_not, _bitwise_not_symb))
+
+
+def _get_xork_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+    """Test cases for the `XorK` bloq."""
+    import itertools
+
+    from qualtran.simulation.verification import ClassicalSimTestCase
+
+    cases: list[ClassicalSimTestCase] = []
+    for bs, k in itertools.product([2, 3, 4], [0, 1, 3]):
+        cases.append(
+            ClassicalSimTestCase(bloq=XorK(QUInt(bs), k=k), name=f"XorK(QUInt({bs}), k={k})")
+        )
+    for bs, k in itertools.product([3, 4], [-2, 0, 1]):
+        cases.append(
+            ClassicalSimTestCase(bloq=XorK(QInt(bs), k=k), name=f"XorK(QInt({bs}), k={k})")
+        )
+    for bs, k in [(4, 5)]:
+        cases.append(
+            ClassicalSimTestCase(
+                bloq=XorK(QMontgomeryUInt(bs), k=k), name=f"XorK(QMontgomeryUInt({bs}), k={k})"
+            )
+        )
+    return cases
+
+
+def _get_xor_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+    """Test cases for the `Xor` bloq."""
+    from qualtran.simulation.verification import ClassicalSimTestCase
+
+    cases: list[ClassicalSimTestCase] = []
+    for bs in [2, 3, 4]:
+        cases.append(ClassicalSimTestCase(bloq=Xor(QUInt(bs)), name=f"Xor(QUInt({bs}))"))
+        cases.append(ClassicalSimTestCase(bloq=Xor(QInt(bs)), name=f"Xor(QInt({bs}))"))
+    cases.append(ClassicalSimTestCase(bloq=Xor(QMontgomeryUInt(4)), name="Xor(QMontgomeryUInt(4))"))
+    return cases
+
+
+def _get_bitwise_not_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+    """Test cases for the `BitwiseNot` bloq."""
+    from qualtran.simulation.verification import ClassicalSimTestCase
+
+    cases: list[ClassicalSimTestCase] = []
+    for bs in [1, 2, 3, 4]:
+        cases.append(
+            ClassicalSimTestCase(bloq=BitwiseNot(QUInt(bs)), name=f"BitwiseNot(QUInt({bs}))")
+        )
+    for bs in [2, 3, 4]:
+        cases.append(
+            ClassicalSimTestCase(bloq=BitwiseNot(QInt(bs)), name=f"BitwiseNot(QInt({bs}))")
+        )
+    cases.append(
+        ClassicalSimTestCase(
+            bloq=BitwiseNot(QMontgomeryUInt(4)), name="BitwiseNot(QMontgomeryUInt(4))"
+        )
+    )
+    return cases

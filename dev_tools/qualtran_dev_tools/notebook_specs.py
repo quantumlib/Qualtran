@@ -27,8 +27,6 @@ generate the static exports for the Qualtran web UI.
  3. Update the `NotebookSpec` `bloq_specs` field to include the `BloqDocSpec` for your new bloq.
 """
 
-from typing import List
-
 from qualtran_dev_tools.git_tools import get_git_root
 
 import qualtran.bloqs.arithmetic.addition
@@ -147,7 +145,7 @@ SOURCE_DIR = GIT_ROOT / 'qualtran/'
 # --------------------------------------------------------------------------
 # -----   Basic Gates   ----------------------------------------------------
 # --------------------------------------------------------------------------
-BASIC_GATES: List[NotebookSpecV2] = [
+BASIC_GATES: list[NotebookSpecV2] = [
     NotebookSpecV2(
         title='T Gate',
         module=qualtran.bloqs.basic_gates.t_gate,
@@ -215,6 +213,16 @@ BASIC_GATES: List[NotebookSpecV2] = [
         ],
     ),
     NotebookSpecV2(
+        title='Quantum Constants',
+        module=qualtran.bloqs.basic_gates.qconst,
+        bloq_specs=[
+            qualtran.bloqs.basic_gates.qconst._QUINT_STATE_DOC,
+            qualtran.bloqs.basic_gates.qconst._QUINT_EFFECT_DOC,
+            qualtran.bloqs.basic_gates.qconst._QINT_STATE_DOC,
+            qualtran.bloqs.basic_gates.qconst._QINT_EFFECT_DOC,
+        ],
+    ),
+    NotebookSpecV2(
         title='Measurement',
         module=qualtran.bloqs.basic_gates.z_basis,
         path_stem='measurement',
@@ -279,7 +287,7 @@ BASIC_GATES: List[NotebookSpecV2] = [
 # --------------------------------------------------------------------------
 # -----   Chemistry   ------------------------------------------------------
 # --------------------------------------------------------------------------
-CHEMISTRY: List[NotebookSpecV2] = [
+CHEMISTRY: list[NotebookSpecV2] = [
     NotebookSpecV2(
         title='Sparse',
         module=qualtran.bloqs.chemistry.sparse,
@@ -797,7 +805,7 @@ ROT_QFT_PE = [
 # --------------------------------------------------------------------------
 # -----   Block Encoding   ----------------------------------------------------------
 # --------------------------------------------------------------------------
-BLOCK_ENCODING: List[NotebookSpecV2] = [
+BLOCK_ENCODING: list[NotebookSpecV2] = [
     NotebookSpecV2(
         title='Block Encoding Interface',
         module=qualtran.bloqs.block_encoding,
@@ -865,7 +873,7 @@ BLOCK_ENCODING: List[NotebookSpecV2] = [
 # --------------------------------------------------------------------------
 # -----   Optimization   ---------------------------------------------------
 # --------------------------------------------------------------------------
-OPTIMIZATION: List[NotebookSpecV2] = [
+OPTIMIZATION: list[NotebookSpecV2] = [
     # -----   Algorithm  ------------------------------------------
     NotebookSpecV2(
         title='kXOR: Instance load Oracles',
@@ -910,7 +918,7 @@ OPTIMIZATION: List[NotebookSpecV2] = [
     ),
 ]
 
-BOOKKEEPING: List[NotebookSpecV2] = [
+BOOKKEEPING: list[NotebookSpecV2] = [
     NotebookSpecV2(
         title='Split / Join',
         module=qualtran.bloqs.bookkeeping.split,
@@ -959,7 +967,7 @@ BOOKKEEPING: List[NotebookSpecV2] = [
 # --------------------------------------------------------------------------
 # -----   Other   ----------------------------------------------------------
 # --------------------------------------------------------------------------
-OTHER: List[NotebookSpecV2] = [
+OTHER: list[NotebookSpecV2] = [
     NotebookSpecV2(
         title='Prepare Uniform Superposition',
         module=qualtran.bloqs.state_preparation.prepare_uniform_superposition,

@@ -1,0 +1,6 @@
+# Qualtran-L1
+# 1.0.0
+
+extern qdef H
+from qualtran.bloqs.basic_gates.Hadamard
+[q: QBit]

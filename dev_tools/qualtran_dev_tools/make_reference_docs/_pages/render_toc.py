@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Callable, List, Sequence
+from collections.abc import Callable, Sequence
 
 from .._page import ModulePage, Page
 from .._render_context import RenderContext
@@ -28,7 +28,7 @@ def write_toc(toc_f, pages, _page_in_section, _pages_sort_key, render_context: R
         toc_f.write(f'   :caption: {section}\n')
         toc_f.write('   :maxdepth: 2\n\n')
 
-        spages: List[Page] = sorted(
+        spages: list[Page] = sorted(
             (p for p in pages if _page_in_section(p, section)), key=_pages_sort_key
         )
 

@@ -15,13 +15,13 @@ import os
 import subprocess
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Any, List
+from typing import Any
 
 import nbformat
 from nbconvert.preprocessors import ClearMetadataPreprocessor, ClearOutputPreprocessor
 
 
-def get_nb_rel_paths(rootdir) -> List[Path]:
+def get_nb_rel_paths(rootdir) -> list[Path]:
     """List all checked-in *.ipynb files within `rootdir`."""
     cp = subprocess.run(
         ['git', 'ls-files', '*.ipynb'],

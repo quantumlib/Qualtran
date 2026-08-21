@@ -12,3 +12,4 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from .guided_hamiltonian import GuidedHamiltonian, GuidedHamiltonianPhaseEstimation
+from .hamiltonian_simulation_by_gqsp import HamiltonianSimulationByGQSP

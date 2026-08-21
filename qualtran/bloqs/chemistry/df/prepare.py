@@ -51,7 +51,7 @@ class InnerPrepareDoubleFactorization(Bloq):
         succ_p: control to flag success for inner state preparation.
         p: Register for inner state preparation.
 
-    Refererences:
+    References:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor Hypercontraction](https://arxiv.org/abs/2011.03494).
         Step 3. Page 52.
     """
@@ -113,7 +113,7 @@ class OuterPrepareDoubleFactorization(Bloq):
         l: register to store L values for auxiliary index.
         succ_l: flag for success of this state preparation.
 
-    Refererences:
+    References:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             Hypercontraction](https://arxiv.org/abs/2011.03494)
             Appendix C, page 51 and 52
@@ -167,7 +167,7 @@ class OutputIndexedData(Bloq):
         rot: rotation for amplitude amplification.
         offset: offset for each DF factor.
 
-    Refererences:
+    References:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             Hypercontraction](https://arxiv.org/abs/2011.03494)
             Appendix C, page 52. Step 2.
@@ -196,6 +196,11 @@ class OutputIndexedData(Bloq):
         num_bits_xi = (self.num_spin_orb // 2 - 1).bit_length()
         bo = num_bits_xi + num_bits_lxi + self.num_bits_rot_aa + 1
         return {QROAM(self.num_aux + 1, bo): 1}
+
+    @classmethod
+    def _pkg_(cls) -> str:
+        # Local import
+        return '.'.join(cls.__module__.split('.')[:])
 
     def __str__(self) -> str:
         return "In_l-data_l"
