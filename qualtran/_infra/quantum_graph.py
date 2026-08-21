@@ -106,9 +106,12 @@ class _Soquet:
 
     @idx.validator
     def _check_idx(self, attribute, value):
-        if len(value) != len(self.reg.shape):
+        reg_shape = self.reg._shape
+        if not value and not reg_shape:
+            return value
+        if len(value) != len(reg_shape):
             raise ValueError(f"Bad index shape {value} for {self.reg}.")
-        for i, shape in zip(value, self.reg.shape):
+        for i, shape in zip(value, reg_shape):
             if i >= shape:
                 raise ValueError(f"Bad index {i} for {self.reg}.")
         return value

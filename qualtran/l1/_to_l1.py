@@ -18,12 +18,14 @@ import itertools
 import logging
 import uuid
 import warnings
+from collections import deque
 from typing import (
     Callable,
     cast,
     Container,
     Dict,
     List,
+    MutableMapping,
     Optional,
     Sequence,
     Set,
@@ -82,17 +84,23 @@ class Locals:
     bloqvars: Dict[qlt.Bloq, BloqKey] = attrs.field(factory=dict)
     varnames: Set[str] = attrs.field(factory=set)
     nodes: L1Nodes = attrs.field(default=qualtran_l1_nodes)
+    _prefix_counters: Dict[str, int] = attrs.field(factory=dict)
 
     def get_unique_name(self, prefix: str) -> str:
         """Get and register a unique name."""
-        candidate = f'{prefix}'
-        i = 1
+        if prefix not in self.varnames and prefix not in self._prefix_counters:
+            self.varnames.add(prefix)
+            self._prefix_counters[prefix] = 2
+            return prefix
+
+        i = self._prefix_counters.get(prefix, 2)
         while True:
+            candidate = f'{prefix}{i}'
+            i += 1
             if candidate not in self.varnames:
                 self.varnames.add(candidate)
+                self._prefix_counters[prefix] = i
                 return candidate
-            i += 1
-            candidate = f'{prefix}{i}'
 
     def register_name(self, name: str):
         """Register a specific name, so we don't accidentally reuse it."""
@@ -109,6 +117,53 @@ class Locals:
         name = self.get_unique_name(prefix=prefix)
         self.bloqvars[bloq] = name
         return name
+
+
+@attrs.mutable
+class QGlobals(MutableMapping[qlt.Bloq, BloqKey]):
+    """Handles assigning and tracking unique bloq keys (qdef names) for global Bloq objects."""
+
+    bloq_to_key: Dict[qlt.Bloq, BloqKey] = attrs.field(factory=dict)
+    bloq_keys: Set[BloqKey] = attrs.field(factory=set)
+    _base_counters: Dict[str, int] = attrs.field(factory=dict)
+    nodes: L1Nodes = attrs.field(default=qualtran_l1_nodes)
+
+    def __attrs_post_init__(self):
+        for key in self.bloq_to_key.values():
+            self.bloq_keys.add(key)
+
+    def __getitem__(self, key: qlt.Bloq) -> BloqKey:
+        return self.bloq_to_key[key]
+
+    def __setitem__(self, key: qlt.Bloq, value: BloqKey) -> None:
+        self.bloq_to_key[key] = value
+        self.bloq_keys.add(value)
+
+    def __delitem__(self, key: qlt.Bloq) -> None:
+        val = self.bloq_to_key.pop(key)
+        if val not in self.bloq_to_key.values():
+            self.bloq_keys.discard(val)
+
+    def __iter__(self):
+        return iter(self.bloq_to_key)
+
+    def __len__(self) -> int:
+        return len(self.bloq_to_key)
+
+    def __contains__(self, key: object) -> bool:
+        return key in self.bloq_to_key
+
+    def get_unique_bloq_key(self, bloq: qlt.Bloq) -> BloqKey:
+        """Get and register a unique bloq key for `bloq`."""
+        if bloq in self.bloq_to_key:
+            return self.bloq_to_key[bloq]
+
+        bloq_key = _get_unique_bloq_key(
+            bloq, self.bloq_keys, base_counters=self._base_counters, nodes=self.nodes
+        )
+        self.bloq_to_key[bloq] = bloq_key
+        self.bloq_keys.add(bloq_key)
+        return bloq_key
 
 
 def regs_to_sig_entry(
@@ -161,11 +216,19 @@ def signature_to_l1_entries(
     return [regs_to_sig_entry(reg_name, regs, nodes=nodes) for reg_name, regs in signature.groups()]
 
 
+def _get_cxn_left(cxn: qlt.Connection) -> '_Soquet':
+    return cxn.left
+
+
+def _get_cxn_right(cxn: qlt.Connection) -> '_Soquet':
+    return cxn.right
+
+
 @attrs.mutable
 class QDefBuilder:
     bloq: qlt.Bloq
     bloq_key: str
-    qglobals: Dict[qlt.Bloq, str]
+    qglobals: Union[QGlobals, Dict[qlt.Bloq, str]]
     nodes: L1Nodes = attrs.field(default=qualtran_l1_nodes)
     qlocals: Locals = attrs.field(factory=Locals)
 
@@ -241,15 +304,22 @@ class QDefBuilder:
             extern_reason='qcast',
         )
 
-    def add_alias_assignment_heuristically(self, bloq: qlt.Bloq) -> None:
-
-        if bloq not in self.qglobals:
-            bloq_key = _get_unique_bloq_key(bloq, self.qglobals.values(), nodes=self.nodes)
+    def add_alias_assignment_heuristically(
+        self, bloq: qlt.Bloq, *, skip_aliases: bool = False
+    ) -> None:
+        if isinstance(self.qglobals, QGlobals):
+            bloq_key = self.qglobals.get_unique_bloq_key(bloq)
+        elif bloq not in self.qglobals:
+            bloq_key = _get_unique_bloq_key(bloq, set(self.qglobals.values()), nodes=self.nodes)
             self.qglobals[bloq] = bloq_key
         else:
             bloq_key = self.qglobals[bloq]
 
         if bloq in self.qlocals.bloqvars:
+            return
+
+        if skip_aliases:
+            self.qlocals.bloqvars[bloq] = bloq_key
             return
 
         # Should we make an 'alias' or just use the original name?
@@ -274,7 +344,7 @@ class QDefBuilder:
             assert len(preds) == 0
             for suc in succs:
                 reg = suc.left.reg
-                if reg.shape:
+                if reg._shape:
                     v = self.nodes.QArgValueNode(reg.name, suc.left.idx)
                     self.qlocals.soqvars[suc.left] = v
                 else:
@@ -288,17 +358,15 @@ class QDefBuilder:
         if binst is qlt.RightDangle:
             assert len(succs) == 0
             finsoqs = _cxns_to_soq_dict(
-                self.bloq.signature.rights(),
-                preds,
-                get_me=lambda cxn: cxn.right,
-                get_assign=lambda cxn: cxn.left,
+                self.bloq.signature.rights(), preds, get_me=_get_cxn_right, get_assign=_get_cxn_left
             )
             for reg in self.bloq.signature.rights():
                 regname = reg.name
                 soqs = finsoqs[regname]
-                if qlt.BloqBuilder.is_ndarray(soqs):
-                    arr = np.empty(soqs.shape, dtype=object)
-                    for idx in itertools.product(*[range(sh) for sh in soqs.shape]):
+                if reg._shape:
+                    arr = np.empty(reg.shape, dtype=object)
+                    soqs = cast(np.ndarray, soqs)
+                    for idx in itertools.product(*[range(sh) for sh in reg.shape]):
                         arr[idx] = self.qlocals.soqvars[soqs[idx]]
                     kwargs.append(self.nodes.QArgNode(regname, arr.tolist()))
                 else:
@@ -312,17 +380,15 @@ class QDefBuilder:
         # Otherwise, this is a qcall to a sub-bloq.
         # A. Handle input variables to the subbloq
         inpsoqs = _cxns_to_soq_dict(
-            binst.bloq.signature.lefts(),
-            preds,
-            get_me=lambda cxn: cxn.right,
-            get_assign=lambda cxn: cxn.left,
+            binst.bloq.signature.lefts(), preds, get_me=_get_cxn_right, get_assign=_get_cxn_left
         )
         for reg in binst.bloq.signature.lefts():
             regname = reg.name
             soqs = inpsoqs[regname]
-            if qlt.BloqBuilder.is_ndarray(soqs):
-                arr = np.empty(soqs.shape, dtype=object)
-                for idx in itertools.product(*[range(sh) for sh in soqs.shape]):
+            if reg._shape:
+                arr = np.empty(reg.shape, dtype=object)
+                soqs = cast(np.ndarray, soqs)
+                for idx in itertools.product(*[range(sh) for sh in reg.shape]):
                     arr[idx] = self.qlocals.soqvars[soqs[idx]]
                 kwargs.append(self.nodes.QArgNode(regname, arr.tolist()))
             else:
@@ -332,10 +398,7 @@ class QDefBuilder:
 
         # B: Handle output variables from the subbloq
         retsoqs = _cxns_to_soq_dict(
-            binst.bloq.signature.rights(),
-            succs,
-            get_me=lambda cxn: cxn.left,
-            get_assign=lambda cxn: cxn.left,
+            binst.bloq.signature.rights(), succs, get_me=_get_cxn_left, get_assign=_get_cxn_left
         )
         rets: List[str] = []
         for reg in binst.bloq.signature.rights():
@@ -343,8 +406,9 @@ class QDefBuilder:
             soqs = retsoqs[regname]
             basename = self.qlocals.get_unique_name(regname)
 
-            if qlt.BloqBuilder.is_ndarray(soqs):
-                for idx in itertools.product(*[range(sh) for sh in soqs.shape]):
+            if reg._shape:
+                soqs = cast(np.ndarray, soqs)
+                for idx in itertools.product(*[range(sh) for sh in reg.shape]):
                     # Track indexed soquets as independent local variables
                     self.qlocals.soqvars[soqs[idx]] = self.nodes.QArgValueNode(basename, idx)
                 # But syntactically, we assign to an indexless basename.
@@ -384,10 +448,11 @@ class QDefBuilder:
 
 def bloq_to_ast(
     bloq: qlt.Bloq,
-    qglobals: Dict[qlt.Bloq, BloqKey],
+    qglobals: Union[QGlobals, Dict[qlt.Bloq, BloqKey]],
     *,
     extern_only_from: bool,
     force_extern: bool = False,
+    skip_aliases: bool = False,
     level: int = 0,
     nodes: L1Nodes = qualtran_l1_nodes,
 ) -> Tuple[QDefWithContext, List['qlt.Bloq']]:
@@ -399,11 +464,12 @@ def bloq_to_ast(
         fmt: A filled-in subroutine formatter for this bloq.
         subbloqs: The subbloqs found in the traversal.
     """
-
-    if bloq in qglobals:
+    if isinstance(qglobals, QGlobals):
+        bloq_key = qglobals.get_unique_bloq_key(bloq)
+    elif bloq in qglobals:
         bloq_key = qglobals[bloq]
     else:
-        bloq_key = _get_unique_bloq_key(bloq, qglobals.values(), nodes=nodes)
+        bloq_key = _get_unique_bloq_key(bloq, set(qglobals.values()), nodes=nodes)
         qglobals[bloq] = bloq_key
 
     qdb = QDefBuilder(
@@ -441,15 +507,16 @@ def bloq_to_ast(
             return qdb.finalize_extern(reason='DecomposeNotImplementedError'), []
 
     g = cbloq._binst_graph
+    sorted_binsts = list(greedy_topological_sort(g))
 
     # Make aliases for all the bloqs we find
-    for binst in greedy_topological_sort(g):
+    for binst in sorted_binsts:
         if isinstance(binst, qlt.DanglingT):
             continue
-        qdb.add_alias_assignment_heuristically(binst.bloq)
+        qdb.add_alias_assignment_heuristically(binst.bloq, skip_aliases=skip_aliases)
 
     # Add calls and returns
-    for binst in greedy_topological_sort(g):
+    for binst in sorted_binsts:
         preds, succs = _binst_to_cxns(binst, binst_graph=g)
         qdb.add_bloqnection(binst, preds, succs)
 
@@ -460,12 +527,22 @@ def bloq_to_ast(
 class L1ModuleBuilder:
     """Format and export a Qualtran-L1 'module': a collection of 'qdef' bloq definitions."""
 
-    qglobals: Dict[qlt.Bloq, BloqKey] = attrs.field(factory=dict)
+    qglobals: QGlobals = attrs.field(factory=QGlobals)
     done: Set[qlt.Bloq] = attrs.field(factory=set)
     qdefs: List[QDefWithContext] = attrs.field(factory=list)
     extern_qdefs: List[QDefWithContext] = attrs.field(factory=list)
     nodes: L1Nodes = attrs.field(default=qualtran_l1_nodes)
     # all_costs: Dict['CostKey', Dict] = attrs.field(factory=dict)
+
+    def __attrs_post_init__(self):
+        if not isinstance(self.qglobals, QGlobals):
+            self.qglobals = QGlobals(
+                bloq_to_key=dict(self.qglobals),
+                bloq_keys=set(self.qglobals.values()),
+                nodes=self.nodes,
+            )
+        elif self.qglobals.nodes is qualtran_l1_nodes and self.nodes is not qualtran_l1_nodes:
+            self.qglobals.nodes = self.nodes
 
     def add_bloqs(
         self,
@@ -474,17 +551,18 @@ class L1ModuleBuilder:
         annotate_costs: bool = False,
         extern_only_from: bool = True,
         force_extern_pred: Callable[['qlt.Bloq'], bool] = lambda b: False,
+        skip_aliases: bool = False,
     ) -> BloqKey:
 
-        # Stack of (Bloq, level) indices where `level` is the level of recursion
-        subbloqs: List[Tuple[qlt.Bloq, int]] = [(root, 0)]
+        # Queue of (Bloq, level) indices where `level` is the level of recursion
+        subbloqs: deque[Tuple[qlt.Bloq, int]] = deque([(root, 0)])
 
         # cks = [QECGatesCost(), QubitCount()]
         # if not self.all_costs:
         #     self.all_costs = {ck: {} for ck in cks}
 
         while subbloqs:
-            bloq, level = subbloqs.pop(0)
+            bloq, level = subbloqs.popleft()
             if bloq in self.done:
                 continue
 
@@ -495,10 +573,11 @@ class L1ModuleBuilder:
                 qglobals=self.qglobals,
                 extern_only_from=extern_only_from,
                 force_extern=force_extern,
+                skip_aliases=skip_aliases,
                 level=level,
                 nodes=self.nodes,
             )
-            subbloqs += [(nsb, level + 1) for nsb in new_subbloqs]
+            subbloqs.extend((nsb, level + 1) for nsb in new_subbloqs)
 
             # if annotate_costs:
             #     lines = get_cost_lines(bloq, cks, self.all_costs)
@@ -549,6 +628,7 @@ def dump_l1(
     annotate_costs: bool = False,
     extern_only_from: bool = False,
     force_extern_pred: Callable[['qlt.Bloq'], bool] = lambda b: False,
+    skip_aliases: bool = False,
     nodes: L1Nodes = qualtran_l1_nodes,
 ) -> Optional[str]:
     from qualtran.l1 import L1ASTPrinter
@@ -559,6 +639,7 @@ def dump_l1(
         annotate_costs=annotate_costs,
         extern_only_from=extern_only_from,
         force_extern_pred=force_extern_pred,
+        skip_aliases=skip_aliases,
     )
     l1_mod = l1_mb.finalize()
     l1_txt = L1ASTPrinter().visit(l1_mod)
@@ -570,7 +651,9 @@ def dump_l1(
     return root_bloq_key
 
 
-def dump_root_l1(bloq: qlt.Bloq, *, nodes: L1Nodes = qualtran_l1_nodes) -> str:
+def dump_root_l1(
+    bloq: qlt.Bloq, *, skip_aliases: bool = False, nodes: L1Nodes = qualtran_l1_nodes
+) -> str:
     from qualtran.l1 import L1ASTPrinter
 
     def extern_all_but_root(b: qlt.Bloq) -> bool:
@@ -580,7 +663,10 @@ def dump_root_l1(bloq: qlt.Bloq, *, nodes: L1Nodes = qualtran_l1_nodes) -> str:
 
     l1_mb = L1ModuleBuilder(nodes=nodes)
     _root_bloq_key = l1_mb.add_bloqs(
-        root=bloq, extern_only_from=True, force_extern_pred=extern_all_but_root
+        root=bloq,
+        extern_only_from=True,
+        force_extern_pred=extern_all_but_root,
+        skip_aliases=skip_aliases,
     )
     l1_mod = l1_mb.finalize()
     l1_txt = L1ASTPrinter().visit(l1_mod)
@@ -589,30 +675,41 @@ def dump_root_l1(bloq: qlt.Bloq, *, nodes: L1Nodes = qualtran_l1_nodes) -> str:
 
 
 def _get_unique_bloq_key(
-    bloq: qlt.Bloq, bloq_keys: Container[str], *, nodes: L1Nodes = qualtran_l1_nodes
+    bloq: qlt.Bloq,
+    bloq_keys: Container[str],
+    *,
+    base_counters: Optional[Dict[str, int]] = None,
+    nodes: L1Nodes = qualtran_l1_nodes,
 ) -> str:
-    """Heuristic for writing a human-readable bloq key"""
+    """Heuristic for writing a human-readable bloq key."""
     from qualtran.l1 import parse_objectstring
 
     key = str(bloq).replace('†', '_dag')
     try:
         structured_key = parse_objectstring(key, nodes=nodes)
-        key = structured_key.canonical_str()
-        if key not in bloq_keys:
+        base_key = structured_key.canonical_str()
+        if base_key not in bloq_keys:
             log.debug("Using structured __str__ for %s", bloq)
-            return key
-        i = 1
+            if base_counters is not None:
+                base_counters[base_key] = 1
+            return base_key
+
+        i = 1 if base_counters is None else base_counters.get(base_key, 1)
         while True:
             new_cargs = tuple(structured_key.cargs) + (
                 nodes.CArgNode(key='variant', value=nodes.LiteralNode(value=i)),
             )
             key = attrs.evolve(structured_key, cargs=new_cargs).canonical_str()
+            i += 1
             if key not in bloq_keys:
+                if base_counters is not None:
+                    base_counters[base_key] = i
                 log.warning(
-                    "Structured __str__ for %s found, but had to be disambiguated, i=%d", bloq, i
+                    "Structured __str__ for %s found, but had to be disambiguated, i=%d",
+                    bloq,
+                    i - 1,
                 )
                 return key
-            i += 1
     except ValueError as e:
         log.error("Invalid bloq __str__ %s for %s: %s", bloq, repr(bloq), e)
         return f'bloq{uuid.uuid4().hex}'

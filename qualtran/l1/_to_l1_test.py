@@ -26,6 +26,8 @@ from qualtran.l1._to_l1 import (
     bloq_to_ast,
     dump_l1,
     dump_root_l1,
+    Locals,
+    QGlobals,
     regs_to_sig_entry,
     signature_to_l1_entries,
 )
@@ -275,3 +277,69 @@ def test_module_builder_str():
     s = str(l1_mb)
     assert s.startswith('L1ModuleBuilder(')
     assert 'CSwap' in s
+
+
+# ---------------------------------------------------------------------------
+# Locals and QGlobals unique key generation tests
+# ---------------------------------------------------------------------------
+
+
+def test_locals_get_unique_name():
+    locals_mgr = Locals()
+    assert locals_mgr.get_unique_name('reg') == 'reg'
+    assert locals_mgr.get_unique_name('reg') == 'reg2'
+    assert locals_mgr.get_unique_name('reg') == 'reg3'
+
+    # Independent prefix
+    assert locals_mgr.get_unique_name('other') == 'other'
+    assert locals_mgr.get_unique_name('other') == 'other2'
+
+    # Pre-registered name handling
+    locals_mgr.register_name('reg4')
+    assert locals_mgr.get_unique_name('reg') == 'reg5'
+    assert locals_mgr.get_unique_name('reg') == 'reg6'
+
+
+def test_qglobals_unique_bloq_keys():
+    import attrs
+
+    @attrs.frozen
+    class DummyBloq(qlt.Bloq):
+        val: int
+
+        @property
+        def signature(self) -> qlt.Signature:
+            return qlt.Signature([qlt.Register('q', qdt.QBit())])
+
+        def __str__(self) -> str:
+            return "DummyBloq()"
+
+    qglobals = QGlobals()
+    b1 = DummyBloq(val=1)
+    b2 = DummyBloq(val=2)
+    b3 = DummyBloq(val=3)
+
+    k1 = qglobals.get_unique_bloq_key(b1)
+    k2 = qglobals.get_unique_bloq_key(b2)
+    k3 = qglobals.get_unique_bloq_key(b3)
+
+    assert k1 == 'DummyBloq'
+    assert k2 == 'DummyBloq(variant=1)'
+    assert k3 == 'DummyBloq(variant=2)'
+
+    # Re-querying existing bloq returns cached key
+    assert qglobals.get_unique_bloq_key(b1) == 'DummyBloq'
+    assert qglobals[b2] == 'DummyBloq(variant=1)'
+    assert len(qglobals) == 3
+    assert b3 in qglobals
+
+
+def test_dump_l1_skip_aliases():
+    # Long bloq name that would normally be aliased
+    bloq = CSwap(bitsize=2)
+    txt_with_aliases = dump_l1(bloq, skip_aliases=False)
+    txt_without_aliases = dump_l1(bloq, skip_aliases=True)
+
+    assert isinstance(txt_with_aliases, str)
+    assert isinstance(txt_without_aliases, str)
+    assert "alias" not in txt_without_aliases
