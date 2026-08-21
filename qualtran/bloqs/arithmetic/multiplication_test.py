@@ -37,6 +37,7 @@ from qualtran.bloqs.arithmetic.multiplication import (
 from qualtran.bloqs.arithmetic.subtraction import Subtract
 from qualtran.bloqs.basic_gates import CNOT, IntState, Toffoli, XGate
 from qualtran.bloqs.mcmt import MultiControlX
+from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.symbolics import HasLength
 from qualtran.testing import execute_notebook
@@ -118,6 +119,94 @@ def test_product():
     cbloq = bb.finalize(a=q0, b=q1, result=q2)
     num_toff = 2 * bitsize * mbits - max(bitsize, mbits)
     assert t_complexity(cbloq) == TComplexity(t=4 * num_toff)
+
+def test_product_gates():
+    ab_sets = [(a, b) for a in range(1, 4) for b in range(1, 4)]
+    
+    for a, b in ab_sets:        
+        assert _test_specific_product_ands(a, b), "AND gate count is incorrect"
+        assert _test_specific_product_validity(a, b), "Product gate does not perform the correct transformation"
+        
+        print(f"PRODUCT is correct for {a}x{b}")
+
+
+def _keep_toffoli_gates(gate):
+        okay_gates = [cirq.Pauli, cirq.ZPowGate, cirq.YPowGate, cirq.XPowGate, cirq.CZPowGate, cirq.MeasurementGate, cirq.ResetChannel, cirq.CCXPowGate, And]
+        
+        if isinstance(gate, cirq.ClassicallyControlledOperation):
+            return True
+        
+        for compare in okay_gates:
+            if isinstance(gate._gate, compare):
+                return True
+
+        return False
+
+def _test_specific_product_ands(num_bits_a, num_bits_b):
+    # Verify that the number of queries to AND (not AND adjoint) is correct
+    # this corresponds with the number of Toffoli gates used.
+    result_size = 2 * max(num_bits_a, num_bits_b)
+    gate = Product(num_bits_a, num_bits_b)
+
+    qubits = cirq.LineQubit.range(num_bits_a + num_bits_b + result_size)
+    op = gate.on_registers(a=qubits[:num_bits_a], b=qubits[num_bits_a: num_bits_a + num_bits_b], result=qubits[num_bits_a + num_bits_b:])
+    greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
+    context = cirq.DecompositionContext(greedy_mm)
+    out_cirq = cirq.Circuit(cirq.decompose(op, context=context, preserve_structure=True, keep=_keep_toffoli_gates))
+    
+    and_count = 0
+    for moment in out_cirq:
+        for op in moment:
+            if isinstance(op.gate, And):
+                if not op.gate.uncompute:
+                    and_count += 1
+
+    return and_count == 2 * num_bits_a * num_bits_b - max(num_bits_a, num_bits_b)
+
+
+def _bit_array_to_int_be(arr):
+    return int("".join([str(x) for x in arr]), 2)
+
+
+# generate all bitstrings with length n
+def _bitstrings(n):
+    return np.array([[int(i) for i in format(x, '0' + str(n) + 'b')] for x in range(2 ** n)])
+
+def _test_specific_product_validity(num_bits_a, num_bits_b):
+    # Check the I/O of the multiplier to ensure it performs the desired transformation
+    simulator = cirq.Simulator()
+    
+    result_size = 2 * max(num_bits_a, num_bits_b)
+    gate = Product(num_bits_a, num_bits_b)
+
+    qubits = cirq.LineQubit.range(num_bits_a + num_bits_b + result_size)
+    op = gate.on_registers(a=qubits[:num_bits_a], b=qubits[num_bits_a: num_bits_a + num_bits_b], result=qubits[num_bits_a + num_bits_b:])
+    greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
+    context = cirq.DecompositionContext(greedy_mm)
+    out_cirq = cirq.Circuit(cirq.decompose(op, context=context, preserve_structure=True, keep=_keep_toffoli_gates))
+    
+    a_bs = _bitstrings(num_bits_a)
+    b_bs = _bitstrings(num_bits_b)
+
+    for a_idx in range(2 ** num_bits_a):
+        for b_idx in range(2 ** num_bits_b):
+            # prep circuit now to be these inputs
+            prepend_circs = []
+            for i in range(num_bits_a):
+                if a_bs[a_idx][i]:
+                    prepend_circs.append(cirq.X(qubits[i]))
+            
+            for i in range(num_bits_b):
+                if b_bs[b_idx][i]:
+                    prepend_circs.append(cirq.X(qubits[num_bits_a + i]))
+            
+            temp_circuit = cirq.Circuit(prepend_circs + out_cirq + [cirq.measure(*qubits[num_bits_a + num_bits_b:], key='result')]) 
+            result = simulator.run(temp_circuit)
+            
+            if a_idx * b_idx != _bit_array_to_int_be(result.records["result"][0, 0]):
+                return False
+
+    return True
 
 
 def test_scale_int_by_real():
