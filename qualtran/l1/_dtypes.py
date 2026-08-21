@@ -112,11 +112,14 @@ def to_qdtype_node(dtype: 'qlt.QCDType', *, nodes: L1Nodes = qualtran_l1_nodes) 
             nodes.CArgNode(None, nodes.LiteralNode(cast(int, dtype.degree))),
         ]
         if dtype.irreducible_poly is not None:
-            from galois import GF
+            try:
+                from galois import GF
 
-            default_poly = GF(
-                int(dtype.characteristic), int(dtype.degree), compile='python-calculate'
-            ).irreducible_poly
+                default_poly = GF(
+                    int(dtype.characteristic), int(dtype.degree), compile='python-calculate'
+                ).irreducible_poly
+            except ImportError:
+                default_poly = None
             if dtype.irreducible_poly != default_poly:
                 degrees_tuple = tuple(int(d) for d in dtype.irreducible_poly.nonzero_degrees)
                 poly_items = [nodes.LiteralNode(d) for d in degrees_tuple]

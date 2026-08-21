@@ -28,10 +28,10 @@ if TYPE_CHECKING:
 
 
 def _poly_converter(p) -> Union['galois.Poly', None]:
-    import galois
-
     if p is None:
         return None
+    import galois
+
     if isinstance(p, galois.Poly):
         return p
     return galois.Poly.Degrees(p)
@@ -84,7 +84,10 @@ class _GF(_GFHashEqMixin, BitEncoding['galois.FieldArray']):
         if is_symbolic(self.characteristic, self.degree):
             return None
 
-        from galois import GF
+        try:
+            from galois import GF
+        except ImportError:
+            return None
 
         return GF(  # type: ignore[call-overload]
             int(self.characteristic), int(self.degree), compile='python-calculate'
@@ -189,7 +192,10 @@ class QGF(_GFHashEqMixin, QDType['galois.FieldArray']):
         if is_symbolic(self.characteristic, self.degree):
             return None
 
-        from galois import GF
+        try:
+            from galois import GF
+        except ImportError:
+            return None
 
         return GF(  # type: ignore[call-overload]
             int(self.characteristic), int(self.degree), compile='python-calculate'
@@ -242,7 +248,10 @@ class CGF(_GFHashEqMixin, CDType['galois.FieldArray']):
         if is_symbolic(self.characteristic, self.degree):
             return None
 
-        from galois import GF
+        try:
+            from galois import GF
+        except ImportError:
+            return None
 
         return GF(  # type: ignore[call-overload]
             int(self.characteristic), int(self.degree), compile='python-calculate'
