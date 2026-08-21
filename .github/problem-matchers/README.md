@@ -15,12 +15,20 @@ from the [Home Assistant](https://github.com/home-assistant/core) project on
 GitHub. The Home Assistant project is licensed under the Apache 2.0 open-source
 license. The versions of the file at the time it was copied was 2025.1.2.
 
-- [`pylint.json`](https://github.com/home-assistant/core/blob/dev/.github/workflows/matchers/pylint.json)
-- [`mypy.json`](https://github.com/home-assistant/core/blob/dev/.github/workflows/matchers/pypy.json)
+*   [`pylint.json`](https://github.com/home-assistant/core/blob/dev/.github/workflows/matchers/pylint.json)
+*   [`mypy.json`](https://github.com/home-assistant/core/blob/dev/.github/workflows/matchers/pypy.json)
+*   [`yamllint.json`](https://github.com/home-assistant/core/blob/dev/.github/workflows/matchers/yamllint.json)
 
 The following problem matcher for Black came from a fork of the
 [MLflow](https://github.com/mlflow/mlflow) project by user Sumanth077 on
 GitHub. The MLflow project is licensed under the Apache 2.0 open-source
 license. The version of the file copied was dated 2022-05-29.
 
-- [`black.json`](https://github.com/Sumanth077/mlflow/blob/problem-matcher-for-black/.github/workflows/matchers/black.json)
+*   [`black.json`](https://github.com/Sumanth077/mlflow/blob/problem-matcher-for-black/.github/workflows/matchers/black.json)
+
+The actionlint problem matcher JSON file came from the
+[actionlint](https://github.com/rhysd/actionlint/blob/v1.7.7/docs/usage.md)
+documentation (copied on 2025-02-12, version 1.7.7). Actionlint is made
+available under the terms of the MIT license.
+
+*   [`actionlint.json`](https://raw.githubusercontent.com/rhysd/actionlint/main/.github/actionlint-matcher.json)
