@@ -20,4 +20,5 @@ from qualtran.rotation_synthesis.protocols import (
     magnitude_approx,
     mixed_diagonal_protocol,
     mixed_fallback_protocol,
+    mixed_magnitude_approx,
 )
