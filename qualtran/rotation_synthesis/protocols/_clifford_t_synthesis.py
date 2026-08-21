@@ -629,19 +629,4 @@ def mixed_magnitude_approx(
         probability=rz_prob_approx.probability,
     )
 
-    theta_under = config.arccos(abs(rx_under_rotation.to_matrix().numpy(config)[0, 0]))
-    theta_over = config.arccos(abs(rx_over_rotation.to_matrix().numpy(config)[0, 0]))
-    e1 = (
-        prob_channel.c1.diamond_norm_distance_to_unitary(
-            rsad.rz(alpha, config) @ rsad.rx(theta_under * 2, config) @ rsad.rz(beta, config),
-            config,
-        )
-        * prob_channel.probability
-    )
-    e2 = prob_channel.c2.diamond_norm_distance_to_unitary(
-        rsad.rz(alpha, config) @ rsad.rx(theta_over * 2, config) @ rsad.rz(beta, config), config
-    ) * (1 - prob_channel.probability)
-    e3 = rz_prob_approx.diamond_norm_distance_to_rz(-theta / 2, config)
-    print(e1 + e2 + e3)
-
     return prob_channel
