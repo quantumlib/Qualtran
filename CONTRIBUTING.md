@@ -71,6 +71,12 @@ Guides](https://google.github.io/styleguide/) in your code, particularly the
 
 Do your work and `git commit` your changes to your branch as needed.
 
+We use [`uv`](https://docs.astral.sh/uv/) to manage pinned dependencies for
+development and CI. See [`dev_tools/requirements/README`](./dev_tools/requirements/README)
+for how to install the locked environment and qualtran itself. In brief: use
+`uv sync --frozen [--no-dev] [--group ...] --no-install-project` followed by
+`uv pip install --no-deps -e .` so dependencies come only from `uv.lock`.
+
 We use several tools to test code and perform other activities such as
 checking formatting against the style guidelines. You can run those tools
 locally during development. Wrapper scripts are located in the
