@@ -14,9 +14,10 @@
 from __future__ import annotations
 
 import io
+import types
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any
+from typing import Self
 
 
 class WriteIfDifferent:
@@ -62,10 +63,15 @@ class WriteIfDifferent:
             print(f"{self.path}\t writing.")
             f_write.write(new_content)
 
-    def __enter__(self) -> WriteIfDifferent:
+    def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: types.TracebackType | None,
+    ) -> None:
         self.close()
         # Do not suppress exceptions from the 'with' block body.
 
@@ -79,7 +85,7 @@ class WriteIfDifferent:
 
     def writable(self) -> bool:
         """Returns True if the adapter is not closed, False otherwise."""
-        return self._buffer.writable()
+        return not self.closed and self._buffer.writable()
 
     def seekable(self) -> bool:
         """Returns False, as this adapter is not seekable like a disk file opened in 'w' mode."""
