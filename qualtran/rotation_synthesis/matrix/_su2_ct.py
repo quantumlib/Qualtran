@@ -17,7 +17,7 @@ from __future__ import annotations
 import functools
 import itertools
 from collections.abc import Mapping, Sequence
-from typing import cast
+from typing import cast, Self
 
 import attrs
 import numpy as np
@@ -165,9 +165,7 @@ class SU2CliffordT:
         return cast(tuple[int, int, int, int], tuple(v.a % 2 for v in pf))
 
     @classmethod
-    def from_pair(
-        cls: type[SU2CliffordT], p: _zw.ZW, q: _zw.ZW, pick_phase: bool = False
-    ) -> SU2CliffordT:
+    def from_pair(cls, p: _zw.ZW, q: _zw.ZW, pick_phase: bool = False) -> Self:
         """Creates an SU2CliffordT instance from a pair of ZW rst.
 
         The matrix is constructed as [[p, -q.conj()], [q, p.conj()]].
@@ -188,11 +186,7 @@ class SU2CliffordT:
             for exponent in range(8):
                 phase = _zw.Omega**exponent
                 nq = q * phase
-        if pick_phase:
-            for exponent in range(8):
-                phase = _zw.Omega**exponent
-                nq = q * phase
-                res = SU2CliffordT([[p, -nq.conj()], [nq, p.conj()]])
+                res = cls([[p, -nq.conj()], [nq, p.conj()]])
                 if res.is_valid():
                     return res
             raise ValueError(f"can't construct a valid SU(2) matrix from the given pair {p=} {q=}")

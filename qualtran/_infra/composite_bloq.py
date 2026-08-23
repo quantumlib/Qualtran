@@ -1125,7 +1125,7 @@ class BloqBuilder:
 
     def add_register_from_dtype(
         self, reg: str | Register, dtype: QCDType | None = None
-    ) -> None | QVarT:
+    ) -> QVarT | None:
         """Add a new typed register to the composite bloq being built.
 
         If this bloq builder was constructed with `add_registers_allowed=False`,
@@ -1173,7 +1173,7 @@ class BloqBuilder:
         return None
 
     @overload
-    def add_register(self, reg: Register, bitsize: None = None) -> None | QVarT: ...
+    def add_register(self, reg: Register, bitsize: None = None) -> QVarT | None: ...
 
     @overload
     def add_register(self, reg: str, bitsize: SymbolicInt) -> QVarT: ...
@@ -1182,8 +1182,8 @@ class BloqBuilder:
     def add_register(self, reg: str, bitsize: QCDType) -> QVarT: ...
 
     def add_register(
-        self, reg: str | Register, bitsize: None | QCDType | SymbolicInt = None
-    ) -> None | QVarT:
+        self, reg: str | Register, bitsize: QCDType | SymbolicInt | None = None
+    ) -> QVarT | None:
         """Add a new register to the composite bloq being built.
 
         If this bloq builder was constructed with `add_registers_allowed=False`,
@@ -1717,7 +1717,7 @@ class BloqBuilder:
 
         return self.add(Join(dtype=dtype), reg=soqs)
 
-    def in_register(self, name: str, dtype: QCDType, shape=()) -> None | QVarT:
+    def in_register(self, name: str, dtype: QCDType, shape=()) -> QVarT | None:
         return self.add_register_from_dtype(Register(name=name, dtype=dtype, shape=shape))
 
     def alloc_qint(self, k: int, bitsize: int) -> QVar:

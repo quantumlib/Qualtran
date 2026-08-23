@@ -169,14 +169,14 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):
 
     @classmethod
     def build_from_data(
-        cls: type[SelectSwapQROM],
+        cls,
         *data: ArrayLike,
         target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
         num_controls: SymbolicInt = 0,
         log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
         use_dirty_ancilla: bool = True,
-    ) -> SelectSwapQROM:
-        qroam: SelectSwapQROM = cls._build_from_data(
+    ) -> Self:
+        qroam: Self = cls._build_from_data(
             *data, target_bitsizes=target_bitsizes, num_controls=num_controls
         )
         qroam = attrs.evolve(qroam, use_dirty_ancilla=use_dirty_ancilla)
@@ -186,7 +186,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):
 
     @classmethod
     def build_from_bitsize(
-        cls: type[SelectSwapQROM],
+        cls,
         data_len_or_shape: SymbolicInt | tuple[SymbolicInt, ...],
         target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...],
         *,
@@ -194,8 +194,8 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):
         num_controls: SymbolicInt = 0,
         log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
         use_dirty_ancilla: bool = True,
-    ) -> SelectSwapQROM:
-        qroam: SelectSwapQROM = cls._build_from_bitsize(
+    ) -> Self:
+        qroam: Self = cls._build_from_bitsize(
             data_len_or_shape,
             target_bitsizes,
             selection_bitsizes=selection_bitsizes,

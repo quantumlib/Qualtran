@@ -132,7 +132,7 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):
 
     @classmethod
     def build_from_data(
-        cls: type[QROAMCleanAdjoint],
+        cls,
         *data: ArrayLike,
         target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
         target_shapes: tuple[tuple[SymbolicInt, ...], ...] = (),
@@ -149,7 +149,7 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):
 
     @classmethod
     def build_from_bitsize(
-        cls: type[QROAMCleanAdjoint],
+        cls,
         data_len_or_shape: SymbolicInt | tuple[SymbolicInt, ...],
         target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...],
         *,
@@ -381,7 +381,7 @@ class QROAMClean(SelectSwapQROM):
 
     @classmethod
     def build_from_data(
-        cls: type[QROAMClean],
+        cls,
         *data: ArrayLike,
         target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
         num_controls: SymbolicInt = 0,
@@ -394,7 +394,7 @@ class QROAMClean(SelectSwapQROM):
 
     @classmethod
     def build_from_bitsize(
-        cls: type[QROAMClean],
+        cls,
         data_len_or_shape: SymbolicInt | tuple[SymbolicInt, ...],
         target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...],
         *,

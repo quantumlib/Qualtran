@@ -129,7 +129,7 @@ def _populate_flame_graph_data(
 
 def get_flame_graph_data(
     *bloqs: Bloq,
-    file_path: None | pathlib.Path | str = None,
+    file_path: pathlib.Path | str | None = None,
     keep: Callable[[Bloq], bool] | None = _keep_if_small,
     **kwargs,
 ) -> list[str]:
@@ -169,7 +169,7 @@ def get_flame_graph_data(
 
 
 def get_flame_graph_svg_data(
-    *bloqs: Bloq, file_path: None | pathlib.Path | str = None, **kwargs
+    *bloqs: Bloq, file_path: pathlib.Path | str | None = None, **kwargs
 ) -> str | None:
     """Invokes the `third_party/flamegraph/flamegraph.pl` using data from `get_flame_graph_data`."""
 

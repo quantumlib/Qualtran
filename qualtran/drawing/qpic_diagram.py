@@ -274,7 +274,7 @@ class QpicCircuit:
         self.gates += wire_dtype_labels
 
 
-def get_qpic_data(bloq: Bloq, file_path: None | pathlib.Path | str = None) -> list[str]:
+def get_qpic_data(bloq: Bloq, file_path: pathlib.Path | str | None = None) -> list[str]:
     """Get the input data that can be used to draw a latex diagram for `bloq` using `qpic`.
 
     Args:
@@ -307,7 +307,7 @@ def _to_snake_case(name):
 
 def qpic_input_to_diagram(
     qpic_file: pathlib.Path | str,
-    output_file: None | pathlib.Path | str = None,
+    output_file: pathlib.Path | str | None = None,
     output_type: str = 'pdf',
 ) -> str:
     r"""Invoke `qpic` script to generate output diagram of type qpic/tex/pdf/png.
@@ -383,7 +383,7 @@ def qpic_input_to_diagram(
 
 
 def qpic_diagram_for_bloq(
-    bloq: Bloq, base_file_path: None | pathlib.Path | str = None, output_type: str = 'pdf'
+    bloq: Bloq, base_file_path: pathlib.Path | str | None = None, output_type: str = 'pdf'
 ) -> str:
     r"""Generate latex diagram for `bloq` by invoking `qpic`. Assumes qpic is already installed.
 
