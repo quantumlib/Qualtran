@@ -247,7 +247,7 @@ def assert_valid_bloq_decomposition(bloq: Bloq | None) -> CompositeBloq:
     return cbloq
 
 
-def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: list[str | WireSymbol]):
+def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: Sequence[str | WireSymbol]):
     """Assert a bloq's wire symbols match the expected ones.
 
     For multi-dimensional registers (with a shape), this will iterate

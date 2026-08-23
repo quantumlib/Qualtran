@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import overload, TYPE_CHECKING
 
 from qualtran import Bloq
@@ -123,7 +123,7 @@ def show_call_graph(
         IPython.display.display(GraphvizCallGraph(item).get_svg())
 
 
-def show_counts_sigma(sigma: dict[Bloq, int | sympy.Expr]):
+def show_counts_sigma(sigma: Mapping[Bloq, int | sympy.Expr]) -> None:
     """Display nicely formatted bloq counts sums `sigma`."""
     import IPython.display
 

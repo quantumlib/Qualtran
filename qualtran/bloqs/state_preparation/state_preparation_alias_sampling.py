@@ -22,7 +22,7 @@ largest absolute error that one can tolerate in the prepared amplitudes.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -386,7 +386,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
 
     @classmethod
     def from_sparse_dict(
-        cls, unnormalized_probabilities: dict[int, float], N: int, *, precision: float = 1.0e-5
+        cls, unnormalized_probabilities: Mapping[int, float], N: int, *, precision: float = 1.0e-5
     ) -> SparseStatePreparationAliasSampling:
         """Construct the state preparation gate for a given dictionary of non-zero probabilities.
 

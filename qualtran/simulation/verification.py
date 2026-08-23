@@ -318,7 +318,7 @@ BFS, so every subbloq is also verified.
 """
 
 
-def validate_test_cases(name: str, cases: list[ClassicalSimTestCase]) -> None:
+def validate_test_cases(name: str, cases: Sequence[ClassicalSimTestCase]) -> None:
     """Validate that all test cases from a provider target the same bloq class.
 
     Call this after invoking a :data:`TestCaseProvider` to verify the

@@ -316,7 +316,7 @@ def format_counts_graph_markdown(graph: nx.DiGraph) -> str:
     return m
 
 
-def format_counts_sigma(sigma: dict[Bloq, int | sympy.Expr]) -> str:
+def format_counts_sigma(sigma: Mapping[Bloq, int | sympy.Expr]) -> str:
     """Format `sigma` as markdown."""
     lines = [f' - {_format_bloq_expr_markdown(bloq, expr)}' for bloq, expr in sigma.items()]
     lines.sort()

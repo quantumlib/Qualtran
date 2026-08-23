@@ -24,7 +24,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from functools import singledispatch
 from typing import Any, cast
 
@@ -404,7 +404,7 @@ def _import_resources(bloq: Bloq) -> list[dict[str, Any]]:
     return resources
 
 
-def _extract_input_params(bloq: Bloq, ports: list[PortV1]) -> set[str]:
+def _extract_input_params(bloq: Bloq, ports: Sequence[PortV1]) -> set[str]:
     """Extracts input_params from bloq's t_complexity and port sizes.
 
     In QREF `input_params` define the symbols that can be used to define port sizes
@@ -428,7 +428,7 @@ def _extract_symbols_from_t_complexity(bloq: Bloq) -> list[str]:
     return [str(symbol) for symbol in symbols]
 
 
-def _extract_symbols_from_port_sizes(ports: list[PortV1]) -> list[str]:
+def _extract_symbols_from_port_sizes(ports: Sequence[PortV1]) -> list[str]:
     """Extracts symbols from the expressions for port sizes."""
     symbols: set[sympy.Symbol] = set()
     for port in ports:

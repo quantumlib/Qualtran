@@ -19,8 +19,8 @@ like whether the bloq is a Clifford operation, whether it's a rotation, etc.
 
 from __future__ import annotations
 
-from collections import abc, defaultdict
-from collections.abc import Sequence
+from collections import defaultdict
+from collections.abc import Mapping, Sequence
 from typing import cast, TYPE_CHECKING
 
 import numpy as np
@@ -57,7 +57,7 @@ def _get_basic_bloq_classification() -> dict[str, str]:
     return bloq_classifier
 
 
-def classify_bloq(bloq: Bloq, bloq_classification: dict[str, str]) -> str:
+def classify_bloq(bloq: Bloq, bloq_classification: Mapping[str, str]) -> str:
     """Classify a bloq given a bloq_classification.
 
     Args:
@@ -102,7 +102,7 @@ def classify_t_count_by_bloq_type(
     keeper = lambda bloq: classify_bloq(bloq, bloq_classification) != 'other'
     basic_generalizer: list[GeneralizerT] = [ignore_split_join, ignore_alloc_free, ignore_cliffords]
     if generalizer is not None:
-        if isinstance(generalizer, abc.Sequence):
+        if isinstance(generalizer, Sequence):
             basic_generalizer.extend(generalizer)
         else:
             basic_generalizer.append(generalizer)

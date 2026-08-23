@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any, cast, TYPE_CHECKING
 
 import numpy as np
@@ -70,7 +71,7 @@ def _process_single_result_for_logical_depth(r: SweepResult) -> dict:
 
 
 def post_process_for_logical_depth(
-    sweep_results: list[SweepResult], *, n_jobs: int = -1
+    sweep_results: Sequence[SweepResult], *, n_jobs: int = -1
 ) -> pd.DataFrame:
     """
     Post-processes `run_sweep` output to extract logical resource costs.
