@@ -30,6 +30,7 @@ permissions: {}
 
 jobs:
   pytest:
+    if: github.repository_owner == 'quantumlib'
     runs-on: ubuntu-24.04-x64-8-core
     permissions:
       contents: read
@@ -51,6 +52,7 @@ jobs:
           uv run --no-sync check/pytest-quick -n logical
 
   dev-tools:
+    if: github.repository_owner == 'quantumlib'
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -74,6 +76,7 @@ jobs:
           uv run --no-sync check/mypy-dev-tools
 
   notebooks:
+    if: github.repository_owner == 'quantumlib'
     runs-on: ubuntu-24.04-x64-8-core
     permissions:
       contents: read
@@ -96,6 +99,7 @@ jobs:
           NUMBA_NUM_THREADS: 4
 
   format:
+    if: github.repository_owner == 'quantumlib'
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -119,6 +123,7 @@ jobs:
           uv run --no-sync check/format-incremental
 
   ruff:
+    if: github.repository_owner == 'quantumlib'
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -138,6 +143,7 @@ jobs:
           uv run --no-sync check/ruff
 
   mypy:
+    if: github.repository_owner == 'quantumlib'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -217,6 +223,7 @@ jobs:
           yamllint -f github . CITATION.cff
 
   autogenerate-notebooks:
+    if: github.repository_owner == 'quantumlib'
     runs-on: ubuntu-24.04-x64-8-core
     permissions:
       contents: read
@@ -237,6 +244,7 @@ jobs:
           uv run --no-sync check/autogenerate-notebooks
 
   pytest-minimal-install:
+    if: github.repository_owner == 'quantumlib'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -261,6 +269,7 @@ jobs:
           ./check/pytest-minimal-install
 
   experimental-rsqualtran:
+    if: github.repository_owner == 'quantumlib'
     runs-on: ubuntu-24.04
     permissions:
       contents: read

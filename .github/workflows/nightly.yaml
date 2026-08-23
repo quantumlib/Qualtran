@@ -28,6 +28,7 @@ permissions: {}
 
 jobs:
   pytest:
+    if: github.repository_owner == 'quantumlib'
     permissions:
       contents: read
     runs-on: ubuntu-24.04-x64-16-core
