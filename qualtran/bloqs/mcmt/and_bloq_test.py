@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import itertools
+from collections.abc import Iterator
 from functools import cached_property
 
 import cirq
@@ -23,7 +24,7 @@ import pytest
 from attrs import frozen
 
 import qualtran.testing as qlt_testing
-from qualtran import Bloq, BloqBuilder, Signature, SoquetT
+from qualtran import Bloq, BloqBuilder, CompositeBloq, Signature, SoquetT
 from qualtran.bloqs.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
 from qualtran.bloqs.mcmt.and_bloq import _and_bloq, _multi_and, _multi_and_symb, And, MultiAnd
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
@@ -45,7 +46,7 @@ def test_multi_and_symb():
     assert bloq.t_complexity().t == 4 * bloq.n_ctrls - 4
 
 
-def _iter_and_truth_table(cv1: int, cv2: int):
+def _iter_and_truth_table(cv1: int, cv2: int) -> Iterator[tuple[CompositeBloq, int, int]]:
     # Iterate over And bra/ketted by all possible inputs
     state = [ZeroState(), OneState()]
     eff = [ZeroEffect(), OneEffect()]

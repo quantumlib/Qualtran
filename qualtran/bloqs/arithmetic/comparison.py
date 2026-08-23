@@ -460,7 +460,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
     def with_registers(self, *new_registers) -> LessThanEqual:
         return LessThanEqual(len(new_registers[0]), len(new_registers[1]))
 
-    def apply(self, *register_vals: int) -> int | int | Iterable[int]:
+    def apply(self, *register_vals: int) -> tuple[int, int, int]:
         x_val, y_val, target_val = register_vals
         return x_val, y_val, target_val ^ (x_val <= y_val)
 

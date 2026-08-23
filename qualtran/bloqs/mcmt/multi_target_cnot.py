@@ -50,7 +50,7 @@ class MultiTargetCNOT(GateWithRegisters):
         context: cirq.DecompositionContext,
         control: NDArray[cirq.Qid],  # type: ignore[type-var]
         targets: NDArray[cirq.Qid],  # type: ignore[type-var]
-    ):
+    ) -> Iterator[cirq.OP_TREE]:
         def cnots_for_depth_i(i: int, q: NDArray[cirq.Qid]) -> Iterator[cirq.OP_TREE]:  # type: ignore[type-var]
             for c, t in zip(q[: 2**i], q[2**i : min(len(q), 2 ** (i + 1))]):
                 yield cirq.CNOT(c, t)

@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import itertools
 from collections import Counter
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -156,7 +156,13 @@ class Add(Bloq):
         else:
             raise ValueError()
 
-    def _left_building_block(self, inp, out, anc, depth):
+    def _left_building_block(
+        self,
+        inp: NDArray[cirq.Qid] | Sequence[cirq.Qid],  # type: ignore[type-var]
+        out: NDArray[cirq.Qid] | Sequence[cirq.Qid],  # type: ignore[type-var]
+        anc: Sequence[cirq.Qid],
+        depth: int,
+    ) -> Iterator[cirq.OP_TREE]:
         if depth == self.b_dtype.bitsize - 1:
             return
         else:
@@ -177,7 +183,13 @@ class Add(Bloq):
             yield CNOT().on(anc[depth - 1], anc[depth])
             yield from self._left_building_block(inp, out, anc, depth + 1)
 
-    def _right_building_block(self, inp, out, anc, depth):
+    def _right_building_block(
+        self,
+        inp: NDArray[cirq.Qid] | Sequence[cirq.Qid],  # type: ignore[type-var]
+        out: NDArray[cirq.Qid] | Sequence[cirq.Qid],  # type: ignore[type-var]
+        anc: Sequence[cirq.Qid],
+        depth: int,
+    ) -> Iterator[cirq.OP_TREE]:
         if depth == 0:
             return
         else:

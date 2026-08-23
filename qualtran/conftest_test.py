@@ -12,7 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import os
+from collections.abc import Iterator
 from contextlib import contextmanager
 from unittest import mock
 
@@ -22,7 +25,7 @@ from qualtran.conftest import get_available_cpu_count, pytest_configure
 
 
 @contextmanager
-def temporary_delete_attr(obj, attr):
+def temporary_delete_attr(obj: object, attr: str) -> Iterator[None]:
     """Context manager to temporarily delete an attribute from an object.
 
     This is useful for mocking Python environment detection logic where we want
@@ -44,7 +47,7 @@ def temporary_delete_attr(obj, attr):
 
 
 @contextmanager
-def temporary_set_attr(obj, attr, val):
+def temporary_set_attr(obj: object, attr: str, val: object) -> Iterator[None]:
     """Context manager to temporarily set or override an attribute on an object.
 
     This allows us to simulate the presence of standard library features or OS-level
