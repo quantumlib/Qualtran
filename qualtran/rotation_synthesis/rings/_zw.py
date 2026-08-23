@@ -156,7 +156,9 @@ class ZW:
     def __hash__(self) -> int:
         return hash(self.coords)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ZW):
+            return False
         return self.coords == other.coords
 
     def conjugate(self) -> ZW:

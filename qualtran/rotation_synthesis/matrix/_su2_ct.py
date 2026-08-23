@@ -79,11 +79,13 @@ class SU2CliffordT:
     def __sub__(self, other):
         return SU2CliffordT(self.matrix - other.matrix)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(tuple(map(tuple, self.matrix)))
 
-    def __eq__(self, other):
-        return np.all(self.matrix == other.matrix)
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, SU2CliffordT):
+            return False
+        return bool(np.all(self.matrix == other.matrix))
 
     def numpy(self, config: mc.MathConfig | None = None) -> np.ndarray:
         """Returns the numpy representation of the unitary.

@@ -172,12 +172,12 @@ class BloqAsCirqGate(cirq.Gate):
 
         return Power(bloq, abs(power))
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, BloqAsCirqGate):
             return False
         return self.bloq == other.bloq
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.bloq)
 
     def __str__(self) -> str:

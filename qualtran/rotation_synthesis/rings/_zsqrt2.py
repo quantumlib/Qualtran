@@ -135,14 +135,14 @@ class ZSqrt2:  # noqa: PLW1641 (false positive)
             )
         return ZSqrt2(self.b, self.a // 2)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, ZSqrt2):
             return self.a == other.a and self.b == other.b
         if rst.is_int(other):
             return self == ZSqrt2(other, 0)
         raise TypeError(f"Comparison is not supported between ZSqrt2 and {type(other)}")
 
-    def __lt__(self, other) -> bool:
+    def __lt__(self, other: object) -> bool:
         # comparison is done using only integer operations.
         if isinstance(other, ZSqrt2):
             if self.b == other.b:

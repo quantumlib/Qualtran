@@ -21,7 +21,7 @@ import itertools
 import warnings
 from collections.abc import Callable, Sequence
 from functools import cached_property
-from typing import Any, TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 import cirq
 import numpy as np
@@ -271,13 +271,13 @@ class _QReg:
     # QBit, but the input registers (which are used to track the qubits) may
     # have QUInt(1) or similar, leading to the mappings not updating correctly.
     # Single qubit QFxp cases are handled separately in _ensure_in_reg_exists
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, _QReg):
             return False
 
         return other.qubits == self.qubits
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.qubits)
 
 

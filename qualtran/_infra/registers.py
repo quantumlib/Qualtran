@@ -452,10 +452,12 @@ class Signature:
     def __len__(self) -> int:
         return len(self._registers)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self._registers)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Signature):
+            return False
         return self._registers == other._registers
 
 

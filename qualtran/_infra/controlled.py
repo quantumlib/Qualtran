@@ -17,7 +17,7 @@ import abc
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from functools import cached_property
-from typing import Any, Protocol, TYPE_CHECKING
+from typing import Protocol, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -219,7 +219,7 @@ class CtrlSpec:
 
         return tuple(_serialize(cvs) for cvs in self.cvs)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, CtrlSpec):
             return False
 
@@ -229,7 +229,7 @@ class CtrlSpec:
             and other.__cvs_tuple == self.__cvs_tuple
         )
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.qdtypes, self.shapes, self.__cvs_tuple))
 
     def to_cirq_cv(self) -> cirq.SumOfProducts:

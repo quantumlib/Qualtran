@@ -47,10 +47,10 @@ class TestCostKey(CostKey[int]):
     def zero(self) -> int:
         return 0
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.__class__)
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         return isinstance(other, self.__class__)
 
 
