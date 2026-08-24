@@ -15,7 +15,7 @@
 
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, cast
+from typing import cast
 
 import griffe
 from griffe import Kind
@@ -30,7 +30,7 @@ from .._render_context import RenderContext
 
 
 def write_module_other_member(
-    f: LinkingWriter, obj: Any, pref_path: str, aliases_d: dict[str, str]
+    f: LinkingWriter, obj: griffe.Object, pref_path: str, aliases_d: dict[str, str]
 ) -> None:
     first_line, rest = split_docstring(obj)
     f.write_nl(f'### `{obj.name}`\n')
@@ -42,7 +42,7 @@ def write_module_other_member(
         write_function_signature(f, cast(griffe.Function, obj))
     write_docstring_parts(f, rest, level=1)
 
-    submemb: griffe.Object
+    submemb: griffe.Object | griffe.Alias
     doc_submembers = {
         (submemb_name, submemb)
         for submemb_name, submemb in obj.members.items()
