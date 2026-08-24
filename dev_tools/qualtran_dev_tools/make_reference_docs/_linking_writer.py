@@ -15,7 +15,7 @@ import re
 from collections import defaultdict
 from collections.abc import MutableMapping
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Protocol
 
 from mdit_py_plugins.anchors.index import slugify
 
@@ -25,7 +25,7 @@ _CACHE: MutableMapping[str, dict[str, str | None]] = defaultdict(dict)
 
 
 class Writable(Protocol):
-    def write(self, s: str) -> Any: ...
+    def write(self, s: str) -> object: ...
 
 
 class LinkingWriter:
