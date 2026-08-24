@@ -35,8 +35,8 @@ the code of conduct.
 
 All submissions, including submissions by project members, require review. We
 use the tools provided by GitHub for [pull
-requests](https://help.github.com/articles/about-pull-requests/) for this
-purpose. The preferred manner for submitting pull requests is to fork the
+requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests)
+for this purpose. The preferred manner for submitting pull requests is to fork the
 Qualtran [repository](https://github.com/quantumlib/Qualtran), create a [git
 branch](https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell)
 in this fork to do your work, and when ready, create a pull request from this
@@ -101,8 +101,8 @@ locally during development. Wrapper scripts are located in the
     ```
 
     If git reports conflicts during one or both of these merge processes, you
-    may need to [resolve the merge conflicts](
-    https://docs.github.com/articles/about-merge-conflicts) before continuing.
+    may need to [resolve the merge conflicts](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/addressing-merge-conflicts/about-merge-conflicts)
+    before continuing.
 
 1.  Finally, push your changes to your fork of the Qualtran repo on GitHub:
 
