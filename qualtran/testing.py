@@ -584,7 +584,12 @@ def assert_bloq_example_serializes(bloq_ex: BloqExample) -> None:
     Raises:
         BloqCheckException: if any assertions are violated.
     """
-    from qualtran.serialization.bloq import bloqs_from_proto, bloqs_to_proto
+    try:
+        from qualtran.serialization.bloq import bloqs_from_proto, bloqs_to_proto
+    except ModuleNotFoundError as e:
+        raise BloqCheckException.na(
+            'Serialization check is only applicable when protobuf is installed.'
+        ) from e
 
     bloq = bloq_ex.make()
 
