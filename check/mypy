@@ -27,8 +27,20 @@ cd "${topdir}" || exit $?
 
 CONFIG_FILE='mypy.ini'
 
+# Mypy 2.0 added a `-n` flag for parallel workers. Use it if possible.
+# shellcheck disable=SC2207  # Need the next command *not* to be quoted.
+mypy_version_array=( $(mypy --version) )
+mypy_major_version="${mypy_version_array[1]%%.*}"
+n_workers=()
+if (( mypy_major_version >= 2 )); then
+    # Mypy 2.x doesn't support a value of 'auto' like pytest does. We have to
+    # come up with a number. This uses (#cpus - 1) or 16, whichever is smallest.
+    num_workers=$(python -c 'import os; c = os.cpu_count() or 1; print(min(16, max(1, c - 1)))')
+    n_workers=("-n" "${num_workers}")
+fi
+
 echo -e -n "\033[31m"
-mypy --config-file=dev_tools/conf/$CONFIG_FILE "$@" qualtran/
+mypy --config-file=dev_tools/conf/$CONFIG_FILE "${n_workers[@]}" "$@" qualtran/
 result=$?
 echo -e -n "\033[0m"
 

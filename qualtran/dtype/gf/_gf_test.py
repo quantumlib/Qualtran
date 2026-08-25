@@ -18,7 +18,8 @@ import sympy
 
 pytest.importorskip('galois')
 
-from qualtran.dtype import assert_to_and_from_bits_array_consistent, QGF
+from qualtran.dtype import assert_to_and_from_bits_array_consistent, CGF, QGF
+from qualtran.dtype.gf._gf import _GF
 from qualtran.symbolics import ceil, is_symbolic, log2
 
 
@@ -66,3 +67,47 @@ def test_qgf_domain_and_validation_arr():
 def test_qgf_validation_errs():
     with pytest.raises(ValueError):
         QGF(2, 8).assert_valid_classical_val(2**8)  # type: ignore[arg-type]
+
+
+def test_qgf_equality_and_hashing():
+    import galois
+
+    q1 = QGF(2, 8)
+    q2 = QGF(2, 8)
+    p_deg = galois.Poly.Degrees([8, 4, 3, 2, 0])
+    q3 = QGF(2, 8, irreducible_poly=p_deg)
+    p_diff = galois.Poly.Degrees([8, 4, 3, 1, 0])
+    q4 = QGF(2, 8, irreducible_poly=p_diff)
+    q5 = QGF(2, 7)
+    q6 = QGF(3, 3)
+
+    assert q1 == q2
+    assert q1 == q3
+    assert q1 != q4
+    assert q1 != q5
+    assert q1 != q6
+    assert hash(q1) == hash(q2)
+    assert hash(q1) == hash(q3)
+    assert hash(q1) != hash(q4)
+
+    # Distinct types
+    cgf = CGF(2, 8)
+    assert q1 != cgf
+    gf_enc = _GF(2, 8)
+    assert q1 != gf_enc
+    assert hash(q1) != hash(cgf)
+
+    # Set / dict lookup
+    s = {q1, q4, q5, cgf}
+    assert q2 in s
+    assert q3 in s
+    assert len(s) == 4
+
+    # Symbolic equality & hashing
+    p, m = sympy.symbols('p, m', integer=True, positive=True)
+    sym_q1 = QGF(characteristic=p, degree=m)
+    sym_q2 = QGF(characteristic=p, degree=m)
+    sym_q3 = QGF(characteristic=p, degree=m + 1)
+    assert sym_q1 == sym_q2
+    assert sym_q1 != sym_q3
+    assert hash(sym_q1) == hash(sym_q2)

@@ -765,7 +765,7 @@ def _cxns_to_soq_dict(
 
     # Initialize multi-dimensional dictionary values.
     for reg in regs:
-        if reg.shape:
+        if reg._shape:
             soqdict[reg.name] = np.empty(reg.shape, dtype=object)
 
     # In the abstract: set `soqdict[me] = assign`. Specifically: use the register name as
@@ -774,7 +774,7 @@ def _cxns_to_soq_dict(
         me = get_me(cxn)
         assign = get_assign(cxn)
 
-        if me.reg.shape:
+        if me.reg._shape:
             soqdict[me.reg.name][me.idx] = assign  # type: ignore[index]
         else:
             soqdict[me.reg.name] = assign

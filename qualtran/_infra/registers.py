@@ -104,7 +104,15 @@ class Register:
             raise ValueError(f'dtype must be a QCDType: found {type(self.dtype)}')
 
     def is_symbolic(self) -> bool:
-        return is_symbolic(self.dtype, *self._shape)
+        if is_symbolic(self.dtype):
+            return True
+        shape = self._shape
+        if not shape:
+            return False
+        for x in shape:
+            if type(x) is not int:
+                return is_symbolic(*shape)
+        return False
 
     @property
     def shape_symbolic(self) -> Tuple[SymbolicInt, ...]:
@@ -112,11 +120,17 @@ class Register:
 
     @property
     def shape(self) -> Tuple[int, ...]:
-        if is_symbolic(*self._shape):
-            raise ValueError(
-                f"{self.name}'s shape {self._shape} is symbolic. Cannot get real-valued shape."
-            )
-        return cast(Tuple[int, ...], self._shape)
+        shape = self._shape
+        if not shape:
+            return ()
+        for x in shape:
+            if type(x) is not int:
+                if is_symbolic(*shape):
+                    raise ValueError(
+                        f"{self.name}'s shape {shape} is symbolic. Cannot get real-valued shape."
+                    )
+                return cast(Tuple[int, ...], shape)
+        return cast(Tuple[int, ...], shape)
 
     @property
     def bitsize(self) -> int:

@@ -132,11 +132,18 @@ def is_symbolic(*args) -> Union[TypeIs[Union[sympy.Expr, Shaped, HasLength]], bo
         True if any argument is either a sympy object,
         or implements the `is_symbolic` method which returns True.
     """
-
-    if len(args) != 1:
-        return any(is_symbolic(arg) for arg in args)
+    n = len(args)
+    if n == 0:
+        return False
+    if n > 1:
+        for arg in args:
+            if is_symbolic(arg):
+                return True
+        return False
 
     (arg,) = args
+    if type(arg) in (int, float, str, bool):
+        return False
     if isinstance(arg, sympy.Basic):
         return True
 
