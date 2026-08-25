@@ -32,6 +32,8 @@ from qualtran.l1._eval import eval_qdtype_node
         qlt.Register('x', qdt.CBit()),
         qlt.Register('x', qdt.QIntOnesComp(10)),
         qlt.Register('x', qdt.QIntSignMag(10)),
+        qlt.Register('x', qdt.QGF(2, 8)),
+        qlt.Register('x', qdt.CGF(2, 4)),
     ],
 )
 def test_qdtype_roundtrip(reg):
@@ -57,15 +59,17 @@ def test_builtin_mapping_contains_all_expected():
     mapping = get_builtin_qdtype_mapping()
     expected_names = [
         'BQUInt',
+        'CBit',
+        'CGF',
         'QAny',
         'QBit',
-        'QInt',
-        'QUInt',
         'QFxp',
-        'QMontgomeryUInt',
-        'CBit',
+        'QGF',
+        'QInt',
         'QIntOnesComp',
         'QIntSignMag',
+        'QMontgomeryUInt',
+        'QUInt',
     ]
     for name in expected_names:
         assert name in mapping, f'{name} missing from builtin qdtype mapping'

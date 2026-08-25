@@ -28,9 +28,11 @@ def get_builtin_qdtype_mapping() -> Dict[str, Type['qdt.QCDType']]:
     from qualtran.dtype import (
         BQUInt,
         CBit,
+        CGF,
         QAny,
         QBit,
         QFxp,
+        QGF,
         QInt,
         QIntOnesComp,
         QIntSignMag,
@@ -51,6 +53,8 @@ def get_builtin_qdtype_mapping() -> Dict[str, Type['qdt.QCDType']]:
             CBit,
             QIntOnesComp,
             QIntSignMag,
+            QGF,
+            CGF,
         ]
     }
 
@@ -97,12 +101,35 @@ def to_qdtype_node(dtype: 'qlt.QCDType', *, nodes: L1Nodes = qualtran_l1_nodes) 
                 nodes.CArgNode('signed', nodes.LiteralNode(dtype.signed)),
             ],
         )
+    elif isinstance(dtype, qdt.QMontgomeryUInt):
+        cargs = [nodes.CArgNode(None, nodes.LiteralNode(cast(int, dtype.bitsize)))]
+        if dtype.modulus is not None:
+            cargs.append(nodes.CArgNode('modulus', nodes.LiteralNode(cast(int, dtype.modulus))))
+        dtype_node = nodes.CObjectNode('QMontgomeryUInt', cargs=cargs)
+    elif isinstance(dtype, (qdt.QGF, qdt.CGF)):
+        cargs = [
+            nodes.CArgNode(None, nodes.LiteralNode(cast(int, dtype.characteristic))),
+            nodes.CArgNode(None, nodes.LiteralNode(cast(int, dtype.degree))),
+        ]
+        if dtype.irreducible_poly is not None:
+            try:
+                from galois import GF
+
+                default_poly = GF(
+                    int(dtype.characteristic), int(dtype.degree), compile='python-calculate'
+                ).irreducible_poly
+            except ImportError:
+                default_poly = None
+            if dtype.irreducible_poly != default_poly:
+                degrees_tuple = tuple(int(d) for d in dtype.irreducible_poly.nonzero_degrees)
+                poly_items = [nodes.LiteralNode(d) for d in degrees_tuple]
+                cargs.append(nodes.CArgNode('irreducible_poly', nodes.TupleNode(poly_items)))
+        dtype_node = nodes.CObjectNode(dtype.__class__.__name__, cargs=cargs)
 
     else:
-        from ._to_cobject_node import to_cobject_node
+        from ._to_cobject_node import object_to_object_node
 
-        cval_node = to_cobject_node(dtype, nodes=nodes)
-        dtype_node = cval_node
+        dtype_node = object_to_object_node(dtype, pkg='', nodes=nodes)
 
     return dtype_node
 
