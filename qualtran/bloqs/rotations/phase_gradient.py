@@ -45,7 +45,7 @@ from qualtran.symbolics.types import is_symbolic
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran.resource_counting import BloqCountDictT
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
     from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
