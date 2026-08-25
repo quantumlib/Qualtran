@@ -16,7 +16,7 @@ GitHub. The Home Assistant project is licensed under the Apache 2.0 open-source
 license. The versions of the file at the time it was copied was 2025.1.2.
 
 *   [`pylint.json`](https://github.com/home-assistant/core/blob/dev/.github/workflows/matchers/pylint.json)
-*   [`mypy.json`](https://github.com/home-assistant/core/blob/dev/.github/workflows/matchers/pypy.json)
+*   [`mypy.json`](https://github.com/home-assistant/core/blob/dev/.github/workflows/matchers/mypy.json)
 *   [`yamllint.json`](https://github.com/home-assistant/core/blob/dev/.github/workflows/matchers/yamllint.json)
 
 The following problem matcher for Black came from a fork of the
