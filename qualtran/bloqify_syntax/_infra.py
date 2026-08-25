@@ -44,7 +44,7 @@ class _TracingBloqFuncT(Protocol):
          - positional arguments will the be passed
          - any provided keyword arguments will be merged with a dictionary of initial quantum
            variables constructed by this method, and passed by keyword. An error is raised
-           if a keyworkd argument is provided that interferes with this.
+           if a keyword argument is provided that interferes with this.
 
          - During normal operation, all quantum and classical arguments will be
          - Quantum arguments will always be passed by keyword, so you should probably put them last.

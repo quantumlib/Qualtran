@@ -21,7 +21,7 @@ issue tracker.
 _Qualtran Cynq_ is our biweekly virtual meeting of contributors to discuss
 everything from issues to ongoing efforts, as well as to ask questions. Join the
 [`qualtran-dev` Google
-Group](https://groups.google.com/forum/#!forum/qualtran-dev) to get an automatic
+Group](https://groups.google.com/g/qualtran-dev) to get an automatic
 meeting invitation.
 
 ## Contact the maintainers

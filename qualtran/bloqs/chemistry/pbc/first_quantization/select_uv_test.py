@@ -31,5 +31,5 @@ def test_select_uv_toffoli_counts():
     )
     sel = SelectUVFirstQuantization(num_bits_p, eta, eta, num_bits_nuc_pos)
     qual_cost = get_cost_value(sel, QECGatesCost()).total_toffoli_only()
-    # + 6 as they cost additon as nbits not nbits - 1, there are 6 additions / subtractions.
+    # + 6 as they cost addition as nbits not nbits - 1, there are 6 additions / subtractions.
     assert qual_cost + 6 == expected_cost

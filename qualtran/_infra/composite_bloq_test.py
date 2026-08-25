@@ -247,7 +247,7 @@ def test_wrong_soquet():
 def test_double_use_1():
     bb, x, y = _get_bb()
 
-    with pytest.raises(BloqError, match=r'.*quantum variable was re\-used.*'):
+    with pytest.raises(BloqError, match=r'.*quantum variable was reused.*'):
         bb.add(TestTwoBitOp(), ctrl=x, target=x)
 
 
@@ -256,7 +256,7 @@ def test_double_use_2():
 
     x2, y2 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
-    with pytest.raises(BloqError, match=r'.*quantum variable was re\-used.*'):
+    with pytest.raises(BloqError, match=r'.*quantum variable was reused.*'):
         x3, y3 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
 
@@ -282,7 +282,7 @@ def test_finalize_wrong_soquet():
     assert x != x2
     assert y != y2
 
-    with pytest.raises(BloqError, match=r'.*quantum variable was re\-used.*'):
+    with pytest.raises(BloqError, match=r'.*quantum variable was reused.*'):
         bb.finalize(
             x=x2, y=bb._make_qvar(BloqInstance(TestTwoBitOp(), i=12), Register('target', QAny(2)))
         )
@@ -292,7 +292,7 @@ def test_finalize_double_use_1():
     bb, x, y = _get_bb()
     x2, y2 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
-    with pytest.raises(BloqError, match=r'.*quantum variable was re\-used.*'):
+    with pytest.raises(BloqError, match=r'.*quantum variable was reused.*'):
         bb.finalize(x=x2, y=x2)
 
 
@@ -300,7 +300,7 @@ def test_finalize_double_use_2():
     bb, x, y = _get_bb()
     x2, y2 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
-    with pytest.raises(BloqError, match=r'.*quantum variable was re\-used.*'):
+    with pytest.raises(BloqError, match=r'.*quantum variable was reused.*'):
         bb.finalize(x=x, y=y2)
 
 
