@@ -95,9 +95,7 @@ def build_all(
     for i, be in enumerate(examples):
         print(f'[{i + 1:4d}/{total}] {be.name} ...', end='', flush=True)
         if skip_symbolic and SYMBOLIC_NAME_PATTERN.search(be.name):
-            result = L1BuildResult(
-                be.name, BuildOutcome.SKIPPED, 'Skipped symbolic example'
-            )
+            result = L1BuildResult(be.name, BuildOutcome.SKIPPED, 'Skipped symbolic example')
         else:
             try:
                 bloq = be.make()
@@ -145,8 +143,7 @@ def write_report(results: List[L1BuildResult], path: Path) -> None:
 
     lines: List[str] = []
     lines.append('# Qualtran-L1 Library Build Report\n')
-    lines.append(f'Built **{len(results)}** `BloqExample`s through '
-                 'compile → reload → execute.\n')
+    lines.append(f'Built **{len(results)}** `BloqExample`s through compile → reload → execute.\n')
     lines.append('## Summary\n')
     lines.append('| Outcome | Count |')
     lines.append('| --- | ---: |')
@@ -170,26 +167,45 @@ def write_report(results: List[L1BuildResult], path: Path) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('output_dir', type=Path,
-                        help='Root directory for the generated .qlt files (created if needed). '
-                             'Files are compiled into <output_dir>/partial/ and moved to '
-                             '<output_dir>/lib/ on success, organized by fully-qualified bloq '
-                             'class, e.g. lib/qualtran/bloqs/arithmetic/Add/add_small.qlt.')
-    parser.add_argument('--limit', type=int, default=None,
-                        help='Only process the first N examples (for a quick smoke test).')
-    parser.add_argument('--regenerate', action='store_true',
-                        help='Recompile and overwrite .qlt files that already exist. By default, '
-                             'existing files are reused (the compile step is skipped) and only '
-                             'reloaded and executed.')
-    parser.add_argument('--timeout', type=float, default=60.0,
-                        help='Per-example time budget in seconds; 0 disables it. Default: 60.')
-    parser.add_argument('--include-symbolic', action='store_true',
-                        help='Include symbolic bloq examples (by default, examples with '
-                             '"symb" or "symbolic" in their name are skipped).')
-    parser.add_argument('--report', type=Path, default=None,
-                        help='Also write a markdown report to this path.')
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        'output_dir',
+        type=Path,
+        help='Root directory for the generated .qlt files (created if needed). '
+        'Files are compiled into <output_dir>/partial/ and moved to '
+        '<output_dir>/lib/ on success, organized by fully-qualified bloq '
+        'class, e.g. lib/qualtran/bloqs/arithmetic/Add/add_small.qlt.',
+    )
+    parser.add_argument(
+        '--limit',
+        type=int,
+        default=None,
+        help='Only process the first N examples (for a quick smoke test).',
+    )
+    parser.add_argument(
+        '--regenerate',
+        action='store_true',
+        help='Recompile and overwrite .qlt files that already exist. By default, '
+        'existing files are reused (the compile step is skipped) and only '
+        'reloaded and executed.',
+    )
+    parser.add_argument(
+        '--timeout',
+        type=float,
+        default=60.0,
+        help='Per-example time budget in seconds; 0 disables it. Default: 60.',
+    )
+    parser.add_argument(
+        '--include-symbolic',
+        action='store_true',
+        help='Include symbolic bloq examples (by default, examples with '
+        '"symb" or "symbolic" in their name are skipped).',
+    )
+    parser.add_argument(
+        '--report', type=Path, default=None, help='Also write a markdown report to this path.'
+    )
     args = parser.parse_args()
 
     out_dir = args.output_dir

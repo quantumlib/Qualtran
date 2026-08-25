@@ -104,9 +104,7 @@ def test_composite_bloq():
     cxns, signature = _manually_make_test_cbloq_cxns()
     cbloq = CompositeBloq(connections=cxns, signature=signature)
 
-    assert (
-        cbloq.debug_text()
-        == """\
+    assert cbloq.debug_text() == """\
 TestTwoBitOp<1>
   LeftDangle.q1 -> ctrl
   LeftDangle.q2 -> target
@@ -118,7 +116,6 @@ TestTwoBitOp<2>
   TestTwoBitOp<1>.target -> ctrl
   ctrl -> RightDangle.q1
   target -> RightDangle.q2"""
-    )
 
 
 def test_iter_bloqnections():
@@ -496,35 +493,32 @@ def test_add_from(call_decompose):
     else:
         (stuff,) = bb.add_from(TestParallelCombo(), reg=stuff)
     bloq = bb.finalize(stuff=stuff)
-    assert (
-        bloq.debug_text()
-        == """\
+    assert bloq.debug_text() == """\
 TestParallelCombo<0>
   LeftDangle.stuff -> reg
-  reg -> Split<1>.reg
+  reg -> Split(3)<1>.reg
 --------------------
-Split<1>
+Split(3)<1>
   TestParallelCombo<0>.reg -> reg
   reg[0] -> TestAtom<2>.q
   reg[1] -> TestAtom<3>.q
   reg[2] -> TestAtom<4>.q
 --------------------
 TestAtom<2>
-  Split<1>.reg[0] -> q
-  q -> Join<5>.reg[0]
+  Split(3)<1>.reg[0] -> q
+  q -> Join(3)<5>.reg[0]
 TestAtom<3>
-  Split<1>.reg[1] -> q
-  q -> Join<5>.reg[1]
+  Split(3)<1>.reg[1] -> q
+  q -> Join(3)<5>.reg[1]
 TestAtom<4>
-  Split<1>.reg[2] -> q
-  q -> Join<5>.reg[2]
+  Split(3)<1>.reg[2] -> q
+  q -> Join(3)<5>.reg[2]
 --------------------
-Join<5>
+Join(3)<5>
   TestAtom<2>.q -> reg[0]
   TestAtom<3>.q -> reg[1]
   TestAtom<4>.q -> reg[2]
   reg -> RightDangle.stuff"""
-    )
 
 
 def test_final_soqs():

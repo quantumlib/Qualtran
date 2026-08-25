@@ -200,9 +200,7 @@ def library_qlt_path(
     return root.joinpath(subdir, *class_in_pkg.split('.'), f'{name}.qlt')
 
 
-def _finalize_placement(
-    result: L1BuildResult, partial_path: Path, lib_path: Path
-) -> L1BuildResult:
+def _finalize_placement(result: L1BuildResult, partial_path: Path, lib_path: Path) -> L1BuildResult:
     """Move/remove the working `.qlt` file based on the outcome.
 
     Establishes the invariant:
@@ -311,14 +309,19 @@ def build_library_entry(
             loaded: Dict[str, object] = load_module(l1_text)  # type: ignore[assignment]
         except Exception as e:  # pylint: disable=broad-except
             return L1BuildResult(
-                name, BuildOutcome.RELOAD_FAILED, _short_exc(e), traceback.format_exc(),
-                qlt_path=str(source_path)
+                name,
+                BuildOutcome.RELOAD_FAILED,
+                _short_exc(e),
+                traceback.format_exc(),
+                qlt_path=str(source_path),
             )
 
         if not loaded:
             return L1BuildResult(
-                name, BuildOutcome.RELOAD_FAILED, 'load_module returned no bloqs',
-                qlt_path=str(source_path)
+                name,
+                BuildOutcome.RELOAD_FAILED,
+                'load_module returned no bloqs',
+                qlt_path=str(source_path),
             )
 
         # Select the root bloq by its known key. Fall back to the first

@@ -83,7 +83,9 @@ def test_build_library_entry_soft_failure_stays_in_partial(tmp_path):
     assert not result.outcome.is_hard_failure
     assert result.n_problems and result.n_problems >= 1
 
-    partial_file = tmp_path / 'partial' / 'qualtran' / 'bloqs' / 'arithmetic' / 'Add' / 'add_symb.qlt'
+    partial_file = (
+        tmp_path / 'partial' / 'qualtran' / 'bloqs' / 'arithmetic' / 'Add' / 'add_symb.qlt'
+    )
     assert result.qlt_path == str(partial_file)
     assert partial_file.exists()
 
@@ -115,15 +117,9 @@ def test_symbolic_name_pattern():
         'symbolic_qft',
         'symb_bloq_ex',
     ]
-    should_not_match = [
-        'bloq_ex_symbiotic',
-        'bloq_symbiotic_ex',
-        'asymb_bloq',
-        'asymbolic_bloq',
-    ]
+    should_not_match = ['bloq_ex_symbiotic', 'bloq_symbiotic_ex', 'asymb_bloq', 'asymbolic_bloq']
 
     for name in should_match:
         assert SYMBOLIC_NAME_PATTERN.search(name), f'Expected match for {name}'
     for name in should_not_match:
         assert not SYMBOLIC_NAME_PATTERN.search(name), f'Expected no match for {name}'
-

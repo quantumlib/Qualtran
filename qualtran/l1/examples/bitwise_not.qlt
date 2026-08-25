@@ -16,22 +16,22 @@ from qualtran.bloqs.basic_gates.OnEach(4, qualtran.bloqs.basic_gates.XGate, QUIn
 [
     q: QUInt(4),
 ] {
-    reg                  = Split            [reg=q]             
+    reg                  = Split(4)         [reg=q]             
     q2                   = X                [q=reg[0]]          
     q3                   = X                [q=reg[1]]          
     q4                   = X                [q=reg[2]]          
     q5                   = X                [q=reg[3]]          
-    reg2                 = Join             [reg=[q2, q3, q4, q5]]
+    reg2                 = Join(4)          [reg=[q2, q3, q4, q5]]
                            return           [q=reg2]            
 }
 
 
-qcast Split
+qcast Split(4)
 [reg: QUInt(4) -> QBit[4]]
 
 extern qdef X
 from qualtran.bloqs.basic_gates.XGate
 [q: QBit @ oplus]
 
-qcast Join
+qcast Join(4)
 [reg: QBit[4] -> QUInt(4)]
