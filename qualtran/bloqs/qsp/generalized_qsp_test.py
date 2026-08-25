@@ -11,14 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from collections.abc import Sequence
 from functools import cached_property
-from typing import Dict, Optional, Sequence
 
 import cirq
 import numpy as np
 import pytest
 import sympy
 from attrs import define
+from numpy.typing import NDArray
 
 from qualtran import Bloq, bloq_example, Controlled, CtrlSpec, GateWithRegisters
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
@@ -75,8 +76,8 @@ def test_real_polynomial_has_real_complementary_polynomial(degree: int):
 
 def verify_generalized_qsp(
     U: GateWithRegisters,
-    P: Sequence[complex],
-    Q: Optional[Sequence[complex]] = None,
+    P: NDArray[np.number] | Sequence[complex],
+    Q: NDArray[np.number] | Sequence[complex] | None = None,
     *,
     negative_power: int = 0,
     tolerance: float = 1e-5,
@@ -160,7 +161,7 @@ def test_call_graph(negative_power: int):
 
     g, sigma = gsqp_U.call_graph(max_depth=1, generalizer=catch_rotations)
 
-    expected_counts: Dict[Bloq, int] = {arbitrary_rotation: 3}
+    expected_counts: dict[Bloq, int] = {arbitrary_rotation: 3}
     if negative_power < 2:
         expected_counts[U.controlled(control_values=[0])] = 2 - negative_power
     if negative_power > 0:

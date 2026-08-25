@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterator
+
 import cirq
 import numpy as np
 import pytest
@@ -22,7 +24,7 @@ import qualtran.rotation_synthesis.matrix._clifford_t_repr as ctr
 import qualtran.rotation_synthesis.matrix._su2_ct as _su2_ct
 
 
-def _make_gates(n_seqs: int, n_gates: int, seed: int):
+def _make_gates(n_seqs: int, n_gates: int, seed: int) -> Iterator[list[str]]:
     gates = tuple(_su2_ct.GATE_MAP.keys())
     rng = np.random.default_rng(seed)
     for _ in range(n_seqs):

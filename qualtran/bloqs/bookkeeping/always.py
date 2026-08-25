@@ -11,7 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Iterable, Mapping, Optional, Sequence, TYPE_CHECKING, Union
+from __future__ import annotations
+
+from collections.abc import Iterable, Mapping, Sequence
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT
@@ -65,34 +68,30 @@ class Always(Bloq):
     subbloq: Bloq
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return self.subbloq.signature
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         return bb.add_d(self.subbloq, **soqs)
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Mapping[str, 'ClassicalValRetT']:
+    def on_classical_vals(self, **vals: ClassicalValT) -> Mapping[str, ClassicalValRetT]:
         return self.subbloq.on_classical_vals(**vals)
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', set['BloqCountT']]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         return self.subbloq.build_call_graph(ssa)
 
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec | None = None) -> tuple[Bloq, AddControlledT]:
         """Pass-through the control registers as-is"""
 
         def add_controlled(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
-        ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            bb: BloqBuilder, ctrl_soqs: Sequence[SoquetT], in_soqs: dict[str, SoquetT]
+        ) -> tuple[Iterable[SoquetT], Iterable[SoquetT]]:
             out_soqs = bb.add_t(self, **in_soqs)
             return ctrl_soqs, out_soqs
 
         return self, add_controlled
 
-    def adjoint(self) -> 'Always':
+    def adjoint(self) -> Always:
         return Always(self.subbloq.adjoint())
 
     def __str__(self) -> str:

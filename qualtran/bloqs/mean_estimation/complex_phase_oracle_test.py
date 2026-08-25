@@ -14,7 +14,6 @@
 
 import math
 from functools import cached_property
-from typing import Optional, Tuple
 
 import cirq
 import numpy as np
@@ -31,18 +30,18 @@ from qualtran.testing import assert_valid_bloq_decomposition
 @frozen
 class ExampleSelect(SelectOracle):
     bitsize: int
-    control_val: Optional[int] = None
+    control_val: int | None = None
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return () if self.control_val is None else (Register('control', QBit()),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (Register('selection', QAny(self.bitsize)),)
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return (Register('target', QAny(self.bitsize)),)
 
     def decompose_from_registers(self, context, selection, target):

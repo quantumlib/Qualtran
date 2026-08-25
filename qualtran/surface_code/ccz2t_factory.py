@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import math
 from typing import TYPE_CHECKING
 
@@ -44,7 +46,7 @@ class CCZ2TFactory(MagicStateFactory):
     # ----     Level 0    ---------
     # -------------------------------------------------------------------------------
 
-    def l0_state_injection_error(self, error_model: 'LogicalErrorModel') -> float:
+    def l0_state_injection_error(self, error_model: LogicalErrorModel) -> float:
         """Error rate associated with the level-0 creation of a |T> state.
 
         By using the techniques of Ying Li (https://arxiv.org/abs/1410.7808), this can be
@@ -52,7 +54,7 @@ class CCZ2TFactory(MagicStateFactory):
         """
         return error_model.physical_error
 
-    def l0_topo_error_t_gate(self, error_model: 'LogicalErrorModel') -> float:
+    def l0_topo_error_t_gate(self, error_model: LogicalErrorModel) -> float:
         """Topological error associated with level-0 distillation.
 
         For a level-1 code distance of `d1`, this construction uses a `d1/2` distance code
@@ -67,7 +69,7 @@ class CCZ2TFactory(MagicStateFactory):
         # it needs to be and perform the T gate.
         return 100 * topo_error_per_unit_cell
 
-    def l0_error(self, error_model: 'LogicalErrorModel') -> float:
+    def l0_error(self, error_model: LogicalErrorModel) -> float:
         """Chance of failure of a T gate performed with an injected (level-0) T state.
 
         As a simplifying approximation here (and elsewhere) we assume different sources
@@ -79,18 +81,18 @@ class CCZ2TFactory(MagicStateFactory):
     # ----     Level 1    ---------
     # -------------------------------------------------------------------------------
 
-    def l1_topo_error_factory(self, error_model: 'LogicalErrorModel') -> float:
+    def l1_topo_error_factory(self, error_model: LogicalErrorModel) -> float:
         """Topological error associated with a L1 T factory."""
 
         # The L1 T factory uses approximately 1000 L1 unit cells.
         return 1000 * error_model(code_distance=self.distillation_l1_d)
 
-    def l1_topo_error_t_gate(self, error_model: 'LogicalErrorModel') -> float:
+    def l1_topo_error_t_gate(self, error_model: LogicalErrorModel) -> float:
         # It takes approximately 100 L1 unit cells to get the L1 state produced by the
         # factory to where it needs to be and perform the T gate.
         return 100 * error_model(code_distance=self.distillation_l1_d)
 
-    def l1_distillation_error(self, error_model: 'LogicalErrorModel') -> float:
+    def l1_distillation_error(self, error_model: LogicalErrorModel) -> float:
         """The error due to level-0 faulty T states making it through distillation undetected.
 
         The level 1 distillation procedure detects any two errors. There are 35 weight-three
@@ -98,7 +100,7 @@ class CCZ2TFactory(MagicStateFactory):
         """
         return 35 * self.l0_error(error_model) ** 3
 
-    def l1_error(self, error_model: 'LogicalErrorModel') -> float:
+    def l1_error(self, error_model: LogicalErrorModel) -> float:
         """Chance of failure of a T gate performed with a T state produced from the L1 factory."""
         return (
             self.l1_topo_error_factory(error_model)
@@ -110,7 +112,7 @@ class CCZ2TFactory(MagicStateFactory):
     # ----     Level 2    ---------
     # -------------------------------------------------------------------------------
 
-    def l2_error(self, error_model: 'LogicalErrorModel') -> float:
+    def l2_error(self, error_model: LogicalErrorModel) -> float:
         """Chance of failure of the level two factory.
 
         This is the chance of failure of a CCZ gate or a pair of T gates performed with a CCZ state.
@@ -134,16 +136,14 @@ class CCZ2TFactory(MagicStateFactory):
         return 6 * l1 + l2
 
     def factory_error(
-        self, n_logical_gates: 'GateCounts', logical_error_model: 'LogicalErrorModel'
+        self, n_logical_gates: GateCounts, logical_error_model: LogicalErrorModel
     ) -> float:
         """Error resulting from the magic state distillation part of the computation."""
         counts = n_logical_gates.total_t_and_ccz_count()
         total_ccz_states = counts['n_ccz'] + math.ceil(counts['n_t'] / 2)
         return self.l2_error(logical_error_model) * total_ccz_states
 
-    def n_cycles(
-        self, n_logical_gates: 'GateCounts', logical_error_model: 'LogicalErrorModel'
-    ) -> int:
+    def n_cycles(self, n_logical_gates: GateCounts, logical_error_model: LogicalErrorModel) -> int:
         """The number of error-correction cycles to distill enough magic states."""
         distillation_d = max(2 * self.distillation_l1_d + 1, self.distillation_l2_d)
         counts = n_logical_gates.total_t_and_ccz_count()

@@ -14,6 +14,8 @@
 
 import itertools
 import math
+from collections.abc import Iterator
+from typing import Any
 
 import numpy as np
 import pytest
@@ -35,7 +37,7 @@ def test_enumerate1d_requiring_swapping():
     }
 
 
-def bf(A, B, bounds):
+def bf(A: lattice.Range, B: lattice.Range, bounds: tuple[int, int]) -> Iterator[rings.ZSqrt2]:
     left, right = bounds
     for p in itertools.product(range(left, right + 1), repeat=2):
         x = rings.ZSqrt2(*p)
@@ -62,7 +64,7 @@ def test_enumerate1d_against_brute_force(n):
     assert bf_sol == enum_sol
 
 
-def bf_rect(r1, r2, b):
+def bf_rect(r1: Any, r2: Any, b: float) -> Iterator[rings.ZW]:
     w = np.exp(1j * np.pi / 4)
     W = [w**i for i in range(4)]
     W_conj = W * np.array([1, -1, 1, -1])

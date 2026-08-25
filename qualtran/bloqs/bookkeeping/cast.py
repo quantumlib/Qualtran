@@ -11,8 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Dict, List, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -33,7 +35,6 @@ from qualtran import (
     Signature,
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
-from qualtran.symbolics import is_symbolic
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -67,7 +68,7 @@ class Cast(_BookkeepingBloq):
 
     inp_dtype: QCDType
     out_dtype: QCDType
-    shape: Tuple[int, ...] = attrs.field(
+    shape: tuple[int, ...] = attrs.field(
         default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
     )
     allow_quantum_to_classical: bool = attrs.field(default=False, kw_only=True)
@@ -82,9 +83,6 @@ class Cast(_BookkeepingBloq):
                 f"If you are sure, set `Cast(..., allow_quantum_to_classical=True)`."
             )
 
-        if is_symbolic(self.inp_dtype.num_bits):
-            return
-
         if self.inp_dtype.num_bits != self.out_dtype.num_bits:
             raise ValueError(
                 f"Casting must preserve the number of bits in the data. "
@@ -92,7 +90,7 @@ class Cast(_BookkeepingBloq):
                 f"{self.inp_dtype.num_bits} != {self.out_dtype.num_bits}."
             )
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f'{self} is atomic')
 
     @cached_property
@@ -104,12 +102,12 @@ class Cast(_BookkeepingBloq):
             ]
         )
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return Cast(inp_dtype=self.out_dtype, out_dtype=self.inp_dtype)
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         return [
@@ -119,14 +117,14 @@ class Cast(_BookkeepingBloq):
             for j in range(self.out_dtype.num_bits)
         ]
 
-    def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, reg: int) -> dict[str, ClassicalValT]:
         res = self.out_dtype.from_bits(self.inp_dtype.to_bits(reg))
         return {'reg': res}
 
-    def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
+    def as_cirq_op(self, qubit_manager, reg: CirqQuregT) -> tuple[None, dict[str, CirqQuregT]]:
         return None, {'reg': reg}
 
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: Wires) -> Operation:
         return None
 
 

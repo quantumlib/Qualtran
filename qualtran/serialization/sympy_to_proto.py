@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Any, cast, Dict, Union
+from typing import Any, cast
 
 import sympy
 import sympy.codegen.cfunctions
@@ -67,7 +67,7 @@ def _get_sympy_function_from_enum(enum: int) -> Any:
     Sympy functions are represented as a sympy_pb2.Function enum. This method converts
     this int enum.
     """
-    enum_to_sympy: Dict[int, Any] = {
+    enum_to_sympy: dict[int, Any] = {
         sympy_pb2.Function.Mul: sympy.core.mul.Mul,
         sympy_pb2.Function.Add: sympy.core.add.Add,
         sympy_pb2.Function.Pow: sympy.core.power.Pow,
@@ -93,7 +93,7 @@ def _get_sympy_const_from_enum(enum: int) -> Any:
     Symbolic constants are serialized as an enum of type sympy_pb2.ConstSymbol. This method converts the
     enum representation back to its original sympy representation.
     """
-    enum_to_sympy: Dict[int, Any] = {
+    enum_to_sympy: dict[int, Any] = {
         sympy_pb2.ConstSymbol.Pi: sympy.pi,
         sympy_pb2.ConstSymbol.E: sympy.E,
         sympy_pb2.ConstSymbol.EulerGamma: sympy.EulerGamma,
@@ -122,7 +122,7 @@ def _get_const_symbolic_operand(expr: sympy.Expr) -> sympy_pb2.Parameter:
     raise NotImplementedError(f"Sympy expression {str(expr)} cannot be serialized.")
 
 
-def _get_sympy_operand(expr: Union[sympy.Basic, int, float]) -> sympy_pb2.Parameter:
+def _get_sympy_operand(expr: sympy.Basic | int | float) -> sympy_pb2.Parameter:
     """
     Converts the input to a serializable sympy_pb2 Parameter.
 
@@ -175,8 +175,8 @@ def sympy_expr_to_proto(expr: sympy.Basic) -> sympy_pb2.Term:
 
 
 def _get_parameter(
-    serialized_input: Union[sympy_pb2.Operand, sympy_pb2.Parameter],
-) -> Union[sympy.core.AtomicExpr, int, float]:
+    serialized_input: sympy_pb2.Operand | sympy_pb2.Parameter,
+) -> sympy.core.AtomicExpr | int | float:
     """
     Deserializes a parameter.
 
@@ -206,7 +206,7 @@ def _get_parameter(
     raise TypeError(f"Type is not supported for {serialized_input}")
 
 
-def sympy_expr_from_proto(term: sympy_pb2.Term) -> Union[sympy.core.AtomicExpr, int, float]:
+def sympy_expr_from_proto(term: sympy_pb2.Term) -> sympy.core.AtomicExpr | int | float:
     """Deserialize a sympy expression.
 
     This will take a sympy_pb2.Term which will contain a function and

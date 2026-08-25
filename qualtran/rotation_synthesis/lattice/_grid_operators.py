@@ -14,6 +14,8 @@
 
 """A representation of a GridOperator as defined in https://arxiv.org/abs/1403.2975 and its operations."""
 
+from __future__ import annotations
+
 import attrs
 import numpy as np
 
@@ -52,7 +54,7 @@ class GridOperator:
         assert sum(x.a for x in self.matrix.reshape(-1)) % 2 == 0
         assert sum(x.b for x in self.matrix.reshape(-1)) % 2 == 0
 
-    def __pow__(self, k) -> "GridOperator":
+    def __pow__(self, k) -> GridOperator:
         if k == 0:
             return ISqrt2
         x = self
@@ -64,7 +66,7 @@ class GridOperator:
             k >>= 1
         return x @ y
 
-    def shift(self, k: rst.Integral) -> "GridOperator":
+    def shift(self, k: rst.Integral) -> GridOperator:
         """Returns the operator that equivalent to shift(k)-self-shift(k).
 
         Note: this method follows the mathematical formulae in Lemma A.9 which differs from
@@ -91,7 +93,7 @@ class GridOperator:
         )
         return left @ self @ right
 
-    def __matmul__(self, other) -> "GridOperator":
+    def __matmul__(self, other) -> GridOperator:
         assert isinstance(other, GridOperator)
         res = self.matrix @ other.matrix
         # Divide by sqrt(2) to preserve the representation.
@@ -100,7 +102,7 @@ class GridOperator:
                 res[i, j] = res[i, j].divide_by_sqrt2()
         return GridOperator(res)
 
-    def sqrt2_conj(self) -> "GridOperator":
+    def sqrt2_conj(self) -> GridOperator:
         """Returns the sqrt2-conjugate of the operator"""
         res = np.empty((2, 2), dtype=object)
         for i in range(2):
@@ -133,7 +135,7 @@ class GridOperator:
             ret.append(a / sqrt2 + b)
         return np.array(ret).reshape((2, 2))
 
-    def scaled_inverse(self) -> "GridOperator":
+    def scaled_inverse(self) -> GridOperator:
         """Returns the inverse of the operator multiplied by sqrt(2)."""
         a, b, c, d = self.matrix.reshape(-1)
         det: _zsqrt2.ZSqrt2 = a * d - b * c

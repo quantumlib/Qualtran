@@ -73,8 +73,11 @@ References:
 
 """
 
+from __future__ import annotations
+
 from collections import Counter
-from typing import cast, Dict, Iterable, List, Tuple, TYPE_CHECKING, Union
+from collections.abc import Iterable
+from typing import cast, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -102,9 +105,7 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
-def _to_tuple_or_has_length(
-    x: Union[HasLength, Iterable[complex]]
-) -> Union[HasLength, Tuple[complex, ...]]:
+def _to_tuple_or_has_length(x: HasLength | Iterable[complex]) -> HasLength | tuple[complex, ...]:
     if isinstance(x, HasLength):
         return x
     return tuple(x)
@@ -134,7 +135,7 @@ class StatePreparationViaRotations(GateWithRegisters):
         Low, Kliuchnikov, Schaeffer. 2018.
     """
 
-    state_coefficients: Union[HasLength, Tuple[complex, ...]] = attrs.field(
+    state_coefficients: HasLength | tuple[complex, ...] = attrs.field(
         converter=_to_tuple_or_has_length
     )
     phase_bitsize: SymbolicInt
@@ -152,7 +153,8 @@ class StatePreparationViaRotations(GateWithRegisters):
         if not is_symbolic(self.phase_bitsize):
             assert self.phase_bitsize > 1
         # a valid quantum state must have norm one
-        assert np.isclose(np.linalg.norm(self.state_coefficients), 1)
+        if not isinstance(self.state_coefficients, HasLength):
+            assert np.isclose(np.linalg.norm(self.state_coefficients), 1)
 
     @property
     def state_bitsize(self) -> SymbolicInt:
@@ -171,12 +173,12 @@ class StatePreparationViaRotations(GateWithRegisters):
         )
 
     @property
-    def rotation_tree(self) -> 'RotationTree':
+    def rotation_tree(self) -> RotationTree:
         assert isinstance(self.state_coefficients, tuple) and isinstance(self.phase_bitsize, int)
         return RotationTree(np.asarray(self.state_coefficients), self.phase_bitsize, self.uncompute)
 
     @property
-    def prga_prepare_amplitude(self) -> List['PRGAViaPhaseGradient']:
+    def prga_prepare_amplitude(self) -> list[PRGAViaPhaseGradient]:
         if is_symbolic(self.state_coefficients, self.phase_bitsize):
             return [
                 PRGAViaPhaseGradient(
@@ -199,8 +201,8 @@ class StatePreparationViaRotations(GateWithRegisters):
         return ret
 
     @property
-    def prga_prepare_phases(self) -> 'PRGAViaPhaseGradient':
-        data_or_shape: Union[Shaped, Tuple[int, ...]] = (
+    def prga_prepare_phases(self) -> PRGAViaPhaseGradient:
+        data_or_shape: Shaped | tuple[int, ...] = (
             Shaped((slen(self.state_coefficients),))
             if is_symbolic(self.state_coefficients) or is_symbolic(self.phase_bitsize)
             else tuple(self.rotation_tree.get_rom_vals()[1])
@@ -212,7 +214,7 @@ class StatePreparationViaRotations(GateWithRegisters):
             control_bitsize=self.control_bitsize + 1,
         )
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         r"""Parameters:
         * prepare_control: only if control_bitsize != 0
         * target_state: register where the state is written
@@ -229,8 +231,8 @@ class StatePreparationViaRotations(GateWithRegisters):
             soqs = self._prepare_phases(bb, **soqs)
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        ret: 'Counter[Bloq]' = Counter()
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        ret: Counter[Bloq] = Counter()
         ret[Rx(angle=-np.pi / 2)] += self.state_bitsize
         ret[Rx(angle=np.pi / 2)] += self.state_bitsize
         ret[XGate()] += 2
@@ -239,7 +241,7 @@ class StatePreparationViaRotations(GateWithRegisters):
             ret[bloq] += 1
         return ret
 
-    def _prepare_amplitudes(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
+    def _prepare_amplitudes(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         r"""Parameters into soqs:
         * prepare_control: only if control_bitsize != 0
         * target_state: register where the state is written
@@ -279,7 +281,7 @@ class StatePreparationViaRotations(GateWithRegisters):
         soqs["target_state"] = bb.join(state_qubits)
         return soqs
 
-    def _prepare_phases(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
+    def _prepare_phases(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         """Encodes the phase of each coefficient.
 
         Takes into account both the phase of the original coefficient and offsets caused by the
@@ -410,7 +412,7 @@ class PRGAViaPhaseGradient(Bloq):
 
     selection_bitsize: SymbolicInt
     phase_bitsize: SymbolicInt
-    rom_values: Union[Shaped, Tuple[int, ...]]
+    rom_values: Shaped | tuple[int, ...]
     control_bitsize: SymbolicInt
 
     @property
@@ -434,7 +436,7 @@ class PRGAViaPhaseGradient(Bloq):
     def add_into_phase_grad(self) -> AddIntoPhaseGrad:
         return AddIntoPhaseGrad(self.phase_bitsize, self.phase_bitsize)
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         """Parameters:
         * control
         * selection (not necessary if selection_bitsize == 0)
@@ -456,8 +458,8 @@ class PRGAViaPhaseGradient(Bloq):
         bb.free(cast(Soquet, soqs.pop("target0_")))
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        ret: 'Counter[Bloq]' = Counter()
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        ret: Counter[Bloq] = Counter()
         ret[self.qrom_bloq] += 1
         ret[self.qrom_bloq.adjoint()] += 1
         ret[self.add_into_phase_grad] += 1
@@ -490,7 +492,7 @@ class RotationTree:
         self._calc_amplitude_angles_and_rv(state, phase_bitsize, uncompute)
         self._calc_phase_rom_values(state, phase_bitsize, uncompute)
 
-    def get_rom_vals(self) -> Tuple[List[List[int]], List[int]]:
+    def get_rom_vals(self) -> tuple[list[list[int]], list[int]]:
         return self.amplitude_rom_values, self.phase_rom_values
 
     def _calc_amplitude_angles_and_rv(
@@ -507,9 +509,9 @@ class RotationTree:
             self.sum_total[i + slen] = abs(state[i]) ** 2
         for i in range(slen - 1, 0, -1):
             self.sum_total[i] = self.sum_total[i << 1] + self.sum_total[(i << 1) | 1]
-        self.amplitude_rom_values: List[List[int]] = []
+        self.amplitude_rom_values: list[list[int]] = []
         for i in range(self.state_bitsize):
-            rom_vals_this_layer: List[int] = []
+            rom_vals_this_layer: list[int] = []
             for node in range(1 << i, 1 << (i + 1)):
                 angle = self._angle_0(node)
                 if uncompute:
@@ -536,7 +538,7 @@ class RotationTree:
         angles = np.array([np.angle(c) for c in state])
         # flip angle if uncompute
         angles = [(1 - 2 * uncompute) * (a - o) for a, o in zip(angles, offsets)]
-        self.phase_rom_values: List[int] = [
+        self.phase_rom_values: list[int] = [
             RotationTree._angle_to_rom_value(a, phase_bitsize) for a in angles
         ]
 

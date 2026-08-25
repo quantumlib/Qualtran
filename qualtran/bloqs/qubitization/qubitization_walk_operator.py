@@ -26,8 +26,9 @@ We first document the SelectOracle and PrepareOracle abstract base bloqs, and th
 how they can be combined in `QubitizationWalkOperator`.
 """
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Tuple, Union
 
 import attrs
 import cirq
@@ -91,10 +92,10 @@ class QubitizationWalkOperator(GateWithRegisters):
         Babbush et al. (2018). Figure 1.
     """
 
-    block_encoding: Union[SelectBlockEncoding, LCUBlockEncoding]
+    block_encoding: SelectBlockEncoding | LCUBlockEncoding
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         regs = tuple(
             set(self.block_encoding.selection_registers + self.reflect.selection_registers)
         )
@@ -108,22 +109,18 @@ class QubitizationWalkOperator(GateWithRegisters):
         return regs
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return self.block_encoding.target_registers
 
     @cached_property
-    def junk_registers(self) -> Tuple[Register, ...]:
+    def junk_registers(self) -> tuple[Register, ...]:
         return self.block_encoding.junk_registers
 
     @cached_property
     def signature(self) -> Signature:
         # TODO Make `QubitizationWalkOperator` a `BlockEncoding`.
         #      https://github.com/quantumlib/Qualtran/issues/1266
-        if isinstance(self.block_encoding, (SelectBlockEncoding, LCUBlockEncoding)):
-            return Signature(
-                [*self.selection_registers, *self.target_registers, *self.junk_registers]
-            )
-        return self.block_encoding.signature
+        return Signature([*self.selection_registers, *self.target_registers, *self.junk_registers])
 
     @cached_property
     def reflect(self) -> ReflectionUsingPrepare:
@@ -134,7 +131,7 @@ class QubitizationWalkOperator(GateWithRegisters):
         r"""value of $\lambda$, i.e. sum of absolute values of coefficients $w_l$."""
         return self.block_encoding.alpha
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         be_soqs = {reg.name: soqs.pop(reg.name) for reg in self.block_encoding.signature}
         soqs |= bb.add_d(self.block_encoding, **be_soqs)
 
@@ -143,7 +140,7 @@ class QubitizationWalkOperator(GateWithRegisters):
 
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {self.block_encoding: 1, self.reflect: 1}
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
@@ -151,7 +148,7 @@ class QubitizationWalkOperator(GateWithRegisters):
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     @cached_property
-    def prepare(self) -> Union[PrepareOracle, BlackBoxPrepare]:
+    def prepare(self) -> PrepareOracle | BlackBoxPrepare:
         """Get the Prepare bloq if appropriate from the block encoding."""
         # TODO: This should use self.signal_state
         # https://github.com/quantumlib/Qualtran/issues/1266

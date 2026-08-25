@@ -11,8 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
+from collections.abc import Sequence
 from functools import cached_property
-from typing import Dict, Optional, Sequence, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -62,7 +65,7 @@ class XorK(Bloq):
     k: SymbolicInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=self.dtype)
 
     @cached_property
@@ -72,14 +75,14 @@ class XorK(Bloq):
     def is_symbolic(self):
         return is_symbolic(self.k, self.dtype)
 
-    def adjoint(self) -> 'XorK':
+    def adjoint(self) -> XorK:
         return self
 
     @cached_property
     def _bits_k(self) -> Sequence[int]:
         return self.dtype.to_bits(self.k)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet) -> dict[str, SoquetT]:
         if self.is_symbolic():
             raise DecomposeTypeError(f"cannot decompose symbolic {self}")
 
@@ -93,22 +96,20 @@ class XorK(Bloq):
 
         return {'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         num_flips = self.bitsize if self.is_symbolic() else sum(self._bits_k)
         return {XGate(): num_flips}
 
-    def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, x: ClassicalValT) -> dict[str, ClassicalValT]:
         if self.is_symbolic():
             raise ValueError(f"cannot classically simulate with symbolic {self}")
         assert isinstance(self.k, int)
-        k: 'ClassicalValT' = self.k
+        k: ClassicalValT = self.k
         if isinstance(x, np.integer):
             k = np.array(k, dtype=x.dtype)[()]
         return {'x': x ^ k}
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("")
 
@@ -148,7 +149,7 @@ class Xor(Bloq):
         return Signature.build_from_dtypes(x=self.dtype, y=self.dtype)
 
     @classmethod
-    def qcall(cls, x: 'QVar', y: 'QVar'):
+    def qcall(cls, x: QVar, y: QVar):
         xdtype = x.dtype
         ydtype = y.dtype
         if not xdtype == ydtype:
@@ -170,22 +171,18 @@ class Xor(Bloq):
 
         return {'x': bb.join(xs, dtype=self.dtype), 'y': bb.join(ys, dtype=self.dtype)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {CNOT(): self.dtype.num_qubits}
 
-    def adjoint(self) -> 'Xor':
+    def adjoint(self) -> Xor:
         return self
 
-    def on_classical_vals(
-        self, x: 'ClassicalValT', y: 'ClassicalValT'
-    ) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, x: ClassicalValT, y: ClassicalValT) -> dict[str, ClassicalValT]:
         if is_symbolic(self.dtype):
             raise ValueError(f"cannot classically simulate with symbolic {self.dtype=}")
         return {'x': x, 'y': x ^ y}
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return TextBox('')
         elif reg.name == 'x':
@@ -223,34 +220,32 @@ class BitwiseNot(Bloq):
     dtype: QDType
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=self.dtype)
 
     @classmethod
-    def qcall(cls, x: 'QVar') -> 'QVar':
+    def qcall(cls, x: QVar) -> QVar:
         return x.bb.add(cls(dtype=x.dtype), x=x)  # type: ignore[arg-type]
 
-    def adjoint(self) -> 'BitwiseNot':
+    def adjoint(self) -> BitwiseNot:
         return self
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet) -> dict[str, SoquetT]:
         if is_symbolic(self.dtype):
             raise DecomposeTypeError(f"cannot decompose symbolic {self}")
         x = bb.add(OnEach(self.dtype.num_qubits, XGate(), self.dtype), q=x)
         return {'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {XGate(): self.dtype.num_qubits}
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("")
 
         return TextBox("~x")
 
-    def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, x: ClassicalValT) -> dict[str, ClassicalValT]:
         if is_symbolic(self.dtype):
             raise ValueError(f"cannot classically simulate with symbolic {self.dtype=}")
         if isinstance(self.dtype, QInt):
@@ -277,7 +272,7 @@ def _bitwise_not_symb() -> BitwiseNot:
 _BITWISE_NOT_DOC = BloqDocSpec(bloq_cls=BitwiseNot, examples=(_bitwise_not, _bitwise_not_symb))
 
 
-def _get_xork_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+def _get_xork_classical_sim_test_cases() -> list[ClassicalSimTestCase]:
     """Test cases for the `XorK` bloq."""
     import itertools
 
@@ -301,7 +296,7 @@ def _get_xork_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
     return cases
 
 
-def _get_xor_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+def _get_xor_classical_sim_test_cases() -> list[ClassicalSimTestCase]:
     """Test cases for the `Xor` bloq."""
     from qualtran.simulation.verification import ClassicalSimTestCase
 
@@ -313,7 +308,7 @@ def _get_xor_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
     return cases
 
 
-def _get_bitwise_not_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+def _get_bitwise_not_classical_sim_test_cases() -> list[ClassicalSimTestCase]:
     """Test cases for the `BitwiseNot` bloq."""
     from qualtran.simulation.verification import ClassicalSimTestCase
 

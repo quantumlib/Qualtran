@@ -12,8 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import math
-from typing import Callable, cast, Iterable, Iterator, Optional, Tuple, TYPE_CHECKING
+from collections.abc import Callable, Iterable, Iterator
+from typing import cast, TYPE_CHECKING
 
 from .algorithm_summary import AlgorithmSummary
 from .ccz2t_factory import CCZ2TFactory
@@ -31,7 +34,7 @@ if TYPE_CHECKING:
 
 def get_ccz2t_costs(
     *,
-    n_logical_gates: 'GateCounts',
+    n_logical_gates: GateCounts,
     n_algo_qubits: int,
     phys_err: float,
     cycle_time_us: float,
@@ -70,14 +73,14 @@ def get_ccz2t_costs(
 
 def get_ccz2t_costs_from_error_budget(
     *,
-    n_logical_gates: 'GateCounts',
+    n_logical_gates: GateCounts,
     n_algo_qubits: int,
     phys_err: float = 1e-3,
     error_budget: float = 1e-2,
     cycle_time_us: float = 1.0,
     routing_overhead: float = 0.5,
-    factory: Optional[MagicStateFactory] = None,
-    data_block: Optional[DataBlock] = None,
+    factory: MagicStateFactory | None = None,
+    data_block: DataBlock | None = None,
 ) -> PhysicalCostsSummary:
     """Physical costs using the model from catalyzed CCZ to 2T paper.
 
@@ -174,14 +177,14 @@ def iter_ccz2t_factories(
             yield factory(distillation_l1_d=l1_distance, distillation_l2_d=l2_distance)
 
 
-def iter_simple_data_blocks(d_start: int = 7, d_stop: int = 35):
+def iter_simple_data_blocks(d_start: int = 7, d_stop: int = 35) -> Iterator[SimpleDataBlock]:
     for logical_data_qubit_distance in range(d_start, d_stop, 2):
         yield SimpleDataBlock(data_d=logical_data_qubit_distance)
 
 
 def get_ccz2t_costs_from_grid_search(
     *,
-    n_logical_gates: 'GateCounts',
+    n_logical_gates: GateCounts,
     n_algo_qubits: int,
     phys_err: float = 1e-3,
     error_budget: float = 1e-2,
@@ -189,7 +192,7 @@ def get_ccz2t_costs_from_grid_search(
     factory_iter: Iterable[MagicStateFactory] = tuple(iter_ccz2t_factories()),
     data_block_iter: Iterable[DataBlock] = tuple(iter_simple_data_blocks()),
     cost_function: Callable[[PhysicalCostsSummary], float] = (lambda pc: pc.qubit_hours),
-) -> Tuple[PhysicalCostsSummary, MagicStateFactory, SimpleDataBlock]:
+) -> tuple[PhysicalCostsSummary, MagicStateFactory, SimpleDataBlock]:
     """Grid search over parameters to minimize the space-time volume.
 
     Args:
@@ -212,8 +215,8 @@ def get_ccz2t_costs_from_grid_search(
         A similar search was conducted manually in https://arxiv.org/abs/2011.03494, using a tweaked
         version of the spreadsheet from https://arxiv.org/abs/1812.01238
     """
-    best_cost: Optional[PhysicalCostsSummary] = None
-    best_params: Optional[Tuple[MagicStateFactory, SimpleDataBlock]] = None
+    best_cost: PhysicalCostsSummary | None = None
+    best_params: tuple[MagicStateFactory, SimpleDataBlock] | None = None
     for factory in factory_iter:
         for data_block in data_block_iter:
             cost = get_ccz2t_costs(

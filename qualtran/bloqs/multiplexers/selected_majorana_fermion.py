@@ -12,8 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
+from collections.abc import Iterator, Sequence
 from functools import cached_property
-from typing import Dict, Iterator, Sequence, Tuple, Union
 
 import attrs
 import cirq
@@ -48,10 +50,10 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         Fig 9.
     """
 
-    selection_regs: Tuple[Register, ...] = attrs.field(
+    selection_regs: tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )
-    control_regs: Tuple[Register, ...] = attrs.field(
+    control_regs: tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v),
         default=(Register('control', QBit()),),
     )
@@ -62,7 +64,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         cls,
         *,
         target_gate=cirq.Y,
-        **quregs: Union[Sequence[cirq.Qid], NDArray[cirq.Qid]],  # type: ignore[type-var]
+        **quregs: Sequence[cirq.Qid] | NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> cirq.Operation:
         """Helper constructor to automatically deduce selection_regs attribute."""
         return SelectedMajoranaFermion(
@@ -73,15 +75,15 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         ).on_registers(**quregs)
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return self.control_regs
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return self.selection_regs
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         if any(
             isinstance(reg.dtype.iteration_length_or_zero(), sympy.Expr)
             for reg in self.selection_registers
@@ -94,20 +96,18 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         return (Register('target', QAny(int(total_iteration_size))),)
 
     @cached_property
-    def extra_registers(self) -> Tuple[Register, ...]:
+    def extra_registers(self) -> tuple[Register, ...]:
         return (Register('accumulator', QBit()),)
 
     def decompose_from_registers(
         self, context: cirq.DecompositionContext, **quregs
     ) -> Iterator[cirq.OP_TREE]:
         quregs['accumulator'] = np.array(context.qubit_manager.qalloc(1))
-        control: Sequence['cirq.Qid'] = (
+        control: Sequence[cirq.Qid] = (
             quregs[self.control_regs[0].name].tolist() if total_bits(self.control_registers) else []
         )
         yield cirq.X(*quregs['accumulator']).controlled_by(*control)
-        yield super(SelectedMajoranaFermion, self).decompose_from_registers(
-            context=context, **quregs
-        )
+        yield super().decompose_from_registers(context=context, **quregs)
         context.qubit_manager.qfree(quregs['accumulator'])
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
@@ -116,7 +116,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         wire_symbols += [f"Z{self.target_gate}"] * total_bits(self.target_registers)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def nth_operation(  # type: ignore[override]
+    def nth_operation(
         self,
         context: cirq.DecompositionContext,
         control: cirq.Qid,
@@ -138,7 +138,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         yield self.target_gate(target[target_idx]).controlled_by(control)
         yield cirq.CZ(*accumulator, target[target_idx])
 
-    def on_classical_vals(self, **vals) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, **vals) -> dict[str, ClassicalValT]:
         if self.target_gate != cirq.X and self.target_gate != cirq.Z:
             return NotImplemented
         if len(self.control_registers) != 1 or len(self.selection_registers) != 1:
@@ -159,7 +159,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
 
         return {control_name: control, selection_name: selection, 'target': target}
 
-    def basis_state_phase(self, **vals) -> Union[complex, None]:
+    def basis_state_phase(self, **vals) -> complex | None:
         if self.target_gate != cirq.X and self.target_gate != cirq.Z:
             return None
         if len(self.control_registers) != 1 or len(self.selection_registers) != 1:

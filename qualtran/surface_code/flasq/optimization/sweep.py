@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 import itertools
-from typing import Callable, Iterable, List, Tuple, Union
+from collections.abc import Callable, Iterable
 
 import attrs
 import numpy as np
@@ -49,7 +49,7 @@ class SweepResult:
     core_config: CoreParametersConfig
     total_allowable_rotation_error: float
     reaction_time_in_cycles: float
-    flasq_model_config: Tuple[FLASQCostModel, str]
+    flasq_model_config: tuple[FLASQCostModel, str]
     n_phys_qubits: int
     logical_circuit_analysis: frozendict
     flasq_summary: FLASQSummary
@@ -77,14 +77,14 @@ class SweepResult:
 def run_sweep(
     *,
     circuit_builder_func: Callable,
-    circuit_builder_kwargs_list: Union[frozendict, Iterable[frozendict]],
-    core_configs_list: Union[CoreParametersConfig, Iterable[CoreParametersConfig]],
-    total_allowable_rotation_error_list: Union[float, Iterable[float]],
-    reaction_time_in_cycles_list: Union[float, Iterable[float]],
-    flasq_model_configs: Iterable[Tuple[FLASQCostModel, str]],
-    n_phys_qubits_total_list: Union[int, Iterable[int]],
+    circuit_builder_kwargs_list: frozendict | Iterable[frozendict],
+    core_configs_list: CoreParametersConfig | Iterable[CoreParametersConfig],
+    total_allowable_rotation_error_list: float | Iterable[float],
+    reaction_time_in_cycles_list: float | Iterable[float],
+    flasq_model_configs: Iterable[tuple[FLASQCostModel, str]],
+    n_phys_qubits_total_list: int | Iterable[int],
     print_level: int = 1,
-) -> List[SweepResult]:
+) -> list[SweepResult]:
     """
     Core sweep function to generate physical cost estimates (`FLASQSummary`) over a parameter space.
 

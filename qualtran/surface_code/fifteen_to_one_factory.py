@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
@@ -54,7 +56,7 @@ class FifteenToOne(MagicStateFactory):
         return 2 * (self.d_X + 4 * self.d_Z) * 3 * self.d_X + 4 * self.d_m
 
     @lru_cache(8)
-    def _final_state(self, logi_err_model: 'LogicalErrorModel'):
+    def _final_state(self, logi_err_model: LogicalErrorModel):
         factory = _build_factory(
             d_X=self.d_X, d_Z=self.d_Z, d_m=self.d_m, logical_error_model=logi_err_model
         )
@@ -63,14 +65,14 @@ class FifteenToOne(MagicStateFactory):
         )
 
     @lru_cache(8)
-    def p_fail(self, logical_error_model: 'LogicalErrorModel') -> float:
+    def p_fail(self, logical_error_model: LogicalErrorModel) -> float:
         projector = np.kron(np.eye(2), np.ones((16, 16)) / 16)
         return np.real_if_close(
             1 - np.trace(projector @ self._final_state(logical_error_model))
         ).item()
 
     @lru_cache(8)
-    def p_out(self, logical_error_model: 'LogicalErrorModel') -> float:
+    def p_out(self, logical_error_model: LogicalErrorModel) -> float:
         # I \otimes ones \otimes ones \otimes ones \otimes ones / 16
         projector = np.kron(np.eye(2), np.ones((16, 16)) / 16)
         project_state = (
@@ -83,9 +85,7 @@ class FifteenToOne(MagicStateFactory):
         target_density = np.kron(T_state.T.conj() @ T_state, np.ones((16, 16)) / 16)
         return np.real_if_close(1 - np.trace(project_state @ target_density)).item()
 
-    def n_cycles(
-        self, n_logical_gates: 'GateCounts', logical_error_model: 'LogicalErrorModel'
-    ) -> int:
+    def n_cycles(self, n_logical_gates: GateCounts, logical_error_model: LogicalErrorModel) -> int:
         """The number of cycles (time) required to produce the requested number of magic states.
 
         Unlike the same method for other factories. This method reports the *expected* number of cycles
@@ -97,7 +97,7 @@ class FifteenToOne(MagicStateFactory):
         return np.ceil(num_t * 6 * self.d_m / (1 - self.p_fail(logical_error_model)))
 
     def factory_error(
-        self, n_logical_gates: 'GateCounts', logical_error_model: 'LogicalErrorModel'
+        self, n_logical_gates: GateCounts, logical_error_model: LogicalErrorModel
     ) -> float:
         """The total error expected from distilling magic states with a given physical error rate."""
         num_t = n_logical_gates.total_t_count()
@@ -105,7 +105,7 @@ class FifteenToOne(MagicStateFactory):
 
 
 def _build_factory(
-    *, d_X: int, d_Z: int, d_m: int, logical_error_model: 'LogicalErrorModel'
+    *, d_X: int, d_Z: int, d_m: int, logical_error_model: LogicalErrorModel
 ) -> cirq.Circuit:
     """Builds the 15-to-1 factory with its associated cost model.
 

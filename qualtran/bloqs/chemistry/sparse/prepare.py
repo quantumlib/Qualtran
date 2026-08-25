@@ -13,9 +13,11 @@
 #  limitations under the License.
 """PREPARE for the sparse chemistry Hamiltonian in second quantization."""
 
+from __future__ import annotations
+
 import itertools
 from functools import cached_property
-from typing import Dict, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -173,19 +175,19 @@ class PrepareSparse(PrepareOracle):
     num_spin_orb: int
     num_non_zero: int
     num_bits_state_prep: int
-    alt_pqrs: Tuple[Tuple[int, ...], ...] = attrs.field(repr=False)
-    alt_theta: Tuple[int, ...] = attrs.field(repr=False)
-    alt_one_body: Tuple[int, ...] = attrs.field(repr=False)
-    ind_pqrs: Tuple[Tuple[int, ...], ...] = attrs.field(repr=False)
-    theta: Tuple[int, ...] = attrs.field(repr=False)
-    one_body: Tuple[int, ...] = attrs.field(repr=False)
-    keep: Tuple[int, ...] = attrs.field(repr=False)
+    alt_pqrs: tuple[tuple[int, ...], ...] = attrs.field(repr=False)
+    alt_theta: tuple[int, ...] = attrs.field(repr=False)
+    alt_one_body: tuple[int, ...] = attrs.field(repr=False)
+    ind_pqrs: tuple[tuple[int, ...], ...] = attrs.field(repr=False)
+    theta: tuple[int, ...] = attrs.field(repr=False)
+    one_body: tuple[int, ...] = attrs.field(repr=False)
+    keep: tuple[int, ...] = attrs.field(repr=False)
     num_bits_rot_aa: int = 8
     sum_of_l1_coeffs: SymbolicFloat = 0.0
     log_block_size: SymbolicInt = 1
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (
             Register(
                 "d",
@@ -203,12 +205,12 @@ class PrepareSparse(PrepareOracle):
         )
 
     @cached_property
-    def junk_registers(self) -> Tuple[Register, ...]:
+    def junk_registers(self) -> tuple[Register, ...]:
         extra_junk = (Register("less_than", QBit()),)
         return extra_junk + self.qroam_target_registers + self.qroam_extra_target_registers
 
     @cached_property
-    def qroam_target_registers(self) -> Tuple[Register, ...]:
+    def qroam_target_registers(self) -> tuple[Register, ...]:
         """Target registers for QROAMClean."""
         bs = (self.num_spin_orb // 2 - 1).bit_length()
         return (
@@ -228,7 +230,7 @@ class PrepareSparse(PrepareOracle):
         )
 
     @cached_property
-    def qroam_extra_target_registers(self) -> Tuple[Register, ...]:
+    def qroam_extra_target_registers(self) -> tuple[Register, ...]:
         """Extra registers required for QROAMClean."""
         if self.log_block_size == 0:
             return ()
@@ -259,8 +261,8 @@ class PrepareSparse(PrepareOracle):
         num_bits_state_prep: int = 8,
         num_bits_rot_aa: int = 8,
         drop_element_thresh: float = 0.0,
-        log_block_size: Optional[SymbolicInt] = None,
-    ) -> 'PrepareSparse':
+        log_block_size: SymbolicInt | None = None,
+    ) -> PrepareSparse:
         r"""Factory method to build PrepareSparse from Hamiltonian coefficients.
 
         Args:
@@ -321,7 +323,7 @@ class PrepareSparse(PrepareOracle):
             log_block_size=log_block_size,
         )
 
-    def build_qrom_bloq(self) -> 'Bloq':
+    def build_qrom_bloq(self) -> Bloq:
         n_n = self.num_bits_spat_orb
         target_bitsizes = (
             (n_n,) * 4 + (1,) * 2 + (n_n,) * 4 + (1,) * 2 + (self.num_bits_state_prep,)
@@ -345,12 +347,12 @@ class PrepareSparse(PrepareOracle):
         )
         return qrom
 
-    def add_qrom(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def add_qrom(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         qrom = self.build_qrom_bloq()
         # The qroam_junk_regs won't be present initially when building the
         # composite bloq as they're RIGHT registers.
         qroam_out_soqs = bb.add_d(qrom, selection=soqs['d'])
-        out_soqs: Dict[str, 'SoquetT'] = {'d': qroam_out_soqs.pop('selection')}
+        out_soqs: dict[str, SoquetT] = {'d': qroam_out_soqs.pop('selection')}
         # map output soqs to Prepare junk registers names
         out_soqs |= {
             reg.name: qroam_out_soqs.pop(f'target{i}_')
@@ -362,7 +364,7 @@ class PrepareSparse(PrepareOracle):
         }
         return soqs | out_soqs
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         n_n = self.num_bits_spat_orb
         # 1. Prepare \sum_d |d\rangle
         soqs['d'] = bb.add(PrepareUniformSuperposition(self.num_non_zero), target=soqs['d'])
@@ -425,7 +427,7 @@ class PrepareSparse(PrepareOracle):
         )
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             PrepareUniformSuperposition(self.num_non_zero): 1,
             self.build_qrom_bloq(): 1,

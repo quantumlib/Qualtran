@@ -14,8 +14,10 @@
 
 """The ring Z[w] where w = e^{i pi/4}"""
 
+from __future__ import annotations
+
 import itertools
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import attrs
 import numpy as np
@@ -96,7 +98,7 @@ class ZW:
         """
         return self.mag(config.sqrt2), self.arg(config)
 
-    def __mul__(self, other: Union["ZW", rst.Integral]) -> "ZW":
+    def __mul__(self, other: ZW | rst.Integral) -> ZW:
         if isinstance(other, ZW):
             c = [0] * 4
             for i in range(4):
@@ -108,30 +110,30 @@ class ZW:
             return self * ZW([int(other), 0, 0, 0])
         return NotImplemented
 
-    def __add__(self, other) -> "ZW":
+    def __add__(self, other) -> ZW:
         if isinstance(other, ZW):
             return ZW([a + b for a, b in zip(self.coords, other.coords)])
         if rst.is_int(other):
             return self + ZW([int(other), 0, 0, 0])
         return NotImplemented
 
-    def __sub__(self, other) -> "ZW":
+    def __sub__(self, other) -> ZW:
         if isinstance(other, ZW):
             return ZW([a - b for a, b in zip(self.coords, other.coords)])
         if rst.is_int(other):
             return self - ZW([int(other), 0, 0, 0])
         return NotImplemented
 
-    def __rmul__(self, other) -> "ZW":
+    def __rmul__(self, other) -> ZW:
         return self * other
 
-    def __radd__(self, other) -> "ZW":
+    def __radd__(self, other) -> ZW:
         return self + other
 
-    def __rsub__(self, other) -> "ZW":
+    def __rsub__(self, other) -> ZW:
         return -(self - other)
 
-    def __pow__(self, exponent) -> "ZW":
+    def __pow__(self, exponent) -> ZW:
         if not rst.is_int(exponent):
             raise TypeError(f"{exponent=} is not integral")
         exponent = int(exponent)
@@ -148,35 +150,37 @@ class ZW:
             exponent >>= 1
         return cur * other
 
-    def __neg__(self) -> "ZW":
+    def __neg__(self) -> ZW:
         return ZW([-c for c in self.coords])
 
     def __hash__(self) -> int:
         return hash(self.coords)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ZW):
+            return False
         return self.coords == other.coords
 
-    def conjugate(self) -> "ZW":
+    def conjugate(self) -> ZW:
         """Returns the complex-conjugate of the element."""
         a, b, c, d = self.coords
         return ZW([a, -d, -c, -b])
 
-    def conj(self) -> "ZW":
+    def conj(self) -> ZW:
         """Returns the complex-conjugate of the element."""
         return self.conjugate()
 
-    def sqrt2_conjugate(self) -> "ZW":
+    def sqrt2_conjugate(self) -> ZW:
         """Returns the sqrt2-conjugate of the element."""
         a, b, c, d = self.coords
         return ZW([a, -b, c, -d])
 
-    def sqrt2_conj(self) -> "ZW":
+    def sqrt2_conj(self) -> ZW:
         """Returns the sqrt2-conjugate of the element."""
         return self.sqrt2_conjugate()
 
     @staticmethod
-    def from_pair(a: _zsqrt2.ZSqrt2, b: _zsqrt2.ZSqrt2, include_w: bool = False) -> "ZW":
+    def from_pair(a: _zsqrt2.ZSqrt2, b: _zsqrt2.ZSqrt2, include_w: bool = False) -> ZW:
         r"""Constructs a $\mathbb{Z}[\omega]$ element from its $\mathbb{\sqrt{2}}$ representation.
 
         Constructs the element defined by $a + i b + \mathrm{include\_w} * \omega$
@@ -222,17 +226,17 @@ class ZW:
         assert res.coords[0] >= 0
         return res.coords[0]
 
-    def __floordiv__(self, other: "ZW") -> "ZW":
+    def __floordiv__(self, other: ZW) -> ZW:
         z = self * other.conj() * other.sqrt2_conj() * other.sqrt2_conj().conj()
         x_norm = other.norm()
         return ZW([v // x_norm for v in z.coords])
 
-    def is_divisible_by(self, other: "ZW") -> bool:
+    def is_divisible_by(self, other: ZW) -> bool:
         z = self * other.conj() * other.sqrt2_conj() * other.sqrt2_conj().conj()
         x_norm = other.norm()
         return all(c % x_norm == 0 for c in z.coords)
 
-    def gcd(self, other: "ZW") -> "ZW":
+    def gcd(self, other: ZW) -> ZW:
         """Returns the gcd between the operands using the euclidan algorithm."""
         x = self
         y = other
@@ -253,7 +257,7 @@ class ZW:
         return y
 
     @staticmethod
-    def factor_prime(p: int) -> dict["ZW", int]:
+    def factor_prime(p: int) -> dict[ZW, int]:
         """Returns the factorization of a prime into the prime ideals of the ring.
 
         Note: The method assumes the input is a prime.

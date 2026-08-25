@@ -11,8 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
+from collections.abc import Iterator
 from functools import cached_property
-from typing import Iterator, Optional, Tuple
 
 import attrs
 import cirq
@@ -84,7 +86,7 @@ class TestPrepareOracle(PrepareOracle):
 
 
 @frozen
-class TestPauliSelectOracle(SelectOracle):  # type: ignore[misc]
+class TestPauliSelectOracle(SelectOracle):
     r"""Paulis acting on $m$ qubits, controlled by an $n$-qubit register.
 
     Given $2^n$ multi-qubit-Paulis (acting on $m$ qubits) $U_j$,
@@ -110,12 +112,12 @@ class TestPauliSelectOracle(SelectOracle):  # type: ignore[misc]
     select_bitsize: int
     target_bitsize: int
     select_unitaries: tuple[cirq.DensePauliString, ...]
-    control_val: Optional[int] = None
+    control_val: int | None = None
 
     @classmethod
     def random(
         cls, select_bitsize: int, target_bitsize: int, *, random_state: np.random.RandomState
-    ) -> 'TestPauliSelectOracle':
+    ) -> TestPauliSelectOracle:
         dps = tuple(
             cirq.DensePauliString(random_state.randint(0, 4, size=target_bitsize))
             for _ in range(2**select_bitsize)
@@ -123,15 +125,15 @@ class TestPauliSelectOracle(SelectOracle):  # type: ignore[misc]
         return cls(select_bitsize, target_bitsize, dps)
 
     @property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return () if self.control_val is None else (Register('control', QBit()),)
 
     @property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (Register('selection', BQUInt(bitsize=self.select_bitsize)),)
 
     @property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return (Register('target', BQUInt(bitsize=self.target_bitsize)),)
 
     def decompose_from_registers(
@@ -149,7 +151,7 @@ class TestPauliSelectOracle(SelectOracle):  # type: ignore[misc]
                 op = op.controlled_by(*quregs['control'], control_values=[self.control_val])
             yield op
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 
         return get_ctrl_system_1bit_cv(

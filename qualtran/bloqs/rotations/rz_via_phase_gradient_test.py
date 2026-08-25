@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import numpy as np
 import pytest
 import sympy
@@ -47,7 +49,7 @@ class TestRz(Bloq):
     phasegrad_bitsize: int = 4
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(q=QBit())
 
     @property
@@ -65,7 +67,7 @@ class TestRz(Bloq):
     def load_phasegrad_bloq(self) -> PhaseGradientState:
         return PhaseGradientState(self.phasegrad_bitsize)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', q: Soquet) -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, q: Soquet) -> dict[str, SoquetT]:
         angle = bb.add(self.load_angle_bloq)
         phase_grad = bb.add(self.load_phasegrad_bloq)
         q, angle, phase_grad = bb.add(

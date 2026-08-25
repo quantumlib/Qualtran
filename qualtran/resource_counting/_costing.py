@@ -12,22 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import abc
-import collections
 import logging
 import time
 from collections import defaultdict
-from typing import (
-    Callable,
-    Dict,
-    Generic,
-    Iterable,
-    Optional,
-    Sequence,
-    TYPE_CHECKING,
-    TypeVar,
-    Union,
-)
+from collections.abc import Callable, Iterable, Sequence
+from typing import Generic, TYPE_CHECKING, TypeVar
 
 from qualtran import CompositeBloq
 
@@ -66,7 +58,7 @@ class CostKey(Generic[CostValT], metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def compute(self, bloq: 'Bloq', get_callee_cost: Callable[['Bloq'], CostValT]) -> CostValT:
+    def compute(self, bloq: Bloq, get_callee_cost: Callable[[Bloq], CostValT]) -> CostValT:
         """Compute this type of cost.
 
         When implementing a new CostKey, this method must be overridden.
@@ -99,11 +91,11 @@ class CostKey(Generic[CostValT], metaclass=abc.ABCMeta):
 
 
 def _get_cost_value(
-    bloq: 'Bloq',
+    bloq: Bloq,
     cost_key: CostKey[CostValT],
     *,
-    costs_cache: Dict['Bloq', CostValT],
-    generalizer: 'GeneralizerT',
+    costs_cache: dict[Bloq, CostValT],
+    generalizer: GeneralizerT,
 ) -> CostValT:
     """Helper function for getting costs.
 
@@ -138,7 +130,7 @@ def _get_cost_value(
 
     # Strategy 3: Compute
     # part a. set up caching of computed costs by currying the costs_cache.
-    def _get_cost_val_internal(callee: 'Bloq'):
+    def _get_cost_val_internal(callee: Bloq):
         return _get_cost_value(callee, cost_key, costs_cache=costs_cache, generalizer=generalizer)
 
     # part b. call the compute method and cache the result.
@@ -152,10 +144,10 @@ def _get_cost_value(
 
 
 def get_cost_value(
-    bloq: 'Bloq',
+    bloq: Bloq,
     cost_key: CostKey[CostValT],
-    costs_cache: Optional[Dict['Bloq', CostValT]] = None,
-    generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
+    costs_cache: dict[Bloq, CostValT] | None = None,
+    generalizer: GeneralizerT | Sequence[GeneralizerT] | None = None,
 ) -> CostValT:
     """Compute the specified cost of the provided bloq.
 
@@ -177,7 +169,7 @@ def get_cost_value(
         costs_cache = {}
     if generalizer is None:
         generalizer = lambda b: b
-    if isinstance(generalizer, collections.abc.Sequence):
+    if isinstance(generalizer, Sequence):
         generalizer = _make_composite_generalizer(*generalizer)
 
     cost_val = _get_cost_value(bloq, cost_key, costs_cache=costs_cache, generalizer=generalizer)
@@ -185,11 +177,11 @@ def get_cost_value(
 
 
 def get_cost_cache(
-    bloq: 'Bloq',
+    bloq: Bloq,
     cost_key: CostKey[CostValT],
-    costs_cache: Optional[Dict['Bloq', CostValT]] = None,
-    generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
-) -> Dict['Bloq', CostValT]:
+    costs_cache: dict[Bloq, CostValT] | None = None,
+    generalizer: GeneralizerT | Sequence[GeneralizerT] | None = None,
+) -> dict[Bloq, CostValT]:
     """Build a cache of cost values for the bloq and its callees.
 
     This can be useful to inspect how callees' costs flow upwards in a given cost computation.
@@ -214,7 +206,7 @@ def get_cost_cache(
         costs_cache = {}
     if generalizer is None:
         generalizer = lambda b: b
-    if isinstance(generalizer, collections.abc.Sequence):
+    if isinstance(generalizer, Sequence):
         generalizer = _make_composite_generalizer(*generalizer)
 
     _get_cost_value(bloq, cost_key, costs_cache=costs_cache, generalizer=generalizer)
@@ -222,10 +214,10 @@ def get_cost_cache(
 
 
 def query_costs(
-    bloq: 'Bloq',
+    bloq: Bloq,
     cost_keys: Iterable[CostKey],
-    generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
-) -> Dict['Bloq', Dict[CostKey, CostValT]]:
+    generalizer: GeneralizerT | Sequence[GeneralizerT] | None = None,
+) -> dict[Bloq, dict[CostKey, CostValT]]:
     """Compute a selection of costs for a bloq and its callees.
 
     This function can be used to annotate a call graph diagram with multiple costs
@@ -244,7 +236,7 @@ def query_costs(
         A dictionary of dictionaries forming a table of multiple costs for multiple bloqs.
         This is indexed by bloq, then cost key.
     """
-    costs: Dict['Bloq', Dict[CostKey, CostValT]] = defaultdict(dict)
+    costs: dict[Bloq, dict[CostKey, CostValT]] = defaultdict(dict)
     for cost_key in cost_keys:
         cost_for_bloqs = get_cost_cache(bloq, cost_key, generalizer=generalizer)
         for bloq, val in cost_for_bloqs.items():

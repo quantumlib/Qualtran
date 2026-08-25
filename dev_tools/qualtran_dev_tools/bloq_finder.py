@@ -16,7 +16,6 @@ import inspect
 import subprocess
 from collections.abc import Callable, Iterable
 from pathlib import Path
-from typing import Optional
 
 from qualtran import Bloq, BloqDocSpec, BloqExample
 
@@ -119,7 +118,7 @@ def modpath_to_bloqdocspecs(path: Path) -> Iterable[tuple[str, str, BloqDocSpec]
         yield modname, name, obj
 
 
-def get_bloq_classes(bloqs_root: Optional[Path] = None) -> list[type[Bloq]]:
+def get_bloq_classes(bloqs_root: Path | None = None) -> list[type[Bloq]]:
     committed_only = bloqs_root is None
     if bloqs_root is None:
         reporoot = get_git_root()
@@ -132,7 +131,7 @@ def get_bloq_classes(bloqs_root: Optional[Path] = None) -> list[type[Bloq]]:
     return bloq_clss
 
 
-def get_bloq_examples(bloqs_root: Optional[Path] = None) -> list[BloqExample]:
+def get_bloq_examples(bloqs_root: Path | None = None) -> list[BloqExample]:
     committed_only = bloqs_root is None
     if bloqs_root is None:
         reporoot = get_git_root()
@@ -148,7 +147,7 @@ def get_bloq_examples(bloqs_root: Optional[Path] = None) -> list[BloqExample]:
     return bexamples
 
 
-def get_bloqdocspecs(bloqs_root: Optional[Path] = None) -> list[BloqDocSpec]:
+def get_bloqdocspecs(bloqs_root: Path | None = None) -> list[BloqDocSpec]:
     committed_only = bloqs_root is None
     if bloqs_root is None:
         reporoot = get_git_root()

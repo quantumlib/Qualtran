@@ -20,7 +20,6 @@ and physical error parameters.
 """
 
 from functools import lru_cache
-from typing import Tuple
 
 import sympy
 
@@ -39,7 +38,7 @@ def calculate_error_mitigation_metrics(
     code_distance: SymbolicFloat,  # Can be int or float, using SymbolicFloat for flexibility
     lambda_val: SymbolicFloat,  # Renamed to avoid conflict with Python's lambda keyword
     cultivation_error_rate: SymbolicFloat,
-) -> Tuple[SymbolicFloat, SymbolicFloat, SymbolicFloat]:
+) -> tuple[SymbolicFloat, SymbolicFloat, SymbolicFloat]:
     """Calculates PEC overhead and wall-clock time per noiseless sample.
 
     Args:
@@ -113,7 +112,7 @@ def calculate_failure_probabilities(
     lambda_val: SymbolicFloat,
     cultivation_error_rate: SymbolicFloat,
     error_prefactor: SymbolicFloat = ERROR_PER_CYCLE_PREFACTOR,
-) -> Tuple[SymbolicFloat, SymbolicFloat]:
+) -> tuple[SymbolicFloat, SymbolicFloat]:
     """
     Calculates failure probabilities (P_fail) for Clifford operations and T-gates.
 
@@ -134,7 +133,7 @@ def calculate_failure_probabilities(
     """
     # 1. Calculate logical error rate per cycle (p_cyc)
     # p_cyc = c_cyc * Λ^(-(d+1)/2)
-    p_cyc = error_prefactor * lambda_val ** (-(code_distance + 1) / 2)  # type: ignore
+    p_cyc = error_prefactor * lambda_val ** (-(code_distance + 1) / 2)
 
     # 2. Calculate P_fail_Clifford (Probability of at least one Clifford failure)
     # The relevant volume is the total spacetime volume except for that used by cultivation

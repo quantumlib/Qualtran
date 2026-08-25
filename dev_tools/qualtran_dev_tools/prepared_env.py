@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Optional
 
 from . import shell_tools
 
@@ -22,9 +21,9 @@ class PreparedEnv:
 
     def __init__(
         self,
-        actual_commit_id: Optional[str],
+        actual_commit_id: str | None,
         compare_commit_id: str,
-        destination_directory: Optional[str],
+        destination_directory: str | None,
     ) -> None:
         """Initializes a description of a prepared (or desired) environment.
 

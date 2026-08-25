@@ -15,7 +15,8 @@
 from __future__ import annotations
 
 import abc
-from typing import Callable, Iterator, Optional, TYPE_CHECKING
+from collections.abc import Callable, Iterator
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import matplotlib.pyplot as plt
@@ -41,7 +42,7 @@ class ApproxProblem(abc.ABC):
     def get_points(self, config: mc.MathConfig, verbose: bool) -> Iterator[tuple[int, rings.ZW]]:
         """Yields the lattice points inside the region."""
 
-    def plot(self, n: int, ax: Optional[plt.Axes] = None) -> plt.Axes:
+    def plot(self, n: int, ax: plt.Axes | None = None) -> plt.Axes:
         """Plots the target region"""
         raise NotImplementedError()
 

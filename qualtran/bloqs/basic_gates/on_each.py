@@ -14,8 +14,10 @@
 
 """Classes to apply single qubit bloq to multiple qubits."""
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import cast, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import cast, TYPE_CHECKING
 
 import attrs
 import sympy
@@ -57,7 +59,7 @@ class OnEach(Bloq):
 
     n: SymbolicInt
     gate: Bloq
-    target_dtype: Optional[QDType] = None
+    target_dtype: QDType | None = None
 
     def __attrs_post_init__(self):
         assert len(self.gate.signature) == 1, "Gate must only have a single register."
@@ -77,10 +79,10 @@ class OnEach(Bloq):
         return Signature([reg])
 
     @classmethod
-    def qcall(cls, q: 'QVar', *, gate: Bloq) -> 'QVar':
+    def qcall(cls, q: QVar, *, gate: Bloq) -> QVar:
         return q.bb.add(cls(n=q.dtype.num_qubits, gate=gate, target_dtype=q.dtype), q=q)  # type: ignore[arg-type]
 
-    def build_composite_bloq(self, bb: BloqBuilder, *, q: Soquet) -> Dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, *, q: Soquet) -> dict[str, SoquetT]:
         if isinstance(self.n, sympy.Expr):
             raise DecomposeTypeError(f'Cannote decompose {self} with symbolic bitsize {self.n}')
         qs = bb.split(q)
@@ -88,7 +90,7 @@ class OnEach(Bloq):
             qs[i] = bb.add(self.gate, q=qs[i])
         return {'q': bb.join(qs, self.target_dtype)}
 
-    def on_classical_vals(self, q: int) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, q: int) -> dict[str, ClassicalValT]:
         n = self.n
         if isinstance(n, sympy.Expr):
             raise ValueError(f'Cannot simulate symbolic bloq {self}')
@@ -102,10 +104,10 @@ class OnEach(Bloq):
             out_bits[i] = int(cast(int, out['q']))
         return {'q': dtype.from_bits(out_bits)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {self.gate: self.n}
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         one_reg = self.gate.wire_symbol(reg=reg, idx=idx)
         if isinstance(one_reg, TextBox):
             new_text = f'{one_reg.text}⨂{self.n}'
@@ -122,7 +124,7 @@ class OnEach(Bloq):
         return f'{self.gate}(oneach={self.n})'
 
 
-def _get_on_each_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+def _get_on_each_classical_sim_test_cases() -> list[ClassicalSimTestCase]:
     """Test cases for the `OnEach` bloq.
 
     These specify concrete (non-symbolic) bloq instances with specific

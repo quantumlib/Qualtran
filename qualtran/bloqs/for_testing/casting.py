@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Dict
 
 from attrs import frozen
 
@@ -42,9 +43,7 @@ class TestCastToFrom(Bloq):
             [Register('a', QUInt(self.bitsize)), Register('b', QFxp(self.bitsize, self.bitsize))]
         )
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', *, a: 'Soquet', b: 'Soquet'
-    ) -> Dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: BloqBuilder, *, a: Soquet, b: Soquet) -> dict[str, Soquet]:
         cast = Cast(b.reg.dtype, a.reg.dtype)
         b = bb.add(cast, reg=b)
         assert isinstance(a.reg.dtype, (QInt, QUInt, QMontgomeryUInt))

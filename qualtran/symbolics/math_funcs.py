@@ -15,7 +15,8 @@
 """Mathematical functions that support either symbolic or concrete values."""
 
 import math
-from typing import Any, cast, Iterable, overload, TypeVar
+from collections.abc import Iterable
+from typing import Any, cast, overload, TypeVar
 
 import numpy as np
 import sympy
@@ -70,7 +71,7 @@ def sexp(x: sympy.Expr) -> sympy.Expr: ...
 def sexp(x: SymbolicComplex) -> SymbolicComplex:
     if is_symbolic(x):
         return sympy.exp(x)
-    return np.exp(x)
+    return np.exp(complex(x))
 
 
 @overload
@@ -85,7 +86,7 @@ def sarg(x: SymbolicComplex) -> SymbolicFloat:
     r"""Argument $t$ of a complex number $r e^{i t}$"""
     if is_symbolic(x):
         return sympy.arg(x)
-    return float(np.angle(x))
+    return float(np.angle(complex(x)))
 
 
 @overload
@@ -124,7 +125,7 @@ def ceil(x: sympy.Expr) -> sympy.Expr: ...
 
 def ceil(x: SymbolicFloat) -> SymbolicInt:
     if not is_symbolic(x):
-        return int(np.ceil(x))
+        return int(np.ceil(float(x)))
     return sympy.ceiling(x)
 
 
@@ -138,7 +139,7 @@ def floor(x: sympy.Expr) -> sympy.Expr: ...
 
 def floor(x: SymbolicFloat) -> SymbolicInt:
     if not is_symbolic(x):
-        return int(np.floor(x))
+        return int(np.floor(float(x)))
     return sympy.floor(x)
 
 
@@ -241,7 +242,7 @@ def acos(x: sympy.Expr) -> sympy.Expr: ...
 
 def acos(x: SymbolicFloat) -> SymbolicFloat:
     if not is_symbolic(x):
-        return np.arccos(x)
+        return np.arccos(float(x))
     return sympy.acos(x)
 
 
@@ -255,7 +256,7 @@ def sconj(x: sympy.Expr) -> sympy.Expr: ...
 
 def sconj(x: SymbolicComplex) -> SymbolicComplex:
     """Compute the complex conjugate."""
-    return sympy.conjugate(x) if is_symbolic(x) else np.conjugate(x)
+    return sympy.conjugate(x) if is_symbolic(x) else complex(x).conjugate()
 
 
 def is_zero(x: SymbolicInt) -> bool:
@@ -266,6 +267,7 @@ def is_zero(x: SymbolicInt) -> bool:
     or could not be symbolically symplified to a zero.
     """
     if is_symbolic(x):
+        assert isinstance(x, sympy.Expr)
         try:
             zero = x.equals(0)
         except ValueError:

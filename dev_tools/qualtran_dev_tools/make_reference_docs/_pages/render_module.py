@@ -29,7 +29,9 @@ from .._page import MemberType, ModulePage, ModulePageMember
 from .._render_context import RenderContext
 
 
-def write_module_other_member(f: LinkingWriter, obj, pref_path, aliases_d) -> None:
+def write_module_other_member(
+    f: LinkingWriter, obj: griffe.Object, pref_path: str, aliases_d: dict[str, str]
+) -> None:
     first_line, rest = split_docstring(obj)
     f.write_nl(f'### `{obj.name}`\n')
     f.write_nl(get_aliases_str(pref_path, aliases_d=aliases_d))
@@ -40,7 +42,7 @@ def write_module_other_member(f: LinkingWriter, obj, pref_path, aliases_d) -> No
         write_function_signature(f, cast(griffe.Function, obj))
     write_docstring_parts(f, rest, level=1)
 
-    submemb: griffe.Object
+    submemb: griffe.Object | griffe.Alias
     doc_submembers = {
         (submemb_name, submemb)
         for submemb_name, submemb in obj.members.items()

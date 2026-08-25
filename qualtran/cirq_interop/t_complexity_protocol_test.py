@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import cirq
 import pytest
 from attrs import frozen
@@ -58,7 +60,7 @@ class DoesNotSupportTComplexityGate(cirq.Gate):
 
 class DoesNotSupportTComplexityBloq(Bloq):
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(q=1)
 
 

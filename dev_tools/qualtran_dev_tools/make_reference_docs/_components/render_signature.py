@@ -14,9 +14,11 @@
 from __future__ import annotations
 
 import re
-from typing import Optional, TYPE_CHECKING
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
-from griffe import Function, Object, Parameter, ParameterKind
+import griffe
+from griffe import Function, Parameter, ParameterKind
 
 if TYPE_CHECKING:
     from .._linking_writer import Writable
@@ -48,14 +50,14 @@ def format_parameter(p: Parameter) -> str:
         raise ValueError(p.kind)
 
 
-def camel_to_snake(name) -> str:
+def camel_to_snake(name: str) -> str:
     # Turn an UpperCamelCaseName into lower_snake_case
     # .. we want to make it look like we're calling methods on instances of the class.
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     return s1.lower()
 
 
-def get_obj_instance_name(obj) -> str:
+def get_obj_instance_name(obj: griffe.Object) -> str:
     # Get prototypical object instance names for a given class.
 
     # First, check if we have a bespoke name
@@ -67,7 +69,7 @@ def get_obj_instance_name(obj) -> str:
     return camel_to_snake(obj.name)
 
 
-def write_property_method_signature(f, obj, obj2: Function) -> None:
+def write_property_method_signature(f: Writable, obj: griffe.Object, obj2: Function) -> None:
     assert obj2.returns, obj2
     obj_instance_name = get_obj_instance_name(obj)
     method_signature = f'{obj_instance_name}.{obj2.name} -> {obj2.returns}'
@@ -75,11 +77,11 @@ def write_property_method_signature(f, obj, obj2: Function) -> None:
 
 
 def write_generic_method_signature(
-    f,
-    obj,
+    f: Writable,
+    obj: griffe.Object,
     obj2: Function,
-    first_arg_name: Optional[str] = 'self',
-    caller_name=get_obj_instance_name,
+    first_arg_name: str | None = 'self',
+    caller_name: Callable[[griffe.Object], str] = get_obj_instance_name,
 ) -> None:
     parameters = list(obj2.parameters)
     if first_arg_name is not None:
@@ -125,7 +127,7 @@ def write_function_signature(f: Writable, obj2: Function) -> None:
     f.write(f'```python\n{method_signature}\n```\n\n')
 
 
-def write_method_signature(f: Writable, obj: Object, obj2: Function) -> None:
+def write_method_signature(f: Writable, obj: griffe.Object, obj2: Function) -> None:
     if obj2.overloads:
         # Assume the full documentation is in the defined function, not the overrides.
         return

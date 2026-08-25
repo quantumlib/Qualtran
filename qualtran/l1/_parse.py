@@ -19,7 +19,7 @@ from __future__ import annotations
 import json
 import logging
 import re
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import attrs
 
@@ -56,7 +56,7 @@ class Token:
     column: int
 
 
-def tokenize(code: str) -> List[Token]:
+def tokenize(code: str) -> list[Token]:
     """Turn a string into a list of tokens."""
     token_specification = [
         ('NUMBER', r'(\-)?\d+(\.\d*)?(e[+\-]\d+)?'),
@@ -110,7 +110,7 @@ def tokenize(code: str) -> List[Token]:
 class QualtranL1Parser:
     """A recursive-descent parser for bloq strings."""
 
-    def __init__(self, tokens: List[Token], nodes: L1Nodes = qualtran_l1_nodes):
+    def __init__(self, tokens: list[Token], nodes: L1Nodes = qualtran_l1_nodes):
         self.tokens = tokens
         self.pos = 0
         self.nodes = nodes
@@ -169,7 +169,7 @@ class QualtranL1Parser:
             return True
         return False
 
-    def parse_annotation(self) -> Optional[CValueNode]:
+    def parse_annotation(self) -> CValueNode | None:
         if self.check('AT'):
             self.advance()
             return self.parse_cvalue()
@@ -192,7 +192,7 @@ class QualtranL1Parser:
         self.consume('EOF', "Expected EOF")
         return self.nodes.L1Module(qdefs=qdefs)
 
-    def parse_qdefs(self) -> List[QDefNode]:
+    def parse_qdefs(self) -> list[QDefNode]:
         """Parse a sequence of quantum function, or cast definitions.
 
         Reads zero or more `qcast`, `qdef` or `extern qdef` keywords and parses them
@@ -280,7 +280,7 @@ class QualtranL1Parser:
         bobj_cval = self.parse_cobject_node()
         return bobj_cval
 
-    def parse_qdef_signature(self) -> List[QSignatureEntry]:
+    def parse_qdef_signature(self) -> list[QSignatureEntry]:
         self.consume('LBRACK', "quantum signature must start with [")
 
         if self.check('RBRACK'):
@@ -288,7 +288,7 @@ class QualtranL1Parser:
             self.advance()
             return []
 
-        qsig: List[QSignatureEntry] = []
+        qsig: list[QSignatureEntry] = []
         while True:
             qsig_entry = self.parse_qsig_entry()
             qsig.append(qsig_entry)
@@ -352,14 +352,14 @@ class QualtranL1Parser:
             return self.nodes.QDTypeNode(dtype=cls, shape=shape)
         return self.nodes.QDTypeNode(dtype=cls, shape=None)
 
-    def parse_shape_list(self) -> List[int]:
+    def parse_shape_list(self) -> list[int]:
         """[1, 2, 3]"""
         self.consume('LBRACK', "datatype shapes must begin with '['")
         if self.check('RBRACK'):
             self.advance()
             return []
 
-        items: List[int] = []
+        items: list[int] = []
         while True:
             item = self.parse_int_literal(err_ctx='datatype shape list')
             items.append(item)
@@ -368,7 +368,7 @@ class QualtranL1Parser:
             if done:
                 return items
 
-    def parse_qdef_body(self) -> List[StatementNode]:
+    def parse_qdef_body(self) -> list[StatementNode]:
         """Curly-brace delimited sequence of statements."""
         self.consume('LCURLY', 'qdef body must start with {')
         if self.check('RCURLY'):
@@ -419,7 +419,7 @@ class QualtranL1Parser:
         qargs = self.parse_qargs()
         return self.nodes.QReturnNode(qargs)
 
-    def parse_lvalues(self) -> List[LValueNode]:
+    def parse_lvalues(self) -> list[LValueNode]:
         """Parse a comma-separated list of l-values.
 
         L-values are the targets of an assignment statement, typically
@@ -447,7 +447,7 @@ class QualtranL1Parser:
             if done:
                 return lvalues
 
-    def parse_qargs(self) -> List[QArgNode]:
+    def parse_qargs(self) -> list[QArgNode]:
         """[ctrl=[qvar[0], qvar[1]], target=trg]"""
         self.consume('LBRACK', 'qargs must start with [')
         if self.check('RBRACK'):
@@ -487,12 +487,12 @@ class QualtranL1Parser:
         annotation = self.parse_annotation()
         return self.nodes.QArgNode(key=key, value=val, annotation=annotation)
 
-    def parse_qarg_value_list(self) -> List[NestedQArgValue]:
+    def parse_qarg_value_list(self) -> list[NestedQArgValue]:
         """[qvar[0], qvar[1]].
 
         Lists can be arbitrarily nested.
         """
-        qarg_value_list: List[NestedQArgValue] = []
+        qarg_value_list: list[NestedQArgValue] = []
         self.consume('LBRACK', 'qarg value list must start with [')
         while True:
             if self.check('LBRACK'):

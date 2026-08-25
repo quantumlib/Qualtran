@@ -11,11 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Sequence, TYPE_CHECKING, Union
+from __future__ import annotations
+
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 import attrs
 import numpy as np
-import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
@@ -56,8 +58,8 @@ class SparseStatePreparationViaRotations(Bloq):
         Ramacciotti et al. Section 4 "Permutation Grover-Rudolph".
     """
 
-    sparse_indices: Union[tuple[int, ...], HasLength] = field(converter=_to_tuple_or_has_length)
-    nonzero_coeffs: Union[tuple[complex, ...], HasLength] = field(converter=_to_tuple_or_has_length)
+    sparse_indices: tuple[int, ...] | HasLength = field(converter=_to_tuple_or_has_length)
+    nonzero_coeffs: tuple[complex, ...] | HasLength = field(converter=_to_tuple_or_has_length)
     N: SymbolicInt
     phase_bitsize: SymbolicInt
     target_bitsize: SymbolicInt = field()
@@ -103,7 +105,7 @@ class SparseStatePreparationViaRotations(Bloq):
     @classmethod
     def from_sparse_array(
         cls,
-        coeffs: Union[Sequence[complex], NDArray[np.complex128], 'scipy.sparse.sparray'],
+        coeffs: Sequence[complex] | NDArray[np.complex128] | scipy.sparse.sparray,
         phase_bitsize: SymbolicInt,
     ):
         """Factory to construct sparse state given the coefficients.
@@ -141,8 +143,6 @@ class SparseStatePreparationViaRotations(Bloq):
         """Bloq to extract the first `d` qubits to prepare the dense state on."""
         if is_symbolic(self.target_bitsize):
             raise ValueError(f"cannot partition with symbolic {self.target_bitsize=}")
-
-        assert not isinstance(self.target_bitsize, sympy.Expr)
 
         return Partition(
             self.target_bitsize,
@@ -182,8 +182,8 @@ class SparseStatePreparationViaRotations(Bloq):
         return attrs.evolve(permute_bloq, bitsize=self.target_bitsize)
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', target_state: 'SoquetT', phase_gradient: 'SoquetT'
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, target_state: SoquetT, phase_gradient: SoquetT
+    ) -> dict[str, SoquetT]:
         if self.is_symbolic():
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic data")
 
@@ -201,7 +201,7 @@ class SparseStatePreparationViaRotations(Bloq):
 
         return {'target_state': target_state, 'phase_gradient': phase_gradient}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {self._dense_stateprep_bloq: 1, self._basis_permutation_bloq: 1}
 
 

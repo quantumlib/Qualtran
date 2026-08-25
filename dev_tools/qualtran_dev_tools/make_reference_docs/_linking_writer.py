@@ -15,17 +15,17 @@ import re
 from collections import defaultdict
 from collections.abc import MutableMapping
 from pathlib import Path
-from typing import Optional, Protocol
+from typing import Protocol
 
 from mdit_py_plugins.anchors.index import slugify
 
 from ._page import Page
 
-_CACHE: MutableMapping[str, dict[str, Optional[str]]] = defaultdict(dict)
+_CACHE: MutableMapping[str, dict[str, str | None]] = defaultdict(dict)
 
 
 class Writable(Protocol):
-    def write(self, s: str): ...
+    def write(self, s: str) -> object: ...
 
 
 class LinkingWriter:
@@ -45,7 +45,7 @@ class LinkingWriter:
         f: Writable,
         *,
         link_aliases: dict[str, str],
-        link_d: dict[str, tuple[Page, Optional[str]]],
+        link_d: dict[str, tuple[Page, str | None]],
         refdoc_relpath: Path,
     ):
         self._f: Writable = f
@@ -54,7 +54,7 @@ class LinkingWriter:
         self._link_d = link_d
         self._reference_relpath = refdoc_relpath
 
-    def resolve_dotpath(self, dotpath: str) -> Optional[str]:
+    def resolve_dotpath(self, dotpath: str) -> str | None:
         maybe_cached = _CACHE[str(self._reference_relpath)].get(dotpath, None)
         if maybe_cached is not None:
             return maybe_cached

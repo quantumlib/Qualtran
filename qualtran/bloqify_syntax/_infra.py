@@ -11,9 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 # pylint: disable=keyword-arg-before-vararg
 import inspect
-from typing import Any, Dict, Optional, Protocol, Sequence, Set, TYPE_CHECKING
+from collections.abc import Sequence
+from typing import Any, Protocol, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -30,7 +33,7 @@ class _TracingBloqFuncT(Protocol):
 
     __name__: str
 
-    def __call__(self, bb: 'BloqBuilder', *args: Any, **kwargs: Any) -> Dict[str, Any]:
+    def __call__(self, bb: BloqBuilder, *args: Any, **kwargs: Any) -> dict[str, Any]:
         """the structure of the function.
 
         During normal operation
@@ -55,14 +58,14 @@ class _TracingBloqFuncT(Protocol):
 class _BloqifyPrepResult:
     """Container for the results of tracing a function to build a Bloq."""
 
-    cbloq: 'CompositeBloq'
-    in_qargnames: Set[str]
-    out_qargnames: Set[str]
-    explicit_bb: Optional['BloqBuilder'] = None
-    found_bb: Optional['BloqBuilder'] = None
+    cbloq: CompositeBloq
+    in_qargnames: set[str]
+    out_qargnames: set[str]
+    explicit_bb: BloqBuilder | None = None
+    found_bb: BloqBuilder | None = None
 
     @property
-    def bb(self) -> 'BloqBuilder':
+    def bb(self) -> BloqBuilder:
         if self.explicit_bb is not None:
             return self.explicit_bb
         if self.found_bb is not None:
@@ -145,9 +148,7 @@ class _TracingBloqIntermediate:
             cbloq=cbloq, in_qargnames=set(qkwargs.keys()), out_qargnames=set(out_qvars.keys())
         )
 
-    def make(
-        self, signature: Optional['qlt.Signature'] = None, *classical_args, **classical_kwargs
-    ):
+    def make(self, signature: qlt.Signature | None = None, *classical_args, **classical_kwargs):
         """Trace the function and finalize it into a CompositeBloq."""
         if signature is None:
             signature = Signature([])
@@ -167,35 +168,29 @@ class _TracingBloqIntermediate:
         soqs = self.func(bb, *classical_args, **kwargs)
         return bb.finalize(**soqs)
 
-    def __call__(self, bb: 'BloqBuilder', /, *args, **kwargs):
+    def __call__(self, bb: BloqBuilder, /, *args, **kwargs):
         """Trace the function and add it as a sub-bloq to the provided builder."""
         f = self._prep_qstackframe(self._bound_kvs(*args, **kwargs))
         return bb.add(
             f.cbloq, **{k: v for k, v in self._bound_kvs(*args, **kwargs) if k in f.in_qargnames}
         )
 
-    def inline(self, bb: 'BloqBuilder', /, *args, **kwargs):
+    def inline(self, bb: BloqBuilder, /, *args, **kwargs):
         """Run the function directly on the provided builder without creating a sub-bloq."""
         ret_dict = self.func(bb, *args, **kwargs)
         return tuple(ret_dict.values())
 
-    def dump_l1(
-        self, signature: Optional['qlt.Signature'] = None, *classical_args, **classical_kwargs
-    ):
+    def dump_l1(self, signature: qlt.Signature | None = None, *classical_args, **classical_kwargs):
         """Trace the function and return its L1 representation."""
         from qualtran.l1 import dump_root_l1
 
         return dump_root_l1(self.make(signature, *classical_args, **classical_kwargs))
 
-    def print_l1(
-        self, signature: Optional['qlt.Signature'] = None, *classical_args, **classical_kwargs
-    ):
+    def print_l1(self, signature: qlt.Signature | None = None, *classical_args, **classical_kwargs):
         """Trace the function and print its L1 representation."""
         print(self.dump_l1(signature, *classical_args, **classical_kwargs))
 
-    def draw(
-        self, signature: Optional['qlt.Signature'] = None, *classical_args, **classical_kwargs
-    ):
+    def draw(self, signature: qlt.Signature | None = None, *classical_args, **classical_kwargs):
         """Trace the function and draw the resulting CompositeBloq."""
         draw_type = classical_kwargs.pop("type", 'graph')
         self.make(signature, *classical_args, **classical_kwargs).draw(type=draw_type)

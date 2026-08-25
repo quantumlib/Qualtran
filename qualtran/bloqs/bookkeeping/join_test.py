@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Type, Union
 
 import numpy as np
 import pytest
@@ -28,7 +27,7 @@ def test_join(bloq_autotester):
 
 @pytest.mark.parametrize('n', [5, 123])
 @pytest.mark.parametrize('bloq_cls', [Split, Join])
-def test_register_sizes_add_up(bloq_cls: Union[Type[Split], Type[Join]], n):
+def test_register_sizes_add_up(bloq_cls: type[Split] | type[Join], n):
     bloq = bloq_cls(QAny(n))
     for name, group_regs in bloq.signature.groups():
         if any(reg.side is Side.THRU for reg in group_regs):

@@ -14,8 +14,10 @@
 
 """Bloqs for applying SELECT unitary for LCU of Pauli Strings."""
 
+from __future__ import annotations
+
+from collections.abc import Iterable, Iterator, Sequence
 from functools import cached_property
-from typing import Iterable, Iterator, Optional, Sequence, Tuple
 
 import attrs
 import cirq
@@ -48,7 +50,7 @@ def _to_tuple(x: Iterable[cirq.DensePauliString]) -> Sequence[cirq.DensePauliStr
 
 
 @attrs.frozen
-class SelectPauliLCU(SelectOracle, UnaryIterationGate):  # type: ignore[misc]
+class SelectPauliLCU(SelectOracle, UnaryIterationGate):
     r"""A SELECT bloq for selecting and applying operators from an array of `PauliString`s.
 
     $$
@@ -71,8 +73,8 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):  # type: ignore[misc]
 
     selection_bitsize: int
     target_bitsize: int
-    select_unitaries: Tuple[cirq.DensePauliString, ...] = attrs.field(converter=_to_tuple)
-    control_val: Optional[int] = None
+    select_unitaries: tuple[cirq.DensePauliString, ...] = attrs.field(converter=_to_tuple)
+    control_val: int | None = None
 
     def __attrs_post_init__(self):
         if any(len(dps) != self.target_bitsize for dps in self.select_unitaries):
@@ -87,27 +89,27 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):  # type: ignore[misc]
             )
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return () if self.control_val is None else (Register('control', QBit()),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (Register('selection', BQUInt(self.selection_bitsize, len(self.select_unitaries))),)
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return (Register('target', QAny(self.target_bitsize)),)
 
     def decompose_from_registers(
-        self, context, **quregs: NDArray[cirq.Qid]  # type:ignore[type-var]
+        self, context, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         if self.control_val == 0:
             yield cirq.X(*quregs['control'])
-        yield super(SelectPauliLCU, self).decompose_from_registers(context=context, **quregs)
+        yield super().decompose_from_registers(context=context, **quregs)
         if self.control_val == 0:
             yield cirq.X(*quregs['control'])
 
-    def nth_operation(  # type: ignore[override]
+    def nth_operation(
         self,
         context: cirq.DecompositionContext,
         selection: int,
@@ -126,7 +128,7 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):  # type: ignore[misc]
         ps = self.select_unitaries[selection].on(*target)
         return ps.with_coefficient(np.sign(complex(ps.coefficient).real)).controlled_by(control)
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 
         return get_ctrl_system_1bit_cv(
@@ -139,7 +141,7 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):  # type: ignore[misc]
             ),
         )
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return self
 
     def _has_unitary_(self):

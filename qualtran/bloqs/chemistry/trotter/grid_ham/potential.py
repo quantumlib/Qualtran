@@ -13,8 +13,9 @@
 #  limitations under the License.
 """Bloqs for the Potential energy of a 3D grid based Hamiltonian."""
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Dict, Optional, Tuple
 
 import numpy as np
 from attrs import field, frozen
@@ -66,7 +67,7 @@ class PairPotential(Bloq):
     """
 
     bitsize: int
-    qrom_data: Tuple[Tuple[int], ...] = field(
+    qrom_data: tuple[tuple[int], ...] = field(
         repr=False, converter=lambda d: tuple(tuple(x) for x in d)
     )
     poly_bitsize: int = 15
@@ -82,16 +83,14 @@ class PairPotential(Bloq):
             ]
         )
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text(f'U_{self.label}(dt)_ij')
         return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(
         self, bb: BloqBuilder, *, system_i: SoquetT, system_j: SoquetT
-    ) -> Dict[str, SoquetT]:
+    ) -> dict[str, SoquetT]:
         if not (BloqBuilder.is_ndarray(system_i) and BloqBuilder.is_ndarray(system_j)):
             raise ValueError("system_i and system_j must be numpy arrays of Soquet")
         # compute r_i - r_j
@@ -212,20 +211,18 @@ class PotentialEnergy(Bloq):
             [
                 Register(
                     'system',
-                    dtype=QAny(((self.num_grid - 1).bit_length() + 1)),
+                    dtype=QAny((self.num_grid - 1).bit_length() + 1),
                     shape=(self.num_elec, 3),
                 )
             ]
         )
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text(f'U_{self.label}(dt)')
         return super().wire_symbol(reg, idx)
 
-    def build_composite_bloq(self, bb: BloqBuilder, *, system: SoquetT) -> Dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, *, system: SoquetT) -> dict[str, SoquetT]:
         if not BloqBuilder.is_ndarray(system):
             raise ValueError("system must be a numpy array of Soquet")
         bitsize = (self.num_grid - 1).bit_length() + 1

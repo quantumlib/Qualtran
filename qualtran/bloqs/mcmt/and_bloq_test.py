@@ -12,9 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import itertools
+from collections.abc import Iterator
 from functools import cached_property
-from typing import Dict
 
 import cirq
 import numpy as np
@@ -22,7 +24,7 @@ import pytest
 from attrs import frozen
 
 import qualtran.testing as qlt_testing
-from qualtran import Bloq, BloqBuilder, Signature, SoquetT
+from qualtran import Bloq, BloqBuilder, CompositeBloq, Signature, SoquetT
 from qualtran.bloqs.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
 from qualtran.bloqs.mcmt.and_bloq import _and_bloq, _multi_and, _multi_and_symb, And, MultiAnd
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
@@ -44,7 +46,7 @@ def test_multi_and_symb():
     assert bloq.t_complexity().t == 4 * bloq.n_ctrls - 4
 
 
-def _iter_and_truth_table(cv1: int, cv2: int):
+def _iter_and_truth_table(cv1: int, cv2: int) -> Iterator[tuple[CompositeBloq, int, int]]:
     # Iterate over And bra/ketted by all possible inputs
     state = [ZeroState(), OneState()]
     eff = [ZeroEffect(), OneEffect()]
@@ -189,12 +191,10 @@ def test_notebook():
 @frozen
 class AndIdentity(Bloq):
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(q0=1, q1=1)
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', q0: 'SoquetT', q1: 'SoquetT'
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, q0: SoquetT, q1: SoquetT) -> dict[str, SoquetT]:
         assert BloqBuilder.is_single(q0)
         assert BloqBuilder.is_single(q1)
         qs, trg = bb.add(And(), ctrl=[q0, q1])

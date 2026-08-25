@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Dict, Optional, Tuple
 
 import numpy as np
 import sympy
@@ -40,13 +41,13 @@ from qualtran.symbolics.types import SymbolicInt
 
 @frozen
 class MeasureQFT(Bloq):
-    n: 'SymbolicInt'
+    n: SymbolicInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('x', QBit(), shape=(self.n,), side=Side.LEFT)])
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet) -> dict[str, SoquetT]:
         if isinstance(self.n, sympy.Expr):
             raise DecomposeTypeError("Cannot decompose symbolic `n`.")
 
@@ -59,12 +60,10 @@ class MeasureQFT(Bloq):
 
         return {}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {QFTTextBook(self.n): 1, MeasureZ(): self.n}
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('MeasureQFT')
         if reg.name == 'x':

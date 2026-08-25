@@ -14,8 +14,10 @@
 
 """SELECT for the molecular tensor hypercontraction (THC) hamiltonian"""
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Dict, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from attrs import evolve, frozen
@@ -90,14 +92,14 @@ class THCRotations(Bloq):
             ]
         )
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return evolve(self, is_adjoint=not self.is_adjoint)
 
     def __str__(self) -> str:
         dag = '†' if self.is_adjoint else ''
         return f"In_mu-R{dag}"
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # from listings on page 17 of Ref. [1]
         num_data_sets = self.num_mu + self.num_spin_orb // 2
         if self.is_adjoint:
@@ -161,14 +163,14 @@ class SelectTHC(SelectOracle):
     keep_bitsize: int
     kr1: int = 1
     kr2: int = 1
-    control_val: Optional[int] = None
+    control_val: int | None = None
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return () if self.control_val is None else (Register('control', QBit()),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (
             Register("succ", BQUInt(bitsize=1)),
             Register("nu_eq_mp1", BQUInt(bitsize=1)),
@@ -186,13 +188,13 @@ class SelectTHC(SelectOracle):
         )
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return (
             Register("sys_a", QAny(bitsize=self.num_spin_orb // 2)),
             Register("sys_b", QAny(bitsize=self.num_spin_orb // 2)),
         )
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         succ = soqs['succ']
         nu_eq_mp1 = soqs['nu_eq_mp1']
         mu = soqs['mu']
@@ -315,7 +317,7 @@ class SelectTHC(SelectOracle):
 
         return out_soqs
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 
         return get_ctrl_system_1bit_cv(

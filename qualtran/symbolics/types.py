@@ -15,20 +15,19 @@
 """Python types to support propagating symbolic compile-time classical parameters."""
 
 from collections.abc import Sized
-from typing import overload, TypeVar, Union
+from typing import Any, Literal, overload
 
 import numpy as np
 import sympy
 from attrs import field, frozen, validators
-from typing_extensions import TypeIs
 
-SymbolicFloat = Union[float, sympy.Expr]
+SymbolicFloat = float | sympy.Expr
 """A floating point value or a sympy expression."""
 
-SymbolicInt = Union[int, sympy.Expr]
+SymbolicInt = int | sympy.Expr
 """An integer value or a sympy expression."""
 
-SymbolicComplex = Union[complex, sympy.Expr]
+SymbolicComplex = complex | sympy.Expr
 """A complex value or a sympy expression."""
 
 
@@ -48,7 +47,7 @@ class Shaped:
     bloq attribute `data`, we can use the type:
 
     ```py
-    data: Union[NDArray, Shaped]
+    data: NDArray | Shaped
     ```
     """
 
@@ -67,7 +66,7 @@ class HasLength:
     we can use the type:
 
     ```py
-    values: Union[tuple, HasLength]
+    values: tuple | HasLength
     ```
 
     For the symbolic variant of a NDArray, see `Shaped`.
@@ -89,10 +88,10 @@ def slen(x: Sized) -> int: ...
 
 
 @overload
-def slen(x: Union[Shaped, HasLength]) -> sympy.Expr: ...
+def slen(x: Shaped | HasLength) -> sympy.Expr: ...
 
 
-def slen(x: Union[Sized, Shaped, HasLength]) -> SymbolicInt:
+def slen(x: Sized | Shaped | HasLength) -> SymbolicInt:
     if isinstance(x, Shaped):
         return x.shape[0]
     if isinstance(x, HasLength):
@@ -108,24 +107,23 @@ def shape(x: np.ndarray) -> tuple[int, ...]: ...
 def shape(x: Shaped) -> tuple[SymbolicInt, ...]: ...
 
 
-def shape(x: Union[np.ndarray, Shaped]):
+def shape(x: np.ndarray | Shaped):
     return x.shape
 
 
-T = TypeVar('T')
+@overload
+def is_symbolic(arg: sympy.Expr | Shaped | HasLength, /) -> Literal[True]: ...
 
 
 @overload
-def is_symbolic(
-    arg: Union[T, sympy.Expr, Shaped, HasLength], /
-) -> TypeIs[Union[sympy.Expr, Shaped, HasLength]]: ...
+def is_symbolic(arg: int | float | complex | str | bytes | bool, /) -> Literal[False]: ...
 
 
 @overload
-def is_symbolic(*args) -> bool: ...
+def is_symbolic(*args: Any) -> bool: ...
 
 
-def is_symbolic(*args) -> Union[TypeIs[Union[sympy.Expr, Shaped, HasLength]], bool]:
+def is_symbolic(*args: Any) -> bool:
     """Returns whether the inputs contain any symbolic object.
 
     Returns:

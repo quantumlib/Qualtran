@@ -11,7 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import List, TYPE_CHECKING
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
@@ -149,7 +151,7 @@ def test_ctrl_spec_symbolic_wire_symbol():
     assert ctrl_spec.wire_symbol(0, reg) == TextBox('ctrl')
 
 
-def _test_cirq_equivalence(bloq: Bloq, gate: 'cirq.Gate'):
+def _test_cirq_equivalence(bloq: Bloq, gate: cirq.Gate):
     import cirq
 
     left_quregs = get_named_qubits(bloq.signature.lefts())
@@ -307,7 +309,7 @@ def test_bit_vector_ctrl():
     bloq = Controlled(subbloq=TestAtom(), ctrl_spec=CtrlSpec(QBit(), cvs=(1, 0, 1)))
     msd = get_musical_score_data(bloq)
     # select SoqData for the 0th moment, sorted top to bottom
-    soqdatas: List[SoqData] = sorted(
+    soqdatas: list[SoqData] = sorted(
         (sd for sd in msd.soqs if sd.rpos.seq_x == 0), key=lambda sd: sd.rpos.y
     )
 
@@ -386,7 +388,7 @@ def test_notebook():
     qlt_testing.execute_notebook('../Controlled')
 
 
-def _verify_ctrl_tensor_for_unitary(ctrl_spec: CtrlSpec, bloq: Bloq, gate: 'cirq.Gate'):
+def _verify_ctrl_tensor_for_unitary(ctrl_spec: CtrlSpec, bloq: Bloq, gate: cirq.Gate):
     import cirq
 
     pytest.importorskip('quimb')

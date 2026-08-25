@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Iterator, Optional
+from collections.abc import Iterator
 
 import numpy as np
 
@@ -42,7 +42,7 @@ def make_psd(rng: np.random.Generator) -> np.ndarray:
 
 
 def random_grid_operator(
-    n_operators: int, n_components: int, seed: Optional[int] = 0
+    n_operators: int, n_components: int, seed: int | None = 0
 ) -> Iterator[go.GridOperator]:
     """Yields the requested number of random grid operators.
 
@@ -62,7 +62,7 @@ def random_grid_operator(
         yield g
 
 
-def make_states(n: int, seed: Optional[int] = 0) -> Iterator[_state.SelingerState]:
+def make_states(n: int, seed: int | None = 0) -> Iterator[_state.SelingerState]:
     """Yields `n` random states."""
     rng = np.random.default_rng(seed)
     yield from [

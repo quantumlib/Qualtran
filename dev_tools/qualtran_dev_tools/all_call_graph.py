@@ -36,7 +36,7 @@ from qualtran.resource_counting.generalizers import (
 logger = logging.getLogger(__name__)
 
 
-def get_all_call_graph(bes: Iterable[BloqExample]):
+def get_all_call_graph(bes: Iterable[BloqExample]) -> nx.DiGraph:
     """Create a call graph that is the union of all of the bloqs in the list of bloq examples.
 
     This applies some standard generalizers, and will stop at a larger-than-default set

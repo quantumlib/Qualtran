@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Dict, List
 
 import numpy as np
 import pytest
@@ -41,7 +42,7 @@ from qualtran.testing import assert_valid_bloq_decomposition
 @frozen
 class TensorAdderTester(Bloq):
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('x', QAny(bitsize=2), side=Side.LEFT),
@@ -51,8 +52,8 @@ class TensorAdderTester(Bloq):
         )
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         assert sorted(incoming.keys()) == ['qubits', 'x']
         in_qubits = incoming['qubits']
         assert isinstance(in_qubits, np.ndarray)
@@ -95,16 +96,16 @@ def test_bloq_to_dense():
     # Left inds: x=3, qubits=(0,1)
     left = 3 * 2**2 + 0 * 2**1 + 1 * 2**0
 
-    assert np.where(mat2) == (right, left)
+    assert tuple(int(x[0]) for x in np.where(mat2)) == (right, left)
 
 
 @frozen
 class XNest(Bloq):
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(r=1)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', r: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, r: SoquetT) -> dict[str, SoquetT]:
         r = bb.add(XGate(), q=r)
         return {'r': r}
 
@@ -112,10 +113,10 @@ class XNest(Bloq):
 @frozen
 class XDoubleNest(Bloq):
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(s=1)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', s: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, s: SoquetT) -> dict[str, SoquetT]:
         s = bb.add(XNest(), r=s)
         return {'s': s}
 
@@ -139,12 +140,10 @@ def test_double_nest():
 @frozen
 class BloqWithNonTrivialInds(Bloq):
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('q0', QBit()), Register('q1', QBit())])
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', q0: Soquet, q1: Soquet
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, q0: Soquet, q1: Soquet) -> dict[str, SoquetT]:
         q0 = bb.add(XGate(), q=q0)
         q0, q1 = bb.add(CNOT(), ctrl=q0, target=q1)
         q1 = bb.add(ZGate(), q=q1)
@@ -169,18 +168,18 @@ class BloqWithTensorsAndDecomp(Bloq):
         self.called_my_tensors = False
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(a=1, b=1)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, a: Soquet, b: Soquet) -> dict[str, SoquetT]:
         self.called_build_composite_bloq = True
         a, b = bb.add(CNOT(), ctrl=a, target=b)
         a, b = bb.add(CNOT(), ctrl=a, target=b)
         return {'a': a, 'b': b}
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         self.called_my_tensors = True
         return [
             qtn.Tensor(

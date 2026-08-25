@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Dict
 
 import numpy as np
 from attrs import frozen
@@ -52,14 +53,14 @@ class TestMultiRegister(Bloq):
         )
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', xx: 'SoquetT', yy: 'SoquetT', zz: Soquet  # type: ignore[type-var]
-    ) -> Dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, xx: SoquetT, yy: SoquetT, zz: Soquet
+    ) -> dict[str, SoquetT]:
         xx = bb.add(TestAtom(), q=xx)
         for i in range(2):
             for j in range(2):
-                a, b = bb.split(yy[i, j])  # type: ignore[index]
+                a, b = bb.split(yy[i, j])
                 a, b = bb.add(TestTwoBitOp(), ctrl=a, target=b)
-                yy[i, j] = bb.join(np.array([a, b]))  # type: ignore[index]
+                yy[i, j] = bb.join(np.array([a, b]))
         a, b, c = bb.split(zz)
         zz = bb.join(np.array([a, b, c]))
         return {'xx': xx, 'yy': yy, 'zz': zz}
@@ -104,8 +105,8 @@ class TestMultiTypedRegister(Bloq):
         )
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', a: 'SoquetT', b: 'SoquetT', c: 'SoquetT', d: 'Soquet'
-    ) -> Dict[str, 'Soquet']:
+        self, bb: BloqBuilder, a: SoquetT, b: SoquetT, c: SoquetT, d: Soquet
+    ) -> dict[str, Soquet]:
         a, b = bb.add(TestBoundedQUInt(), xx=a, yy=d)
         b, c = bb.add(TestQFxp(), xx=b, yy=c)
         return {'a': a, 'b': b, 'c': c, 'd': d}

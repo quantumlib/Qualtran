@@ -12,8 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -61,22 +64,22 @@ class Identity(Bloq):
     bitsize: SymbolicInt = 1
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(q=self.bitsize)
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return self
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic")
 
     @classmethod
-    def qcall(cls, q: 'QVar') -> 'QVar':
+    def qcall(cls, q: QVar) -> QVar:
         return q.bb.add(cls(bitsize=q.dtype.num_qubits), q=q)
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         return [
@@ -87,40 +90,40 @@ class Identity(Bloq):
         ]
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'  # type: ignore[type-var]
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
+        self, qubit_manager: cirq.QubitManager, q: CirqQuregT
+    ) -> tuple[cirq.Operation, dict[str, CirqQuregT]]:
         import cirq
 
         if is_symbolic(self.bitsize):
             raise ValueError(f"cirq.IdentityGate does not support symbolic {self.bitsize=}")
 
-        return cirq.IdentityGate(self.bitsize).on(*q), {'q': q}
+        return cirq.IdentityGate(int(self.bitsize)).on(*q), {'q': q}
 
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: Wires) -> Operation:
         import pennylane as qml
 
         return qml.Identity(wires=wires)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text('')
         return TextBox('I')
 
-    def on_classical_vals(self, q: int) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, q: int) -> dict[str, ClassicalValT]:
         return {'q': q}
 
     def __str__(self) -> str:
         return 'I'
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         if ctrl_spec.num_cbits > 0:
             return super().get_ctrl_system(ctrl_spec=ctrl_spec)
 
         ctrl_I = Identity(ctrl_spec.num_qubits + self.bitsize)
 
         def ctrl_adder(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            bb: BloqBuilder, ctrl_soqs: Sequence[SoquetT], in_soqs: dict[str, SoquetT]
+        ) -> tuple[Iterable[SoquetT], Iterable[SoquetT]]:
             parts = [
                 Register(f"ctrl_{i}", dtype=dtype, shape=shape)
                 for i, (dtype, shape) in enumerate(ctrl_spec.activation_function_dtypes())

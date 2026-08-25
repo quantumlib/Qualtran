@@ -52,7 +52,8 @@ import math
 import os
 import sys
 from collections import Counter, deque, OrderedDict
-from typing import Any, Callable, IO, Sequence
+from collections.abc import Callable, Sequence
+from typing import Any, IO
 
 import attrs
 import numpy as np
@@ -317,7 +318,7 @@ BFS, so every subbloq is also verified.
 """
 
 
-def validate_test_cases(name: str, cases: list[ClassicalSimTestCase]) -> None:
+def validate_test_cases(name: str, cases: Sequence[ClassicalSimTestCase]) -> None:
     """Validate that all test cases from a provider target the same bloq class.
 
     Call this after invoking a :data:`TestCaseProvider` to verify the
@@ -434,7 +435,7 @@ logger = logging.getLogger(__name__)
 def _get_qlt_fastsim_cls() -> Any | None:
     """Memoize attempting to import `rsqualtran.QLTFastsim` to avoid repetitive `sys.path` searches."""
     try:
-        from rsqualtran import QLTFastsim  # type: ignore[import-untyped,import-not-found]
+        from rsqualtran import QLTFastsim
 
         return QLTFastsim
     except ImportError:

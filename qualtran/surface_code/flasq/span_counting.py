@@ -20,8 +20,10 @@ costs. These distances are later scaled by connect_span_volume and
 compute_span_volume in FLASQCostModel to produce ancilla volumes.
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Callable, Dict, Mapping, Sequence, Tuple, Union
+from collections.abc import Callable, Mapping, Sequence
 
 import attrs
 import sympy
@@ -158,7 +160,7 @@ class GateSpan:
             return "-"
         return ", ".join(parts)
 
-    def asdict(self) -> Dict[str, Union[SymbolicInt, Dict["Bloq", SymbolicInt]]]:
+    def asdict(self) -> dict[str, SymbolicInt | dict[Bloq, SymbolicInt]]:
         # Filter out zero counts and empty dicts
         d = attrs.asdict(
             self, recurse=False, filter=lambda a, v: not is_zero(v) and v != frozendict()
@@ -168,7 +170,7 @@ class GateSpan:
         return d
 
 
-def _calculate_spanning_distance(coords: Sequence[Tuple[int, ...]]) -> SymbolicInt:
+def _calculate_spanning_distance(coords: Sequence[tuple[int, ...]]) -> SymbolicInt:
     """Calculates the rectilinear spanning distance for a set of coordinates.
 
     - 2 qubits: Manhattan distance.
@@ -198,8 +200,8 @@ def _calculate_spanning_distance(coords: Sequence[Tuple[int, ...]]) -> SymbolicI
 
 
 def calculate_spans(
-    coords: Sequence[Tuple[int, ...]], bloq: Bloq
-) -> Tuple[SymbolicFloat, SymbolicFloat]:
+    coords: Sequence[tuple[int, ...]], bloq: Bloq
+) -> tuple[SymbolicFloat, SymbolicFloat]:
     """Calculates connect_span and compute_span for a bloq given qubit coordinates.
 
     This function centralizes the logic for determining span costs. It first

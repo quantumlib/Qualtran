@@ -14,6 +14,7 @@
 
 from typing import cast
 
+import numpy as np
 import pytest
 
 import qualtran as qlt
@@ -24,7 +25,7 @@ def test_load_objectstring_safe():
     # Normal loading of safe context object, using the canonical qualified name.
     obj = load_objectstring("qualtran.CtrlSpec()")
     assert isinstance(obj, qlt.CtrlSpec)
-    assert obj.cvs == (1,)
+    assert len(obj.cvs) == 1 and int(np.asarray(obj.cvs[0])) == 1
 
 
 def test_issue_1713():

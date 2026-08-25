@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from pathlib import Path
-from typing import Optional
 
 import attrs
 
@@ -58,7 +57,7 @@ class RenderContext:
     aliases_d: dict[str, str]
     """Returned by `get_pages`, see `_PackageWalker.aliases_d`"""
 
-    link_d: dict[str, tuple[Page, Optional[str]]]
+    link_d: dict[str, tuple[Page, str | None]]
     """Returned by `get_pages`, see `_PackageWalker.link_d`"""
 
     linkable_to_prefpath: dict[str, str]

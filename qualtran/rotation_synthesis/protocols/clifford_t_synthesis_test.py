@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterator
+
 import numpy as np
 import pytest
 from scipy import stats
@@ -24,7 +26,7 @@ LAMBDA = rings.ZSqrt2(2, 1)
 _CONFIG = mc.with_dps(40)
 
 
-def _make_tests(n_points: int, seed: int):
+def _make_tests(n_points: int, seed: int) -> Iterator[tuple[float, float]]:
     rng = np.random.default_rng(seed)
     for _ in range(n_points):
         theta = rng.random() * 2 * np.pi

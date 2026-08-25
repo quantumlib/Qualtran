@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from collections import Counter
 from functools import cached_property
 
@@ -53,7 +55,7 @@ class GuidedHamiltonianPhaseEstimation(Bloq):
         assert self.hamiltonian.system_bitsize == self.guiding_state.selection_bitsize
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(
             phase_estimate=self.qpe_window_state.m_register.dtype,
             system=QAny(self.hamiltonian.system_bitsize),
@@ -67,7 +69,7 @@ class GuidedHamiltonianPhaseEstimation(Bloq):
         #      QubitizationWalkOperator currently accepts only specific
         #      block-encodings, but should be generalized.
         #      For now we ignore the type here.
-        return QubitizationWalkOperator(self.hamiltonian)  # type: ignore
+        return QubitizationWalkOperator(self.hamiltonian)  # type: ignore[arg-type]
 
     @cached_property
     def qpe_window_state(self) -> QPEWindowStateBase:
@@ -85,9 +87,9 @@ class GuidedHamiltonianPhaseEstimation(Bloq):
 
     @cached_property
     def qpe_bloq(self) -> QubitizationQPE:
-        return QubitizationQPE(self.walk_operator, self.qpe_window_state)  # type: ignore
+        return QubitizationQPE(self.walk_operator, self.qpe_window_state)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {self.guiding_state: 1, self.qpe_bloq: 1}
 
 
@@ -176,7 +178,7 @@ class GuidedHamiltonian(Bloq):
         assert self.signature == self.qpe_bloq.signature
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(
             phase_estimate=self.qpe_bloq.qpe_window_state.m_register.dtype,
             system=QAny(self.hamiltonian.system_bitsize),
@@ -237,7 +239,7 @@ class GuidedHamiltonian(Bloq):
     def _refl_all(self) -> ReflectionUsingPrepare:
         return ReflectionUsingPrepare(PrepareIdentity(tuple(self.signature)), global_phase=-1)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         counts = Counter[Bloq]()
 
         # prepare the initial state

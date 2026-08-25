@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Sequence
+from collections.abc import Sequence
 
 import cirq
 import numpy as np
@@ -139,7 +139,7 @@ def _fake_prepare(
     assert len(pos_coeffs) <= size_hilbert_of_reg
     # pad to 2**(len(selection_bitsize)) size
     if len(pos_coeffs) < size_hilbert_of_reg:
-        pos_coeffs = np.hstack(  # type: ignore[assignment]
+        pos_coeffs = np.hstack(
             (pos_coeffs, np.array([0] * (size_hilbert_of_reg - len(pos_coeffs))))
         )
 

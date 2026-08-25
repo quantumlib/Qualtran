@@ -19,11 +19,13 @@ models), FLASQSummary (computed resource estimates including spacetime volume,
 depth, and qubit counts), and the main analysis function apply_flasq_cost_model.
 """
 
+from __future__ import annotations
+
 import logging
-import typing
 import warnings
+from collections.abc import Mapping
 from functools import lru_cache
-from typing import Mapping, Optional
+from typing import Any
 
 import sympy
 from attrs import field, fields, frozen
@@ -110,12 +112,12 @@ class FLASQCostModel:
     extra_cost_per_rotation: SymbolicFloat = 45.0
 
     # --- Derived Parameters (calculated in post_init if not provided) ---
-    toffoli_cultivation_volume: Optional[SymbolicFloat] = field(default=None)
-    and_cultivation_volume: Optional[SymbolicFloat] = field(default=None)
-    rz_clifford_volume: Optional[SymbolicFloat] = field(default=None)
-    rz_cultivation_volume: Optional[SymbolicFloat] = field(default=None)
-    rx_clifford_volume: Optional[SymbolicFloat] = field(default=None)
-    rx_cultivation_volume: Optional[SymbolicFloat] = field(default=None)
+    toffoli_cultivation_volume: SymbolicFloat | None = field(default=None)
+    and_cultivation_volume: SymbolicFloat | None = field(default=None)
+    rz_clifford_volume: SymbolicFloat | None = field(default=None)
+    rz_cultivation_volume: SymbolicFloat | None = field(default=None)
+    rx_clifford_volume: SymbolicFloat | None = field(default=None)
+    rx_cultivation_volume: SymbolicFloat | None = field(default=None)
 
     def __attrs_post_init__(self):
         """Calculate and set default values for derived cost parameters."""
@@ -426,9 +428,7 @@ class FLASQSummary:
         return self.total_spacetime_volume - self.cultivation_volume
 
     @lru_cache(maxsize=65536)
-    def resolve_symbols(
-        self, assumptions: frozendict[typing.Union[sympy.Symbol, str], typing.Any]
-    ) -> "FLASQSummary":
+    def resolve_symbols(self, assumptions: frozendict[sympy.Symbol | str, Any]) -> FLASQSummary:
         """Substitutes symbols in the summary fields based on provided assumptions.
 
         Args:
@@ -456,7 +456,7 @@ def apply_flasq_cost_model(
     span_info: GateSpan,
     measurement_depth: MeasurementDepth,
     logical_timesteps_per_measurement: SymbolicFloat,
-    assumptions: Optional[frozendict] = None,
+    assumptions: frozendict | None = None,
     verbosity: int = 0,
 ) -> FLASQSummary:
     """Calculates key FLASQ resource estimates including volumes and limiting depth.
@@ -527,7 +527,7 @@ def apply_flasq_cost_model(
     if not is_symbolic(n_fluid_ancilla) and n_fluid_ancilla <= 0:
         volume_limited_depth = sympy.oo
     else:
-        volume_limited_depth = total_computational_volume / n_fluid_ancilla  # type: ignore[operator]
+        volume_limited_depth = total_computational_volume / n_fluid_ancilla
     total_depth = sympy.Max(scaled_measurement_depth, volume_limited_depth)
 
     # Calculate total Clifford volume including idling
@@ -584,7 +584,7 @@ def apply_flasq_cost_model(
     return summary
 
 
-def get_rotation_depth(rotation_error: Optional[SymbolicFloat] = None) -> SymbolicFloat:
+def get_rotation_depth(rotation_error: SymbolicFloat | None = None) -> SymbolicFloat:
     """Returns the expected T-count via mixed fallback synthesis.
 
     T gates in rotation synthesis are sequential, so T-count = T-depth.

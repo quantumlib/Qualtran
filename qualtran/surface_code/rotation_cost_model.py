@@ -14,7 +14,6 @@
 
 import abc
 import math
-from typing import Optional
 
 from attrs import frozen
 
@@ -56,7 +55,7 @@ class RotationLogarithmicModel(RotationCostModel):
 
     slope: float
     overhead: float
-    gateset: Optional[str] = None
+    gateset: str | None = None
 
     def rotation_cost(self, error_budget: float) -> GateCounts:
         return GateCounts(t=math.ceil(-self.slope * math.log2(error_budget) + self.overhead))

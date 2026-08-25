@@ -13,7 +13,8 @@
 #  limitations under the License.
 
 import functools
-from typing import cast, Iterator, Sequence
+from collections.abc import Iterator, Sequence
+from typing import cast
 
 from tqdm import tqdm
 

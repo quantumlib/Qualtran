@@ -13,8 +13,10 @@
 #  limitations under the License.
 r"""Bloqs for preparation of the U and V parts of the first quantized chemistry Hamiltonian."""
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Dict, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import evolve, frozen
 
@@ -60,12 +62,10 @@ class PrepareMuUnaryEncodedOneHot(Bloq):
             [Register("mu", QAny(self.num_bits_p)), Register("flag", QBit(), side=Side.RIGHT)]
         )
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {Toffoli(): (self.num_bits_p - 1)}
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text(r'PREP √(2^μ)|μ⟩')
         return super().wire_symbol(reg, idx)
@@ -108,16 +108,14 @@ class PrepareNuSuperPositionState(Bloq):
             ]
         )
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # controlled hadamards which cannot be inverted at zero Toffoli cost.
         return {Toffoli(): (3 * (self.num_bits_p - 1))}
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text(r'PREP (2^-μ)|μ⟩|ν⟩')
         return super().wire_symbol(reg, idx)
@@ -153,10 +151,10 @@ class FlagZeroAsFailure(Bloq):
             ]
         )
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         if self.is_adjoint:
             # This can be inverted with cliffords.
             return {}
@@ -165,9 +163,7 @@ class FlagZeroAsFailure(Bloq):
             # check the result of the Toffolis.
             return {Toffoli(): (3 * self.num_bits_p + 2)}
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text(r'ν≠−0')
         return super().wire_symbol(reg, idx)
@@ -204,10 +200,10 @@ class TestNuLessThanMu(Bloq):
             ]
         )
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         if self.is_adjoint:
             # This can be inverted with cliffords.
             return {Toffoli(): 0}
@@ -215,9 +211,7 @@ class TestNuLessThanMu(Bloq):
             # n_p controlled Toffolis with four controls.
             return {Toffoli(): 3 * self.num_bits_p}
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text(r'ν<2^(μ−2)')
         return super().wire_symbol(reg, idx)
@@ -280,10 +274,10 @@ class TestNuInequality(Bloq):
             ]
         )
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> Bloq:
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         if self.is_adjoint:
             return {Toffoli(): 0}
         else:
@@ -298,9 +292,7 @@ class TestNuInequality(Bloq):
             cost_4 = (Toffoli(), 3)
             return dict([cost_1, cost_2, cost_3, cost_4])
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text(r'(2^(μ-2))^2 M > m ν^2')
         return super().wire_symbol(reg, idx)
@@ -369,7 +361,7 @@ class PrepareNuState(Bloq):
 
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, flag_nu: SoquetT
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, SoquetT]:
         mu, flag_mu = bb.add(PrepareMuUnaryEncodedOneHot(self.num_bits_p), mu=mu)
         mu, nu = bb.add(PrepareNuSuperPositionState(self.num_bits_p), mu=mu, nu=nu)
         nu, flag_zero = bb.add(FlagZeroAsFailure(self.num_bits_p), nu=nu)
@@ -389,7 +381,7 @@ class PrepareNuState(Bloq):
         )
         return {'mu': mu, 'nu': nu, 'm': m, 'flag_nu': flag_nu}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # 1. Prepare unary encoded superposition state (Eq 77)
         cost_1 = (PrepareMuUnaryEncodedOneHot(self.num_bits_p), 1)
         n_m = (self.m_param - 1).bit_length()
@@ -404,9 +396,7 @@ class PrepareNuState(Bloq):
         cost_6 = (TestNuInequality(self.num_bits_p, n_m), 1)
         return dict([cost_1, cost_2, cost_3, cost_4, cost_6])
 
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text(r"PREP 1/‖ν‖ ∣ν⟩")
         return super().wire_symbol(reg, idx)

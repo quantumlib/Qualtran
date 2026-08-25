@@ -11,8 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -61,7 +63,7 @@ class GF2Square(Bloq):
     uncompute: bool = False
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature([Register('x', dtype=self.qgf)])
 
     @cached_property
@@ -104,7 +106,7 @@ class GF2Square(Bloq):
             ret = ret.adjoint()
         return ret
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'Soquet') -> Dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: BloqBuilder, *, x: Soquet) -> dict[str, Soquet]:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
         x = bb.split(x)[::-1]
@@ -112,15 +114,13 @@ class GF2Square(Bloq):
         x = bb.join(x[::-1], dtype=self.qgf)
         return {'x': x}
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         return {self.synthesize_squaring_matrix: 1}
 
     def adjoint(self):
         return attrs.evolve(self, uncompute=not self.uncompute)
 
-    def on_classical_vals(self, *, x) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, *, x) -> dict[str, ClassicalValT]:
         assert isinstance(x, self.qgf.gf_type)
         if self.uncompute:
             for _ in range(self.k):

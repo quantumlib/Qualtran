@@ -26,7 +26,7 @@ from .jupyter_autogen import (
 )
 
 
-def test_notebook_spec():
+def test_notebook_spec() -> None:
     nbspec = NotebookSpecV2(
         title='test',
         module=qualtran.bloqs.for_testing,
@@ -45,19 +45,16 @@ def _my_bloq_example() -> TestAtom:
     return my_bloq_example
 
 
-def test_get_bloq_example_source_lines():
+def test_get_bloq_example_source_lines() -> None:
     lines = _get_bloq_example_source_lines(_my_bloq_example)
     source = '\n'.join(lines)
-    assert (
-        source
-        == """\
+    assert source == """\
 # Comment
 x = 'y' + str(2)
 my_bloq_example = TestAtom(tag=x)"""
-    )
 
 
-def test_get_cells():
+def test_get_cells() -> None:
 
     bds = BloqDocSpec(bloq_cls=TestAtom, examples=[_my_bloq_example])
     cells = get_cells(bds)

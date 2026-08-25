@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from attrs import frozen
 
 from qualtran import (
@@ -100,7 +102,7 @@ class RzViaPhaseGradient(Bloq):
 
         return {'q': q, 'angle': angle, 'phase_grad': phase_grad}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {ControlledAddOrSubtract(self._angle_int_dtype, self._phasegrad_int_dtype): 1}
 
 

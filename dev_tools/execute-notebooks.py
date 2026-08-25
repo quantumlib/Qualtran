@@ -17,7 +17,7 @@ import argparse
 from qualtran_dev_tools.notebook_execution import execute_and_export_notebooks
 
 
-def parse_args():
+def parse_args() -> None:
     p = argparse.ArgumentParser()
     p.add_argument('--output-nbs', action=argparse.BooleanOptionalAction, default=True)
     p.add_argument('--output-md', action=argparse.BooleanOptionalAction, default=False)

@@ -11,9 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import warnings
 from functools import cached_property
-from typing import cast, Dict, Set, TYPE_CHECKING, Union
+from typing import cast, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -107,7 +109,7 @@ class GF2Inverse(Bloq):
         object.__setattr__(self, 'qgf', qgf)
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         junk_reg = (
             [Register('junk', dtype=self.qgf, shape=(self.n_junk_regs,), side=Side.RIGHT)]
             if is_symbolic(self.bitsize) or self.bitsize > 1
@@ -140,7 +142,7 @@ class GF2Inverse(Bloq):
             else int(self.bitsize - 1).bit_count()
         )
 
-    def my_static_costs(self, cost_key: 'CostKey'):
+    def my_static_costs(self, cost_key: CostKey):
         from qualtran._infra.gate_with_registers import total_bits
         from qualtran.resource_counting import QubitCount
 
@@ -158,7 +160,7 @@ class GF2Inverse(Bloq):
     def gf2_multiplier(self) -> Bloq:
         return GF2MulViaKaratsuba(self.qgf)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'Soquet') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, *, x: Soquet) -> dict[str, SoquetT]:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
 
@@ -198,9 +200,7 @@ class GF2Inverse(Bloq):
 
         return {'x': f[0], 'result': f[k], 'junk': np.array(f[1:k])}
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT | set[BloqCountT]:
         if not is_symbolic(self.bitsize) and self.bitsize == 1:
             return {GF2Addition(self.qgf): 1}
         k1 = bit_length(self.bitsize - 1) - 1
@@ -230,7 +230,7 @@ class GF2Inverse(Bloq):
             bloq_counts[GF2Addition(self.qgf)] = add_count
         return bloq_counts
 
-    def on_classical_vals(self, *, x) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, *, x) -> dict[str, ClassicalValT]:
         assert isinstance(x, self.qgf.gf_type)
         t = (self.bitsize - 1).bit_count()
         k1 = bit_length(self.bitsize - 1) - 1

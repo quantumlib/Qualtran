@@ -109,7 +109,7 @@ class BloqExampleListItem:
         return f'({be2}{self.objectstring!r}),', '', ''
 
 
-def main():
+def main() -> None:
     """Main entry point for the script.
 
     Finds all bloq classes and examples, processes them, and writes the

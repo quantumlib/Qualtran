@@ -11,8 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
+from collections.abc import Iterator
 from functools import cached_property
-from typing import Iterator
 
 import attrs
 import cirq
@@ -68,7 +70,7 @@ class QFTTextBook(GateWithRegisters):
     with_reverse: bool = True
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(q=QUInt(self.bitsize))
 
     def decompose_from_registers(
@@ -84,14 +86,14 @@ class QFTTextBook(GateWithRegisters):
             for i in range(self.bitsize // 2):
                 yield cirq.SWAP(q[i], q[-i - 1])
 
-    def build_call_graph(self, ssa: SympySymbolAllocator) -> 'BloqCountDictT':
-        ret: 'MutableBloqCountDictT' = {Hadamard(): self.bitsize}
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        ret: MutableBloqCountDictT = {Hadamard(): self.bitsize}
         if is_symbolic(self.bitsize):
             ret[PhaseGradientUnitary(self.bitsize - 1, exponent=0.5, is_controlled=True)] = (
                 self.bitsize // 2
             )
         else:
-            for i in range(1, self.bitsize):
+            for i in range(1, int(self.bitsize)):
                 ret[PhaseGradientUnitary(i, exponent=0.5, is_controlled=True)] = 1
         if self.with_reverse:
             ret[TwoBitSwap()] = self.bitsize // 2

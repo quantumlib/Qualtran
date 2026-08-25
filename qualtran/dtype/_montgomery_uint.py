@@ -12,8 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Iterable, List, Optional, Sequence
 
 import attrs
 import numpy as np
@@ -35,14 +35,14 @@ class _MontgomeryUInt(BitEncoding[int]):
     """
 
     bitsize: SymbolicInt
-    modulus: Optional[SymbolicInt] = None
+    modulus: SymbolicInt | None = None
 
     def get_domain(self) -> Iterable[int]:
         if self.modulus is None or is_symbolic(self.modulus):
             return range(2**self.bitsize)
         return range(1, int(self.modulus))
 
-    def to_bits(self, x: int) -> List[int]:
+    def to_bits(self, x: int) -> list[int]:
         self.assert_valid_val(x)
         return [int(x) for x in f'{int(x):0{self.bitsize}b}']
 
@@ -71,10 +71,10 @@ class _MontgomeryUInt(BitEncoding[int]):
         Args:
             xm: An integer in montgomery form.
         """
-        assert self.modulus is not None and not is_symbolic(self.modulus)
-        return (
-            (pow(xm, -1, self.modulus)) * pow(2, 2 * self.bitsize, int(self.modulus))
-        ) % self.modulus
+        mod = self.modulus
+        assert mod is not None and not is_symbolic(mod)
+        mod_int = int(mod)
+        return ((pow(xm, -1, mod_int)) * pow(2, 2 * self.bitsize, mod_int)) % mod_int
 
     def montgomery_product(self, xm: int, ym: int) -> int:
         """Returns the modular product of two integers in montgomery form.
@@ -139,7 +139,7 @@ class QMontgomeryUInt(QDType[int]):
     """
 
     bitsize: SymbolicInt
-    modulus: Optional[SymbolicInt] = None
+    modulus: SymbolicInt | None = None
 
     @cached_property
     def _bit_encoding(self) -> _MontgomeryUInt:
@@ -195,7 +195,7 @@ class CMontgomeryUInt(CDType[int]):
     """
 
     bitsize: SymbolicInt
-    modulus: Optional[SymbolicInt] = None
+    modulus: SymbolicInt | None = None
 
     @cached_property
     def _bit_encoding(self) -> _MontgomeryUInt:

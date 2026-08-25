@@ -14,13 +14,14 @@
 
 """Autogeneration of stub Jupyter notebooks."""
 
+from __future__ import annotations
+
 import abc
 import inspect
 import re
 import textwrap
 from pathlib import Path
 from types import ModuleType
-from typing import Optional
 
 import nbformat
 from attrs import field, frozen
@@ -34,7 +35,6 @@ _IMPORTS = """\
 from qualtran import Bloq, CompositeBloq, BloqBuilder, Signature, Register
 from qualtran import QBit, QInt, QUInt, QAny
 from qualtran.drawing import show_bloq, show_call_graph, show_counts_sigma
-from typing import *
 import numpy as np
 import sympy
 import cirq\
@@ -68,7 +68,7 @@ class NotebookSpecV2:
     module: ModuleType
     bloq_specs: list[BloqDocSpec]
     directory: str = field()
-    _path_stem: Optional[str] = None
+    _path_stem: str | None = None
 
     @directory.default
     def _default_directory(self) -> str:
@@ -77,7 +77,7 @@ class NotebookSpecV2:
         return str(Path(path).parent)
 
     @property
-    def path_stem(self):
+    def path_stem(self) -> str:
         if self._path_stem is None:
             return self.module.__name__.split('.')[-1]
         return self._path_stem
@@ -87,7 +87,7 @@ class NotebookSpecV2:
         return Path(self.directory) / f'{self.path_stem}.ipynb'
 
 
-def _get_bloq_example_source_lines(bloq_ex: 'BloqExample') -> list[str]:
+def _get_bloq_example_source_lines(bloq_ex: BloqExample) -> list[str]:
     """Parse out the source code from a factory function, so we can render it into a cell.
 
     Args:
@@ -170,7 +170,7 @@ def get_bloq_doc_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> list[_Cell]:
     ]
 
 
-def _get_one_ex_instance_cell(bloq_ex: BloqExample, cid_prefix):
+def _get_one_ex_instance_cell(bloq_ex: BloqExample, cid_prefix: str) -> _PyCell:
     """Code cell for one example instance."""
     return _PyCell(
         text='\n'.join(_get_bloq_example_source_lines(bloq_ex)),
@@ -277,7 +277,7 @@ def _get_title_lines(title: str, mod: ModuleType) -> list[str]:
 
 
 def _init_notebook(
-    path_stem: str, overwrite=False, directory: str = '.'
+    path_stem: str, overwrite: bool = False, directory: str = '.'
 ) -> tuple[nbformat.NotebookNode, Path]:
     """Initialize a jupyter notebook.
 

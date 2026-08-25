@@ -47,7 +47,7 @@ def test_controlled_cost():
     ((qrom, na),) = a_minus_b
     ((ctrl_qrom, nb),) = b_minus_a
     assert na == nb
-    assert evolve(qrom, num_controls=1) == ctrl_qrom  # type: ignore
+    assert evolve(qrom, num_controls=1) == ctrl_qrom  # type: ignore[misc]
 
 
 def test_cost():

@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Any, List, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 import attrs
 import numpy as np
@@ -34,8 +35,8 @@ def _get_pkg(cls) -> str:
 def object_to_object_node(
     o: object,
     *,
-    fieldnames: Optional[Sequence[str]] = None,
-    pkg: Optional[str] = None,
+    fieldnames: Sequence[str] | None = None,
+    pkg: str | None = None,
     nodes: L1Nodes = qualtran_l1_nodes,
 ) -> CObjectNode:
     """Convert an object to a CObjectNode.
@@ -77,8 +78,8 @@ def object_to_object_node(
         kwonlys = tuple(a.kw_only for a in attrs.fields(o.__class__))
 
     pos = True  # State machine: whether positional arguments are permitted.
-    args: List[CArgNode] = []
-    kwargs: List[CArgNode] = []
+    args: list[CArgNode] = []
+    kwargs: list[CArgNode] = []
     for fieldname, kwonly in zip(fieldnames, kwonlys):
         v = getattr(o, fieldname)
         v = to_cobject_node(v, nodes=nodes)

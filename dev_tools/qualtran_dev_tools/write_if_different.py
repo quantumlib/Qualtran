@@ -11,8 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import io
+import types
+from collections.abc import Iterable
 from pathlib import Path
+from typing import Self
 
 
 class WriteIfDifferent:
@@ -23,21 +28,21 @@ class WriteIfDifferent:
         path: The path to write, which may already exist.
     """
 
-    def __init__(self, path: Path):
+    def __init__(self, path: Path) -> None:
         self.path = path
         self._buffer = io.StringIO()
 
-    def write(self, s: str):
+    def write(self, s: str) -> int:
         return self._buffer.write(s)
 
-    def writelines(self, lines):
+    def writelines(self, lines: Iterable[str]) -> None:
         for line in lines:
             self.write(line)
 
-    def flush(self):
+    def flush(self) -> None:
         self._buffer.flush()
 
-    def close(self):
+    def close(self) -> None:
         """Closes the adapter.
 
         This triggers the comparison of buffered content
@@ -58,35 +63,39 @@ class WriteIfDifferent:
             print(f"{self.path}\t writing.")
             f_write.write(new_content)
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: types.TracebackType | None,
+    ) -> None:
         self.close()
         # Do not suppress exceptions from the 'with' block body.
-        return False
 
     @property
-    def closed(self):
+    def closed(self) -> bool:
         return self._buffer.closed
 
-    def readable(self):
+    def readable(self) -> bool:
         """Returns False, as this adapter is write-only like a file from `open('w')`."""
         return False
 
-    def writable(self):
+    def writable(self) -> bool:
         """Returns True if the adapter is not closed, False otherwise."""
-        return self._buffer.writable()
+        return not self.closed and self._buffer.writable()
 
-    def seekable(self):
+    def seekable(self) -> bool:
         """Returns False, as this adapter is not seekable like a disk file opened in 'w' mode."""
         return False
 
-    def tell(self):
+    def tell(self) -> int:
         """Returns the current stream position in the internal buffer."""
         return self._buffer.tell()
 
-    def truncate(self, size=None):
+    def truncate(self, size: int | None = None) -> int:
         """
         Resizes the internal buffer to the given number of bytes.
         If size is not specified, resizes to the current position.

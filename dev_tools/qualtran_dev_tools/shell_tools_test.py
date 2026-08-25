@@ -16,35 +16,36 @@ import contextlib
 import io
 import os
 import subprocess
+from typing import Any
 
 import pytest
 
 from . import shell_tools
 
 
-def only_on_posix(func):
+def only_on_posix(func: Any) -> Any:
     """Only run test on posix."""
     return pytest.mark.skipif(os.name != "posix", reason=f"os {os.name} is not posix")(func)
 
 
-def run(*args, **kwargs):
+def run(*args: Any, **kwargs: Any) -> Any:
     return shell_tools.run(*args, log_run_to_stderr=False, **kwargs)
 
 
 @only_on_posix
-def test_run_raises_on_failure():
+def test_run_raises_on_failure() -> None:
     assert run("true").returncode == 0
     with pytest.raises(subprocess.CalledProcessError):
         run("false")
     assert run("false", check=False).returncode == 1
 
 
-def test_run_returns_string_output():
+def test_run_returns_string_output() -> None:
     result = run(["echo", "hello", "world"], capture_output=True)
     assert result.stdout == "hello world\n"
 
 
-def test_run_with_command_logging():
+def test_run_with_command_logging() -> None:
     catch_stderr = io.StringIO()
     with contextlib.redirect_stderr(catch_stderr):
         shell_tools.run(["echo", "-n", "a", "b"], stdout=subprocess.DEVNULL)
@@ -60,7 +61,7 @@ def test_run_with_command_logging():
 
 
 @only_on_posix
-def test_output_of():
+def test_output_of() -> None:
     assert shell_tools.output_of("true") == ""
     with pytest.raises(subprocess.CalledProcessError):
         _ = shell_tools.output_of("false")

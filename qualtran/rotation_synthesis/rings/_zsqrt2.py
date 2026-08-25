@@ -14,6 +14,8 @@
 
 r"""The ring $\mathbb{Z}[\sqrt{2}]$."""
 
+from __future__ import annotations
+
 import fractions
 import functools
 import itertools
@@ -54,7 +56,7 @@ class ZSqrt2:  # noqa: PLW1641 (false positive)
         """
         return self.a + sqrt2 * self.b
 
-    def __mul__(self, other) -> "ZSqrt2":
+    def __mul__(self, other) -> ZSqrt2:
         if rst.is_int(other):
             return ZSqrt2(self.a * other, self.b * other)
         if isinstance(other, ZSqrt2):
@@ -63,13 +65,13 @@ class ZSqrt2:  # noqa: PLW1641 (false positive)
             )
         return NotImplemented
 
-    def __rmul__(self, other) -> "ZSqrt2":
+    def __rmul__(self, other) -> ZSqrt2:
         if rst.is_int(other):
             return self * other
         return NotImplemented
 
     @functools.lru_cache(512)
-    def _power(self, p: int) -> "ZSqrt2":
+    def _power(self, p: int) -> ZSqrt2:
         if p == 0:
             return One
         y = One
@@ -81,48 +83,48 @@ class ZSqrt2:  # noqa: PLW1641 (false positive)
             p >>= 1
         return x * y
 
-    def __pow__(self, other) -> "ZSqrt2":
+    def __pow__(self, other) -> ZSqrt2:
         assert rst.is_int(other) and other >= 0
         return self._power(int(other))
 
-    def __add__(self, other) -> "ZSqrt2":
+    def __add__(self, other) -> ZSqrt2:
         if rst.is_int(other):
             return ZSqrt2(self.a + other, self.b)
         if isinstance(other, ZSqrt2):
             return ZSqrt2(self.a + other.a, self.b + other.b)
         return NotImplemented
 
-    def __sub__(self, other) -> "ZSqrt2":
+    def __sub__(self, other) -> ZSqrt2:
         if rst.is_int(other):
             return ZSqrt2(self.a - other, self.b)
         if isinstance(other, ZSqrt2):
             return ZSqrt2(self.a - other.a, self.b - other.b)
         return NotImplemented
 
-    def conjugate(self) -> "ZSqrt2":
+    def conjugate(self) -> ZSqrt2:
         """Returns the sqrt2-conjugate"""
         return ZSqrt2(self.a, -self.b)
 
-    def conj(self) -> "ZSqrt2":
+    def conj(self) -> ZSqrt2:
         """Returns the sqrt2-conjugate"""
         return self.conjugate()
 
-    def __neg__(self) -> "ZSqrt2":
+    def __neg__(self) -> ZSqrt2:
         return ZSqrt2(-self.a, -self.b)
 
-    def __floordiv__(self, other: "ZSqrt2") -> "ZSqrt2":
+    def __floordiv__(self, other: ZSqrt2) -> ZSqrt2:
         assert isinstance(other, ZSqrt2)
         res = self * other.conj()
         norm = (other * other.conj()).a
         return ZSqrt2(res.a // norm, res.b // norm)
 
-    def is_divisible_by(self, other: "ZSqrt2") -> bool:
+    def is_divisible_by(self, other: ZSqrt2) -> bool:
         assert isinstance(other, ZSqrt2)
         res = self * other.conj()
         norm = other.norm()
         return res.a % norm == 0 and res.b % norm == 0
 
-    def divide_by_sqrt2(self) -> "ZSqrt2":
+    def divide_by_sqrt2(self) -> ZSqrt2:
         r"""Performs division by sqrt(2).
 
         Dividing $a+b\sqrt{2}$ by sqrt(2) is only possible when the integer part is even.
@@ -133,14 +135,14 @@ class ZSqrt2:  # noqa: PLW1641 (false positive)
             )
         return ZSqrt2(self.b, self.a // 2)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, ZSqrt2):
             return self.a == other.a and self.b == other.b
         if rst.is_int(other):
             return self == ZSqrt2(other, 0)
         raise TypeError(f"Comparison is not supported between ZSqrt2 and {type(other)}")
 
-    def __lt__(self, other) -> bool:
+    def __lt__(self, other: object) -> bool:
         # comparison is done using only integer operations.
         if isinstance(other, ZSqrt2):
             if self.b == other.b:
@@ -175,7 +177,7 @@ class ZSqrt2:  # noqa: PLW1641 (false positive)
     def __ge__(self, other) -> bool:
         return (self == other) or (self > other)
 
-    def gcd(self, other: "ZSqrt2") -> "ZSqrt2":
+    def gcd(self, other: ZSqrt2) -> ZSqrt2:
         """Returns the gcd between the operands using the euclidan algorithm."""
         if self == other == Zero:
             return One
@@ -198,7 +200,7 @@ class ZSqrt2:  # noqa: PLW1641 (false positive)
         return y
 
     @staticmethod
-    def factor_prime(p: int) -> dict["ZSqrt2", int]:
+    def factor_prime(p: int) -> dict[ZSqrt2, int]:
         """Factors a prime into the prime ideals of the ring.
 
         This method follows lemma C.12 from https://arxiv.org/abs/1403.2975.

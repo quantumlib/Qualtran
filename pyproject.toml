@@ -113,7 +113,7 @@ test = [
 ]
 
 typing = [
-    "mypy~=1.14",
+    "mypy~=2.0",
     "mypy-protobuf",
     "sympy",
     "pandas-stubs",
@@ -269,7 +269,3 @@ markers = [
 [[tool.mypy.overrides]]
 module = "sympy"
 ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "dev_tools.qualtran_dev_tools.bloq_report_card"
-ignore_errors = true

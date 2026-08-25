@@ -21,6 +21,8 @@ References:
     Section 4.4.2 for algorithm. Section 2.4 for definitions and notation.
 """
 
+from __future__ import annotations
+
 from functools import cached_property
 
 import sympy
@@ -38,6 +40,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
+from qualtran._infra.registers import Register
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.sparse_matrix import RowColumnOracle
 from qualtran.bloqs.block_encoding.sparse_matrix_hermitian import (
@@ -83,8 +86,8 @@ class BlackBoxKikuchiEntryOracle(SqrtEntryOracle):
         return self.O_H.entry_bitsize
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', q: 'Soquet', i: 'Soquet', j: 'Soquet'
-    ) -> dict[str, 'SoquetT']:
+        self, bb: BloqBuilder, q: Soquet, i: Soquet, j: Soquet
+    ) -> dict[str, SoquetT]:
         i, j, q = bb.add(self.O_H, S=i, T=j, q=q)
         return dict(q=q, i=i, j=j)
 
@@ -109,13 +112,11 @@ class BlackBoxKikuchiRowColumnOracle(RowColumnOracle):
     def num_nonzero(self) -> SymbolicInt:
         return self.O_F.s
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', l: 'Soquet', i: 'Soquet'
-    ) -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, l: Soquet, i: Soquet) -> dict[str, SoquetT]:
         i, l = bb.add(self.O_F, S=i, k=l)
         return dict(l=l, i=i)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {self.O_F: 1}
 
 
@@ -154,7 +155,7 @@ class KikuchiHamiltonian(BlockEncoding):
         raise ValueError("Entries outside range [-2, 2], please specify an explicit entry_bitsize.")
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(
             system=self.system_bitsize, ancilla=self.ancilla_bitsize, resource=self.resource_bitsize
         )
@@ -201,7 +202,19 @@ class KikuchiHamiltonian(BlockEncoding):
     def signal_state(self) -> BlackBoxPrepare:
         return self._sparse_matrix_encoding.signal_state
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    @property
+    def selection_registers(self) -> tuple[Register, ...]:
+        return self._sparse_matrix_encoding.selection_registers
+
+    @property
+    def target_registers(self) -> tuple[Register, ...]:
+        return self._sparse_matrix_encoding.target_registers
+
+    @property
+    def junk_registers(self) -> tuple[Register, ...]:
+        return self._sparse_matrix_encoding.junk_registers
+
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         return bb.add_d(self._sparse_matrix_encoding, **soqs)
 
     def __str__(self):

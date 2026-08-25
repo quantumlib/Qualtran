@@ -13,6 +13,8 @@
 #  limitations under the License.
 r"""Bloqs for the state preparation of the DF Hamiltonian."""
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -68,7 +70,7 @@ class InnerPrepareDoubleFactorization(Bloq):
         nxi = (self.num_spin_orb // 2 - 1).bit_length()
         return Signature.build(xi=nxi, offset=nlxi, rot=self.num_bits_rot_aa, succ_p=1, p=nxi)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # Step 3.
         num_bits_xi = (self.num_spin_orb // 2 - 1).bit_length()
         # uniform superposition state, requires controlled hadamards
@@ -127,7 +129,7 @@ class OuterPrepareDoubleFactorization(Bloq):
     def signature(self) -> Signature:
         return Signature.build(l=self.num_aux.bit_length(), succ_l=1)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # Listing 1 steps a-d
         num_bits_l = self.num_aux.bit_length()
         cost_a = (PrepareUniformSuperposition(self.num_aux + 1), 1)
@@ -190,7 +192,7 @@ class OutputIndexedData(Bloq):
             offset=nlxi,
         )
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # listing 2 C29/30 page 52
         num_bits_lxi = (self.num_eig + self.num_spin_orb // 2 - 1).bit_length()
         num_bits_xi = (self.num_spin_orb // 2 - 1).bit_length()

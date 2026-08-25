@@ -14,11 +14,14 @@
 
 """Classes for specifying `Bloq.registers`."""
 
+from __future__ import annotations
+
 import enum
 import itertools
 from collections import defaultdict
+from collections.abc import Iterable, Iterator
 from functools import cached_property
-from typing import cast, Dict, Iterable, Iterator, List, overload, Tuple, Union
+from typing import cast, overload
 
 import attrs
 from attrs import field, frozen
@@ -52,7 +55,7 @@ class Side(enum.Flag):
         return f'{self.__class__.__name__}.{self._name_}'
 
 
-def _consume_register_dtype(dtype: Union[QCDType, ShapedQCDType]) -> QCDType:
+def _consume_register_dtype(dtype: QCDType | ShapedQCDType) -> QCDType:
     # In __attrs_post_init__, we actually handle the ShapedQCDType case, which isn't accounted
     # for in attrs type checking.
     return cast(QCDType, dtype)
@@ -78,7 +81,7 @@ class Register:
 
     name: str
     dtype: QCDType = field(converter=_consume_register_dtype)
-    _shape: Tuple[SymbolicInt, ...] = field(
+    _shape: tuple[SymbolicInt, ...] = field(
         default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
     )
     side: Side = Side.THRU
@@ -107,22 +110,22 @@ class Register:
         return is_symbolic(self.dtype, *self._shape)
 
     @property
-    def shape_symbolic(self) -> Tuple[SymbolicInt, ...]:
+    def shape_symbolic(self) -> tuple[SymbolicInt, ...]:
         return self._shape
 
     @property
-    def shape(self) -> Tuple[int, ...]:
+    def shape(self) -> tuple[int, ...]:
         if is_symbolic(*self._shape):
             raise ValueError(
                 f"{self.name}'s shape {self._shape} is symbolic. Cannot get real-valued shape."
             )
-        return cast(Tuple[int, ...], self._shape)
+        return cast(tuple[int, ...], self._shape)
 
     @property
     def bitsize(self) -> int:
         return self.dtype.num_bits
 
-    def all_idxs(self) -> Iterable[Tuple[int, ...]]:
+    def all_idxs(self) -> Iterable[tuple[int, ...]]:
         """Iterate over all possible indices of a multidimensional register."""
         yield from itertools.product(*[range(sh) for sh in self.shape])
 
@@ -149,7 +152,7 @@ class Register:
         """
         return self.dtype.num_cbits * prod(self.shape_symbolic)
 
-    def adjoint(self) -> 'Register':
+    def adjoint(self) -> Register:
         """Return the 'adjoint' of this register by switching RIGHT and LEFT registers."""
         if self.side is Side.THRU:
             return self
@@ -160,7 +163,7 @@ class Register:
         raise ValueError(f"Unknown side {self.side}")
 
 
-def _dedupe(kv_iter: Iterable[Tuple[str, Register]]) -> Dict[str, Register]:
+def _dedupe(kv_iter: Iterable[tuple[str, Register]]) -> dict[str, Register]:
     """Construct a dictionary, but check that there are no duplicate keys."""
     # throw ValueError if duplicate keys are provided.
     d = {}
@@ -209,7 +212,7 @@ class Signature:
         self._rights = _dedupe((reg.name, reg) for reg in self._registers if reg.side & Side.RIGHT)
 
     @classmethod
-    def build(cls, *args, **kwargs) -> 'Signature':
+    def build(cls, *args, **kwargs) -> Signature:
         """Construct a Signature using a more natural syntax.
 
         This builder constructs a `Signature` flexibly from a mix of types, positional elements,
@@ -327,7 +330,7 @@ class Signature:
         return cls(registers)
 
     @classmethod
-    def build_from_dtypes(cls, **registers: QCDType) -> 'Signature':
+    def build_from_dtypes(cls, **registers: QCDType) -> Signature:
         """Construct a Signature comprised of thru registers of the given dtypes.
 
         Examples:
@@ -374,7 +377,7 @@ class Signature:
         """Get a right register by name."""
         return self._rights[name]
 
-    def groups(self) -> Iterable[Tuple[str, List[Register]]]:
+    def groups(self) -> Iterable[tuple[str, list[Register]]]:
         """Iterate over register groups by name.
 
         Registers with shared names (but differing `side` attributes) can be implicitly grouped.
@@ -385,7 +388,7 @@ class Signature:
 
         yield from groups.items()
 
-    def adjoint(self) -> 'Signature':
+    def adjoint(self) -> Signature:
         """Swap all RIGHT and LEFT registers in this collection."""
         return Signature(reg.adjoint() for reg in self._registers)
 
@@ -435,7 +438,7 @@ class Signature:
     def __getitem__(self, key: int) -> Register: ...
 
     @overload
-    def __getitem__(self, key: slice) -> Tuple[Register, ...]: ...
+    def __getitem__(self, key: slice) -> tuple[Register, ...]: ...
 
     def __getitem__(self, key):
         return self._registers[key]
@@ -449,10 +452,12 @@ class Signature:
     def __len__(self) -> int:
         return len(self._registers)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self._registers)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Signature):
+            return False
         return self._registers == other._registers
 
 

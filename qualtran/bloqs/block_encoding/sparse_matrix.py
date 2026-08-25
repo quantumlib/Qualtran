@@ -12,9 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import abc
+from collections.abc import Iterable
 from functools import cached_property
-from typing import Dict, Iterable, Tuple
 
 import numpy as np
 import sympy
@@ -238,7 +240,7 @@ class SparseMatrix(BlockEncoding):
 
     def build_composite_bloq(
         self, bb: BloqBuilder, system: SoquetT, ancilla: SoquetT
-    ) -> Dict[str, SoquetT]:
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.system_bitsize) or is_symbolic(self.row_oracle.num_nonzero):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
 
@@ -285,7 +287,7 @@ class TopLeftRowColumnOracle(RowColumnOracle):
     def num_nonzero(self) -> SymbolicInt:
         return self._num_nonzero
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         # the l-th non-zero entry is at position l, so do nothing
         return soqs
 
@@ -323,7 +325,7 @@ class SymmetricBandedRowColumnOracle(RowColumnOracle):
                 f"bandsize={self.bandsize} too large for system_bitsize={self.system_bitsize}"
             )
 
-    def call_classically(self, l: ClassicalValT, i: ClassicalValT) -> Tuple[ClassicalValT, ...]:
+    def call_classically(self, l: ClassicalValT, i: ClassicalValT) -> tuple[ClassicalValT, ...]:
         if (
             is_symbolic(self.bandsize)
             or is_symbolic(self.system_bitsize)
@@ -336,13 +338,13 @@ class SymmetricBandedRowColumnOracle(RowColumnOracle):
             raise IndexError("l out of bounds")
         return ((l + i - self.bandsize) % (2**self.system_bitsize), i)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
             Add(QUInt(self.system_bitsize), QUInt(self.system_bitsize)): 1,
             AddK(QInt(self.system_bitsize), -self.bandsize): 1,
         }
 
-    def build_composite_bloq(self, bb: BloqBuilder, l: SoquetT, i: SoquetT) -> Dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, l: SoquetT, i: SoquetT) -> dict[str, SoquetT]:
         if is_symbolic(self.system_bitsize) or is_symbolic(self.bandsize):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
 
@@ -361,7 +363,7 @@ class UniformEntryOracle(EntryOracle):
 
     def build_composite_bloq(
         self, bb: BloqBuilder, q: Soquet, **soqs: SoquetT
-    ) -> Dict[str, SoquetT]:
+    ) -> dict[str, SoquetT]:
         # Either Rx or Ry work here; Rx would induce a phase on the subspace with non-zero ancilla
         # See https://arxiv.org/abs/2302.10949 for reference that uses Rx
         soqs["q"] = bb.add(Ry(2 * np.arccos(self.entry)), q=q)
@@ -408,7 +410,7 @@ class ExplicitEntryOracle(EntryOracle):
 
     def build_composite_bloq(
         self, bb: BloqBuilder, q: SoquetT, i: SoquetT, j: SoquetT
-    ) -> Dict[str, SoquetT]:
+    ) -> dict[str, SoquetT]:
         if is_symbolic(self.entry_bitsize):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
         # load from QROM

@@ -14,11 +14,14 @@
 
 """Functions for testing bloqs."""
 
+from __future__ import annotations
+
 import itertools
 import traceback
+from collections.abc import Sequence
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -230,7 +233,7 @@ def assert_valid_cbloq(cbloq: CompositeBloq):
     assert_soquets_used_exactly_once(cbloq)
 
 
-def assert_valid_bloq_decomposition(bloq: Optional[Bloq]) -> CompositeBloq:
+def assert_valid_bloq_decomposition(bloq: Bloq | None) -> CompositeBloq:
     """Check the validity of a bloq decomposition.
 
     Importantly, this does not do any correctness checking -- for that you likely
@@ -244,7 +247,7 @@ def assert_valid_bloq_decomposition(bloq: Optional[Bloq]) -> CompositeBloq:
     return cbloq
 
 
-def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: List[Union[str, 'WireSymbol']]):
+def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: Sequence[str | WireSymbol]):
     """Assert a bloq's wire symbols match the expected ones.
 
     For multi-dimensional registers (with a shape), this will iterate
@@ -349,22 +352,22 @@ class BloqCheckException(AssertionError):
         return self._msg
 
     @classmethod
-    def fail(cls, msg: str) -> 'BloqCheckException':
+    def fail(cls, msg: str) -> BloqCheckException:
         """Create an exception with a FAIL check result."""
         return cls(BloqCheckResult.FAIL, msg=msg)
 
     @classmethod
-    def missing(cls, msg: str) -> 'BloqCheckException':
+    def missing(cls, msg: str) -> BloqCheckException:
         """Create an exception with a MISSING check result."""
         return cls(BloqCheckResult.MISSING, msg=msg)
 
     @classmethod
-    def na(cls, msg: str) -> 'BloqCheckException':
+    def na(cls, msg: str) -> BloqCheckException:
         """Create an exception with a NA check result."""
         return cls(BloqCheckResult.NA, msg=msg)
 
     @classmethod
-    def unverified(cls, msg: str) -> 'BloqCheckException':
+    def unverified(cls, msg: str) -> BloqCheckException:
         """Create an exception with an UNVERIFIED check result."""
         return cls(BloqCheckResult.UNVERIFIED, msg=msg)
 
@@ -385,7 +388,7 @@ def assert_bloq_example_make(bloq_ex: BloqExample) -> None:
         raise BloqCheckException.fail(f'{bloq} is not an instance of {bloq_ex.bloq_cls}')
 
 
-def check_bloq_example_make(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+def check_bloq_example_make(bloq_ex: BloqExample) -> tuple[BloqCheckResult, str]:
     """Check that the BloqExample returns the desired bloq.
 
     Returns:
@@ -427,7 +430,7 @@ def assert_bloq_example_decompose(bloq_ex: BloqExample) -> None:
         raise BloqCheckException.fail(str(e)) from e
 
 
-def check_bloq_example_decompose(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+def check_bloq_example_decompose(bloq_ex: BloqExample) -> tuple[BloqCheckResult, str]:
     """Check that the BloqExample has a valid decomposition.
 
     This will use `assert_valid_decomposition` which has a variety of sub-checks. A failure
@@ -471,8 +474,8 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
 
     has_manual_counts: bool
     has_decomp_counts: bool
-    manual_counts: Dict['Bloq', Union[int, 'sympy.Expr']] = {}
-    decomp_counts: Dict['Bloq', Union[int, 'sympy.Expr']] = {}
+    manual_counts: dict[Bloq, int | sympy.Expr] = {}
+    decomp_counts: dict[Bloq, int | sympy.Expr] = {}
 
     # Notable implementation detail: since `bloq.build_call_graph` has a default fallback
     # that uses the decomposition, we could accidentally be comparing two identical code paths
@@ -523,7 +526,7 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
 
 
 def assert_equivalent_bloq_counts(
-    bloq: Bloq, generalizer: Union['GeneralizerT', Sequence['GeneralizerT']] = lambda x: x
+    bloq: Bloq, generalizer: GeneralizerT | Sequence[GeneralizerT] = lambda x: x
 ) -> None:
     """Assert that the BloqExample has consistent bloq counts.
 
@@ -539,7 +542,7 @@ def assert_equivalent_bloq_counts(
     )
 
 
-def check_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+def check_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> tuple[BloqCheckResult, str]:
     """Check that the BloqExample has consistent bloq counts.
 
     Bloq counts can be annotated directly via the `Bloq.build_call_graph` override.
@@ -607,7 +610,7 @@ def assert_bloq_example_serializes(bloq_ex: BloqExample) -> None:
         ) from e
 
 
-def check_bloq_example_serializes(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+def check_bloq_example_serializes(bloq_ex: BloqExample) -> tuple[BloqCheckResult, str]:
     """Check that the BloqExample has consistent serialization.
 
     This function checks that the given bloq can be serialized to a proto format and the
@@ -632,7 +635,7 @@ def check_bloq_example_serializes(bloq_ex: BloqExample) -> Tuple[BloqCheckResult
     return BloqCheckResult.PASS, ''
 
 
-def assert_bloq_example_qtyping(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+def assert_bloq_example_qtyping(bloq_ex: BloqExample) -> tuple[BloqCheckResult, str]:
     """Assert that the bloq example has valid quantum data types throughout its decomposition.
 
     If the bloq has no decomposition, this check is not applicable. Otherwise: we check the
@@ -682,7 +685,7 @@ def assert_bloq_example_qtyping(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, 
     return BloqCheckResult.PASS, ''
 
 
-def check_bloq_example_qtyping(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+def check_bloq_example_qtyping(bloq_ex: BloqExample) -> tuple[BloqCheckResult, str]:
     """Check that the bloq example has valid quantum data types throughout its decomposition.
 
     If the bloq has no decomposition, this check is not applicable. Otherwise: we check the
@@ -709,8 +712,7 @@ def check_bloq_example_qtyping(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, s
 
 
 def assert_consistent_classical_action(
-    bloq: Bloq,
-    **parameter_ranges: Union[NDArray, Sequence[int], Sequence[Union[Sequence[int], NDArray]]],
+    bloq: Bloq, **parameter_ranges: NDArray | Sequence[int] | Sequence[Sequence[int] | NDArray]
 ):
     """Check that the bloq has a classical action consistent with its decomposition.
 
@@ -730,8 +732,7 @@ def assert_consistent_classical_action(
 
 
 def assert_consistent_phased_classical_action(
-    bloq: Bloq,
-    **parameter_ranges: Union[NDArray, Sequence[int], Sequence[Union[Sequence[int], NDArray]]],
+    bloq: Bloq, **parameter_ranges: NDArray | Sequence[int] | Sequence[Sequence[int] | NDArray]
 ):
     """Check that the bloq has a phased classical action consistent with its decomposition.
 

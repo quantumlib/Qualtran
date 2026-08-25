@@ -16,7 +16,8 @@
 
 import html
 import itertools
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from collections.abc import Iterable
+from typing import Any
 
 import IPython.display
 import pydot
@@ -39,7 +40,7 @@ from qualtran._infra.quantum_graph import _Soquet
 
 def _assign_ids_to_bloqs_and_soqs(
     bloq_instances: Iterable[BloqInstance], all_soquets: Iterable[_Soquet]
-) -> Dict[Any, str]:
+) -> dict[Any, str]:
     """Assign unique identifiers to bloq instances, soquets, and register groups.
 
     Graphviz is very forgiving in its input format. If you accidentally introduce a new id (e.g.
@@ -54,8 +55,8 @@ def _assign_ids_to_bloqs_and_soqs(
         shared names (but differing `side` attributes) are implicitly grouped. 3) Each
         Soquet in `all_soquets`.
     """
-    to_id: Dict[Any, str] = {}
-    ids: Set[str] = set()
+    to_id: dict[Any, str] = {}
+    ids: set[str] = set()
     disambiguator = 0
 
     def add(item: Any, desired_id: str):
@@ -86,7 +87,7 @@ def _assign_ids_to_bloqs_and_soqs(
 
 def _parition_registers_in_a_group(
     regs: Iterable[Register], binst: BloqInstance
-) -> Tuple[List[_Soquet], List[_Soquet], List[_Soquet]]:
+) -> tuple[list[_Soquet], list[_Soquet], list[_Soquet]]:
     """Construct and sort the expected Soquets for a given register group.
 
     Since we expect the input registers to be in a group, we assert that
@@ -189,7 +190,7 @@ class GraphDrawer:
             f'{html.escape(self.soq_label(thru))}</TD></TR>\n'
         )
 
-    def _register_td(self, soq: Optional[_Soquet], *, with_empty_td: bool, rowspan: int = 1) -> str:
+    def _register_td(self, soq: _Soquet | None, *, with_empty_td: bool, rowspan: int = 1) -> str:
         """Return the html code for an individual <TD>.
 
         This includes some factored-out complexity which aims to correctly pad cells that
@@ -218,8 +219,8 @@ class GraphDrawer:
 
     def _get_register_tr(
         self,
-        left: Optional[_Soquet],
-        right: Optional[_Soquet],
+        left: _Soquet | None,
+        right: _Soquet | None,
         *,
         with_empty_td: bool = True,
         left_rowspan: int = 1,
@@ -362,7 +363,7 @@ class GraphDrawer:
 
     def get_svg_bytes(self) -> bytes:
         """Get the SVG code (as bytes) for drawing the graph."""
-        return self.get_graph().create(prog='dot', format='svg', encoding='utf-8')  # type: ignore[attr-defined,return-value]
+        return self.get_graph().create(prog='dot', format='svg', encoding='utf-8')  # type: ignore[attr-defined]
 
     def get_svg(self) -> IPython.display.SVG:
         """Get an IPython SVG object displaying the graph."""

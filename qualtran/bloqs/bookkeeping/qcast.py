@@ -14,6 +14,8 @@
 
 """A generic bookkeeping bloq for casting operations based only on a signature."""
 
+from __future__ import annotations
+
 from attrs import frozen
 
 from qualtran import CompositeBloq, DecomposeTypeError, Signature
@@ -32,5 +34,5 @@ class QCast(_BookkeepingBloq):
 
     signature: Signature
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f'{self} is atomic')

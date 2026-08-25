@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Dict
 
 import cirq
 import numpy as np
@@ -55,9 +56,9 @@ class TestPartition(Bloq):
     def signature(self) -> Signature:
         return Signature.build(test_regs=self.bitsize)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', test_regs: 'SoquetT') -> Dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: BloqBuilder, test_regs: SoquetT) -> dict[str, Soquet]:
         bloq_regs = self.test_bloq.signature
-        partition = Partition(self.bitsize, bloq_regs)  # type: ignore[arg-type]
+        partition = Partition(self.bitsize, bloq_regs)
         out_regs = bb.add(partition, x=test_regs)
         out_regs = bb.add(self.test_bloq, **{reg.name: sp for reg, sp in zip(bloq_regs, out_regs)})
         test_regs = bb.add(

@@ -13,8 +13,10 @@
 #  limitations under the License.
 """Quantum Variable Rotation."""
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import frozen
 
@@ -54,12 +56,12 @@ class QuantumVariableRotation(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('phi', QAny(bitsize=self.phi_bitsize))])
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register | None, idx: tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("e^{i*phi}")
         return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         theta = ssa.new_symbol('theta')
         # need to update rotation bloq.
         return {Rz(theta): self.phi_bitsize}

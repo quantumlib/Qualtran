@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Dict
 
 import cirq
 import numpy as np
@@ -68,10 +69,10 @@ def test_tensors():
 
 class TestTStateMaker(Bloq):
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(x=1)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, x: SoquetT) -> dict[str, SoquetT]:
         x = bb.add(Hadamard(), q=x)
         x = bb.add(TGate(), q=x)
         return {'x': x}

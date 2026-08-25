@@ -11,17 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Set, TYPE_CHECKING
-
 from qualtran_dev_tools.bloq_finder import get_bloq_classes
 
 from qualtran import Bloq
 
-if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT
 
-
-def _call_graph(bc: type[Bloq]):
+def _call_graph(bc: type[Bloq]) -> None:
     """Check that a bloq class overrides the right call graph methods.
 
     - Override `build_call_graph` with canonical type annotations.
@@ -43,19 +38,20 @@ def _call_graph(bc: type[Bloq]):
             f'{bc}.build_call_graph should have one argument named `ssa` '
             f'and a return type annotation'
         )
-    if annot['ssa'] != 'SympySymbolAllocator':
+    if 'SympySymbolAllocator' not in str(annot.get('ssa', '')):
         print(f"{bc}.build_call_graph `ssa: 'SympySymbolAllocator'`")
-    if annot['return'] != Set['BloqCountT']:  # type: ignore[misc]
-        print(f"{bc}.build_call_graph -> 'BloqCountT'")
+    ret_str = str(annot.get('return', ''))
+    if not any(sub in ret_str for sub in ('BloqCountDictT', 'set[BloqCountT]', 'Mapping[')):
+        print(f"{bc}.build_call_graph -> {ret_str!r}")
 
 
-def report_call_graph_methods():
+def report_call_graph_methods() -> None:
     bcs = get_bloq_classes()
     for bc in bcs:
         _call_graph(bc)
 
 
-def main():
+def main() -> None:
     report_call_graph_methods()
 
 

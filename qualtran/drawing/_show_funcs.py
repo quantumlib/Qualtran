@@ -14,8 +14,11 @@
 
 """Convenience functions for showing rich displays in Jupyter notebook."""
 
+from __future__ import annotations
+
 import os
-from typing import Dict, Optional, overload, Sequence, TYPE_CHECKING, Union
+from collections.abc import Mapping, Sequence
+from typing import overload, TYPE_CHECKING
 
 from qualtran import Bloq
 
@@ -24,7 +27,7 @@ if TYPE_CHECKING:
     import sympy
 
 
-def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-builtin
+def show_bloq(bloq: Bloq, type: str = 'graph'):  # pylint: disable=redefined-builtin
     """Display a visual representation of the bloq in IPython.
 
     Args:
@@ -51,7 +54,7 @@ def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-b
         )
 
 
-def show_bloqs(bloqs: Sequence['Bloq'], labels: Optional[Sequence[Optional[str]]] = None):
+def show_bloqs(bloqs: Sequence[Bloq], labels: Sequence[str | None] | None = None):
     """Display multiple bloqs side-by-side in IPython."""
     import IPython.display
     import ipywidgets
@@ -77,22 +80,18 @@ def show_bloqs(bloqs: Sequence['Bloq'], labels: Optional[Sequence[Optional[str]]
 
 @overload
 def show_call_graph(
-    item: 'Bloq', /, *, max_depth: Optional[int] = None, agg_gate_counts: Optional[str] = None
+    item: Bloq, /, *, max_depth: int | None = None, agg_gate_counts: str | None = None
 ) -> None: ...
 
 
 @overload
 def show_call_graph(
-    item: 'nx.Graph', /, *, max_depth: Optional[int] = None, agg_gate_counts: Optional[str] = None
+    item: nx.Graph, /, *, max_depth: int | None = None, agg_gate_counts: str | None = None
 ) -> None: ...
 
 
 def show_call_graph(
-    item: Union['Bloq', 'nx.Graph'],
-    /,
-    *,
-    max_depth: Optional[int] = None,
-    agg_gate_counts: Optional[str] = None,
+    item: Bloq | nx.Graph, /, *, max_depth: int | None = None, agg_gate_counts: str | None = None
 ) -> None:
     """Display a graph representation of the call graph.
 
@@ -124,7 +123,7 @@ def show_call_graph(
         IPython.display.display(GraphvizCallGraph(item).get_svg())
 
 
-def show_counts_sigma(sigma: Dict['Bloq', Union[int, 'sympy.Expr']]):
+def show_counts_sigma(sigma: Mapping[Bloq, int | sympy.Expr]) -> None:
     """Display nicely formatted bloq counts sums `sigma`."""
     import IPython.display
 
@@ -133,7 +132,7 @@ def show_counts_sigma(sigma: Dict['Bloq', Union[int, 'sympy.Expr']]):
     IPython.display.display(IPython.display.Markdown(format_counts_sigma(sigma)))
 
 
-def show_flame_graph(*bloqs: 'Bloq', **kwargs):
+def show_flame_graph(*bloqs: Bloq, **kwargs):
     """Display hierarchical decomposition and T-complexity costs as a Flame Graph."""
     from .flame_graph import get_flame_graph_svg_data
 
@@ -143,7 +142,7 @@ def show_flame_graph(*bloqs: 'Bloq', **kwargs):
     IPython.display.display(IPython.display.SVG(svg_data))
 
 
-def show_bloq_graph(bloq: 'Bloq'):
+def show_bloq_graph(bloq: Bloq):
     import IPython.display
 
     from .graphviz import PrettyGraphDrawer
@@ -159,7 +158,7 @@ def show_bloq_dtype_graph(bloq):
     IPython.display.display(TypedGraphDrawer(bloq).get_svg())
 
 
-def show_bloq_musical_score(bloq: 'Bloq'):
+def show_bloq_musical_score(bloq: Bloq):
     import matplotlib.pyplot as plt
 
     from .musical_score import draw_musical_score, get_musical_score_data
@@ -168,7 +167,7 @@ def show_bloq_musical_score(bloq: 'Bloq'):
     plt.show()
 
 
-def show_bloq_via_qpic(bloq: 'Bloq', width: int = 1000, height: int = 400):
+def show_bloq_via_qpic(bloq: Bloq, width: int = 1000, height: int = 400):
     """Display latex diagram for bloq by invoking `qpic`. Assumes qpic is already installed."""
     from .qpic_diagram import qpic_diagram_for_bloq
 

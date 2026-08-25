@@ -11,10 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import logging
 import warnings
 from collections import defaultdict
-from typing import Callable, cast, Dict, Sequence, Tuple, TYPE_CHECKING
+from collections.abc import Callable, Sequence
+from typing import cast, TYPE_CHECKING
 
 import attrs
 import networkx as nx
@@ -38,10 +41,10 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-BloqCountDict = Dict['Bloq', int]
+BloqCountDict = dict['Bloq', int]
 
 
-def _gateset_bloqs_to_tuple(bloqs: Sequence['Bloq']) -> Tuple['Bloq', ...]:
+def _gateset_bloqs_to_tuple(bloqs: Sequence[Bloq]) -> tuple[Bloq, ...]:
     return tuple(bloqs)
 
 
@@ -60,7 +63,7 @@ class BloqCount(CostKey[BloqCountDict]):
         gateset_name: A string name of the gateset. Used for display and debugging purposes.
     """
 
-    gateset_bloqs: Sequence['Bloq'] = field(converter=_gateset_bloqs_to_tuple)
+    gateset_bloqs: Sequence[Bloq] = field(converter=_gateset_bloqs_to_tuple)
     gateset_name: str
 
     @classmethod
@@ -74,7 +77,7 @@ class BloqCount(CostKey[BloqCountDict]):
         """
         from qualtran.bloqs.basic_gates import TGate, Toffoli, TwoBitCSwap
 
-        bloqs: Tuple['Bloq', ...]
+        bloqs: tuple[Bloq, ...]
         if gateset_name == 't':
             bloqs = (TGate(), TGate(is_adjoint=True))
         elif gateset_name == 't+tof':
@@ -98,7 +101,7 @@ class BloqCount(CostKey[BloqCountDict]):
         return cls(tuple(leaf_bloqs), gateset_name='leaf')
 
     def compute(
-        self, bloq: 'Bloq', get_callee_cost: Callable[['Bloq'], BloqCountDict]
+        self, bloq: Bloq, get_callee_cost: Callable[[Bloq], BloqCountDict]
     ) -> BloqCountDict:
         if bloq in self.gateset_bloqs:
             logger.info("Computing %s: %s is in the target gateset.", self, bloq)
@@ -172,7 +175,7 @@ class GateCounts:
             return ', '.join(strs)
         return '-'
 
-    def asdict(self) -> Dict[str, int]:
+    def asdict(self) -> dict[str, int]:
         d = attrs.asdict(self)
 
         def _is_nonzero(v):
@@ -206,7 +209,7 @@ class GateCounts:
             + ts_per_rotation * self.rotation
         )
 
-    def total_t_and_ccz_count(self, ts_per_rotation: int = 11) -> Dict[str, SymbolicInt]:
+    def total_t_and_ccz_count(self, ts_per_rotation: int = 11) -> dict[str, SymbolicInt]:
         n_ccz = self.toffoli + self.cswap + self.and_bloq
         n_t = self.t + ts_per_rotation * self.rotation
         return {'n_t': n_t, 'n_ccz': n_ccz}
@@ -226,7 +229,7 @@ class GateCounts:
         ts_per_and_bloq: int = 4,
         cliffords_per_and_bloq: int = 9,
         cliffords_per_cswap: int = 10,
-    ) -> 'TComplexity':
+    ) -> TComplexity:
         """Return a legacy `TComplexity` object.
 
         This coalesces all the gate types into t, rotations, and clifford fields. The conversion
@@ -257,7 +260,7 @@ class GateCounts:
             + cliffords_per_cswap * self.cswap,
         )
 
-    def total_beverland_count(self) -> Dict[str, SymbolicInt]:
+    def total_beverland_count(self) -> dict[str, SymbolicInt]:
         r"""Counts used by Beverland et al. using notation from the reference.
 
          - $M_\mathrm{meas}$ is the number of measurements.
@@ -296,7 +299,7 @@ class QECGatesCost(CostKey[GateCounts]):
 
     legacy_shims: bool = False
 
-    def compute(self, bloq: 'Bloq', get_callee_cost: Callable[['Bloq'], GateCounts]) -> GateCounts:
+    def compute(self, bloq: Bloq, get_callee_cost: Callable[[Bloq], GateCounts]) -> GateCounts:
         from qualtran.bloqs.basic_gates import (
             Discard,
             GlobalPhase,

@@ -11,8 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
+from collections.abc import Iterator
 from functools import cached_property
-from typing import Iterator, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import attrs
 import cirq
@@ -157,11 +160,11 @@ class TextbookQPE(GateWithRegisters):
         return self.ctrl_state_prep.m_bits
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return tuple(self.unitary.signature)
 
     @cached_property
-    def phase_registers(self) -> Tuple[Register, ...]:
+    def phase_registers(self) -> tuple[Register, ...]:
         return tuple(self.ctrl_state_prep.signature)
 
     @cached_property
@@ -180,7 +183,7 @@ class TextbookQPE(GateWithRegisters):
             yield cirq.pow(unitary_op.controlled_by(qbit), 2**i)
         yield self.qft_inv.on(*phase_qubits)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # Assumes self.unitary is not fast forwardable.
         return {
             self.ctrl_state_prep: 1,

@@ -11,7 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Any, Callable, Iterable, Optional, Union
+from __future__ import annotations
+
+from collections.abc import Callable, Iterable
+from typing import Any
 
 import attrs
 import cachetools
@@ -52,15 +55,15 @@ class TComplexity:
         # See: https://github.com/quantumlib/Qualtran/issues/217
         return ceil(self.t + self.rotation_cost(eps) * self.rotations)
 
-    def __add__(self, other: 'TComplexity') -> 'TComplexity':
+    def __add__(self, other: TComplexity) -> TComplexity:
         return TComplexity(
             self.t + other.t, self.clifford + other.clifford, self.rotations + other.rotations
         )
 
-    def __mul__(self, other: int) -> 'TComplexity':
+    def __mul__(self, other: int) -> TComplexity:
         return TComplexity(self.t * other, self.clifford * other, self.rotations * other)
 
-    def __rmul__(self, other: int) -> 'TComplexity':
+    def __rmul__(self, other: int) -> TComplexity:
         return self.__mul__(other)
 
     def asdict(self):
@@ -72,7 +75,7 @@ class TComplexity:
         )
 
 
-def _from_explicit_annotation(stc: Any) -> Optional[TComplexity]:
+def _from_explicit_annotation(stc: Any) -> TComplexity | None:
     """Returns TComplexity of stc by calling `stc._t_complexity_()` method, if it exists."""
     estimator = getattr(stc, '_t_complexity_', None)
     if estimator is not None:
@@ -84,7 +87,7 @@ def _from_explicit_annotation(stc: Any) -> Optional[TComplexity]:
     return None
 
 
-def _from_directly_countable_cirq(stc: Any) -> Optional[TComplexity]:
+def _from_directly_countable_cirq(stc: Any) -> TComplexity | None:
     """Directly count a clifford, T or Rotation (if it is one)."""
     if not isinstance(stc, (cirq.Gate, cirq.Operation)):
         raise TypeError(f"This strategy should only be used on Cirq gates/operations, not {stc!r}")
@@ -115,19 +118,17 @@ def _from_directly_countable_cirq(stc: Any) -> Optional[TComplexity]:
     return None
 
 
-def _from_iterable(it: Any) -> Optional[TComplexity]:
+def _from_iterable(it: Any) -> TComplexity | None:
     if not isinstance(it, Iterable):
         return None
     t = TComplexity()
     for v in it:
         r = t_complexity_compat(v)
-        if r is None:
-            return None
         t = t + r
     return t
 
 
-def _from_cirq_decomposition(stc: Any) -> Optional[TComplexity]:
+def _from_cirq_decomposition(stc: Any) -> TComplexity | None:
     # Decompose the object and recursively compute the complexity.
     decomposition = _decompose_once_considering_known_decomposition(stc)
     if decomposition is None:
@@ -157,7 +158,7 @@ def _get_hash(val: Any):
 
 
 def _t_complexity_from_strategies(
-    stc: Any, strategies: Iterable[Callable[[Any], Optional[TComplexity]]]
+    stc: Any, strategies: Iterable[Callable[[Any], TComplexity | None]]
 ):
     ret = None
     for strategy in strategies:
@@ -169,8 +170,8 @@ def _t_complexity_from_strategies(
 
 @cachetools.cached(cachetools.LRUCache(128), key=_get_hash, info=True)
 def _t_complexity_for_gate_or_op(
-    gate_or_op: Union[cirq.Gate, cirq.Operation, Bloq],
-) -> Optional[TComplexity]:
+    gate_or_op: cirq.Gate | cirq.Operation | Bloq,
+) -> TComplexity | None:
     if isinstance(gate_or_op, cirq.Operation) and gate_or_op.gate is not None:
         gate_or_op = gate_or_op.gate
 

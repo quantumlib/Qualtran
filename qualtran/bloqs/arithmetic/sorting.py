@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Dict
 
 import numpy as np
 import sympy
@@ -74,9 +75,7 @@ class Comparator(Bloq):
             ]
         )
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', a: 'Soquet', b: 'Soquet'
-    ) -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, a: Soquet, b: Soquet) -> dict[str, SoquetT]:
         out = bb.allocate(dtype=QBit())
         a, b, out = bb.add(GreaterThan(self.bitsize, self.bitsize), a=a, b=b, target=out)
         out, a, b = bb.add(CSwap(self.bitsize), ctrl=out, x=a, y=b)
@@ -152,12 +151,12 @@ class ParallelComparators(Bloq):
         rest = self.k % (2 * self.offset)
         return full + max(rest - self.offset, 0)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', xs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, xs: SoquetT) -> dict[str, SoquetT]:
         if is_symbolic(self.k) or is_symbolic(self.offset):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
 
-        k = self.k
-        offset = self.offset
+        k = int(self.k)
+        offset = int(self.offset)
         assert isinstance(xs, np.ndarray)
 
         comp = Comparator(self.bitsize)
@@ -175,7 +174,7 @@ class ParallelComparators(Bloq):
 
         return {'xs': xs, 'junk': np.array(junk)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {Comparator(self.bitsize): self.num_comparisons}
 
 
@@ -225,7 +224,7 @@ class BitonicMerge(Bloq):
             assert k >= 1, "length of input lists must be positive"
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register("xs", QUInt(self.bitsize), shape=(self.half_length,), side=Side.LEFT),
@@ -245,12 +244,11 @@ class BitonicMerge(Bloq):
     def is_symbolic(self):
         return is_symbolic(self.bitsize, self.half_length)
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', xs: 'SoquetT', ys: 'SoquetT'
-    ) -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, xs: SoquetT, ys: SoquetT) -> dict[str, SoquetT]:
         k = self.half_length
         if is_symbolic(k):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
+        k = int(k)
         if (k & (k - 1)) != 0:
             # TODO(#1090) support non-power-of-two input lengths
             raise DecomposeNotImplementedError("length of input lists must be a power of 2")
@@ -279,7 +277,7 @@ class BitonicMerge(Bloq):
 
         return {'result': result, 'junk': np.array(junk)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {Comparator(self.bitsize): self.num_comparisons}
 
     @classmethod
@@ -339,8 +337,8 @@ class BitonicSort(Bloq):
     bitsize: SymbolicInt
 
     def __attrs_post_init__(self):
-        k = self.k
-        if not is_symbolic(k):
+        if not is_symbolic(self.k):
+            k = int(self.k)
             assert k >= 1, f"length of input list must be positive, got {k=}"
             # TODO(#1090) support non-power-of-two input lengths
             assert (k & (k - 1)) == 0, f"length of input list must be a power of 2, got {k=}"
@@ -363,7 +361,7 @@ class BitonicSort(Bloq):
     def is_symbolic(self):
         return is_symbolic(self.bitsize, self.k)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', xs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, xs: SoquetT) -> dict[str, SoquetT]:
         if is_symbolic(self.k):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
 
@@ -385,7 +383,7 @@ class BitonicSort(Bloq):
 
         return {'xs': xs, 'junk': junk}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {Comparator(self.bitsize): self.num_comparisons}
 
     @classmethod

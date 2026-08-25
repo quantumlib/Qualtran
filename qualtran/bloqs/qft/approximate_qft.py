@@ -11,9 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from collections import defaultdict
+from collections.abc import Iterator
 from functools import cached_property
-from typing import Iterator, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import attrs
 import cirq
@@ -82,7 +85,7 @@ class ApproximateQFT(GateWithRegisters):
         return ceil(log2(self.bitsize))
 
     @classmethod
-    def from_epsilon(cls, n: SymbolicInt, eps: SymbolicFloat) -> 'ApproximateQFT':
+    def from_epsilon(cls, n: SymbolicInt, eps: SymbolicFloat) -> ApproximateQFT:
         """Builds an ApproximateQFT instance using total tolerable error `eps`.
 
         From a given error threshold, epsilon, calculates what size the
@@ -105,7 +108,7 @@ class ApproximateQFT(GateWithRegisters):
         return cls(n, phase_bitsize)
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build_from_dtypes(
             q=QUInt(self.bitsize), phase_grad=QFxp(self.phase_bitsize, self.phase_bitsize)
         )
@@ -137,8 +140,8 @@ class ApproximateQFT(GateWithRegisters):
             for i in range(self.bitsize // 2):
                 yield cirq.SWAP(q[i], q[-i - 1])
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        phase_dict: 'MutableBloqCountDictT' = defaultdict(int)
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        phase_dict: MutableBloqCountDictT = defaultdict(int)
         if is_symbolic(self.bitsize, self.phase_bitsize):
             phase_dict[
                 AddIntoPhaseGrad(

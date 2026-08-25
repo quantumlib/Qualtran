@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from functools import cached_property
-from typing import Optional
 
 import numpy as np
 import scipy
@@ -230,7 +231,7 @@ class PlantedNoisyKXOR(Bloq):
     inst_solve: KXorInstance
     ell: SymbolicInt
     rho: SymbolicFloat
-    _guiding_state_overlap: Optional[SymbolicFloat] = field(kw_only=True, default=None)
+    _guiding_state_overlap: SymbolicFloat | None = field(kw_only=True, default=None)
 
     def __attrs_post_init__(self):
         k = self.inst_guide.k
@@ -242,7 +243,7 @@ class PlantedNoisyKXOR(Bloq):
             assert ell % k == 0 and ell >= k, f"{ell=} must be a multiple of {k=}"
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return self.guided_hamiltonian_bloq.signature
 
     @classmethod
@@ -253,8 +254,8 @@ class PlantedNoisyKXOR(Bloq):
         rho: SymbolicFloat,
         *,
         rng: np.random.Generator,
-        zeta: Optional[SymbolicFloat] = None,
-        guiding_state_overlap: Optional[SymbolicFloat] = None,
+        zeta: SymbolicFloat | None = None,
+        guiding_state_overlap: SymbolicFloat | None = None,
     ):
         if zeta is None:
             zeta = 1 / log2(inst.n)
@@ -339,7 +340,7 @@ class PlantedNoisyKXOR(Bloq):
         # d = \delta m
         d = self.degree_guarantee.delta * self.inst_solve.m
         if is_symbolic(d):
-            return d  # type: ignore
+            return d
         return ceil(d)
 
     @cached_property
@@ -377,10 +378,10 @@ class PlantedNoisyKXOR(Bloq):
             gamma=self.overlap,
         )
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         return bb.add_d(self.guided_hamiltonian_bloq, **soqs)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {self.guided_hamiltonian_bloq: 1}
 
 

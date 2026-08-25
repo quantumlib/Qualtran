@@ -33,7 +33,7 @@ from __future__ import annotations
 
 import importlib.resources
 from functools import lru_cache
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -77,7 +77,7 @@ def get_unique_error_rates(decimal_precision: int = 8) -> np.ndarray:
 
 def round_error_rate_up(
     physical_error_rate: float, decimal_precision: int = 8, slack_factor: float = 1.0
-) -> Optional[float]:
+) -> float | None:
     """
     Finds the smallest unique error rate from the dataset that is greater than
     or equal to the given physical_error_rate. Unique error rates are
@@ -140,7 +140,7 @@ def get_regularized_filtered_cultivation_data(
     error_rate: float,
     cultivation_distance: int,
     decimal_precision: int = 8,
-    uncertainty_cutoff: Optional[float] = 100,  # Default value added
+    uncertainty_cutoff: float | None = 100,  # Default value added
 ) -> pd.DataFrame:
     """Filters and regularizes cultivation data.
 
@@ -224,7 +224,7 @@ def get_regularized_filtered_cultivation_data(
 
 @lru_cache(maxsize=None)
 def get_regularized_filtered_combined_cultivation_data(
-    error_rate: float, decimal_precision: int = 8, uncertainty_cutoff: Optional[float] = 100
+    error_rate: float, decimal_precision: int = 8, uncertainty_cutoff: float | None = 100
 ) -> pd.DataFrame:
     """
     Retrieves and combines regularized cultivation data for distances 3 and 5.
@@ -259,7 +259,7 @@ def find_best_cultivation_parameters(
     physical_error_rate: float,
     target_logical_error_rate: float,
     decimal_precision: int = 8,
-    uncertainty_cutoff: Optional[float] = 100,
+    uncertainty_cutoff: float | None = 100,
 ) -> pd.Series:
     """Finds cultivation parameters that minimize expected volume.
 
@@ -296,8 +296,8 @@ def find_best_cultivation_parameters(
         return pd.Series(dtype=float)
     matched_physical_error_rate = suitable_rates.min()
 
-    best_row_dist3: Optional[pd.Series] = None
-    best_row_dist5: Optional[pd.Series] = None
+    best_row_dist3: pd.Series | None = None
+    best_row_dist5: pd.Series | None = None
 
     for dist in [3, 5]:
         reg_df = get_regularized_filtered_cultivation_data(

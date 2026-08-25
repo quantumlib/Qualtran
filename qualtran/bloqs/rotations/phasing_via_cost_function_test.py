@@ -11,7 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Dict
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import attrs
 import cirq
@@ -51,7 +53,7 @@ class TestHammingWeightPhasing(GateWithRegisters):
     use_phase_gradient: bool = False
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(x=self.bitsize)
 
     @property
@@ -80,7 +82,7 @@ class TestHammingWeightPhasing(GateWithRegisters):
     def cost_eval_oracle(self) -> Bloq:
         return HammingWeightCompute(self.bitsize)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         if self.use_phase_gradient:
             soqs['phase_grad'] = bb.add(PhaseGradientState(int(self.phase_gradient_oracle.b_grad)))
         soqs = bb.add_d(PhasingViaCostFunction(self.cost_eval_oracle, self.phase_oracle), **soqs)
@@ -103,7 +105,8 @@ def test_hamming_weight_phasing_using_phase_via_cost_function(
     # TODO: This test is broken due to Cirq compatibility issues:
     #       https://github.com/quantumlib/Qualtran/issues/1763
     #       It can cause a SIGKILL
-    return pytest.xfail("Broken Cirq simulation")
+    if not TYPE_CHECKING:
+        pytest.xfail("Broken Cirq simulation")
     # pylint: disable=unreachable
     cost_reg_size = 2 ** n.bit_length()
     normalization_factor = 1 if normalize_cost_function else cost_reg_size
@@ -139,7 +142,7 @@ class TestSquarePhasing(GateWithRegisters):
     use_phase_gradient: bool = False
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(a=self.bitsize)
 
     @property
@@ -163,7 +166,7 @@ class TestSquarePhasing(GateWithRegisters):
     def cost_eval_oracle(self) -> Bloq:
         return Square(self.bitsize)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         if self.use_phase_gradient:
             soqs['phase_grad'] = bb.add(PhaseGradientState(int(self.phase_gradient_oracle.b_grad)))
         soqs = bb.add_d(PhasingViaCostFunction(self.cost_eval_oracle, self.phase_oracle), **soqs)

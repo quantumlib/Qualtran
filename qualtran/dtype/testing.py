@@ -12,8 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
+from collections.abc import Sequence
 from enum import Enum
-from typing import Any, Sequence, Union
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
@@ -31,7 +34,7 @@ _QAnyInt = (QInt, QUInt, BQUInt, QMontgomeryUInt)
 _QAnyUInt = (QUInt, BQUInt, QMontgomeryUInt, QGF)
 
 
-def assert_to_and_from_bits_array_consistent(qdtype: QDType, values: Union[Sequence[Any], NDArray]):
+def assert_to_and_from_bits_array_consistent(qdtype: QDType, values: Sequence[Any] | NDArray):
     values = np.asanyarray(values)
     bits_array = qdtype.to_bits_array(values)
 
@@ -57,9 +60,7 @@ class QDTypeCheckingSeverity(Enum):
     """Strictly enforce type checking between registers. Only single bit conversions are allowed."""
 
 
-def _check_uint_fxp_consistent(
-    a: Union['QUInt', 'BQUInt', 'QMontgomeryUInt', 'QGF'], b: 'QFxp'
-) -> bool:
+def _check_uint_fxp_consistent(a: QUInt | BQUInt | QMontgomeryUInt | QGF, b: QFxp) -> bool:
     """A uint / qfxp is consistent with a whole or totally fractional unsigned QFxp."""
     if b.signed:
         return False

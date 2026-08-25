@@ -11,8 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Iterable, Sequence, Union
 
 import attrs
 import cirq
@@ -25,7 +27,7 @@ from qualtran.symbolics import is_symbolic, SymbolicInt
 
 
 @attrs.frozen
-class ArcTan(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
+class ArcTan(GateWithRegisters, cirq.ArithmeticGate):
     r"""Applies U|x>|0>|0000...0> = |x>|sign>|abs(-2 arctan(x) / pi)>.
 
     This is computed by a series of fused-multiply-add (`PlusEqualProduct`) instructions.
@@ -52,10 +54,10 @@ class ArcTan(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     target_bitsize: SymbolicInt
 
     @cached_property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(select=self.selection_bitsize, sign=1, target=self.target_bitsize)
 
-    def registers(self) -> Sequence[Union[int, Sequence[int]]]:
+    def registers(self) -> Sequence[int | Sequence[int]]:
         if is_symbolic(self.selection_bitsize) or is_symbolic(self.target_bitsize):
             raise TypeError(
                 "Cannot build registers for symbolic bitsizes "
@@ -63,10 +65,10 @@ class ArcTan(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
             )
         return (2,) * self.selection_bitsize, (2,), (2,) * self.target_bitsize
 
-    def with_registers(self, *new_registers: Union[int, Sequence[int]]) -> "ArcTan":
+    def with_registers(self, *new_registers: int | Sequence[int]) -> ArcTan:
         raise NotImplementedError()
 
-    def apply(self, *register_values: int) -> Union[int, Iterable[int]]:
+    def apply(self, *register_values: int) -> int | Iterable[int]:
         input_val, target_sign, target_val = register_values
         output_val = -2 * np.arctan(input_val, dtype=np.double) / np.pi
         assert -1 <= output_val <= 1
@@ -84,5 +86,5 @@ class ArcTan(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
             PlusEqualProduct(self.target_bitsize, self.target_bitsize, 2 * self.target_bitsize): c
         }
 
-    def adjoint(self) -> 'ArcTan':
+    def adjoint(self) -> ArcTan:
         return self

@@ -11,8 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Dict, Iterable, List, Sequence, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import attrs
 import cirq
@@ -72,7 +75,7 @@ class GlobalPhase(CirqGateAsBloqBase):
     @classmethod
     def from_coefficient(
         cls, coefficient: SymbolicComplex, *, eps: SymbolicFloat = 1e-11
-    ) -> 'GlobalPhase':
+    ) -> GlobalPhase:
         """Applies a global phase of `coefficient`."""
         return cls(exponent=sarg(coefficient) / pi(coefficient), eps=eps)
 
@@ -80,26 +83,26 @@ class GlobalPhase(CirqGateAsBloqBase):
     def cirq_gate(self) -> cirq.Gate:
         return cirq.GlobalPhaseGate(self.coefficient)
 
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: Wires) -> Operation:
         import numpy as np
         import pennylane as qml
 
         return qml.GlobalPhase(phi=self.exponent * np.pi, wires=wires)
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic")
 
-    def adjoint(self) -> 'GlobalPhase':
+    def adjoint(self) -> GlobalPhase:
         return attrs.evolve(self, exponent=-self.exponent)
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, ConnectionT], outgoing: dict[str, ConnectionT]
+    ) -> list[qtn.Tensor]:
         import quimb.tensor as qtn
 
         return [qtn.Tensor(data=self.coefficient, inds=[], tags=[str(self)])]
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: CtrlSpec) -> tuple[Bloq, AddControlledT]:
         # Delegate to superclass logic for more than one control.
         if ctrl_spec != CtrlSpec():
             return super().get_ctrl_system(ctrl_spec=ctrl_spec)
@@ -109,8 +112,8 @@ class GlobalPhase(CirqGateAsBloqBase):
         bloq = ZPowGate(exponent=self.exponent, eps=self.eps)
 
         def _add_ctrled(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            bb: BloqBuilder, ctrl_soqs: Sequence[SoquetT], in_soqs: dict[str, SoquetT]
+        ) -> tuple[Iterable[SoquetT], Iterable[SoquetT]]:
             (ctrl,) = ctrl_soqs
             ctrl = bb.add(bloq, q=ctrl)
             return [ctrl], []

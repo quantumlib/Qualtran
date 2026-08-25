@@ -826,13 +826,13 @@ def test_assert_nan_in_array_fails():
 
 def test_assert_int_vs_np_int64_equal():
     """Python int(1) and np.int64(1) should compare equal."""
-    _assert_results_equal((int(1),), (np.int64(1),), _IdentityBloq(), {'q': 1})
+    _assert_results_equal((1,), (np.int64(1),), _IdentityBloq(), {'q': 1})
 
 
 def test_assert_int_vs_np_int_different_values():
     """int(1) vs np.int64(0) should fail."""
     with pytest.raises(AssertionError, match='Mismatch'):
-        _assert_results_equal((int(1),), (np.int64(0),), _IdentityBloq(), {'q': 0})
+        _assert_results_equal((1,), (np.int64(0),), _IdentityBloq(), {'q': 0})
 
 
 def test_assert_empty_tuples_equal():
@@ -1749,7 +1749,7 @@ def test_should_use_fastsim_env_var(monkeypatch):
     # Test unset variable falls back to testing import rsqualtran
     monkeypatch.delenv('QLT_USE_FASTSIM', raising=False)
     try:
-        import rsqualtran  # type: ignore[import-untyped,import-not-found] # noqa: F401 # pylint: disable=unused-import
+        import rsqualtran  # noqa: F401
 
         assert _should_use_fastsim() is True
     except ImportError:
@@ -1766,7 +1766,7 @@ def test_verify_structural_induction_engine_code_paths(qlt_use_fastsim, capsys):
     """
     if qlt_use_fastsim == '1':
         try:
-            import rsqualtran  # type: ignore[import-untyped,import-not-found] # noqa: F401 # pylint: disable=unused-import
+            import rsqualtran  # noqa: F401
         except ImportError:
             pytest.skip("rsqualtran (`QLTFastsim`) is not installed in this environment.")
 

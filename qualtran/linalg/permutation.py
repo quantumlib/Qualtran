@@ -11,9 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Iterator, Sequence, TypeAlias
+from collections.abc import Iterator, Mapping, Sequence
 
-CycleT: TypeAlias = tuple[int, ...]
+type CycleT = tuple[int, ...]
 
 
 def decompose_permutation_into_cycles(permutation: Sequence[int]) -> Iterator[CycleT]:
@@ -26,7 +26,7 @@ def decompose_permutation_into_cycles(permutation: Sequence[int]) -> Iterator[Cy
             yield tuple(cycle)
 
 
-def decompose_permutation_map_into_cycles(permutation_map: dict[int, int]) -> Iterator[CycleT]:
+def decompose_permutation_map_into_cycles(permutation_map: Mapping[int, int]) -> Iterator[CycleT]:
     r"""Given a (partial) permutation map, return non-trivial cycles requiring minimum swaps.
 
     We are given a partial permutation on $N$ as a python dictionary. This procedure generates a

@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 import dataclasses
-from typing import Union
 
 import attrs
 import cirq
@@ -90,23 +91,23 @@ def test_cbloq_to_proto_two_cnot():
 
 @attrs.frozen
 class TestCSwap(Bloq):
-    bitsize: Union[int, sympy.Expr]
+    bitsize: int | sympy.Expr
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
-    def my_static_costs(self, cost_key: 'CostKey'):
+    def my_static_costs(self, cost_key: CostKey):
         if isinstance(cost_key, QECGatesCost):
             return GateCounts(t=7 * self.bitsize, clifford=10 * self.bitsize)
 
 
 @dataclasses.dataclass(frozen=True)
 class TestTwoCSwap(Bloq):
-    bitsize: Union[int, sympy.Expr]
+    bitsize: int | sympy.Expr
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
     def build_composite_bloq(self, bb, ctrl, x, y):
@@ -165,7 +166,7 @@ class TestMetaBloq(Bloq):
         assert self.sub_bloq_one.signature == self.sub_bloq_two.signature
 
     @property
-    def signature(self) -> 'Signature':
+    def signature(self) -> Signature:
         return self.sub_bloq_one.signature
 
     def build_composite_bloq(self, bb, **soqs):

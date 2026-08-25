@@ -45,7 +45,7 @@ def test_gf2_poly_add_k_resource():
 def test_gf2_poly_add_k_classical_sim():
     bloq = _gf2_poly_4_8_add_k.make()
     f_x = Poly(bloq.qgf_poly.qgf.gf_type([0, 1, 2, 3, 4]))
-    assert bloq.call_classically(f_x=f_x)[0] == f_x + bloq.g_x  # type: ignore[arg-type]
+    assert bloq.call_classically(f_x=f_x)[0] == f_x + bloq.g_x
 
     f_x_range = np.asarray(
         [

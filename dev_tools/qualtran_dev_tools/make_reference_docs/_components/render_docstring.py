@@ -42,7 +42,7 @@ if TYPE_CHECKING:
 PARSER: Literal['google'] = 'google'
 
 
-def split_docstring(obj: 'griffe.Object') -> tuple[str, list[DocstringSection]]:
+def split_docstring(obj: griffe.Object | griffe.Alias) -> tuple[str, list[DocstringSection]]:
     """Extract the first, summary line of a docstring from an object.
 
     Returns:

@@ -14,9 +14,11 @@
 
 """Plumbing for bloq-to-bloq `Connection`s."""
 
+from __future__ import annotations
+
 import warnings
 from functools import cached_property
-from typing import Optional, Tuple, TYPE_CHECKING, Union
+from typing import Any, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -37,7 +39,7 @@ class BloqInstance:
             within a `CompositeBloq`.
     """
 
-    bloq: 'Bloq'
+    bloq: Bloq
     i: int
 
     def __str__(self):
@@ -45,7 +47,7 @@ class BloqInstance:
 
     def bloq_is(self, t) -> bool:
         """Helper method that does `isinstance(self.bloq, t)`, but works safely on
-        `Union[BloqInstance, DanglingT]`"""
+        `BloqInstance | DanglingT`"""
         return isinstance(self.bloq, t)
 
     def __hash__(self):
@@ -68,12 +70,12 @@ class DanglingT:
 
     def bloq_is(self, t) -> bool:
         """`DanglingT.bloq_is(...)` is always False, but works safely on
-        `Union[BloqInstance, DanglingT]`.
+        `BloqInstance | DanglingT`.
         """
         return False
 
 
-def _to_tuple(x: Union[int, Tuple[int, ...]]) -> Tuple[int, ...]:
+def _to_tuple(x: int | tuple[int, ...]) -> tuple[int, ...]:
     if isinstance(x, int):
         return (x,)
     return x
@@ -100,9 +102,9 @@ class _Soquet:
             register.
     """
 
-    binst: Union[BloqInstance, DanglingT]
-    reg: 'Register'
-    idx: Tuple[int, ...] = field(converter=_to_tuple, default=tuple())
+    binst: BloqInstance | DanglingT
+    reg: Register
+    idx: tuple[int, ...] = field(converter=_to_tuple, default=tuple())
 
     @idx.validator
     def _check_idx(self, attribute, value):
@@ -114,14 +116,24 @@ class _Soquet:
         return value
 
     @property
-    def dtype(self) -> 'QCDType':
+    def dtype(self) -> QCDType:
         return self.reg.dtype
 
     @property
-    def shape(self) -> Tuple[int, ...]:
+    def shape(self) -> tuple[int, ...]:
         return ()
 
-    def item(self, *args) -> '_Soquet':
+    def __getitem__(self, item) -> _Soquet:
+        raise TypeError("Tried to index into a single soquet.")
+
+    @property
+    def bb(self) -> Any:
+        raise AttributeError("Soquet has no attribute 'bb'")
+
+    def __setitem__(self, key, value) -> None:
+        raise TypeError("Tried to assign into a single soquet.")
+
+    def item(self, *args) -> _Soquet:
         if args:
             raise ValueError("Tried to index into a single soquet.")
         return self
@@ -145,16 +157,16 @@ class _QVar:
     """
 
     soquet: _Soquet
-    bb: 'BloqBuilder' = field(kw_only=True)
-    _split_components: Optional['QVarT'] = field(default=None)
-    ssa_name: Optional[str] = field(default=None, kw_only=True)
+    bb: BloqBuilder = field(kw_only=True)
+    _split_components: QVarT | None = field(default=None)
+    ssa_name: str | None = field(default=None, kw_only=True)
 
     @property
-    def dtype(self) -> 'QCDType':
+    def dtype(self) -> QCDType:
         return self.soquet.dtype
 
     @property
-    def shape(self) -> Tuple[int, ...]:
+    def shape(self) -> tuple[int, ...]:
         return ()
 
     def item(self, *args):
@@ -163,7 +175,7 @@ class _QVar:
         return self
 
     @property
-    def reg(self) -> 'Register':
+    def reg(self) -> Register:
         warnings.warn(
             "Accessing the register property of a quantum variable is highly discouraged "
             "and will be dis-allowed in the future.",

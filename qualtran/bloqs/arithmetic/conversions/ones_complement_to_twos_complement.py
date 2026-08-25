@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from __future__ import annotations
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -51,7 +53,7 @@ class SignedIntegerToTwosComplement(Bloq):
             ]
         )
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # Take the sign qubit as a control and cnot the remaining qubits, then
         # add it to the remaining n-1 bits.
         return {Toffoli(): (self.bitsize - 2)}

@@ -14,11 +14,14 @@
 
 """Classes for drawing bloqs with FlameGraph. This relies on third party flamegraph.pl"""
 
+from __future__ import annotations
+
 import functools
 import pathlib
 import subprocess
 import tempfile
-from typing import Any, Callable, List, Optional, Union
+from collections.abc import Callable
+from typing import Any
 
 import networkx as nx
 import numpy as np
@@ -58,7 +61,7 @@ def _pretty_name(bloq: Bloq) -> str:
 
 
 @functools.lru_cache(maxsize=1024)
-def _t_counts_for_bloq(bloq: Bloq, graph: nx.DiGraph) -> Union[int, sympy.Expr]:
+def _t_counts_for_bloq(bloq: Bloq, graph: nx.DiGraph) -> int | sympy.Expr:
     sigma = _compute_sigma(bloq, graph)
     return t_counts_from_sigma(sigma)
 
@@ -72,7 +75,7 @@ def _keep_if_small(bloq: Bloq) -> bool:
     return False
 
 
-def _is_leaf_node(callees: List[Bloq]) -> bool:
+def _is_leaf_node(callees: list[Bloq]) -> bool:
     from qualtran.bloqs.basic_gates import TGate
 
     return len(callees) == 0 or (
@@ -81,8 +84,8 @@ def _is_leaf_node(callees: List[Bloq]) -> bool:
 
 
 def _populate_flame_graph_data(
-    bloq: Bloq, graph: nx.DiGraph, graph_t: nx.DiGraph, prefix: List[str]
-) -> List[str]:
+    bloq: Bloq, graph: nx.DiGraph, graph_t: nx.DiGraph, prefix: list[str]
+) -> list[str]:
     """Populates data for the flame graph.
 
     Args:
@@ -126,10 +129,10 @@ def _populate_flame_graph_data(
 
 def get_flame_graph_data(
     *bloqs: Bloq,
-    file_path: Union[None, pathlib.Path, str] = None,
-    keep: Optional[Callable[['Bloq'], bool]] = _keep_if_small,
+    file_path: pathlib.Path | str | None = None,
+    keep: Callable[[Bloq], bool] | None = _keep_if_small,
     **kwargs,
-) -> List[str]:
+) -> list[str]:
     """Get the flame graph data for visualizing T-costs distribution of a sequence of bloqs.
 
     For each bloq in the input, this will do a DFS ordering over all edges in the DAG and
@@ -166,8 +169,8 @@ def get_flame_graph_data(
 
 
 def get_flame_graph_svg_data(
-    *bloqs: Bloq, file_path: Union[None, pathlib.Path, str] = None, **kwargs
-) -> Optional[str]:
+    *bloqs: Bloq, file_path: pathlib.Path | str | None = None, **kwargs
+) -> str | None:
     """Invokes the `third_party/flamegraph/flamegraph.pl` using data from `get_flame_graph_data`."""
 
     data = get_flame_graph_data(*bloqs, **kwargs)
