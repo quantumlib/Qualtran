@@ -241,7 +241,7 @@ class Permutation(Bloq):
     def from_partial_permutation_map(cls, N: SymbolicInt, permutation_map: dict[int, int]):
         """Construct a permutation bloq from a (partial) permutation mapping
 
-        Constructs a permuation of `[0, N)` from a partial mapping. Any numbers that
+        Constructs a permutation of `[0, N)` from a partial mapping. Any numbers that
         do not occur in `permutation_map` (i.e. as keys or values) are treated as
         mapping to themselves.
 

@@ -59,3 +59,12 @@ from qualtran.bloqs.SomeClass()
     assert result['qdefs'][0]['bloq_key'] == "MainRoutine"
     assert result['qdefs'][0]['cobject_from']['name'] == "qualtran.bloqs.SomeClass"
     assert result['qdefs'][0]['body'][0]['bloq_key'] == "XGate"
+
+
+def test_ast_visitor_base_lvalue_annotation():
+    from qualtran.l1.nodes import LValueNode
+
+    node = LValueNode('q', annotation=CObjectNode('circle', []))
+    record = SimpleVisitor().visit(node)
+    assert record['name'] == 'q'
+    assert record['annotation']['name'] == 'circle'

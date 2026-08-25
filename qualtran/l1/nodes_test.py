@@ -12,7 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.l1.nodes import CArgNode, CObjectNode, LiteralNode, TupleNode
+from qualtran.l1.nodes import (
+    AliasAssignmentNode,
+    CArgNode,
+    CObjectNode,
+    LiteralNode,
+    LValueNode,
+    TupleNode,
+)
 
 
 def test_literal_node():
@@ -66,3 +73,12 @@ def test_cobject_node():
     # Mixed args
     node = CObjectNode('MyObj', [CArgNode(None, LiteralNode(1)), CArgNode('y', LiteralNode(2))])
     assert node.canonical_str() == 'MyObj(1, y=2)'
+
+
+def test_lvalue_node_str():
+    assert str(LValueNode('q')) == 'q'
+    assert str(LValueNode('q', annotation=CObjectNode('circle', []))) == 'q @ circle'
+
+
+def test_alias_assignment_node_str():
+    assert str(AliasAssignmentNode(alias='a', bloq_key='B')) == '[AA] a = B'

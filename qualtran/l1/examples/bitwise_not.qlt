@@ -1,0 +1,37 @@
+# Qualtran-L1
+# 1.0.0
+
+qdef BitwiseNot(4)
+from qualtran.bloqs.arithmetic.BitwiseNot(QUInt(4))
+[
+    x: QUInt(4),
+] {
+    q                    = X(oneach=4)      [q=x]               
+                           return           [x=q]               
+}
+
+
+qdef X(oneach=4)
+from qualtran.bloqs.basic_gates.OnEach(4, qualtran.bloqs.basic_gates.XGate, QUInt(4))
+[
+    q: QUInt(4),
+] {
+    reg                  = Split            [reg=q]             
+    q2                   = X                [q=reg[0]]          
+    q3                   = X                [q=reg[1]]          
+    q4                   = X                [q=reg[2]]          
+    q5                   = X                [q=reg[3]]          
+    reg2                 = Join             [reg=[q2, q3, q4, q5]]
+                           return           [q=reg2]            
+}
+
+
+qcast Split
+[reg: QUInt(4) -> QBit[4]]
+
+extern qdef X
+from qualtran.bloqs.basic_gates.XGate
+[q: QBit @ oplus]
+
+qcast Join
+[reg: QBit[4] -> QUInt(4)]

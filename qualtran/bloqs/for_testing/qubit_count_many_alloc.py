@@ -21,7 +21,7 @@ from qualtran.bloqs.basic_gates import CNOT, TGate
 
 @attrs.frozen
 class TestManyAllocOnce(Bloq):
-    """Allocate an ancilla once, and re-use it explicitly
+    """Allocate an ancilla once, and reuse it explicitly
 
     See qualtran.resource.counting._qubit_counts_test:test_many_alloc
     """

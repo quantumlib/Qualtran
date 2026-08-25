@@ -63,8 +63,6 @@ from .registers import Register, Side, Signature
 if TYPE_CHECKING:
     import cirq
 
-    import qualtran as qlt
-    import qualtran.dtype as qdt
     from qualtran.bloqs.bookkeeping.auto_partition import Unused
     from qualtran.cirq_interop._cirq_to_bloq import CirqQuregInT, CirqQuregT
     from qualtran.drawing import WireSymbol
@@ -141,7 +139,7 @@ class Soquet(Protocol, metaclass=_NoSoquetIsInstanceMeta):
     def __getitem__(self, item) -> 'QVarT': ...
 
     def __setitem__(self, key, value) -> None:
-        """For protocol compatability with QVarT. Not supported on a single _QVar."""
+        """For protocol compatibility with QVarT. Not supported on a single _QVar."""
 
     @property
     def bb(self) -> 'BloqBuilder':
@@ -545,7 +543,7 @@ class CompositeBloq(Bloq):
                 except (DecomposeTypeError, DecomposeNotImplementedError):
                     new_out_soqs = tuple(soq for _, soq in bb._add_binst(binst, in_soqs=in_soqs))
             else:
-                # Since we took care to not re-use existing `binst.i` values for flattened
+                # Since we took care to not reuse existing `binst.i` values for flattened
                 # bloqs, it is safe to call `bb._add_binst` with the old `binst` (and in
                 # particular with the old `binst.i`) to preserve the `binst.i` of unflattened
                 # bloqs.
@@ -840,7 +838,6 @@ def _get_dangling_soquets(signature: Signature, right: bool = True) -> Dict[str,
         dang = LeftDangle
 
     all_soqs: Dict[str, _SoquetT] = {}
-    soqs: _SoquetT
     for reg in regs:
         all_soqs[reg.name] = _reg_to_soq(dang, reg)
     return all_soqs
@@ -1374,10 +1371,10 @@ class BloqBuilder:
         except KeyError:
             bloq = binst if isinstance(binst, DanglingT) else binst.bloq
             raise BloqError(
-                f"During construction of the bloq, a quantum variable was re-used.\n"
+                f"During construction of the bloq, a quantum variable was reused.\n"
                 f"  When calling: {bloq}\n"
                 f"  Register name: {reg.name}\n"
-                f"  Re-used soquet details: {idxed_soq.soquet}"
+                f"  Reused soquet details: {idxed_soq.soquet}"
             ) from None
         cxn = Connection(idxed_soq.soquet, self._make_qvar(binst, reg, idx).soquet)
         self._cxns.append(cxn)

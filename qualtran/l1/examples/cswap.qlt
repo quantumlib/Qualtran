@@ -1,0 +1,32 @@
+# Qualtran-L1
+# 1.0.0
+
+qdef CSwap
+from qualtran.bloqs.basic_gates.CSwap(5)
+[
+    ctrl: QBit @ dot,
+    x: QAny(5),
+    y: QAny(5),
+] {
+    reg                  = Split            [reg=x]             
+    reg2                 = Split            [reg=y]             
+    ctrl2, x2, y2        = TwoBitCSwap      [ctrl=ctrl, x=reg[0], y=reg2[0]]
+    ctrl3, x3, y3        = TwoBitCSwap      [ctrl=ctrl2, x=reg[1], y=reg2[1]]
+    ctrl4, x4, y4        = TwoBitCSwap      [ctrl=ctrl3, x=reg[2], y=reg2[2]]
+    ctrl5, x5, y5        = TwoBitCSwap      [ctrl=ctrl4, x=reg[3], y=reg2[3]]
+    ctrl6, x6, y6        = TwoBitCSwap      [ctrl=ctrl5, x=reg[4], y=reg2[4]]
+    reg3                 = Join             [reg=[x2, x3, x4, x5, x6]]
+    reg4                 = Join             [reg=[y2, y3, y4, y5, y6]]
+                           return           [ctrl=ctrl6, x=reg3, y=reg4]
+}
+
+
+qcast Split
+[reg: QAny(5) -> QBit[5]]
+
+extern qdef TwoBitCSwap
+from qualtran.bloqs.basic_gates.TwoBitCSwap
+[ctrl: QBit @ dot, x: QBit, y: QBit]
+
+qcast Join
+[reg: QBit[5] -> QAny(5)]

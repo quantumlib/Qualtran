@@ -14,7 +14,7 @@
 
 import os.path
 import re
-from typing import cast, Dict, List, Optional, Set, Tuple
+from typing import cast, Optional
 
 from . import shell_tools
 from .prepared_env import PreparedEnv
@@ -57,7 +57,7 @@ IGNORED_LINE_PATTERNS = [
 EXPLICIT_OPT_OUT_COMMENT = "#coverage:ignore"
 
 
-def diff_to_new_interesting_lines(unified_diff_lines: List[str]) -> Dict[int, str]:
+def diff_to_new_interesting_lines(unified_diff_lines: list[str]) -> dict[int, str]:
     """Extracts a set of 'interesting' lines out of a GNU unified diff format.
 
     Format:
@@ -124,7 +124,7 @@ def fix_line_from_coverage_file(line):
 
 def get_incremental_uncovered_lines(
     abs_path: str, base_commit: str, actual_commit: Optional[str]
-) -> List[Tuple[int, str, str]]:
+) -> list[tuple[int, str, str]]:
     """Find touched but uncovered lines in the given file.
 
     Uses git diff and the annotation files created by `pytest --cov-report annotate` to find
@@ -190,9 +190,9 @@ def line_content_counts_as_uncovered_manual(content: str) -> bool:
     return True
 
 
-def determine_ignored_lines(content: str) -> Set[int]:
+def determine_ignored_lines(content: str) -> set[int]:
     lines = content.split("\n")
-    result: List[int] = []
+    result: list[int] = []
 
     i = 0
     while i < len(lines):
@@ -222,7 +222,7 @@ def determine_ignored_lines(content: str) -> Set[int]:
     return {e + 1 for e in result}
 
 
-def naive_find_end_of_scope(lines: List[str], i: int) -> int:
+def naive_find_end_of_scope(lines: list[str], i: int) -> int:
     # TODO: deal with line continuations, which may be less indented.
     # Github issue: https://github.com/quantumlib/Cirq/issues/2968
     line = lines[i]

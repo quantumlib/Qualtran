@@ -39,7 +39,7 @@ For Trotterization we assume the plaquette splitting from the
 [reference](https://arxiv.org/abs/2012.09238).
 The plaquette splitting rewrites $H_h$ as a sum of $H_h^p$ and $H_h^g$ (for pink and gold
 respectively) which when combined tile the entire lattice. Each plaquette
-contains four sites and paritions the lattice such that each edge of the lattice
+contains four sites and partitions the lattice such that each edge of the lattice
 belongs to a single plaquette. Each term within a grouping commutes so that the
 unitary can be be implemented as
 $$
@@ -47,3 +47,6 @@ e^{i H_h^{x}} = \prod_{k\sigma} e^{i H_h^{x(k,\sigma)}}
 $$
 without further trotter error.
 """
+
+from .hopping import HoppingPlaquette, HoppingTile, HoppingTileHWP
+from .interaction import Interaction, InteractionHWP

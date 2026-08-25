@@ -11,10 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Dict
 
 
-def get_aliases_str(pref_dotpath: str, *, aliases_d: Dict[str, str]) -> str:
+def get_aliases_str(pref_dotpath: str, *, aliases_d: dict[str, str]) -> str:
     """From a complete dictionary of aliases, return a formatted string with our aliases.
 
     This will return just `pref_dotpath` if there are none,

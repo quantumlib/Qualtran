@@ -281,7 +281,10 @@ def execute_notebook(name: str):
     Args:
         name: The name of the notebook without extension.
     """
-    import nbformat
+    import pytest
+
+    nbformat = pytest.importorskip('nbformat')
+    _nbconvert = pytest.importorskip('nbconvert')
     from nbconvert.preprocessors import ExecutePreprocessor
 
     # Assumes that the notebook is in the same path from where the function was called,
@@ -476,7 +479,7 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
     # which isn't much of a check at all.
     #
     # To determine whether we have an independent source of bloq counts, we test whether
-    # the `build_call_graph` method was overriden or not. This is not foolproof! The override
+    # the `build_call_graph` method was overridden or not. This is not foolproof! The override
     # could itself rely on the decomposition, and we wouldn't actually have two independent sources
     # of data to compare against each other.
     if bloq.build_call_graph.__qualname__.startswith('Bloq.'):
@@ -578,7 +581,12 @@ def assert_bloq_example_serializes(bloq_ex: BloqExample) -> None:
     Raises:
         BloqCheckException: if any assertions are violated.
     """
-    from qualtran.serialization.bloq import bloqs_from_proto, bloqs_to_proto
+    try:
+        from qualtran.serialization.bloq import bloqs_from_proto, bloqs_to_proto
+    except ModuleNotFoundError as e:
+        raise BloqCheckException.na(
+            'Serialization check is only applicable when protobuf is installed.'
+        ) from e
 
     bloq = bloq_ex.make()
 

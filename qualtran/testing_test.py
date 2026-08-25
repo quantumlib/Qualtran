@@ -43,6 +43,7 @@ from qualtran.bloqs.for_testing import TestAtom, TestParallelCombo, TestTwoBitOp
 from qualtran.testing import (
     assert_bloq_example_decompose,
     assert_bloq_example_make,
+    assert_bloq_example_serializes,
     assert_connections_compatible,
     assert_consistent_classical_action,
     assert_registers_match_dangling,
@@ -53,6 +54,7 @@ from qualtran.testing import (
     BloqCheckResult,
     check_bloq_example_decompose,
     check_bloq_example_make,
+    check_bloq_example_serializes,
 )
 
 
@@ -245,3 +247,44 @@ def test_assert_valid_classical_action_valid_invalid_bloq():
     b = BloqWithInvalidClassicaAction(QInt(bitsize))
     with pytest.raises(AssertionError):
         assert_consistent_classical_action(b, a=valid_range, b=valid_range)
+
+
+@frozen
+class UnserializableBloq(Bloq):
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature([])
+
+
+def test_check_bloq_example_serializes() -> None:
+    try:
+        from qualtran.serialization.bloq import bloqs_from_proto, bloqs_to_proto  # noqa: F401
+
+        has_protobuf = True
+    except ModuleNotFoundError:
+        has_protobuf = False
+
+    @bloq_example
+    def _cnot() -> CNOT:
+        return CNOT()
+
+    res, msg = check_bloq_example_serializes(_cnot)
+    if not has_protobuf:
+        assert res is BloqCheckResult.NA
+        with pytest.raises(BloqCheckException) as raises_ctx:
+            assert_bloq_example_serializes(_cnot)
+        assert raises_ctx.value.check_result is BloqCheckResult.NA
+        return
+
+    assert res is BloqCheckResult.PASS
+    assert_bloq_example_serializes(_cnot)
+
+    @bloq_example
+    def _unserializable() -> UnserializableBloq:
+        return UnserializableBloq()
+
+    res, msg = check_bloq_example_serializes(_unserializable)
+    assert res is BloqCheckResult.FAIL
+    with pytest.raises(BloqCheckException) as raises_ctx:
+        assert_bloq_example_serializes(_unserializable)
+    assert raises_ctx.value.check_result is BloqCheckResult.FAIL

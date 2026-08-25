@@ -455,7 +455,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         """Phasing action of controlled bloqs.
 
         This involves conditionally doing the phasing action of `subbloq`. All implementers
-        of `_ControlledBase` should provide a decomposition that satisfies this phase funciton.
+        of `_ControlledBase` should provide a decomposition that satisfies this phase function.
         """
         ctrl_vals = [vals[reg_name] for reg_name in self.ctrl_reg_names]
         other_vals = {reg.name: vals[reg.name] for reg in self.subbloq.signature}
@@ -549,9 +549,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         return self.ctrl_spec.wire_symbol(i, reg, idx)
 
     def __str__(self) -> str:
-        num_ctrls = self.ctrl_spec.num_bits
-        ctrl_string = 'C' if num_ctrls == 1 else f'C[{num_ctrls}]'
-        return f'{ctrl_string}[{self.subbloq}]'
+        return f'C({self.subbloq!s})'
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
@@ -695,7 +693,7 @@ def make_ctrl_system_with_correct_metabloq(
      - A 1-qubit, positive control (i.e. `CtrlSpec()`) uses `Controlled`, which uses a
        "total control" decomposition.
      - Complex quantum controls (i.e. `CtrlSpec(...)` with quantum data types) uses
-       `ControlledViaAnd`, which computes the activation function once and re-uses it
+       `ControlledViaAnd`, which computes the activation function once and reuses it
        for each subbloq in the decomposition of `bloq`.
     """
     from qualtran.bloqs.mcmt.classically_controlled import ClassicallyControlled

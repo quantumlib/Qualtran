@@ -423,6 +423,8 @@ def cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         cirq.CSWAP: CSwap(1),
         cirq.I: Identity(),
     }
+    if hasattr(cirq, 'CY'):
+        CIRQ_GATE_TO_BLOQ_MAP[cirq.CY] = CYGate()  # cirq >= 1.7
     if gate in CIRQ_GATE_TO_BLOQ_MAP:
         return CIRQ_GATE_TO_BLOQ_MAP[gate]
 

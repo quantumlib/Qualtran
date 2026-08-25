@@ -13,5 +13,10 @@
 #  limitations under the License.
 """Bloqs for Trotter simulation of the real space grid Hamiltonian."""
 
+from .inverse_sqrt import (
+    NewtonRaphsonApproxInverseSquareRoot,
+    PolynmomialEvaluationInverseSquareRoot,
+)
 from .kinetic import KineticEnergy
 from .potential import PairPotential, PotentialEnergy
+from .qvr import QuantumVariableRotation

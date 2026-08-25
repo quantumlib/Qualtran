@@ -14,5 +14,10 @@
 
 from .mod_addition import CModAdd, CModAddK, CtrlScaleModAdd, ModAdd, ModAddK
 from .mod_division import KaliskiModInverse
-from .mod_multiplication import CModMulK, DirtyOutOfPlaceMontgomeryModMul, ModDbl
+from .mod_multiplication import (
+    CModMulK,
+    DirtyOutOfPlaceMontgomeryModMul,
+    ModDbl,
+    SingleWindowModMul,
+)
 from .mod_subtraction import CModNeg, CModSub, ModNeg, ModSub

@@ -14,14 +14,26 @@
 from functools import cached_property
 from typing import TYPE_CHECKING, Union
 
+import sympy
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, QInt, QMontgomeryUInt, QUInt, Signature
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    QInt,
+    QMontgomeryUInt,
+    QUInt,
+    Register,
+    Signature,
+)
 from qualtran.bloqs.arithmetic import AddK
 from qualtran.bloqs.arithmetic.bitwise import BitwiseNot
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
+    from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.simulation.verification import ClassicalSimTestCase
 
 
 @frozen
@@ -59,7 +71,28 @@ class Negate(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build_from_dtypes(x=self.dtype)
+        return Signature([Register('x', self.dtype)])
+
+    def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
+        n = self.dtype.num_qubits
+        if isinstance(n, sympy.Expr):
+            raise ValueError(f'Cannot simulate symbolic bloq {self}')
+        # Two's complement negation: -x == (~x + 1) mod 2^n
+        # Work in unsigned space, then re-interpret in the dtype.
+        unsigned_x = int(x) % (1 << n)
+        result_unsigned = (unsigned_x ^ ((1 << n) - 1)) + 1  # ~x + 1
+        result_unsigned %= 1 << n
+
+        if isinstance(self.dtype, QInt):
+            # Re-interpret as signed.
+            if result_unsigned >= (1 << (n - 1)):
+                result = result_unsigned - (1 << n)
+            else:
+                result = result_unsigned
+        else:
+            result = result_unsigned
+
+        return {'x': result}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: 'SoquetT') -> dict[str, 'SoquetT']:
         x = bb.add(BitwiseNot(self.dtype), x=x)  # ~x
@@ -75,7 +108,6 @@ def _negate() -> Negate:
 
 @bloq_example
 def _negate_symb() -> Negate:
-    import sympy
 
     n = sympy.Symbol("n")
     negate_symb = Negate(QInt(n))
@@ -83,3 +115,24 @@ def _negate_symb() -> Negate:
 
 
 _NEGATE_DOC = BloqDocSpec(bloq_cls=Negate, examples=[_negate, _negate_symb])
+
+
+def _get_negate_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+    """Test cases for the `Negate` bloq.
+
+    These specify concrete (non-symbolic) bloq instances with specific
+    compile-time parameter combinations. Runtime quantum inputs are
+    generated automatically by the verification framework.
+    """
+    from qualtran.simulation.verification import ClassicalSimTestCase
+
+    cases: list[ClassicalSimTestCase] = []
+    for bitsize in [1, 2, 3, 4]:
+        cases.append(
+            ClassicalSimTestCase(bloq=Negate(QUInt(bitsize)), name=f"Negate(QUInt({bitsize}))")
+        )
+    for bitsize in [2, 3, 4]:
+        cases.append(
+            ClassicalSimTestCase(bloq=Negate(QInt(bitsize)), name=f"Negate(QInt({bitsize}))")
+        )
+    return cases

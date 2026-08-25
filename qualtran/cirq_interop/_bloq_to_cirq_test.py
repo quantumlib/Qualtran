@@ -107,6 +107,7 @@ class SwapTestWithOnlyTensorData(Bloq):
 
 @pytest.mark.parametrize('n', [1, 2, 3, 4])
 def test_bloq_as_cirq_gate_uses_tensor_data_for_unitary(n: int):
+    pytest.importorskip('quimb')
     unitary_one = cirq.unitary(BloqAsCirqGate(SwapTest(n)))
     unitary_two = cirq.unitary(BloqAsCirqGate(SwapTestWithOnlyTensorData(n)))
     np.testing.assert_allclose(unitary_one, unitary_two)
@@ -172,13 +173,13 @@ def test_flat_cbloq_to_cirq_circuit_minimizes_qubit_allocation():
     # `cbloq.flatten()` preserves this now because cbloq.iter_bloqnections is also
     #  updated to use `greedy_topological_sort` instead of `nx.topological_sort`.
     #  In general, we should have a more stable way to preserve this property,
-    #  potentially by maintaing a sorted order in `binst.i`;
+    #  potentially by maintaining a sorted order in `binst.i`;
     #  xref: https://github.com/quantumlib/Qualtran/issues/1098
     cbloq = bloq.decompose_bloq().flatten()
     assert len(cbloq.to_cirq_circuit(qubit_manager=qm).all_qubits()) == 7
 
 
-def test_contruct_op_from_gate():
+def test_construct_op_from_gate():
     and_gate = And()
     in_quregs = {'ctrl': np.array([*cirq.LineQubit.range(2)]).reshape(2, 1)}
     qm = cirq.ops.SimpleQubitManager()
@@ -324,6 +325,7 @@ class ComputeUncompute(Bloq):
 
 
 def test_compute_uncompute_simulation():
+    pytest.importorskip('quimb')
     # From https://github.com/quantumlib/Qualtran/issues/1488
     u1 = ComputeUncompute().tensor_contract()
     u2 = cirq.unitary(BloqAsCirqGate(ComputeUncompute()))

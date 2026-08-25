@@ -23,6 +23,7 @@ from qualtran.bloqs.arithmetic.comparison import (
     GreaterThanConstant,
     LessThanConstant,
     LessThanEqual,
+    LinearDepthGreaterThan,
     LinearDepthHalfGreaterThan,
     LinearDepthHalfGreaterThanEqual,
     LinearDepthHalfLessThan,
@@ -48,8 +49,8 @@ from qualtran.bloqs.arithmetic.multiplication import (
     SumOfSquares,
 )
 from qualtran.bloqs.arithmetic.negate import Negate
-from qualtran.bloqs.arithmetic.sorting import BitonicSort, Comparator
+from qualtran.bloqs.arithmetic.sorting import BitonicSort, Comparator, ParallelComparators
 from qualtran.bloqs.arithmetic.subtraction import Subtract, SubtractFrom
 from qualtran.bloqs.arithmetic.trigonometric import ArcSin
 
-from ._shims import CHalf, Lt, MultiCToffoli
+from ._shims import CHalf, CSub, Lt, MultiCToffoli

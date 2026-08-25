@@ -1,0 +1,25 @@
+# CSwap test inputs: ctrl x y (positional, space-separated)
+# No swap (ctrl=0)
+0 0 0
+0 1 0
+0 0 1
+0 3 7
+0 15 16
+0 31 0
+0 0 31
+0 31 31
+# Swap (ctrl=1)
+1 0 0
+1 1 0
+1 0 1
+1 3 7
+1 15 16
+1 31 0
+1 0 31
+1 31 31
+# Boundary values
+0 17 29
+1 17 29
+1 1 1
+0 16 16
+1 16 16

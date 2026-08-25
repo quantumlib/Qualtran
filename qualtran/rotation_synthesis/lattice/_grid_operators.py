@@ -71,7 +71,7 @@ class GridOperator:
         the text above it which says shift(k)-self-shift(-k).
 
         Args:
-            k: An integeral shift.
+            k: An integral shift.
         """
         k = int(k)
         if k >= 0:

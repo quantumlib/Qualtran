@@ -7,7 +7,7 @@
 Python package for fault-tolerant quantum algorithms research.
 
 [![Licensed under the Apache 2.0 open-source license](https://img.shields.io/badge/License-Apache%202.0-3c60b1.svg?logo=opensourceinitiative\&logoColor=white\&style=flat-square)](https://github.com/quantumlib/qualtran/blob/main/LICENSE)
-[![Compatible with Python versions 3.11 and higher](https://img.shields.io/badge/Python-3.11+-6828b2.svg?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![Compatible with Python versions 3.12 and higher](https://img.shields.io/badge/Python-3.12+-6828b2.svg?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![Qualtran project on PyPI](https://img.shields.io/pypi/v/qualtran.svg?logo=python&logoColor=white&label=PyPI&style=flat-square&color=9d3bb8)](https://pypi.org/project/qualtran)
 
 [Installation](#installation) &ndash;
@@ -54,7 +54,7 @@ pip install git+https://github.com/quantumlib/Qualtran
 > Some algorithms or library functionality may be incomplete or contain inaccuracies. Open issues or
 > contact the authors with bug reports or feedback.
 
-You should be able to import the `qualtran` package into your interactive Python environment as
+You should be able to import the `qualtran` package into your interactive Python environment
 as well as your programs:
 
 ```shell
@@ -89,7 +89,7 @@ You can stay on top of Qualtran news using the approach that best suits your nee
     *   *Via RSS from PyPI*: subscribe to the [PyPI releases feed] for Qualtran.
 
 [`qualtran-announce`]: https://groups.google.com/g/qualtran-announce
-[repository notifications]: https://docs.github.com/github/managing-subscriptions-and-notifications-on-github/configuring-notifications
+[repository notifications]: https://docs.github.com/en/subscriptions-and-notifications/get-started/configuring-notifications
 [Qualtran releases feed]: https://github.com/quantumlib/Qualtran/releases.atom
 [PyPI releases feed]: https://pypi.org/rss/project/qualtran/releases.xml
 
@@ -115,7 +115,7 @@ You can stay on top of Qualtran news using the approach that best suits your nee
 
 [Open an issue on GitHub]: https://github.com/quantumlib/Qualtran/issues/new/choose
 [contribution guidelines]: https://github.com/quantumlib/Qualtran/blob/main/CONTRIBUTING.md
-[pull request]: https://help.github.com/articles/about-pull-requests
+[pull request]: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests
 
 ## Citation<a name="how-to-cite"></a>
 

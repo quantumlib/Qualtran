@@ -17,30 +17,40 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import builtins
-import google.protobuf.descriptor
-import google.protobuf.message
-import typing
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+import builtins as _builtins
+import sys
+import typing as _typing
 
-DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+if sys.version_info >= (3, 11):
+    from typing import TypeAlias as _TypeAlias, Never as _Never
+else:
+    from typing_extensions import TypeAlias as _TypeAlias, Never as _Never
 
-@typing.final
-class TComplexity(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+DESCRIPTOR: _descriptor.FileDescriptor
 
-    CLIFFORD_FIELD_NUMBER: builtins.int
-    ROTATIONS_FIELD_NUMBER: builtins.int
-    T_FIELD_NUMBER: builtins.int
-    clifford: builtins.int
-    rotations: builtins.int
-    t: builtins.int
+@_typing.final
+class TComplexity(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    CLIFFORD_FIELD_NUMBER: _builtins.int
+    ROTATIONS_FIELD_NUMBER: _builtins.int
+    T_FIELD_NUMBER: _builtins.int
+    clifford: _builtins.int
+    rotations: _builtins.int
+    t: _builtins.int
     def __init__(
         self,
         *,
-        clifford: builtins.int = ...,
-        rotations: builtins.int = ...,
-        t: builtins.int = ...,
+        clifford: _builtins.int = ...,
+        rotations: _builtins.int = ...,
+        t: _builtins.int = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["clifford", b"clifford", "rotations", b"rotations", "t", b"t"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["clifford", b"clifford", "rotations", b"rotations", "t", b"t"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-global___TComplexity = TComplexity
+Global___TComplexity: _TypeAlias = TComplexity  # noqa: Y015

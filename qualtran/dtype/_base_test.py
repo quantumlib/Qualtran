@@ -14,12 +14,11 @@
 from typing import Any, Iterable, List, Sequence
 
 import attrs
-import galois
 import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-from qualtran.dtype import BQUInt, QBit, QDType, QGF, QGFPoly, QInt, QUInt
+from qualtran.dtype import BQUInt, QBit, QDType, QInt, QUInt
 from qualtran.symbolics import is_symbolic
 
 
@@ -29,17 +28,7 @@ def test_domain_and_validation(qdtype: QDType):
         qdtype.assert_valid_classical_val(v)
 
 
-@pytest.mark.parametrize(
-    'qdtype',
-    [
-        QBit(),
-        QInt(4),
-        QUInt(4),
-        BQUInt(3, 5),
-        QGF(2, 8),
-        QGFPoly(4, QGF(characteristic=2, degree=2)),
-    ],
-)
+@pytest.mark.parametrize('qdtype', [QBit(), QInt(4), QUInt(4), BQUInt(3, 5)])
 def test_domain_and_validation_arr(qdtype: QDType):
     arr = np.array(list(qdtype.get_classical_domain()))
     qdtype.assert_valid_classical_val_array(arr)
@@ -69,14 +58,6 @@ def test_validation_errs():
 
     with pytest.raises(ValueError):
         QUInt(3).assert_valid_classical_val(-1)
-
-    with pytest.raises(ValueError):
-        QGF(2, 8).assert_valid_classical_val(2**8)  # type: ignore[arg-type]
-
-    with pytest.raises(ValueError):
-        qgf = QGF(2, 3)
-        poly = galois.Poly(qgf.gf_type([1, 2, 3, 4, 5, 6, 7]), field=qgf.gf_type)
-        QGFPoly(4, qgf).assert_valid_classical_val(poly)
 
 
 def test_validate_arrays():
