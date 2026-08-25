@@ -46,6 +46,7 @@ if TYPE_CHECKING:
     from pennylane.wires import Wires
 
     from qualtran import AddControlledT, CompositeBloq
+    from qualtran.cirq_interop import CirqQuregT
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
