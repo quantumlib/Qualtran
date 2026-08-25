@@ -45,6 +45,7 @@ from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.symbolics import SymbolicFloat
 
 if TYPE_CHECKING:
+    from qualtran import Soquet
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
