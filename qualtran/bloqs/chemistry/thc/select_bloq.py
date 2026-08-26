@@ -196,20 +196,22 @@ class THCRotations(Bloq):
         return "In_mu-R"
 
     def _build_qroam(self, num_angles: int, block_size: int) -> QROAMClean:
+        target_bitsizes = (self.num_bits_theta,) * num_angles
+        log_block_size = max(0, int(int(block_size) - 1).bit_length())
         if self.angles_data is None:
-            # NOTE: using an array of zeros effectively skips QROAM so this will throw off the cost
-            angles_data = tuple(tuple(0 for _ in range(self.num_terms)) for _ in range(num_angles))
-        else:
-            angles_data = self.angles_data
-            # pad angles array if necessary for one electron terms
-            angles_data = tuple(
-                col + (0,) * max(0, self.num_terms - len(col)) for col in self.angles_data
+            return QROAMClean.build_from_bitsize(
+                (self.num_terms,),
+                target_bitsizes=target_bitsizes,
+                selection_bitsizes=(self.selection_bitsize,),
+                log_block_sizes=(log_block_size,),
             )
 
-        target_bitsizes = (self.num_bits_theta,) * num_angles
-        log_block_size = (int(block_size) - 1).bit_length()
+        # pad angles array if necessary for one electron terms
+        angles_data = tuple(
+            col + (0,) * max(0, self.num_terms - len(col)) for col in self.angles_data
+        )
         return QROAMClean(
-            data_or_shape=[np.array(col) for col in angles_data],
+            data_or_shape=angles_data,
             target_bitsizes=target_bitsizes,
             selection_bitsizes=(self.selection_bitsize,),
             log_block_sizes=(log_block_size,),
@@ -445,7 +447,9 @@ class SelectTHC(SelectOracle):
 
 @bloq_example
 def _thc_rotations() -> THCRotations:
-    thc_rotations = THCRotations(num_mu=10, num_spin_orb=8, num_bits_theta=12)
+    rng = np.random.default_rng(42)
+    eta = rng.normal(size=(2, 4))
+    thc_rotations = THCRotations.from_thc_leaf_tensor(eta, num_bits_theta=12)
     return thc_rotations
 
 
