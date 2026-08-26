@@ -69,12 +69,10 @@ def test_leaf_tensor_to_givens_rotations():
 
 
 @pytest.mark.parametrize(
-    "num_mu, num_spatial, num_bits_theta", ((2, 4, 12), (4, 8, 15), (8, 16, 15))
+    "num_mu, num_spatial, num_bits_theta, kr1, kr2",
+    ((2, 4, 12, 1, 1), (4, 8, 15, 2, 2), (8, 16, 15, 2, 2)),
 )
-def test_thc_select_cost(num_mu, num_spatial, num_bits_theta):
-    kr1 = 1
-    kr2 = 1
-
+def test_thc_select_cost(num_mu, num_spatial, num_bits_theta, kr1, kr2):
     num_spin_orb = num_spatial * 2
     rng = np.random.default_rng(42)
     eta = rng.normal(size=(num_mu, num_spatial))  # THC vectors
@@ -95,8 +93,8 @@ def test_thc_select_cost(num_mu, num_spatial, num_bits_theta):
 
     # Toffoli cost according to the formula in the paper
     paper_cost_toffoli = num_spin_orb  # swaps controlled on spin (doubled for mu/nu)
-    paper_cost_toffoli += num_mu - 2  # QROM load mu
-    paper_cost_toffoli += num_mu - 2  # QROM load nu
+    paper_cost_toffoli += np.ceil(num_mu / kr1) - 2  # QROM load mu
+    paper_cost_toffoli += np.ceil(num_mu / kr2) - 2  # QROM load nu
     paper_cost_toffoli += 2 * num_spin_orb * (num_bits_theta - 2)  # rotations (doubled for mu/nu)
     paper_cost_toffoli += (
         2 * num_spin_orb * (num_bits_theta - 2)
@@ -115,9 +113,10 @@ def test_thc_select_cost(num_mu, num_spatial, num_bits_theta):
     cost_correction += rotation_correct - rotation_incorrect
 
     # correction - QROAM load breaks early when traversing binary tree and finding a zero
-    load_mu_term_correct = bin(num_mu).count("1") - 1
-    load_mu_term_incorrect = 0
-    cost_correction += load_mu_term_correct - load_mu_term_incorrect
+    b = (num_spatial - 1) * num_bits_theta
+    load_mu_term_correct = (kr1 - 1) * b + bin(num_mu).count("1") - 1
+    load_nu_term_correct = (kr2 - 1) * b + bin(num_mu).count("1") - 1
+    cost_correction += load_mu_term_correct + load_nu_term_correct
 
     # correction - QROAM erase always uses the optimal batch size
     k1 = int(np.round(0.5 * np.log2(num_mu)))
