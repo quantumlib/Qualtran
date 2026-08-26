@@ -139,14 +139,20 @@ class THCRotations(Bloq):
     )
 
     @classmethod
-    def from_thc_leaf_tensor(
-        cls, eta: np.ndarray, num_bits_theta: int, block_size: int = 1, two_body_only: bool = False
+    def from_hamiltonian_coeffs(
+        cls,
+        eta: np.ndarray,
+        num_bits_theta: int,
+        tpq: Optional[np.ndarray] = None,
+        block_size: int = 1,
+        two_body_only: bool = False,
     ) -> 'THCRotations':
-        r"""Construct THCRotations from a THC leaf tensor $\eta$.
+        r"""Construct THCRotations from Hamiltonian coefficients.
 
         Args:
-            eta: THC vectors of shape (M, N/2).
+            eta: THC leaf tensor of shape (M, N/2).
             num_bits_theta: Number of bits of precision for the rotation angles ($\beth$).
+            tpq: Optional modified one-body Hamiltonian of shape (N/2, N/2) or (N/2,).
             block_size: Block size for QROAM loading.
             two_body_only: Whether to only apply the two body Hamiltonian.
 
@@ -155,7 +161,19 @@ class THCRotations(Bloq):
         """
         num_mu, num_spatial = eta.shape
         num_spin_orb = 2 * num_spatial
-        angles_data = _leaf_tensor_to_givens_rotations(eta, num_bits_theta=num_bits_theta)
+        thetas_2body = _leaf_tensor_to_givens_rotations(eta, num_bits_theta=num_bits_theta)
+        if two_body_only:
+            angles_data = thetas_2body
+        else:
+            if tpq is not None:
+                _, u = np.linalg.eigh(tpq)
+                thetas_1body = _leaf_tensor_to_givens_rotations(u.T, num_bits_theta=num_bits_theta)
+            else:
+                # pad with zeros
+                num_angles = num_spatial - 1
+                thetas_1body = np.zeros((num_angles, num_spatial), dtype=int)
+            angles_data = np.concatenate([thetas_2body, thetas_1body], axis=1)
+
         return cls(
             num_mu=num_mu,
             num_spin_orb=num_spin_orb,
@@ -179,18 +197,23 @@ class THCRotations(Bloq):
 
     @property
     def num_terms(self) -> int:
-        return self.num_mu
+        if self.two_body_only:
+            return self.num_mu
+        return self.num_mu + self.num_spatial
 
     @cached_property
     def selection_bitsize(self) -> int:
-        return self.num_mu.bit_length()
+        if self.two_body_only:
+            return self.num_mu.bit_length()
+        return self.num_mu.bit_length() + 1
 
     @cached_property
     def signature(self) -> Signature:
         return Signature(
             [
+                Register("nu_eq_mp1", QBit()),
                 Register("data", QAny(bitsize=self.data_bitsize)),
-                Register("sel", QAny(bitsize=self.selection_bitsize)),
+                Register("sel", QAny(bitsize=self.num_mu.bit_length())),
                 Register("trg", QAny(bitsize=self.num_spatial)),
             ]
         )
@@ -229,15 +252,31 @@ class THCRotations(Bloq):
         return {qroam: 1, pg: 1, givens: self.num_angles, pg.adjoint(): 1}
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', data: 'SoquetT', sel: 'SoquetT', trg: 'SoquetT'
+        self,
+        bb: 'BloqBuilder',
+        nu_eq_mp1: 'SoquetT',
+        data: 'SoquetT',
+        sel: 'SoquetT',
+        trg: 'SoquetT',
     ) -> Dict[str, 'SoquetT']:
         if self.num_angles <= 0:
-            return {'data': data, 'sel': sel, 'trg': trg}
+            return {'nu_eq_mp1': nu_eq_mp1, 'data': data, 'sel': sel, 'trg': trg}
 
         bb.free(data)
         qroam = self._build_qroam()
-        sel_res = bb.add_d(qroam, selection=sel)
-        sel = sel_res['selection']
+        if not self.two_body_only:
+            qroam_sel: 'SoquetT' = bb.join(np.array([nu_eq_mp1, *bb.split(sel)]))
+        else:
+            qroam_sel = sel
+
+        sel_res = bb.add_d(qroam, selection=qroam_sel)
+        if not self.two_body_only:
+            soqs_split = bb.split(sel_res['selection'])
+            nu_eq_mp1 = soqs_split[0]
+            sel = bb.join(soqs_split[1:])
+        else:
+            sel = sel_res['selection']
+
         targets = [sel_res[f'target{i}_'] for i in range(self.num_angles)]
         for i in range(self.num_angles):
             junk = sel_res.get(f'junk_target{i}_')
@@ -258,7 +297,7 @@ class THCRotations(Bloq):
 
         bb.add(PhaseGradientState(self.num_bits_theta).adjoint(), phase_grad=pg)
         data = bb.join(np.concatenate([bb.split(tgt) for tgt in targets]))
-        return {'data': data, 'sel': sel, 'trg': bb.join(q_trg)}
+        return {'nu_eq_mp1': nu_eq_mp1, 'data': data, 'sel': sel, 'trg': bb.join(q_trg)}
 
 
 @frozen
@@ -305,6 +344,11 @@ class SelectTHC(SelectOracle):
     kr2: int = 1
     control_val: Optional[int] = None
     eta: Optional[np.ndarray] = field(
+        default=None,
+        eq=lambda x: None if x is None else (x.shape, x.dtype, x.tobytes()),
+        repr=False,
+    )
+    tpq: Optional[np.ndarray] = field(
         default=None,
         eq=lambda x: None if x is None else (x.shape, x.dtype, x.tobytes()),
         repr=False,
@@ -358,8 +402,12 @@ class SelectTHC(SelectOracle):
         data_bitsize = n_angles * self.num_bits_theta
         data = bb.allocate(data_bitsize)
         if self.eta is not None:
-            thc_rot = THCRotations.from_thc_leaf_tensor(
-                self.eta, self.num_bits_theta, block_size=self.kr1, two_body_only=False
+            thc_rot = THCRotations.from_hamiltonian_coeffs(
+                self.eta,
+                self.num_bits_theta,
+                tpq=self.tpq,
+                block_size=self.kr1,
+                two_body_only=False,
             )
         else:
             thc_rot = THCRotations(
@@ -369,7 +417,9 @@ class SelectTHC(SelectOracle):
                 block_size=self.kr1,
                 two_body_only=False,
             )
-        data, mu, sys_a = bb.add(thc_rot, data=data, sel=mu, trg=sys_a)
+        nu_eq_mp1, data, mu, sys_a = bb.add(
+            thc_rot, nu_eq_mp1=nu_eq_mp1, data=data, sel=mu, trg=sys_a
+        )
         # Controlled Z_0
         (succ,), sys_b = bb.add(
             ApplyControlledZs(cvs=(1,), bitsize=self.num_spin_orb // 2),
@@ -377,7 +427,9 @@ class SelectTHC(SelectOracle):
             system=sys_b,
         )
         # Undo rotations
-        data, mu, sys_a = bb.add(thc_rot.adjoint(), data=data, sel=mu, trg=sys_a)
+        nu_eq_mp1, data, mu, sys_a = bb.add(
+            thc_rot.adjoint(), nu_eq_mp1=nu_eq_mp1, data=data, sel=mu, trg=sys_a
+        )
         plus_b, sys_a, sys_b = bb.add(CSwap(self.num_spin_orb // 2), ctrl=plus_b, x=sys_a, y=sys_b)
 
         plus_mn = bb.add(XGate(), q=plus_mn)
@@ -393,8 +445,8 @@ class SelectTHC(SelectOracle):
 
         # Rotations
         if self.eta is not None:
-            thc_rot_two_body = THCRotations.from_thc_leaf_tensor(
-                self.eta, self.num_bits_theta, block_size=self.kr2, two_body_only=True
+            thc_rot_two_body = THCRotations.from_hamiltonian_coeffs(
+                self.eta, self.num_bits_theta, tpq=self.tpq, block_size=self.kr2, two_body_only=True
             )
         else:
             thc_rot_two_body = THCRotations(
@@ -404,7 +456,9 @@ class SelectTHC(SelectOracle):
                 block_size=self.kr2,
                 two_body_only=True,
             )
-        data, mu, sys_a = bb.add(thc_rot_two_body, data=data, sel=mu, trg=sys_a)
+        nu_eq_mp1, data, mu, sys_a = bb.add(
+            thc_rot_two_body, nu_eq_mp1=nu_eq_mp1, data=data, sel=mu, trg=sys_a
+        )
         # Controlled Z_0
         (succ, nu_eq_mp1), sys_b = bb.add(
             ApplyControlledZs(cvs=(1, 0), bitsize=self.num_spin_orb // 2),
@@ -412,7 +466,9 @@ class SelectTHC(SelectOracle):
             system=sys_b,
         )
         # Undo rotations
-        data, mu, sys_a = bb.add(thc_rot_two_body.adjoint(), data=data, sel=mu, trg=sys_a)
+        nu_eq_mp1, data, mu, sys_a = bb.add(
+            thc_rot_two_body.adjoint(), nu_eq_mp1=nu_eq_mp1, data=data, sel=mu, trg=sys_a
+        )
 
         # Clean up
         plus_b, sys_a, sys_b = bb.add(CSwap(self.num_spin_orb // 2), ctrl=plus_b, x=sys_a, y=sys_b)
@@ -452,7 +508,9 @@ class SelectTHC(SelectOracle):
 def _thc_rotations() -> THCRotations:
     rng = np.random.default_rng(42)
     eta = rng.normal(size=(2, 4))
-    thc_rotations = THCRotations.from_thc_leaf_tensor(eta, num_bits_theta=12)
+    tpq = rng.normal(size=(4, 4))
+    tpq = 0.5 * (tpq + tpq.T)
+    thc_rotations = THCRotations.from_hamiltonian_coeffs(eta, num_bits_theta=12, tpq=tpq)
     return thc_rotations
 
 
