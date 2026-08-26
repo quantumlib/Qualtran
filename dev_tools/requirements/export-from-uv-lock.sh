@@ -16,8 +16,6 @@
 
 # This script will generate "backwards compatible" environment lock files.
 # Consider using `uv` to manage your environment if you need this level of locking and control.
-# Exported files omit qualtran itself (--no-emit-project) so pip does not re-resolve
-# unpinned dependencies from pyproject.toml.
 #
 # This script assumes you have already used `uv lock` to generate a `uv.lock` file in the
 # project's root directory.

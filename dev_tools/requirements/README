@@ -9,6 +9,4 @@ We've moved to `uv` to manage dependencies for developers and CI.
    re-resolving dependencies from `pyproject.toml`. CI uses this two-step pattern so
    only versions pinned in `uv.lock` are installed.
  - You can use `export-from-uv-lock.sh` in this directory to output legacy requirements.txt
-   environment files, but they are no longer committed to the repository. The script uses
-   `--no-emit-project` so exported files omit qualtran and avoid pulling unpinned
-   dependencies from `pyproject.toml`.
+   environment files, but they are no longer committed to the repository.
