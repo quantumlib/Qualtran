@@ -41,6 +41,7 @@ from qualtran.bloqs.chemistry.quad_fermion.givens_bloq import RealGivensRotation
 from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 def _leaf_tensor_to_givens_rotations(eta: np.ndarray, num_bits_theta: int) -> np.ndarray:
@@ -206,13 +207,21 @@ class THCRotations(Bloq):
             )
 
         target_bitsizes = (self.num_bits_theta,) * num_angles
-        log_block_size = (block_size - 1).bit_length() if block_size > 1 else 0
+        log_block_size = (int(block_size) - 1).bit_length()
         return QROAMClean(
             data_or_shape=[np.array(col) for col in angles_data],
             target_bitsizes=target_bitsizes,
             selection_bitsizes=(self.selection_bitsize,),
             log_block_sizes=(log_block_size,),
         )
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        if self.num_angles <= 0:
+            return {}
+        qroam = self._build_qroam(self.num_angles, self.block_size)
+        pg = PhaseGradientState(self.num_bits_theta)
+        givens = RealGivensRotationByPhaseGradient(self.num_bits_theta)
+        return {qroam: 1, pg: 1, givens: self.num_angles, pg.adjoint(): 1}
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', data: 'SoquetT', sel: 'SoquetT', trg: 'SoquetT'
@@ -225,6 +234,11 @@ class THCRotations(Bloq):
         sel_res = bb.add_d(qroam, selection=sel)
         sel = sel_res['selection']
         targets = [sel_res[f'target{i}_'] for i in range(self.num_angles)]
+        for i in range(self.num_angles):
+            junk = sel_res.get(f'junk_target{i}_')
+            if junk is not None:
+                for soq in np.asarray(junk).flat:
+                    bb.free(soq)
 
         pg = bb.add(PhaseGradientState(self.num_bits_theta))
         q_trg = bb.split(trg)
