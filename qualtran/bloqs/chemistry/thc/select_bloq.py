@@ -15,7 +15,7 @@
 """SELECT for the molecular tensor hypercontraction (THC) hamiltonian"""
 
 from functools import cached_property
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import evolve, field, frozen
@@ -41,7 +41,9 @@ from qualtran.bloqs.chemistry.quad_fermion.givens_bloq import RealGivensRotation
 from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
-from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
+
+if TYPE_CHECKING:
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 def _leaf_tensor_to_givens_rotations(eta: np.ndarray, num_bits_theta: int) -> np.ndarray:
@@ -107,6 +109,7 @@ class THCRotations(Bloq):
         num_spin_orb: number of spin orbitals $N$ (number of spatial orbitals = $N/2$).
         num_bits_theta: Number of bits of precision for the rotations. Called
             $\beth$ in the reference.
+        block_size: Block size for QROAM loading.
         two_body_only: Whether to only apply the two body Hamiltonian. This reduces the QROM size.
         is_adjoint: Whether to dagger this bloq or not.
         angles_data: Optional tuple of tuples of integer-quantized angles.
@@ -144,7 +147,7 @@ class THCRotations(Bloq):
         Args:
             eta: THC vectors of shape (M, N/2).
             num_bits_theta: Number of bits of precision for the rotation angles ($\beth$).
-            block_size: Block size for QROM loading.
+            block_size: Block size for QROAM loading.
             two_body_only: Whether to only apply the two body Hamiltonian.
 
         Returns:
@@ -195,9 +198,9 @@ class THCRotations(Bloq):
     def __str__(self) -> str:
         return "In_mu-R"
 
-    def _build_qroam(self, num_angles: int, block_size: int) -> QROAMClean:
-        target_bitsizes = (self.num_bits_theta,) * num_angles
-        log_block_size = max(0, int(int(block_size) - 1).bit_length())
+    def _build_qroam(self) -> QROAMClean:
+        target_bitsizes = (self.num_bits_theta,) * self.num_angles
+        log_block_size = max(0, int(int(self.block_size) - 1).bit_length())
         if self.angles_data is None:
             return QROAMClean.build_from_bitsize(
                 (self.num_terms,),
@@ -220,7 +223,7 @@ class THCRotations(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if self.num_angles <= 0:
             return {}
-        qroam = self._build_qroam(self.num_angles, self.block_size)
+        qroam = self._build_qroam()
         pg = PhaseGradientState(self.num_bits_theta)
         givens = RealGivensRotationByPhaseGradient(self.num_bits_theta)
         return {qroam: 1, pg: 1, givens: self.num_angles, pg.adjoint(): 1}
@@ -232,7 +235,7 @@ class THCRotations(Bloq):
             return {'data': data, 'sel': sel, 'trg': trg}
 
         bb.free(data)
-        qroam = self._build_qroam(self.num_angles, self.block_size)
+        qroam = self._build_qroam()
         sel_res = bb.add_d(qroam, selection=sel)
         sel = sel_res['selection']
         targets = [sel_res[f'target{i}_'] for i in range(self.num_angles)]
