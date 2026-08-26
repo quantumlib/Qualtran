@@ -471,6 +471,9 @@ class GF2MulK(Bloq):
     ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         return {SynthesizeLRCircuit(self.reduction_matrix_q): 1}
 
+    def __str__(self):
+        return f'GF2MulK({self.const})'
+
 
 @bloq_example
 def _gf2_multiply_by_constant() -> GF2MulK:

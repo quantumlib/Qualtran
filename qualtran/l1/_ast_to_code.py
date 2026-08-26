@@ -12,9 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import functools
+import numbers
 from typing import Any
-
-import sympy
 
 from ._ast_visitor_base import L1VisitorBase
 from .nodes import (
@@ -113,9 +112,9 @@ class L1ASTPrinter(L1VisitorBase):
         r = super().visit(node)
 
         if 'shape' in r:
-            if not all(isinstance(x, (int, sympy.Expr)) for x in r['shape']):
+            if not all(isinstance(x, numbers.Integral) for x in r['shape']):
                 raise ValueError(f"Invalid shape in QDTypeNode {node}")
-            shape_str = ', '.join(repr(x) for x in r['shape'])
+            shape_str = ', '.join(str(int(x)) for x in r['shape'])
             return f"{r['dtype']}[{shape_str}]"
 
         return f"{r['dtype']}"

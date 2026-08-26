@@ -12,19 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Yamllint configuration to match project settings like line length.
 # See https://yamllint.readthedocs.io/ for info about configuration options.
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# IMPORTANT: if you change values here, update .editorconfig to match.
 
 rules:
   line-length:
-    # YAML files (especially GitHub Actions workflows) tend to end up with
-    # long lines. The default of 80 is pretty limiting, and besides, in Python
-    # code linting, we set line lengths to 100. May as well follow suit here.
+    # Note: if you change the line length here, update .editorconfig too.
     max: 100
-    # Another common occurrence in YAML files is long URLs. The next two
-    # settings are not specific to URLs, but help. It saves developer time by
+    # When the last item on a line can't be broken (e.g., a URL as a value),
+    # it's rarely useful to flag it. The next 2 settings save developer time by
     # not requiring comment directives to disable warnings at every occurrence.
     allow-non-breakable-words: true
     allow-non-breakable-inline-mappings: true

@@ -89,7 +89,7 @@ You can stay on top of Qualtran news using the approach that best suits your nee
     *   *Via RSS from PyPI*: subscribe to the [PyPI releases feed] for Qualtran.
 
 [`qualtran-announce`]: https://groups.google.com/g/qualtran-announce
-[repository notifications]: https://docs.github.com/github/managing-subscriptions-and-notifications-on-github/configuring-notifications
+[repository notifications]: https://docs.github.com/en/subscriptions-and-notifications/get-started/configuring-notifications
 [Qualtran releases feed]: https://github.com/quantumlib/Qualtran/releases.atom
 [PyPI releases feed]: https://pypi.org/rss/project/qualtran/releases.xml
 
@@ -115,7 +115,7 @@ You can stay on top of Qualtran news using the approach that best suits your nee
 
 [Open an issue on GitHub]: https://github.com/quantumlib/Qualtran/issues/new/choose
 [contribution guidelines]: https://github.com/quantumlib/Qualtran/blob/main/CONTRIBUTING.md
-[pull request]: https://help.github.com/articles/about-pull-requests
+[pull request]: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests
 
 ## Citation<a name="how-to-cite"></a>
 

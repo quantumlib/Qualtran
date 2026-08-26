@@ -42,7 +42,7 @@ from qualtran.symbolics.types import SymbolicFloat
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT
 
 
 def _fkn_matrix(k: int, n: int) -> NDArray[np.complex128]:
