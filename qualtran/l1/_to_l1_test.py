@@ -343,3 +343,15 @@ def test_dump_l1_skip_aliases():
     assert isinstance(txt_with_aliases, str)
     assert isinstance(txt_without_aliases, str)
     assert "alias" not in txt_without_aliases
+
+
+def test_bloq_with_no_output_registers_emits_return():
+    from qualtran.bloqs.basic_gates.qconst import QIntEffect
+    from qualtran.l1 import load_module
+
+    bloq = QIntEffect(-5, bitsize=8)
+    l1_txt = dump_root_l1(bloq)
+    assert "return" in l1_txt
+    loaded = load_module(l1_txt)
+    assert "QIntEffect(-5)" in loaded
+

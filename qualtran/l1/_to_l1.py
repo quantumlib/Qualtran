@@ -426,6 +426,9 @@ class QDefBuilder:
             )
         )
 
+    def add_empty_return(self) -> None:
+        self._stmnts.append(self.nodes.QReturnNode(ret_mapping=[]))
+
     def finalize(self, extern_only_from: bool) -> QDefWithContext:
         if extern_only_from:
             cobject_from = None
@@ -519,6 +522,9 @@ def bloq_to_ast(
     for binst in sorted_binsts:
         preds, succs = _binst_to_cxns(binst, binst_graph=g)
         qdb.add_bloqnection(binst, preds, succs)
+
+    if qlt.RightDangle not in g:
+        qdb.add_empty_return()
 
     return qdb.finalize(extern_only_from=extern_only_from), list(qdb.qlocals.bloqvars.keys())
 
