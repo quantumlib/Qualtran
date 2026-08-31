@@ -31,14 +31,14 @@ def test_prep_sparse_adj():
     bloq.adjoint().decompose_bloq()
 
 
-def reconstruct_eris(eris, indx, nb):
+def reconstruct_eris(eris, indices, nb):
     """Fill back the eri tensor given the non-zero eris and the corresponding 4-index indices.
 
     Slight overkill, but written to mimic the swaps in the quantum algorithm
     """
     eris_recon = np.zeros((nb,) * 4)
     # let controls be a tuple of 3 cvs
-    for ix, pqrs in enumerate(indx):
+    for ix, pqrs in enumerate(indices):
         p, q, r, s = pqrs
         # 1. Swap pq, rs
         # controls (0, 0, 0), no swap, base case

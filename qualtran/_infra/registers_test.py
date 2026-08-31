@@ -364,3 +364,30 @@ def test_signature_contains_and_hash():
     sig = Signature([r])
     assert r in sig
     assert hash(sig) == hash(Signature([Register('a', QBit())]))
+
+
+def test_register_shape_fast_paths():
+    import sympy
+
+    # Empty shape
+    r_empty = Register('a', QBit())
+    assert r_empty.shape == ()
+    assert not r_empty.is_symbolic()
+
+    # 1D int shape
+    r_1d = Register('b', QBit(), shape=(5,))
+    assert r_1d.shape == (5,)
+    assert not r_1d.is_symbolic()
+
+    # 2D int shape
+    r_2d = Register('c', QBit(), shape=(2, 3))
+    assert r_2d.shape == (2, 3)
+    assert not r_2d.is_symbolic()
+
+    # Symbolic shape
+    n = sympy.Symbol('n')
+    r_sym = Register('d', QBit(), shape=(n,))
+    assert r_sym.is_symbolic()
+    assert r_sym.shape_symbolic == (n,)
+    with pytest.raises(ValueError, match="is symbolic"):
+        _ = r_sym.shape

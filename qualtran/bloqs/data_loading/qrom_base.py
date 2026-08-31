@@ -111,12 +111,12 @@ class QROMBase(metaclass=abc.ABCMeta):
     In general, to load $K$ dimensional data, we use $K$ named selection registers
     $(\mathrm{selection}_0, \mathrm{selection}_1, ..., \mathrm{selection}_k)$ to index and
     load the data. For the $i$'th selection register, its size is configured using
-    attribute $\mathrm{selection\_bitsizes[i]}$ and the iteration range is configued
+    attribute $\mathrm{selection\_bitsizes[i]}$ and the iteration range is configured
     using $\mathrm{data\_or\_shape[0].shape[i]}$.
 
     ### Number of target registers, their quantum datatype and shape
     QROM bloq uses one target register for each entry corresponding to classical dataset in the
-    tuple `data_or_shape`. Thus, to load $L$ classical datsets, we use $L$ names target registers
+    tuple `data_or_shape`. Thus, to load $L$ classical datasets, we use $L$ names target registers
     $(\mathrm{target}_0, \mathrm{target}_1, ..., \mathrm{target}_L)$
 
     Each named target register has a bitsize $b_{i}=\mathrm{target\_bitsizes[i]}$ that represents

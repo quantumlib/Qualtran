@@ -117,7 +117,7 @@ def _get_all_aliases(obj: Union[griffe.Object, griffe.Alias]) -> set[str]:
                 return True
             return False
 
-        # Doens't violate any rules
+        # Doesn't violate any rules
         return True
 
     valid_aliases = set(a for a in all_aliases if is_valid_alias(a))
@@ -288,7 +288,7 @@ def walk_and_configure(
     unresolved, _ = loader.resolve_aliases()
     assert len(unresolved) == 0
 
-    # Walk the tree into our weird internal data structurs.
+    # Walk the tree into our weird internal data structures.
     pages, aliases_d, link_d = get_pages(root_mod=root_mod)
 
     # Merge user-provided and auto-found section titles.
