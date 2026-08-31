@@ -7,21 +7,21 @@ from qualtran.bloqs.qft.QFTTextBook(3, True)
     q: QUInt(3),
 ] {
     pgu                  = PhaseGradientUnitary(variant=1)
-    reg                  = Split            [reg=q]             
+    reg                  = Split(3)         [reg=q]             
     q2                   = H                [q=reg[0]]          
     ctrl, phase_grad     = PhaseGradientUnitary[ctrl=reg[1], phase_grad=q2]
     q3                   = H                [q=ctrl]            
-    reg2                 = Join             [reg=[q3, phase_grad]]
+    reg2                 = Join(2)          [reg=[q3, phase_grad]]
     ctrl2, phase_grad2   = pgu              [ctrl=reg[2], phase_grad=reg2]
     q4                   = H                [q=ctrl2]           
-    reg3                 = Split(variant=1) [reg=phase_grad2]   
+    reg3                 = Split(2)         [reg=phase_grad2]   
     x, y                 = TwoBitSwap       [x=reg3[1], y=q4]   
-    reg4                 = Join(variant=1)  [reg=[x, reg3[0], y]]
+    reg4                 = Join(3)          [reg=[x, reg3[0], y]]
                            return           [q=reg4]            
 }
 
 
-qcast Split
+qcast Split(3)
 [reg: QUInt(3) -> QBit[3]]
 
 extern qdef H
@@ -39,7 +39,7 @@ from qualtran.bloqs.rotations.PhaseGradientUnitary(1, 0.5, True, 1e-10)
 }
 
 
-qcast Join
+qcast Join(2)
 [reg: QBit[2] -> QFxp(2, 2, signed=False)]
 
 qdef PhaseGradientUnitary(variant=1)
@@ -49,22 +49,22 @@ from qualtran.bloqs.rotations.PhaseGradientUnitary(2, 0.5, True, 1e-10)
     phase_grad: QFxp(2, 2, signed=False),
 ] {
     cz                   = CZ(pow=0.5, variant=1)
-    reg                  = Split(variant=1) [reg=phase_grad]    
+    reg                  = Split(2)         [reg=phase_grad]    
     q                    = cz               [q=[ctrl, reg[0]]]  
     q2                   = CZ(pow=0.25)     [q=[q[0], reg[1]]]  
-    reg2                 = Join             [reg=[q[1], q2[1]]] 
+    reg2                 = Join(2)          [reg=[q[1], q2[1]]] 
                            return           [ctrl=q2[0], phase_grad=reg2]
 }
 
 
-qcast Split(variant=1)
+qcast Split(2)
 [reg: QFxp(2, 2, signed=False) -> QBit[2]]
 
 extern qdef TwoBitSwap
 from qualtran.bloqs.basic_gates.TwoBitSwap
 [x: QBit, y: QBit]
 
-qcast Join(variant=1)
+qcast Join(3)
 [reg: QBit[3] -> QUInt(3)]
 
 qdef CZ(pow=0.5)
