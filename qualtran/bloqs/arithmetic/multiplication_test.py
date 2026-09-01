@@ -16,6 +16,7 @@ import cirq
 import numpy as np
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder, QUInt, Register
 from qualtran.bloqs.arithmetic.multiplication import (
     _invert_real_number,
@@ -119,6 +120,14 @@ def test_product():
     num_toff = 2 * bitsize * mbits - max(bitsize, mbits)
     assert t_complexity(cbloq) == TComplexity(t=4 * num_toff)
 
+    bloq = Product(2, 3)
+    qlt_testing.assert_valid_bloq_decomposition(bloq)
+    cbloq = bloq.decompose_bloq()
+    for a in range(4):
+        for b in range(8):
+            assert bloq.call_classically(a=a, b=b) == (a, b, a * b)
+            assert cbloq.call_classically(a=a, b=b) == (a, b, a * b)
+
 
 def test_scale_int_by_real():
     bb = BloqBuilder()
@@ -154,6 +163,8 @@ def test_plus_equal_product():
     a_bit, b_bit, res_bit = 2, 2, 4
     num_bits = a_bit + b_bit + res_bit
     bloq = PlusEqualProduct(a_bit, b_bit, res_bit)
+    qlt_testing.assert_valid_bloq_decomposition(bloq)
+    cbloq = bloq.decompose_bloq()
     basis_map = {}
     for a in range(2**a_bit):
         for b in range(2**b_bit):
@@ -161,6 +172,7 @@ def test_plus_equal_product():
                 res_out = (result + a * b) % 2**res_bit
                 # Test Bloq style classical simulation.
                 assert bloq.call_classically(a=a, b=b, result=result) == (a, b, res_out)
+                assert cbloq.call_classically(a=a, b=b, result=result) == (a, b, res_out)
                 # Prepare basis states mapping for cirq-style simulation.
                 input_state_str = f'{a:0{a_bit}b}' + f'{b:0{b_bit}b}' + f'{result:0{res_bit}b}'
                 input_state = int(input_state_str, 2)
