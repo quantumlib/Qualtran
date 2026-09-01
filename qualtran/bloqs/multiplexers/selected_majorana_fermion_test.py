@@ -162,3 +162,15 @@ def test_selected_majorana_fermion_classical_action(selection_bitsize, target_bi
     assert_consistent_phased_classical_action(
         gate, selection=range(target_bitsize), target=range(2**target_bitsize), control=range(2)
     )
+
+def test_selected_majorana_fermion_classical_action_multiple_selection():
+    gate = SelectedMajoranaFermion(
+        (
+            Register('selection1', BQUInt(2, 3)),
+            Register('selection2', BQUInt(1, 2)),
+        ),
+        target_gate=cirq.X
+    )
+    assert_consistent_phased_classical_action(
+        gate, selection1=range(3), selection2=range(2), target=range(2**6), control=range(2)
+    )
