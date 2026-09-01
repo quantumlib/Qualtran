@@ -82,6 +82,10 @@ def _build_registry() -> dict[str, TestCaseProvider]:
     from qualtran.bloqs.arithmetic.controlled_addition import (
         _get_cadd_classical_sim_test_cases,
     )
+    from qualtran.bloqs.arithmetic.multiplication import (
+        _get_plus_equal_product_classical_sim_test_cases,
+        _get_product_classical_sim_test_cases,
+    )
     from qualtran.bloqs.arithmetic.negate import (
         _get_negate_classical_sim_test_cases,
     )
@@ -100,6 +104,8 @@ def _build_registry() -> dict[str, TestCaseProvider]:
         'negate': _get_negate_classical_sim_test_cases,
         'on_each': _get_on_each_classical_sim_test_cases,
         'out_of_place_adder': _get_out_of_place_adder_classical_sim_test_cases,
+        'plus_equal_product': _get_plus_equal_product_classical_sim_test_cases,
+        'product': _get_product_classical_sim_test_cases,
         'xor': _get_xor_classical_sim_test_cases,
         'xork': _get_xork_classical_sim_test_cases,
         'xor_k': _get_xork_classical_sim_test_cases,
