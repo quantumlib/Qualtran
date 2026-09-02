@@ -141,51 +141,55 @@ class SelectedMajoranaFermion(UnaryIterationGate):
     def on_classical_vals(self, **vals) -> Dict[str, 'ClassicalValT']:
         if self.target_gate != cirq.X and self.target_gate != cirq.Z:
             return NotImplemented
-        if len(self.control_registers) != 1 or len(self.selection_registers) != 1:
-            return NotImplemented
-        control_name = self.control_registers[0].name
-        control = vals[control_name]
-        selection_name = self.selection_registers[0].name
-        selection = vals[selection_name]
-        target = vals['target']
+        for control_register in self.control_registers:
+            if vals[control_register.name] == 0:
+                return vals
+        selection = 0
+        for selection_register in self.selection_registers:
+            selection = (
+                selection * (selection_register.dtype.iteration_length_or_zero())
+                + vals[selection_register.name]
+            )
 
         # When target_gate == cirq.X, flip the selection-th bit in target. The ith bit of a
         # size N regirster is addressed with the unsigned integer 2^(N - 1 - i) in our big
         # endian convention.
-        if control and self.target_gate == cirq.X:
-            max_selection = self.selection_registers[0].dtype.iteration_length_or_zero() - 1
-            target = (2 ** (max_selection - selection)) ^ target
+        if self.target_gate == cirq.X:
+            max_selection = total_bits(self.target_registers) - 1
+            vals['target'] = (2 ** (max_selection - selection)) ^ vals['target']
         # When target_gate == cirq.Z, the action is only in the phase.
 
-        return {control_name: control, selection_name: selection, 'target': target}
+        return vals
 
     def basis_state_phase(self, **vals) -> Union[complex, None]:
         if self.target_gate != cirq.X and self.target_gate != cirq.Z:
             return None
-        if len(self.control_registers) != 1 or len(self.selection_registers) != 1:
-            return None
-        control_name = self.control_registers[0].name
-        control = vals[control_name]
-        selection_name = self.selection_registers[0].name
-        selection = vals[selection_name]
+        for control_register in self.control_registers:
+            if vals[control_register.name] == 0:
+                return 1
+        selection = 0
+        for selection_register in self.selection_registers:
+            selection = (
+                selection * (selection_register.dtype.iteration_length_or_zero())
+                + vals[selection_register.name]
+            )
+
         target = vals['target']
-        if control:
-            max_selection = self.selection_registers[0].dtype.iteration_length_or_zero() - 1
-            # This gate applies Z in positions 0 through (selection - 1). The effect is
-            # a phase of plus or minus 1 depending on the parity of the number of ones
-            # in those positions. For an N-bit big endian integer, the first j bits can
-            # be isolated by shifting right by N - j.
-            #
-            # The target gate X has no additional phase, so calculate as in the
-            # previous paragraph.
-            if self.target_gate == cirq.X:
-                num_phases = (target >> (max_selection - selection + 1)).bit_count()
-            # The target gate Z is applied in position selection, so consider the full
-            # range 0 through selection.
-            else:
-                num_phases = (target >> (max_selection - selection)).bit_count()
-            return 1 if (num_phases % 2) == 0 else -1
-        return 1
+        max_selection = total_bits(self.target_registers) - 1
+        # This gate applies Z in positions 0 through (selection - 1). The effect is
+        # a phase of plus or minus 1 depending on the parity of the number of ones
+        # in those positions. For an N-bit big endian integer, the first j bits can
+        # be isolated by shifting right by N - j.
+        #
+        # The target gate X has no additional phase, so calculate as in the
+        # previous paragraph.
+        if self.target_gate == cirq.X:
+            num_phases = (target >> (max_selection - selection + 1)).bit_count()
+        # The target gate Z is applied in position selection, so consider the full
+        # range 0 through selection.
+        else:
+            num_phases = (target >> (max_selection - selection)).bit_count()
+        return 1 if (num_phases % 2) == 0 else -1
 
     def __str__(self):
         return f'SelectedMajoranaFermion({self.target_gate})'
