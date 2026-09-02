@@ -16,7 +16,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran import BQUInt, QUInt, Register
+from qualtran import BQUInt, QBit, QUInt, Register
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
 from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
 from qualtran.cirq_interop.testing import GateHelper
@@ -163,14 +163,23 @@ def test_selected_majorana_fermion_classical_action(selection_bitsize, target_bi
         gate, selection=range(target_bitsize), target=range(2**target_bitsize), control=range(2)
     )
 
-def test_selected_majorana_fermion_classical_action_multiple_selection():
+
+def test_selected_majorana_fermion_classical_action_multiple_selections():
     gate = SelectedMajoranaFermion(
-        (
-            Register('selection1', BQUInt(2, 3)),
-            Register('selection2', BQUInt(1, 2)),
-        ),
-        target_gate=cirq.X
+        (Register('selection1', BQUInt(2, 3)), Register('selection2', BQUInt(1, 2))),
+        target_gate=cirq.X,
     )
     assert_consistent_phased_classical_action(
         gate, selection1=range(3), selection2=range(2), target=range(2**6), control=range(2)
+    )
+
+
+def test_selected_majorana_fermion_classical_action_multiple_controls():
+    gate = SelectedMajoranaFermion(
+        selection_regs=Register('selection', BQUInt(2, 4)),
+        control_regs=(Register('control1', QBit()), Register('control2', QBit())),
+        target_gate=cirq.X,
+    )
+    assert_consistent_phased_classical_action(
+        gate, selection=range(4), target=range(2**4), control1=range(2), control2=range(2)
     )

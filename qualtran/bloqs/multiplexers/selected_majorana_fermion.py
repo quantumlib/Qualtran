@@ -146,8 +146,10 @@ class SelectedMajoranaFermion(UnaryIterationGate):
                 return vals
         selection = 0
         for selection_register in self.selection_registers:
-            selection = (selection*(selection_register.dtype.iteration_length_or_zero())
-                         + vals[selection_register.name])
+            selection = (
+                selection * (selection_register.dtype.iteration_length_or_zero())
+                + vals[selection_register.name]
+            )
 
         # When target_gate == cirq.X, flip the selection-th bit in target. The ith bit of a
         # size N regirster is addressed with the unsigned integer 2^(N - 1 - i) in our big
@@ -167,8 +169,10 @@ class SelectedMajoranaFermion(UnaryIterationGate):
                 return 1
         selection = 0
         for selection_register in self.selection_registers:
-            selection = (selection*(selection_register.dtype.iteration_length_or_zero())
-                         + vals[selection_register.name])
+            selection = (
+                selection * (selection_register.dtype.iteration_length_or_zero())
+                + vals[selection_register.name]
+            )
 
         target = vals['target']
         max_selection = total_bits(self.target_registers) - 1
