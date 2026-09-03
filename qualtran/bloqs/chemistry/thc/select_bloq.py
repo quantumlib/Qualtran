@@ -18,7 +18,7 @@ from functools import cached_property
 from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
-from attrs import evolve, frozen
+from attrs import evolve, field, frozen
 
 from qualtran import (
     AddControlledT,
@@ -30,16 +30,66 @@ from qualtran import (
     CtrlSpec,
     QAny,
     QBit,
+    QFxp,
     Register,
     Signature,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates import CSwap, Toffoli, XGate
+from qualtran.bloqs.basic_gates import CSwap, XGate
 from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
+from qualtran.bloqs.chemistry.quad_fermion.givens_bloq import RealGivensRotationByPhaseGradient
+from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
+from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
+
+
+def _leaf_tensor_to_givens_rotations(eta: np.ndarray, num_bits_theta: int) -> np.ndarray:
+    r"""Compute Givens rotation angles for transformation from orbital basis to THC
+
+    Given the THC leaf tensor $\eta$ of shape $(M, N/2)$, this function computes the
+    $N/2 - 1$ Givens rotation angles, $\theta$, that rotate from the standard basis to
+    the THC basis for each $\mu \in [0, M-1]$.
+
+    Args:
+        eta: THC leaf tensor of shape (M, N/2).
+        num_bits_theta: Precision $\beth$ (in bits) for the rotation angles.
+
+    Returns:
+        thetas: Integer array of shape (N/2 - 1,) containing angles $\theta$.
+
+    References:
+        [Quantum computing enhanced computational catalysis](https://arxiv.org/abs/2007.14460).
+            Burg, Low, et al. 2021. Eq. 57
+    """
+    assert len(eta.shape) == 2
+    num_mu, num_spatial = eta.shape
+    num_angles = num_spatial - 1
+    if num_angles <= 0:
+        return np.zeros((0, num_mu), dtype=int)
+    thetas = np.zeros((num_angles, num_mu), dtype=int)
+    dtype = QFxp(num_bits_theta, num_bits_theta, signed=False)
+    fpi = 4 * np.pi
+    for mu in range(num_mu):
+        eta_mu = eta[mu]
+        norm = np.linalg.norm(eta_mu)
+        if norm < 1e-12:
+            continue
+        u = eta_mu / norm
+
+        # solve for first theta
+        theta_first = (np.arctan2(u[num_angles], u[num_angles - 1]) + 2 * np.pi) % (2 * np.pi)
+        thetas[num_angles - 1, mu] = dtype.to_fixed_width_int(theta_first / fpi)
+        hypot = u[-1] ** 2 + u[-2] ** 2
+
+        # solve for remaining thetas
+        for i in range(num_angles - 2, -1, -1):
+            theta_next = np.arctan2(np.sqrt(hypot), u[i])
+            thetas[i, mu] = dtype.to_fixed_width_int(theta_next / fpi)
+            hypot += u[i] ** 2
+    return thetas
 
 
 @frozen
@@ -47,22 +97,28 @@ class THCRotations(Bloq):
     r"""Bloq for rotating into THC basis through Givens rotation network.
 
     This is accounting for In-data:rot and In-R in Fig. 7 of the THC paper (Ref.
-    1). In practice this bloq is made up of a QROM load of the angles followed
-    by controlled rotations. Equivalently it can be built from a modified
-    version of the ProgrammableRotationGateArray from implemented in qualtran
-    from Ref. 2. This is a placeholder waiting for an actual implementation.
-    See https://github.com/quantumlib/Qualtran/issues/386.
+    1).
+
+    The bloq loads $N/2 - 1$ Givens rotation angles from the selection register
+    using QROAM, prepares a phase gradient state, applies $N/2 - 1$ real
+    Givens rotations between spatial orbitals using `RealGivensRotationByPhaseGradient`,
+    and uncomputes the phase gradient state.
 
     Args:
         num_mu: THC auxiliary index dimension $M$
-        num_spin_orb: number of spin orbitals $N$
+        num_spin_orb: number of spin orbitals $N$ (number of spatial orbitals = $N/2$).
         num_bits_theta: Number of bits of precision for the rotations. Called
             $\beth$ in the reference.
-        kr1: block sizes for QROM erasure for outputting rotation angles. See Eq 34.
-        kr2: block sizes for QROM erasure for outputting rotation angles. This
-            is for the second QROM (eq 35)
+        block_size: Block size for QROAM loading.
         two_body_only: Whether to only apply the two body Hamiltonian. This reduces the QROM size.
         is_adjoint: Whether to dagger this bloq or not.
+        angles_data: Optional tuple of tuples of integer-quantized angles.
+            If None, default (zero) angle data is used.
+
+    Registers:
+        data: Register storing the loaded rotation angle data.
+        sel: Selection register indexing $\mu$ (or one-body orbital).
+        trg: Target spatial orbitals register of size $N/2$.
 
     References:
         [Even more efficient quantum computations of chemistry through
@@ -74,51 +130,174 @@ class THCRotations(Bloq):
     num_mu: int
     num_spin_orb: int
     num_bits_theta: int
-    kr1: int = 1
-    kr2: int = 1
+    block_size: int = 1
     two_body_only: bool = False
-    is_adjoint: bool = False
+    angles_data: Optional[Tuple[Tuple[int, ...], ...]] = field(
+        default=None,
+        repr=False,
+        converter=lambda d: None if d is None else tuple(tuple(int(x) for x in row) for row in d),
+    )
+
+    @classmethod
+    def from_hamiltonian_coeffs(
+        cls,
+        eta: np.ndarray,
+        num_bits_theta: int,
+        tpq: Optional[np.ndarray] = None,
+        block_size: int = 1,
+        two_body_only: bool = False,
+    ) -> 'THCRotations':
+        r"""Construct THCRotations from Hamiltonian coefficients.
+
+        Args:
+            eta: THC leaf tensor of shape (M, N/2).
+            num_bits_theta: Number of bits of precision for the rotation angles ($\beth$).
+            tpq: Optional modified one-body Hamiltonian of shape (N/2, N/2) or (N/2,).
+            block_size: Block size for QROAM loading.
+            two_body_only: Whether to only apply the two body Hamiltonian.
+
+        Returns:
+            Constructed THCRotations object.
+        """
+        num_mu, num_spatial = eta.shape
+        num_spin_orb = 2 * num_spatial
+        thetas_2body = _leaf_tensor_to_givens_rotations(eta, num_bits_theta=num_bits_theta)
+        if two_body_only:
+            angles_data = thetas_2body
+        else:
+            if tpq is not None:
+                _, u = np.linalg.eigh(tpq)
+                thetas_1body = _leaf_tensor_to_givens_rotations(u.T, num_bits_theta=num_bits_theta)
+            else:
+                # pad with zeros
+                num_angles = num_spatial - 1
+                thetas_1body = np.zeros((num_angles, num_spatial), dtype=int)
+            angles_data = np.concatenate([thetas_2body, thetas_1body], axis=1)
+
+        return cls(
+            num_mu=num_mu,
+            num_spin_orb=num_spin_orb,
+            num_bits_theta=num_bits_theta,
+            block_size=block_size,
+            two_body_only=two_body_only,
+            angles_data=tuple(tuple(int(x) for x in row) for row in angles_data),
+        )
+
+    @property
+    def num_spatial(self) -> int:
+        return self.num_spin_orb // 2
+
+    @property
+    def num_angles(self) -> int:
+        return self.num_spatial - 1
+
+    @property
+    def data_bitsize(self) -> int:
+        return self.num_angles * self.num_bits_theta
+
+    @property
+    def num_terms(self) -> int:
+        if self.two_body_only:
+            return self.num_mu
+        return self.num_mu + self.num_spatial
+
+    @cached_property
+    def selection_bitsize(self) -> int:
+        if self.two_body_only:
+            return self.num_mu.bit_length()
+        return self.num_mu.bit_length() + 1
 
     @cached_property
     def signature(self) -> Signature:
         return Signature(
             [
                 Register("nu_eq_mp1", QBit()),
-                Register("data", QAny(bitsize=self.num_bits_theta)),
+                Register("data", QAny(bitsize=self.data_bitsize)),
                 Register("sel", QAny(bitsize=self.num_mu.bit_length())),
-                Register("trg", QAny(bitsize=self.num_spin_orb // 2)),
+                Register("trg", QAny(bitsize=self.num_spatial)),
             ]
         )
 
-    def adjoint(self) -> 'Bloq':
-        return evolve(self, is_adjoint=not self.is_adjoint)
-
     def __str__(self) -> str:
-        dag = '†' if self.is_adjoint else ''
-        return f"In_mu-R{dag}"
+        return "In_mu-R"
+
+    def _build_qroam(self) -> QROAMClean:
+        target_bitsizes = (self.num_bits_theta,) * self.num_angles
+        log_block_size = max(0, int(int(self.block_size) - 1).bit_length())
+        if self.angles_data is None:
+            return QROAMClean.build_from_bitsize(
+                (self.num_terms,),
+                target_bitsizes=target_bitsizes,
+                selection_bitsizes=(self.selection_bitsize,),
+                log_block_sizes=(log_block_size,),
+            )
+
+        # pad angles array if necessary for one electron terms
+        angles_data = tuple(
+            col + (0,) * max(0, self.num_terms - len(col)) for col in self.angles_data
+        )
+        return QROAMClean(
+            data_or_shape=angles_data,
+            target_bitsizes=target_bitsizes,
+            selection_bitsizes=(self.selection_bitsize,),
+            log_block_sizes=(log_block_size,),
+        )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        # from listings on page 17 of Ref. [1]
-        num_data_sets = self.num_mu + self.num_spin_orb // 2
-        if self.is_adjoint:
-            if self.two_body_only:
-                toff_cost_qrom = (
-                    int(np.ceil(self.num_mu / self.kr1))
-                    + int(np.ceil(self.num_spin_orb / (2 * self.kr1)))
-                    + self.kr1
-                )
-            else:
-                toff_cost_qrom = int(np.ceil(self.num_mu / self.kr2)) + self.kr2
+        if self.num_angles <= 0:
+            return {}
+        qroam = self._build_qroam()
+        pg = PhaseGradientState(self.num_bits_theta)
+        givens = RealGivensRotationByPhaseGradient(self.num_bits_theta)
+        return {qroam: 1, pg: 1, givens: self.num_angles, pg.adjoint(): 1}
+
+    def build_composite_bloq(
+        self,
+        bb: 'BloqBuilder',
+        nu_eq_mp1: 'SoquetT',
+        data: 'SoquetT',
+        sel: 'SoquetT',
+        trg: 'SoquetT',
+    ) -> Dict[str, 'SoquetT']:
+        if self.num_angles <= 0:
+            return {'nu_eq_mp1': nu_eq_mp1, 'data': data, 'sel': sel, 'trg': trg}
+
+        bb.free(data)
+        qroam = self._build_qroam()
+        if not self.two_body_only:
+            qroam_sel: 'SoquetT' = bb.join(np.array([nu_eq_mp1, *bb.split(sel)]))
         else:
-            toff_cost_qrom = num_data_sets - 2
-            if self.two_body_only:
-                # we don't need the only body bit for the second application of the
-                # rotations for the nu register.
-                toff_cost_qrom -= self.num_spin_orb // 2
-        # xref https://github.com/quantumlib/Qualtran/issues/370, the cost below
-        # assume a phase gradient.
-        rot_cost = self.num_spin_orb * (self.num_bits_theta - 2)
-        return {Toffoli(): (rot_cost + toff_cost_qrom)}
+            qroam_sel = sel
+
+        sel_res = bb.add_d(qroam, selection=qroam_sel)
+        if not self.two_body_only:
+            soqs_split = bb.split(sel_res['selection'])
+            nu_eq_mp1 = soqs_split[0]
+            sel = bb.join(soqs_split[1:])
+        else:
+            sel = sel_res['selection']
+
+        targets = [sel_res[f'target{i}_'] for i in range(self.num_angles)]
+        for i in range(self.num_angles):
+            junk = sel_res.get(f'junk_target{i}_')
+            if junk is not None:
+                for soq in np.asarray(junk).flat:
+                    bb.free(soq)
+
+        pg = bb.add(PhaseGradientState(self.num_bits_theta))
+        q_trg = bb.split(trg)
+        for k in range(self.num_angles):
+            q_trg[k], q_trg[k + 1], targets[k], pg = bb.add(
+                RealGivensRotationByPhaseGradient(self.num_bits_theta),
+                target_i=q_trg[k],
+                target_j=q_trg[k + 1],
+                rom_data=targets[k],
+                phase_gradient=pg,
+            )
+
+        bb.add(PhaseGradientState(self.num_bits_theta).adjoint(), phase_grad=pg)
+        data = bb.join(np.concatenate([bb.split(tgt) for tgt in targets]))
+        return {'nu_eq_mp1': nu_eq_mp1, 'data': data, 'sel': sel, 'trg': bb.join(q_trg)}
 
 
 @frozen
@@ -130,24 +309,26 @@ class SelectTHC(SelectOracle):
         num_spin_orb: number of spin orbitals $N$
         num_bits_theta: Number of bits of precision for the rotations. Called
             $\beth$ in the reference.
+        keep_bitsize: number of bits for keep register for coherent alias
+            sampling. This can be determined from the PrepareTHC bloq. See
+            https://github.com/quantumlib/Qualtran/issues/549
         kr1: block sizes for QROM erasure for outputting rotation angles. See Eq 34.
         kr2: block sizes for QROM erasure for outputting rotation angles. This
             is for the second QROM (eq 35)
         control_val: A control bit for the entire gate.
-        keep_bitsize: number of bits for keep register for coherent alias
-        sampling. This can be determined from the PrepareTHC bloq. See
-        https://github.com/quantumlib/Qualtran/issues/549
+        eta: Optional THC leaf tensor of shape (M, N/2).
 
     Registers:
         succ: success flag qubit from uniform state preparation
-        nu_eq_mp1: flag for if $nu = M+1$
+        nu_eq_mp1: flag for if $\nu = M+1$
         mu: $\mu$ register.
         nu: $\nu$ register.
-        theta: sign register.
         plus_mn: Flag controlling swaps between mu and nu. Note that as per the
             Reference, the swaps are NOT performed as part of SELECT as they're
-            acounted for during Prepare.
+            accounted for during Prepare.
         plus_a / plus_b: plus state for controlled swaps on spins.
+        sigma: ancilla register for alias sampling.
+        rot: ancilla register for uniform superposition rotation.
         sys_a / sys_b : System registers for (a)lpha/(b)eta orbitals.
 
     References:
@@ -162,6 +343,16 @@ class SelectTHC(SelectOracle):
     kr1: int = 1
     kr2: int = 1
     control_val: Optional[int] = None
+    eta: Optional[np.ndarray] = field(
+        default=None,
+        eq=lambda x: None if x is None else (x.shape, x.dtype, x.tobytes()),
+        repr=False,
+    )
+    tpq: Optional[np.ndarray] = field(
+        default=None,
+        eq=lambda x: None if x is None else (x.shape, x.dtype, x.tobytes()),
+        repr=False,
+    )
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
@@ -206,19 +397,28 @@ class SelectTHC(SelectOracle):
         sys_b = soqs['sys_b']
         plus_b, sys_a, sys_b = bb.add(CSwap(self.num_spin_orb // 2), ctrl=plus_b, x=sys_a, y=sys_b)
         # Rotations
-        data = bb.allocate(self.num_bits_theta)
-        nu_eq_mp1, data, mu, sys_a = bb.add(
-            THCRotations(
+        n_spatial = self.num_spin_orb // 2
+        n_angles = n_spatial - 1
+        data_bitsize = n_angles * self.num_bits_theta
+        data = bb.allocate(data_bitsize)
+        if self.eta is not None:
+            thc_rot = THCRotations.from_hamiltonian_coeffs(
+                self.eta,
+                self.num_bits_theta,
+                tpq=self.tpq,
+                block_size=self.kr1,
+                two_body_only=False,
+            )
+        else:
+            thc_rot = THCRotations(
                 num_mu=self.num_mu,
                 num_spin_orb=self.num_spin_orb,
                 num_bits_theta=self.num_bits_theta,
-                kr1=self.kr1,
-                kr2=self.kr2,
-            ),
-            nu_eq_mp1=nu_eq_mp1,
-            data=data,
-            sel=mu,
-            trg=sys_a,
+                block_size=self.kr1,
+                two_body_only=False,
+            )
+        nu_eq_mp1, data, mu, sys_a = bb.add(
+            thc_rot, nu_eq_mp1=nu_eq_mp1, data=data, sel=mu, trg=sys_a
         )
         # Controlled Z_0
         (succ,), sys_b = bb.add(
@@ -228,18 +428,7 @@ class SelectTHC(SelectOracle):
         )
         # Undo rotations
         nu_eq_mp1, data, mu, sys_a = bb.add(
-            THCRotations(
-                num_mu=self.num_mu,
-                num_spin_orb=self.num_spin_orb,
-                num_bits_theta=self.num_bits_theta,
-                kr1=self.kr1,
-                kr2=self.kr2,
-                is_adjoint=True,
-            ),
-            nu_eq_mp1=nu_eq_mp1,
-            data=data,
-            sel=mu,
-            trg=sys_a,
+            thc_rot.adjoint(), nu_eq_mp1=nu_eq_mp1, data=data, sel=mu, trg=sys_a
         )
         plus_b, sys_a, sys_b = bb.add(CSwap(self.num_spin_orb // 2), ctrl=plus_b, x=sys_a, y=sys_b)
 
@@ -255,19 +444,20 @@ class SelectTHC(SelectOracle):
         plus_b, sys_a, sys_b = bb.add(CSwap(self.num_spin_orb // 2), ctrl=plus_b, x=sys_a, y=sys_b)
 
         # Rotations
-        nu_eq_mp1, data, mu, sys_a = bb.add(
-            THCRotations(
+        if self.eta is not None:
+            thc_rot_two_body = THCRotations.from_hamiltonian_coeffs(
+                self.eta, self.num_bits_theta, tpq=self.tpq, block_size=self.kr2, two_body_only=True
+            )
+        else:
+            thc_rot_two_body = THCRotations(
                 num_mu=self.num_mu,
                 num_spin_orb=self.num_spin_orb,
                 num_bits_theta=self.num_bits_theta,
-                kr1=self.kr1,
-                kr2=self.kr2,
+                block_size=self.kr2,
                 two_body_only=True,
-            ),
-            nu_eq_mp1=nu_eq_mp1,
-            data=data,
-            sel=mu,
-            trg=sys_a,
+            )
+        nu_eq_mp1, data, mu, sys_a = bb.add(
+            thc_rot_two_body, nu_eq_mp1=nu_eq_mp1, data=data, sel=mu, trg=sys_a
         )
         # Controlled Z_0
         (succ, nu_eq_mp1), sys_b = bb.add(
@@ -277,19 +467,7 @@ class SelectTHC(SelectOracle):
         )
         # Undo rotations
         nu_eq_mp1, data, mu, sys_a = bb.add(
-            THCRotations(
-                num_mu=self.num_mu,
-                num_spin_orb=self.num_spin_orb,
-                num_bits_theta=self.num_bits_theta,
-                kr1=self.kr1,
-                kr2=self.kr2,
-                two_body_only=True,
-                is_adjoint=True,
-            ),
-            nu_eq_mp1=nu_eq_mp1,
-            data=data,
-            sel=mu,
-            trg=sys_a,
+            thc_rot_two_body.adjoint(), nu_eq_mp1=nu_eq_mp1, data=data, sel=mu, trg=sys_a
         )
 
         # Clean up
@@ -327,8 +505,20 @@ class SelectTHC(SelectOracle):
 
 
 @bloq_example
+def _thc_rotations() -> THCRotations:
+    rng = np.random.default_rng(42)
+    eta = rng.normal(size=(2, 4))
+    tpq = rng.normal(size=(4, 4))
+    tpq = 0.5 * (tpq + tpq.T)
+    thc_rotations = THCRotations.from_hamiltonian_coeffs(eta, num_bits_theta=12, tpq=tpq)
+    return thc_rotations
+
+
+_THC_ROTATIONS = BloqDocSpec(bloq_cls=THCRotations, examples=(_thc_rotations,))
+
+
+@bloq_example
 def _thc_sel() -> SelectTHC:
-    num_mu = 8
     num_mu = 10
     num_spin_orb = 2 * 4
     thc_sel = SelectTHC(

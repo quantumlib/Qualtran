@@ -28,17 +28,51 @@ if TYPE_CHECKING:
 
 
 def _poly_converter(p) -> Union['galois.Poly', None]:
-    import galois
-
     if p is None:
         return None
+    import galois
+
     if isinstance(p, galois.Poly):
         return p
     return galois.Poly.Degrees(p)
 
 
-@attrs.frozen
-class _GF(BitEncoding['galois.FieldArray']):
+class _GFHashEqMixin:
+    """Fast hashing and equality for Galois field data types."""
+
+    characteristic: SymbolicInt
+    degree: SymbolicInt
+    irreducible_poly: Optional['galois.Poly']
+
+    @cached_property
+    def _poly_key(self) -> Optional[int]:
+        if self.irreducible_poly is None:
+            return None
+        return int(self.irreducible_poly)
+
+    @cached_property
+    def _hash(self) -> int:
+        return hash((self.__class__, self.characteristic, self.degree, self._poly_key))
+
+    def __hash__(self) -> int:
+        return self._hash
+
+    def __eq__(self, other: object) -> bool:
+        if self is other:
+            return True
+        if type(self) is not type(other):
+            return False
+        assert isinstance(other, _GFHashEqMixin)
+        return (
+            self._hash == other._hash
+            and self.characteristic == other.characteristic
+            and self.degree == other.degree
+            and self._poly_key == other._poly_key
+        )
+
+
+@attrs.frozen(eq=False, hash=False)
+class _GF(_GFHashEqMixin, BitEncoding['galois.FieldArray']):
     r"""Galois Field type to represent elements of a finite field."""
 
     characteristic: SymbolicInt
@@ -50,7 +84,10 @@ class _GF(BitEncoding['galois.FieldArray']):
         if is_symbolic(self.characteristic, self.degree):
             return None
 
-        from galois import GF
+        try:
+            from galois import GF
+        except ImportError:
+            return None
 
         return GF(  # type: ignore[call-overload]
             int(self.characteristic), int(self.degree), compile='python-calculate'
@@ -110,8 +147,8 @@ class _GF(BitEncoding['galois.FieldArray']):
             raise ValueError(f"Too-large classical values encountered in {debug_str}")
 
 
-@attrs.frozen
-class QGF(QDType['galois.FieldArray']):
+@attrs.frozen(eq=False, hash=False)
+class QGF(_GFHashEqMixin, QDType['galois.FieldArray']):
     r"""Galois Field type to represent elements of a finite field.
 
     A Finite Field or Galois Field is a field that contains finite number of elements. The order
@@ -155,7 +192,10 @@ class QGF(QDType['galois.FieldArray']):
         if is_symbolic(self.characteristic, self.degree):
             return None
 
-        from galois import GF
+        try:
+            from galois import GF
+        except ImportError:
+            return None
 
         return GF(  # type: ignore[call-overload]
             int(self.characteristic), int(self.degree), compile='python-calculate'
@@ -192,8 +232,8 @@ class QGF(QDType['galois.FieldArray']):
         return f'QGF({self.characteristic}**{self.degree})'
 
 
-@attrs.frozen
-class CGF(CDType['galois.FieldArray']):
+@attrs.frozen(eq=False, hash=False)
+class CGF(_GFHashEqMixin, CDType['galois.FieldArray']):
     r"""Galois Field classical type to represent elements of a finite field.
 
     See QGF for documentation.
@@ -208,7 +248,10 @@ class CGF(CDType['galois.FieldArray']):
         if is_symbolic(self.characteristic, self.degree):
             return None
 
-        from galois import GF
+        try:
+            from galois import GF
+        except ImportError:
+            return None
 
         return GF(  # type: ignore[call-overload]
             int(self.characteristic), int(self.degree), compile='python-calculate'
