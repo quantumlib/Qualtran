@@ -51,7 +51,7 @@ dependencies = [
     "ipywidgets",
 
     # ui
-    "dash",
+    "dash<4.2.0",
     "plotly",
 
     # quimb simulation
@@ -83,6 +83,10 @@ dependencies = [
     "seaborn",
     "joblib",
     "tqdm",
+
+    # lark 1.3.1 produces a TypeError at import time.
+    # "(_LexerArgType | None where _LexerArgType is a str)"
+    "lark != 1.3.1",
 ]
 
 [tool.hatch.version]
