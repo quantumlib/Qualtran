@@ -82,6 +82,7 @@ import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_uv
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_and_prepare
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_t
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_uv
+import qualtran.bloqs.chemistry.quad_fermion.givens_bloq
 import qualtran.bloqs.chemistry.sf.prepare
 import qualtran.bloqs.chemistry.sf.select_bloq
 import qualtran.bloqs.chemistry.sf.single_factorization
@@ -329,6 +330,8 @@ RESOLVER_DICT = {
     "qualtran.bloqs.chemistry.pbc.first_quantization.select_t.SelectTFirstQuantization": qualtran.bloqs.chemistry.pbc.first_quantization.select_t.SelectTFirstQuantization,
     "qualtran.bloqs.chemistry.pbc.first_quantization.select_uv.ApplyNuclearPhase": qualtran.bloqs.chemistry.pbc.first_quantization.select_uv.ApplyNuclearPhase,
     "qualtran.bloqs.chemistry.pbc.first_quantization.select_uv.SelectUVFirstQuantization": qualtran.bloqs.chemistry.pbc.first_quantization.select_uv.SelectUVFirstQuantization,
+    "qualtran.bloqs.chemistry.quad_fermion.givens_bloq.ComplexGivensRotationByPhaseGradient": qualtran.bloqs.chemistry.quad_fermion.givens_bloq.ComplexGivensRotationByPhaseGradient,
+    "qualtran.bloqs.chemistry.quad_fermion.givens_bloq.RealGivensRotationByPhaseGradient": qualtran.bloqs.chemistry.quad_fermion.givens_bloq.RealGivensRotationByPhaseGradient,
     "qualtran.bloqs.chemistry.sf.prepare.InnerPrepareSingleFactorization": qualtran.bloqs.chemistry.sf.prepare.InnerPrepareSingleFactorization,
     "qualtran.bloqs.chemistry.sf.prepare.OuterPrepareSingleFactorization": qualtran.bloqs.chemistry.sf.prepare.OuterPrepareSingleFactorization,
     "qualtran.bloqs.chemistry.sf.select_bloq.SelectSingleFactorization": qualtran.bloqs.chemistry.sf.select_bloq.SelectSingleFactorization,
