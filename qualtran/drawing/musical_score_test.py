@@ -32,6 +32,26 @@ def test_dump_json(tmp_path):
     dump_musical_score(msd, name=f'{tmp_path}/musical_score_example')
 
 
+def test_musical_score_aligns_with_qubit_count():
+    from qualtran.bloqs.for_testing.qubit_count_many_alloc import (
+        TestManyAllocAbstracted,
+        TestManyAllocOnce,
+        TestManyAllocMany,
+    )
+    from qualtran.resource_counting import get_cost_cache, get_cost_value, QubitCount
+
+    n = 10
+    for bloq in [TestManyAllocMany(n), TestManyAllocOnce(n), TestManyAllocAbstracted(n)]:
+        expected_qubits = get_cost_value(bloq, QubitCount())
+        msd = get_musical_score_data(bloq.decompose_bloq())
+        # Ensure qubits (horizontal rows) match qubits from cost values in expected count. This test may depend on how
+        # elements of a circuit are represented, and may need to be updated accordingly.
+        actual_qubits = msd.max_y + 1
+        assert (
+            msd.max_y + 1 == expected_qubits
+        ), f'{type(bloq).__name__} has too many lines - expected {expected_qubits}; got {msd.max_y + 1}'
+
+
 @pytest.mark.notebook
 def test_notebook():
     execute_notebook('musical_score')

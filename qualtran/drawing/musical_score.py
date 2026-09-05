@@ -45,6 +45,7 @@ from qualtran import (
     Side,
     Signature,
 )
+from qualtran._infra.binst_graph_iterators import greedy_topological_sort
 from qualtran._infra.composite_bloq import _binst_to_cxns
 from qualtran._infra.quantum_graph import _Soquet
 
@@ -351,15 +352,29 @@ def _cbloq_musical_score(
 
     # Bloq-by-bloq application
     seq_x = 0
-    for topo_gen, binsts in enumerate(nx.topological_generations(binst_graph)):
-        for binst in binsts:
-            if isinstance(binst, DanglingT):
-                continue
-            pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=binst_graph)
-            _binst_assign_line(
-                binst, pred_cxns, soq_assign, seq_x=seq_x, topo_gen=topo_gen, manager=manager
+    # Maintain a mapping of the current depth of the rightmost ends of all qubits.
+    y_to_topo_gen = {}
+    for binst in greedy_topological_sort(binst_graph):
+        if isinstance(binst, DanglingT):
+            continue
+        pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=binst_graph)
+        _binst_assign_line(
+            binst, pred_cxns, soq_assign, seq_x=seq_x, topo_gen=topo_gen, manager=manager
+        )
+
+    # Check if the operation is reusing a qubit that has been freed. If so, we will need to update
+    # its topological ordering to reflect this.
+    for pred in pred_cxns:
+        y = soq_assign[pred.right].y
+        y_to_topo_gen[y] = soq_assign[pred.right].topo_gen
+    for succ in succ_cxns:
+        y = soq_assign[succ.left].y
+        if y in y_to_topo_gen and y_to_topo_gen[y] > topo_gen:
+            soq_assign[succ.left] = attrs.evolve(
+                soq_assign[succ.left], topo_gen=y_to_topo_gen[y] + 1
             )
-            seq_x += 1
+        y_to_topo_gen[y] = soq_assign[succ.left].topo_gen
+        seq_x += 1
 
     # Track bloq-to-dangle name changes
     if len(list(signature.rights())) > 0:
