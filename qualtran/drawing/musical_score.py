@@ -352,11 +352,7 @@ def _cbloq_musical_score(
 
     # Bloq-by-bloq application
     seq_x = 0
-    # Maintain a mapping of the current depth of the rightmost ends of all
-    # qubits. We'll need to use this later to update topological labels of
-    # operations that depend on operations on its qubit to be relinquished
-    # before it is able to run, e.g. waiting for a qubit to be freed before it
-    # is re-allocated.
+    # Maintain a mapping of the current depth of the rightmost ends of all qubits.
     y_to_topo_gen = {}
     for binst in greedy_topological_sort(binst_graph):
         if isinstance(binst, DanglingT):
@@ -366,6 +362,8 @@ def _cbloq_musical_score(
             binst, pred_cxns, soq_assign, seq_x=seq_x, topo_gen=topo_gen, manager=manager
         )
 
+    # Check if the operation is reusing a qubit that has been freed. If so, we will need to update
+    # its topological ordering to reflect this.
     for pred in pred_cxns:
         y = soq_assign[pred.right].y
         y_to_topo_gen[y] = soq_assign[pred.right].topo_gen
@@ -373,7 +371,7 @@ def _cbloq_musical_score(
         y = soq_assign[succ.left].y
         if y in y_to_topo_gen and y_to_topo_gen[y] > topo_gen:
             soq_assign[succ.left] = attrs.evolve(
-                soq_assign[succ.left], topo_gen=y_to_topo_gen[y] + 1,
+                soq_assign[succ.left], topo_gen=y_to_topo_gen[y] + 1
             )
         y_to_topo_gen[y] = soq_assign[succ.left].topo_gen
         seq_x += 1
