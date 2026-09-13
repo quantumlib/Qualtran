@@ -40,7 +40,7 @@ def _solve(
     relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
     verbose: bool = False,
 ) -> Optional[Union[list[channels.Channel], tuple[list[channels.Channel], list[channels.Channel]]]]:
-    """Iterates over lattice points that satisify the geometric constraints defined by the protocol.
+    """Iterates over lattice points that satisfy the geometric constraints defined by the protocol.
 
     Each valid point gets added to the collector which decides whether to terminate or not.
 
@@ -519,6 +519,7 @@ def mixed_magnitude_approx(
     eps: rst.Real,
     max_n: int,
     config: mc.MathConfig,
+    eps_split: Optional[tuple[rst.Real, rst.Real, rst.Real]] = None,
     relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
     verbose: bool = False,
 ):
@@ -537,6 +538,10 @@ def mixed_magnitude_approx(
         eps: Target error.
         max_n: Maximum number of T gates to check.
         config: A math config.
+        eps_split: Optional splitting of the error budget for three rotations.
+            Note: `eps_split` defaults to an even `eps / 3` split for the rotations. This algorithm
+            guarantees a $3\epsilon$ approximation to the target unitary, which may be broken by
+            modifying this split (see Proposition 3.22).
         relative_norm_solver: The relative norm solver to use.
         verbose: whether to print debug statements or not.
     Returns:
@@ -546,16 +551,15 @@ def mixed_magnitude_approx(
         [Shorter quantum circuits via single-qubit gate approximation](https://arxiv.org/abs/2203.10064)
         section 3.5
     """
-    # From Proposition 3.21, this algorithm produces an estimation that is a
-    # $3\epsilon$-approximation to the target unitary. So, we should target
-    # $\epsilon / 3$ as our error.
-    eps = config.number(eps) / 3
+    eps = config.number(eps)
+    if eps_split is None:
+        eps_split = eps / 3, eps / 3, eps / 3
 
     alpha, theta, beta = rsad.su_unitary_to_zxz_angles(unitary, config)
 
     rz_prob_approx = mixed_diagonal_protocol(
         theta=-theta / 2,
-        eps=eps,
+        eps=eps_split[1],
         max_n=max_n,
         config=config,
         relative_norm_solver=relative_norm_solver,
@@ -581,7 +585,7 @@ def mixed_magnitude_approx(
     z_under_rotations = (
         diagonal_unitary_approx(
             theta=-(alpha - zxz_under_rotation[0]) / 2,
-            eps=eps,
+            eps=eps_split[0],
             max_n=max_n,
             config=config,
             relative_norm_solver=relative_norm_solver,
@@ -589,7 +593,7 @@ def mixed_magnitude_approx(
         ),
         diagonal_unitary_approx(
             theta=-(beta - zxz_under_rotation[2]) / 2,
-            eps=eps,
+            eps=eps_split[2],
             max_n=max_n,
             config=config,
             relative_norm_solver=relative_norm_solver,
