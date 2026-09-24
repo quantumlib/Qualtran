@@ -73,7 +73,7 @@ def diamond_norm(choi: np.ndarray) -> float:
     prob = cp.Problem(cp.Maximize(cp.real(cp.trace(Y @ choi))), constraints)
     prob.solve()
 
-    if prob.status != cp.OPTIMAL:
+    if prob.status not in (cp.OPTIMAL, cp.OPTIMAL_INACCURATE):
         raise RuntimeError(f"the diamond norm SDP did not solve to optimality: {prob.status}")
 
     return float(prob.value)
@@ -110,10 +110,12 @@ def diamond_norm_distance(
     Returns:
         The diamond norm distance between the two channels.
     """
+    kraus_list_a = [np.asarray(k, dtype=np.complex128) for k in kraus_list_a]
+    kraus_list_b = [np.asarray(k, dtype=np.complex128) for k in kraus_list_b]
     u, v = _qubit_unitary(kraus_list_a), _qubit_unitary(kraus_list_b)
     if u is not None and v is not None:
         return _unitary_diamond_norm_distance(u, v)
 
     choi_difference_matrix = cirq.kraus_to_choi(kraus_list_a) - cirq.kraus_to_choi(kraus_list_b)
 
-    return diamond_norm(choi_difference_matrix.astype(np.complex128))
+    return diamond_norm(choi_difference_matrix)
