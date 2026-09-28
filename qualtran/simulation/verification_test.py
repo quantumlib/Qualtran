@@ -60,7 +60,7 @@ def default_python_verification_engine(monkeypatch, request):
     """By default, run verification tests with Python engine (`QLT_USE_FASTSIM=0`).
 
     Mock verification bloqs (`_AtomicNot`, `_DomainConstrainedBloq`, etc.) are not
-    supported by the `rsqualtran` compiled L1 engine. Tests that explicitly exercise
+    supported by the `rsqualtran` compiled QLT IR engine. Tests that explicitly exercise
     the Rust fastsim engine bypass this via `qlt_use_fastsim` parameterization or fixture.
     """
     if 'qlt_use_fastsim' not in request.fixturenames:
