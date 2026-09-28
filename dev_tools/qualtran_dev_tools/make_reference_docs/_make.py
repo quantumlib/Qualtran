@@ -83,7 +83,7 @@ DEFINED_IN_CONTAINER_EXCEPTIONS = [
     'qualtran.dtype',
     'qualtran.exception',
     'qualtran.cirq_interop',
-    'qualtran.l1.nodes',
+    'qualtran.qlt_ir.nodes',
 ]
 
 
