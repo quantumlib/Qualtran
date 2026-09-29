@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
       - run: sudo apt-get install -y clang-format-21
-      - run: find src | grep "\.\(cc\|h\)$" | xargs clang-format-21 --dry-run --Werror
+      - run: find kickmix/src | grep "\.\(cc\|h\)$" | xargs clang-format-21 --dry-run --Werror
   generated_files_are_up_to_date:
     runs-on: ubuntu-26.04
     steps:
@@ -42,7 +42,7 @@ jobs:
           bazelisk-version: 1.x
       - run: bazel build :kickmix_dev_wheel
       - run: pip install bazel-bin/kickmix-0.0.dev0-py3-none-any.whl
-      - run: diff doc/api_reference.md <(python tools/gen_api_reference.py)
+      - run: diff docs/kickmix/api_reference.md <(python dev_tools/kickmix/gen_api_reference.py)
   python_doctests_pass:
     runs-on: ubuntu-26.04
     steps:
@@ -56,7 +56,7 @@ jobs:
           bazelisk-version: 1.x
       - run: bazel build :kickmix_dev_wheel
       - run: pip install bazel-bin/kickmix-0.0.dev0-py3-none-any.whl
-      - run: ./tools/doctest_proper.py --module kickmix
+      - run: ./dev_tools/kickmix/doctest_proper.py --module kickmix
   run_kickmix:
     runs-on: ubuntu-26.04
     steps:
@@ -107,7 +107,7 @@ jobs:
       - run: bazel build :kickmix_dev_wheel
       - run: pip install bazel-bin/kickmix-0.0.dev0-py3-none-any.whl
       - run: pip install pytest
-      - run: PYTHONPATH=. pytest src
+      - run: PYTHONPATH=kickmix pytest src
   run_kickmix_pytest_no_avx:
     runs-on: ubuntu-26.04
     steps:
@@ -122,7 +122,7 @@ jobs:
       - run: bazel build :kickmix_dev_wheel --copt="-mno-avx"
       - run: pip install bazel-bin/kickmix-0.0.dev0-py3-none-any.whl
       - run: pip install pytest
-      - run: PYTHONPATH=. pytest src
+      - run: PYTHONPATH=kickmix pytest src
   run_kickmix_macos:
     strategy:
       fail-fast: false
@@ -144,4 +144,4 @@ jobs:
       - run: bazel build :all
       - run: bazel test :kickmix_test --test_output=errors
       - run: python -m pip install bazel-bin/kickmix-0.0.dev0-py3-none-any.whl pytest
-      - run: PYTHONPATH=. python -m pytest src
+      - run: PYTHONPATH=kickmix python -m pytest src
