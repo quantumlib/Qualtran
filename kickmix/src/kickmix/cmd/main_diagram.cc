@@ -2,6 +2,7 @@
 
 #include "kickmix/circuit/circuit.h"
 #include "kickmix/util/arg_parse.h"
+#include "kickmix/util/binary_file_tools.h"
 #include "main_util.h"
 
 using namespace kickmix;
@@ -49,10 +50,7 @@ int kickmix::main_diagram(int argc, const char **argv) {
     }
     ss << "\n";
     std::string text = ss.str();
-    bool failed = fwrite(text.data(), text.size(), 1, out) != 1;
-    if (failed) {
-        throw std::invalid_argument("Error while writing output.");
-    }
+    fwrite_else_throw(text.data(), text.size(), out);
 
     if (in != stdin) {
         fclose(in);

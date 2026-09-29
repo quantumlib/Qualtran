@@ -23,6 +23,9 @@ static const QubitOrXZBitOrXZBool GLOBAL_MINUS = XBool(true);
 
 template <typename T>
 static T *aligned_alloc_32(size_t count) {
+    if (count == 0) {
+        return nullptr;
+    }
     size_t bytes = count * sizeof(T);
     bytes += size_t{31};
     bytes &= ~size_t{31};

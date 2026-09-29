@@ -20,6 +20,9 @@ array_z::array_z(array_z &&other) noexcept : items(other.items), count(other.cou
     other.count = 0;
 }
 array_z &array_z::operator=(array_z &&other) noexcept {
+    if (this == &other) {
+        return *this;
+    }
     if (items != nullptr) {
         free(items);
     }

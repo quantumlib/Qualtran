@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 
+#include "../util/binary_file_tools.h"
 #include "kickmix/gen/comparators/gen_cmp.h"
 #include "kickmix/sim/fuzzer.h"
 #include "kickmix/util/circuit_testing.test.h"
@@ -781,9 +782,7 @@ void expect_fails_to_parse(const char *substring, const char *byte_text) {
     RaiiTempNamedFile kmb;
     FILE *f = fopen(kmb.path.c_str(), "wb");
     auto data = bytestr(byte_text);
-    if (fwrite(data.data(), data.size(), 1, f) != 1) {
-        throw std::invalid_argument("Failed to write test data");
-    }
+    fwrite_else_throw(data.data(), data.size(), f);
     fclose(f);
     f = fopen(kmb.path.c_str(), "rb");
     try {

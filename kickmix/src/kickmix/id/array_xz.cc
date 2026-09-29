@@ -25,6 +25,9 @@ array_xz::array_xz(array_z &&other) noexcept
     other.count = 0;
 }
 array_xz &array_xz::operator=(array_xz &&other) noexcept {
+    if (this == &other) {
+        return *this;
+    }
     if (items != nullptr) {
         free(items);
     }

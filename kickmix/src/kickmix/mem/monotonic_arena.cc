@@ -30,6 +30,9 @@ kickmix::MonotonicArena_Helper::MonotonicArena_Helper(MonotonicArena_Helper &&ot
     other.cur_length_cap = 0;
 }
 kickmix::MonotonicArena_Helper &kickmix::MonotonicArena_Helper::operator=(MonotonicArena_Helper &&other) noexcept {
+    if (this == &other) {
+        return *this;
+    }
     dealloc(*this);
     frozen_allocations = std::move(other.frozen_allocations);
     total_frozen_length_used = std::move(other.total_frozen_length_used);

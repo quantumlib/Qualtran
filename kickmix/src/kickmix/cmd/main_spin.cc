@@ -6,6 +6,7 @@
 #include "kickmix/sim/sim.h"
 #include "kickmix/simd/simd.h"
 #include "kickmix/util/arg_parse.h"
+#include "kickmix/util/binary_file_tools.h"
 #include "main_util.h"
 
 using namespace kickmix;
@@ -160,10 +161,7 @@ int kickmix::main_spin(int argc, const char **argv) {
     output << "              time elapsed: " << si2(micros / 1000000.0) << "s\n";
     output << si2(ops * 1000000LL / micros) << "ops/sec\n";
     std::string text = output.str();
-    bool failed = fwrite(text.data(), text.size(), 1, out) != 1;
-    if (failed) {
-        throw std::invalid_argument("Error while writing output.");
-    }
+    fwrite_else_throw(text.data(), text.size(), out);
     if (out != stdout) {
         fclose(out);
     }

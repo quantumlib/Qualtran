@@ -459,6 +459,9 @@ void MutableCircuit::append_from_kmx_text(std::string_view kmx_text) {
 
 template <typename T>
 static T *aligned_alloc_32(size_t count) {
+    if (count == 0) {
+        return nullptr;
+    }
     size_t bytes = count * sizeof(T);
     bytes += size_t{31};
     bytes &= ~size_t{31};

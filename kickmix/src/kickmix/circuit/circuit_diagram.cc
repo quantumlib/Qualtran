@@ -4,6 +4,7 @@
 #include <sstream>
 
 #include "kickmix/circuit/circuit.h"
+#include "kickmix/util/binary_file_tools.h"
 
 using namespace kickmix;
 
@@ -500,7 +501,7 @@ void Circuit::write_text_diagram_to(FILE *out, bool use_unicode) const {
                 was_line = c == '-';
             }
         } else {
-            fwrite(line.data(), 1, line.size(), out);
+            fwrite_else_throw(line.data(), line.size(), out);
         }
     }
 }

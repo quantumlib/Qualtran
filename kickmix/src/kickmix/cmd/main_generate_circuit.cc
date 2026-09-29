@@ -253,6 +253,8 @@ int kickmix::main_generate_circuit(int argc, const char **argv) {
         builder.finish_circuit().write_kmx_to(out_file);
     }
 
-    fclose(out_file);
+    if (out_file != stdout) {
+        fclose(out_file);
+    }
     return 0;
 }

@@ -4,6 +4,7 @@
 
 import argparse
 import doctest
+import importlib
 import inspect
 import sys
 from typing import Dict
@@ -116,7 +117,7 @@ def main():
     globs = {k: __import__(k) for k in getattr(args, 'import')}
     any_failed = False
     for module_name in args.module:
-        module = __import__(module_name)
+        module = importlib.import_module(module_name)
         out = {}
         gen(obj=module, fullname=module_name, out=out)
         for k, v in out.items():

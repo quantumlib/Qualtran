@@ -109,6 +109,9 @@ FixedWidthInt::FixedWidthInt(const FixedWidthInt &value)
     }
 }
 FixedWidthInt &FixedWidthInt::operator=(const FixedWidthInt &value) {
+    if (this == &value) {
+        return *this;
+    }
     if (num_words != value.num_words) {
         if (words != nullptr) {
             delete[] words;
@@ -123,6 +126,9 @@ FixedWidthInt &FixedWidthInt::operator=(const FixedWidthInt &value) {
     return *this;
 }
 FixedWidthInt &FixedWidthInt::operator=(FixedWidthInt &&value) noexcept {
+    if (this == &value) {
+        return *this;
+    }
     if (words != nullptr) {
         delete[] words;
     }

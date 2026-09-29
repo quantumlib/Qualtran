@@ -239,6 +239,9 @@ Circuit::Circuit(Circuit &&other) noexcept {
 
 template <typename T>
 static T *aligned_alloc_32(size_t count) {
+    if (count == 0) {
+        return nullptr;
+    }
     size_t bytes = count * sizeof(T);
     bytes += size_t{31};
     bytes &= ~size_t{31};
@@ -281,6 +284,9 @@ Circuit::Circuit(const Circuit &other) {
 }
 
 Circuit &Circuit::operator=(const Circuit &other) {
+    if (this == &other) {
+        return *this;
+    }
     clear();
 
     register_data = other.register_data;
@@ -320,6 +326,9 @@ Circuit &Circuit::operator=(const Circuit &other) {
 }
 
 Circuit &Circuit::operator=(Circuit &&other) noexcept {
+    if (this == &other) {
+        return *this;
+    }
     clear();
     register_data = std::move(other.register_data);
     op_types = other.op_types;
@@ -1031,108 +1040,100 @@ enum class KmbPacketType : uint64_t {
 };
 
 template <typename T>
-static void write_T_blob_packet(FILE *file, KmbPacketType type, const T *data, size_t count, bool &err) {
-    err |= write_u64_be(file, (uint64_t)type);
-    err |= write_u64_be(file, count * sizeof(T));
-    if (count > 0) {
-        err |= fwrite_unlocked(data, count * sizeof(T), 1, file) != 1;
-    }
+static void write_T_blob_packet(FILE *file, KmbPacketType type, const T *data, size_t count) {
+    write_u64_be(file, (uint64_t)type);
+    write_u64_be(file, count * sizeof(T));
+    fwrite_else_throw(data, count * sizeof(T), file);
 }
 
 void Circuit::write_kmb_to(FILE *file) const {
-    bool err = false;
     constexpr uint32_t version = 2;
 
     // Header
-    err |= fwrite_unlocked(KMB_MAGIC_BYTES.data(), KMB_MAGIC_BYTES.size(), 1, file) != 1;
-    err |= write_u32_be(file, version);
-    err |= write_u32_be(file, num_qubits);
-    err |= write_u32_be(file, num_bits);
-    err |= write_u32_be(file, register_data.size());
-    err |= write_u64_be(file, num_ops);
-    err |= write_u64_be(file, num_qqq_ops);
-    err |= write_u64_be(file, num_qq_ops);
-    err |= write_u64_be(file, num_q_ops);
-    err |= write_u64_be(file, num_b_ops);
-    err |= write_u64_be(file, num_c_ops);
-    err |= write_u64_be(file, num_angle_ops);
+    fwrite_else_throw(KMB_MAGIC_BYTES.data(), KMB_MAGIC_BYTES.size(), file);
+    write_u32_be(file, version);
+    write_u32_be(file, num_qubits);
+    write_u32_be(file, num_bits);
+    write_u32_be(file, register_data.size());
+    write_u64_be(file, num_ops);
+    write_u64_be(file, num_qqq_ops);
+    write_u64_be(file, num_qq_ops);
+    write_u64_be(file, num_q_ops);
+    write_u64_be(file, num_b_ops);
+    write_u64_be(file, num_c_ops);
+    write_u64_be(file, num_angle_ops);
 
     // Register data.
     for (const auto &reg : register_data) {
-        err |= write_u64_be(file, (uint32_t)KmbPacketType::REGISTER_TARGETS);
-        err |= write_u64_be(file, reg.name.size() + reg.contents.size() * sizeof(uint32_t) + 8);
-        err |= reg.name.size() > UINT32_MAX || reg.contents.size() > UINT32_MAX;
-        err |= write_u32_be(file, (uint32_t)reg.name.size());
-        err |= write_u32_be(file, (uint32_t)reg.contents.size());
-        if (!reg.name.empty()) {
-            err |= fwrite_unlocked(reg.name.data(), reg.name.size(), 1, file) != 1;
+        write_u64_be(file, (uint32_t)KmbPacketType::REGISTER_TARGETS);
+        write_u64_be(file, reg.name.size() + reg.contents.size() * sizeof(uint32_t) + 8);
+        if (reg.name.size() > UINT32_MAX || reg.contents.size() > UINT32_MAX) {
+            throw std::invalid_argument("Too much register data.");
         }
+        write_u32_be(file, (uint32_t)reg.name.size());
+        write_u32_be(file, (uint32_t)reg.contents.size());
+        fwrite_else_throw(reg.name.data(), reg.name.size(), file);
         for (auto e : reg.contents) {
-            err |= write_u32_be(file, e.untagged_id() | (e.is_qubit() ? 0x80000000 : 0));
+            write_u32_be(file, e.untagged_id() | (e.is_qubit() ? 0x80000000 : 0));
         }
     }
 
     // Operation type data.
-    err |= write_u64_be(file, (uint32_t)KmbPacketType::OPERATION_TYPES);
-    err |= write_u64_be(file, num_ops);
+    write_u64_be(file, (uint32_t)KmbPacketType::OPERATION_TYPES);
+    write_u64_be(file, num_ops);
     if (num_ops) {
-        err |= fwrite_unlocked(op_types, num_ops, 1, file) != 1;
+        fwrite_else_throw(op_types, num_ops, file);
     }
 
     // Operation target data.
-    write_T_blob_packet<uint32_t>(file, KmbPacketType::QUBIT0_DATA_FOR_3_TARGET_QUBIT_GATES, qqq0, num_qqq_ops, err);
-    write_T_blob_packet<uint32_t>(file, KmbPacketType::QUBIT1_DATA_FOR_3_TARGET_QUBIT_GATES, qqq1, num_qqq_ops, err);
-    write_T_blob_packet<uint32_t>(file, KmbPacketType::QUBIT2_DATA_FOR_3_TARGET_QUBIT_GATES, qqq2, num_qqq_ops, err);
-    write_T_blob_packet<uint32_t>(file, KmbPacketType::QUBIT0_DATA_FOR_2_TARGET_QUBIT_GATES, qq0, num_qq_ops, err);
-    write_T_blob_packet<uint32_t>(file, KmbPacketType::QUBIT1_DATA_FOR_2_TARGET_QUBIT_GATES, qq1, num_qq_ops, err);
-    write_T_blob_packet<uint32_t>(file, KmbPacketType::QUBIT0_DATA_FOR_1_TARGET_QUBIT_GATES, q0, num_q_ops, err);
-    write_T_blob_packet<uint32_t>(file, KmbPacketType::BIT0_DATA_FOR_1_TARGET_BIT_GATES, b0, num_b_ops, err);
-    write_T_blob_packet<uint32_t>(file, KmbPacketType::BIT0_DATA_FOR_1_CONDITION_BIT_GATES, bc, num_c_ops, err);
+    write_T_blob_packet<uint32_t>(file, KmbPacketType::QUBIT0_DATA_FOR_3_TARGET_QUBIT_GATES, qqq0, num_qqq_ops);
+    write_T_blob_packet<uint32_t>(file, KmbPacketType::QUBIT1_DATA_FOR_3_TARGET_QUBIT_GATES, qqq1, num_qqq_ops);
+    write_T_blob_packet<uint32_t>(file, KmbPacketType::QUBIT2_DATA_FOR_3_TARGET_QUBIT_GATES, qqq2, num_qqq_ops);
+    write_T_blob_packet<uint32_t>(file, KmbPacketType::QUBIT0_DATA_FOR_2_TARGET_QUBIT_GATES, qq0, num_qq_ops);
+    write_T_blob_packet<uint32_t>(file, KmbPacketType::QUBIT1_DATA_FOR_2_TARGET_QUBIT_GATES, qq1, num_qq_ops);
+    write_T_blob_packet<uint32_t>(file, KmbPacketType::QUBIT0_DATA_FOR_1_TARGET_QUBIT_GATES, q0, num_q_ops);
+    write_T_blob_packet<uint32_t>(file, KmbPacketType::BIT0_DATA_FOR_1_TARGET_BIT_GATES, b0, num_b_ops);
+    write_T_blob_packet<uint32_t>(file, KmbPacketType::BIT0_DATA_FOR_1_CONDITION_BIT_GATES, bc, num_c_ops);
     write_T_blob_packet<FixedPrecisionAngle128>(
-        file, KmbPacketType::ANGLE_DATA_FOR_ROTATION_GATES, angles, num_angle_ops, err);
-
-    if (err) {
-        throw std::invalid_argument("Failed to write kmb data to file.");
-    }
+        file, KmbPacketType::ANGLE_DATA_FOR_ROTATION_GATES, angles, num_angle_ops);
 }
 
-static uint32_t read_u32_be(FILE *file, bool &err) {
+static uint32_t read_u32_be(FILE *file) {
     uint32_t result{};
-    err |= fread_unlocked(&result, sizeof(uint32_t), 1, file) != 1;
+    fread_else_throw(&result, sizeof(uint32_t), file);
     if constexpr (std::endian::native == std::endian::big) {
         result = __builtin_bswap32(result);
     }
     return result;
 }
 
-static uint64_t read_u64_be(FILE *file, bool &err) {
+static uint64_t read_u64_be(FILE *file) {
     uint64_t result{};
-    err |= fread_unlocked(&result, sizeof(uint64_t), 1, file) != 1;
+    fread_else_throw(&result, sizeof(uint64_t), file);
     if constexpr (std::endian::native == std::endian::big) {
         result = __builtin_bswap64(result);
     }
     return result;
 }
 
-static void read_u64_be_expect(FILE *file, bool &err, uint64_t expected, const char *message) {
-    uint64_t actual = read_u64_be(file, err);
-    if (!err && actual != expected) {
+static void read_u64_be_expect(FILE *file, uint64_t expected, const char *message) {
+    uint64_t actual = read_u64_be(file);
+    if (actual != expected) {
         throw std::invalid_argument(message);
     }
 }
 
 template <typename T>
-static void alloc_and_read_T_blob_packet(FILE *file, KmbPacketType type, T **data_out, size_t count, bool &err) {
-    read_u64_be_expect(file, err, (uint64_t)type, "Payload packets in wrong order.");
-    read_u64_be_expect(file, err, count * sizeof(T), "Size mismatch: actual payload size vs size specified in header.");
+static void alloc_and_read_T_blob_packet(FILE *file, KmbPacketType type, T **data_out, size_t count) {
+    read_u64_be_expect(file, (uint64_t)type, "Payload packets in wrong order.");
+    read_u64_be_expect(file, count * sizeof(T), "Size mismatch: actual payload size vs size specified in header.");
     if (count > 0) {
         *data_out = aligned_alloc_32<T>(count);
-        err |= fread_unlocked(*data_out, count * sizeof(T), 1, file) != 1;
+        fread_else_throw(*data_out, count * sizeof(T), file);
     }
 }
 
 Circuit Circuit::from_kmb_file(FILE *file, bool skip_magic) {
-    bool err = false;
     Circuit result{};
 
     // Header
@@ -1144,26 +1145,26 @@ Circuit Circuit::from_kmb_file(FILE *file, bool skip_magic) {
             }
         }
     }
-    if (read_u32_be(file, err) != 2) {
+    if (read_u32_be(file) != 2) {
         throw std::invalid_argument("File specifies an unsupported kickmix binary format file version.");
     }
-    uint32_t num_qubits = read_u32_be(file, err);
-    uint32_t num_bits = read_u32_be(file, err);
-    uint32_t num_registers = read_u32_be(file, err);
-    result.num_ops = read_u64_be(file, err);
-    result.num_qqq_ops = read_u64_be(file, err);
-    result.num_qq_ops = read_u64_be(file, err);
-    result.num_q_ops = read_u64_be(file, err);
-    result.num_b_ops = read_u64_be(file, err);
-    result.num_c_ops = read_u64_be(file, err);
-    result.num_angle_ops = read_u64_be(file, err);
+    uint32_t num_qubits = read_u32_be(file);
+    uint32_t num_bits = read_u32_be(file);
+    uint32_t num_registers = read_u32_be(file);
+    result.num_ops = read_u64_be(file);
+    result.num_qqq_ops = read_u64_be(file);
+    result.num_qq_ops = read_u64_be(file);
+    result.num_q_ops = read_u64_be(file);
+    result.num_b_ops = read_u64_be(file);
+    result.num_c_ops = read_u64_be(file);
+    result.num_angle_ops = read_u64_be(file);
 
     // Register data.
     for (size_t k = 0; k < num_registers; k++) {
-        read_u64_be_expect(file, err, (uint64_t)KmbPacketType::REGISTER_TARGETS, "Expected register target data.");
-        uint64_t register_payload_size = read_u64_be(file, err);
-        size_t name_len = read_u32_be(file, err);
-        size_t reg_len = read_u32_be(file, err);
+        read_u64_be_expect(file, (uint64_t)KmbPacketType::REGISTER_TARGETS, "Expected register target data.");
+        uint64_t register_payload_size = read_u64_be(file);
+        size_t name_len = read_u32_be(file);
+        size_t reg_len = read_u32_be(file);
         if (reg_len * 4 + name_len + 8 != register_payload_size) {
             throw std::invalid_argument("Register data had wrong payload size.");
         }
@@ -1173,11 +1174,11 @@ Circuit Circuit::from_kmb_file(FILE *file, bool skip_magic) {
 
         reg.name.resize(name_len);
         if (name_len) {
-            err |= fread(reg.name.data(), name_len, 1, file) != 1;
+            fread_else_throw(reg.name.data(), name_len, file);
         }
 
         for (size_t k2 = 0; k2 < reg_len; k2++) {
-            uint32_t id = read_u32_be(file, err);
+            uint32_t id = read_u32_be(file);
             if (id & uint32_t{0x80000000ull}) {
                 reg.contents.push_back(QubitId{id & ~uint32_t{0x80000000ull}});
             } else {
@@ -1187,37 +1188,34 @@ Circuit Circuit::from_kmb_file(FILE *file, bool skip_magic) {
     }
 
     // Operation type data.
-    read_u64_be_expect(file, err, (uint64_t)KmbPacketType::OPERATION_TYPES, "Expected operation type data.");
+    read_u64_be_expect(file, (uint64_t)KmbPacketType::OPERATION_TYPES, "Expected operation type data.");
     read_u64_be_expect(
-        file, err, result.num_ops, "Operation type payload size was inconsistent with amount specified in header.");
+        file, result.num_ops, "Operation type payload size was inconsistent with amount specified in header.");
     if (result.num_ops) {
         result.op_types = aligned_alloc_32<OpType>(result.num_ops);
-        err |= fread_unlocked((void *)result.op_types, result.num_ops, 1, file) != 1;
+        fread_else_throw((void *)result.op_types, result.num_ops, file);
     }
 
     // Operation target data.
     alloc_and_read_T_blob_packet<uint32_t>(
-        file, KmbPacketType::QUBIT0_DATA_FOR_3_TARGET_QUBIT_GATES, &result.qqq0, result.num_qqq_ops, err);
+        file, KmbPacketType::QUBIT0_DATA_FOR_3_TARGET_QUBIT_GATES, &result.qqq0, result.num_qqq_ops);
     alloc_and_read_T_blob_packet<uint32_t>(
-        file, KmbPacketType::QUBIT1_DATA_FOR_3_TARGET_QUBIT_GATES, &result.qqq1, result.num_qqq_ops, err);
+        file, KmbPacketType::QUBIT1_DATA_FOR_3_TARGET_QUBIT_GATES, &result.qqq1, result.num_qqq_ops);
     alloc_and_read_T_blob_packet<uint32_t>(
-        file, KmbPacketType::QUBIT2_DATA_FOR_3_TARGET_QUBIT_GATES, &result.qqq2, result.num_qqq_ops, err);
+        file, KmbPacketType::QUBIT2_DATA_FOR_3_TARGET_QUBIT_GATES, &result.qqq2, result.num_qqq_ops);
     alloc_and_read_T_blob_packet<uint32_t>(
-        file, KmbPacketType::QUBIT0_DATA_FOR_2_TARGET_QUBIT_GATES, &result.qq0, result.num_qq_ops, err);
+        file, KmbPacketType::QUBIT0_DATA_FOR_2_TARGET_QUBIT_GATES, &result.qq0, result.num_qq_ops);
     alloc_and_read_T_blob_packet<uint32_t>(
-        file, KmbPacketType::QUBIT1_DATA_FOR_2_TARGET_QUBIT_GATES, &result.qq1, result.num_qq_ops, err);
+        file, KmbPacketType::QUBIT1_DATA_FOR_2_TARGET_QUBIT_GATES, &result.qq1, result.num_qq_ops);
     alloc_and_read_T_blob_packet<uint32_t>(
-        file, KmbPacketType::QUBIT0_DATA_FOR_1_TARGET_QUBIT_GATES, &result.q0, result.num_q_ops, err);
+        file, KmbPacketType::QUBIT0_DATA_FOR_1_TARGET_QUBIT_GATES, &result.q0, result.num_q_ops);
     alloc_and_read_T_blob_packet<uint32_t>(
-        file, KmbPacketType::BIT0_DATA_FOR_1_TARGET_BIT_GATES, &result.b0, result.num_b_ops, err);
+        file, KmbPacketType::BIT0_DATA_FOR_1_TARGET_BIT_GATES, &result.b0, result.num_b_ops);
     alloc_and_read_T_blob_packet<uint32_t>(
-        file, KmbPacketType::BIT0_DATA_FOR_1_CONDITION_BIT_GATES, &result.bc, result.num_c_ops, err);
+        file, KmbPacketType::BIT0_DATA_FOR_1_CONDITION_BIT_GATES, &result.bc, result.num_c_ops);
     alloc_and_read_T_blob_packet<FixedPrecisionAngle128>(
-        file, KmbPacketType::ANGLE_DATA_FOR_ROTATION_GATES, &result.angles, result.num_angle_ops, err);
+        file, KmbPacketType::ANGLE_DATA_FOR_ROTATION_GATES, &result.angles, result.num_angle_ops);
 
-    if (err) {
-        throw std::invalid_argument("Failed to read kmb data from file.");
-    }
     if (fgetc(file) != EOF) {
         throw std::invalid_argument("Failed to read kmb data from file: data leftover.");
     }

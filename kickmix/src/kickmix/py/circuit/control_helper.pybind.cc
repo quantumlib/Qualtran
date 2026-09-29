@@ -17,6 +17,9 @@ RaiiControlObjHelper::RaiiControlObjHelper(RaiiControlObjHelper &&other) noexcep
 }
 
 RaiiXControlObjHelper &RaiiXControlObjHelper::operator=(RaiiXControlObjHelper &&other) noexcept {
+    if (this == &other) {
+        return *this;
+    }
     builder = other.builder;
     skip = other.skip;
     value = other.value;
@@ -27,6 +30,9 @@ RaiiXControlObjHelper &RaiiXControlObjHelper::operator=(RaiiXControlObjHelper &&
 }
 
 RaiiControlObjHelper &RaiiControlObjHelper::operator=(RaiiControlObjHelper &&other) noexcept {
+    if (this == &other) {
+        return *this;
+    }
     builder = other.builder;
     skip = other.skip;
     value = other.value;
