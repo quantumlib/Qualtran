@@ -117,6 +117,9 @@ py_wheel(
     name = "kickmix_dev_wheel",
     distribution = "kickmix",
     requires = ["numpy"],
+    strip_path_prefixes = [
+        "kickmix/",
+    ],
     version = "0.0.dev0",
     deps = [
         ":kickmix.so",
