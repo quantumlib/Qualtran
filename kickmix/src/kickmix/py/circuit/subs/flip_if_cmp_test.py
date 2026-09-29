@@ -16,13 +16,7 @@ def test_fuzz_flip_if_lt(n: int):
     target = builder.create_quantum_register(1, name="target")[0]
     control = builder.create_quantum_register(1, name="control")[0]
     or_equal = builder.create_quantum_register(1, name="or_equal")[0]
-    builder.flip_if_less_than(
-        lhs=lhs,
-        rhs=rhs,
-        target=target,
-        control=control,
-        or_equal=or_equal,
-    )
+    builder.flip_if_less_than(lhs=lhs, rhs=rhs, target=target, control=control, or_equal=or_equal)
     circuit = builder.finish_circuit()
 
     assert_fuzz_testing_acts_like(
@@ -38,8 +32,13 @@ def test_fuzz_flip_if_lt(n: int):
             'or_equal': random.randrange(2),
             'control': random.randrange(2),
             # Prefer to test near misses:
-            'rhs': (e + random.randrange(-10, 10)) % (1 << n) if random.randrange(2) else random.randrange(1 << n),
-        })
+            'rhs': (
+                (e + random.randrange(-10, 10)) % (1 << n)
+                if random.randrange(2)
+                else random.randrange(1 << n)
+            ),
+        },
+    )
 
 
 @pytest.mark.parametrize("n", [0, 1, 2, 8, 64, 256])
@@ -49,13 +48,7 @@ def test_fuzz_flip_if_lt_phase_target(n: int):
     rhs = builder.create_classical_register(n, name="rhs")
     control = builder.create_quantum_register(1, name="control")[0]
     or_equal = builder.create_quantum_register(1, name="or_equal")[0]
-    builder.flip_if_less_than(
-        lhs=lhs,
-        rhs=rhs,
-        target="|->",
-        control=control,
-        or_equal=or_equal,
-    )
+    builder.flip_if_less_than(lhs=lhs, rhs=rhs, target="|->", control=control, or_equal=or_equal)
     circuit = builder.finish_circuit()
 
     assert_fuzz_testing_acts_like(
@@ -70,8 +63,13 @@ def test_fuzz_flip_if_lt_phase_target(n: int):
             'or_equal': random.randrange(2),
             'control': random.randrange(2),
             # Prefer to test near misses:
-            'rhs': (e + random.randrange(-10, 10)) % (1 << n) if random.randrange(2) else random.randrange(1 << n),
-        })
+            'rhs': (
+                (e + random.randrange(-10, 10)) % (1 << n)
+                if random.randrange(2)
+                else random.randrange(1 << n)
+            ),
+        },
+    )
 
 
 @pytest.mark.parametrize("n", [0, 1, 2, 8, 64, 256])
@@ -83,11 +81,7 @@ def test_fuzz_flip_if_gt(n: int):
     control = builder.create_quantum_register(1, name="control")[0]
     or_equal = builder.create_quantum_register(1, name="or_equal")[0]
     builder.flip_if_greater_than(
-        lhs=lhs,
-        rhs=rhs,
-        target=target,
-        control=control,
-        or_equal=or_equal,
+        lhs=lhs, rhs=rhs, target=target, control=control, or_equal=or_equal
     )
     circuit = builder.finish_circuit()
 
@@ -104,8 +98,13 @@ def test_fuzz_flip_if_gt(n: int):
             'or_equal': random.randrange(2),
             'control': random.randrange(2),
             # Prefer to test near misses:
-            'rhs': (e + random.randrange(-10, 10)) % (1 << n) if random.randrange(2) else random.randrange(1 << n),
-        })
+            'rhs': (
+                (e + random.randrange(-10, 10)) % (1 << n)
+                if random.randrange(2)
+                else random.randrange(1 << n)
+            ),
+        },
+    )
 
 
 @pytest.mark.parametrize("n", [0, 1, 2, 8, 64, 256])
@@ -116,12 +115,7 @@ def test_fuzz_flip_if_eq(n: int):
     target = builder.create_quantum_register(1, name="target")[0]
     control = builder.create_quantum_register(1, name="control")[0]
     builder.free(builder.alloc_qubits(n))
-    builder.flip_if_equal(
-        lhs=lhs,
-        rhs=rhs,
-        target=target,
-        control=control,
-    )
+    builder.flip_if_equal(lhs=lhs, rhs=rhs, target=target, control=control)
     circuit = builder.finish_circuit()
 
     assert_fuzz_testing_acts_like(
@@ -136,8 +130,13 @@ def test_fuzz_flip_if_eq(n: int):
             'target': random.randrange(2),
             'control': random.randrange(2),
             # Prefer to test near misses:
-            'rhs': (e + random.randrange(-10, 10)) % (1 << n) if random.randrange(2) else random.randrange(1 << n),
-        })
+            'rhs': (
+                (e + random.randrange(-10, 10)) % (1 << n)
+                if random.randrange(2)
+                else random.randrange(1 << n)
+            ),
+        },
+    )
 
 
 @pytest.mark.parametrize("n", [0, 1, 2, 8, 64, 70, 256])
@@ -169,9 +168,11 @@ def test_fuzz_flip_if_cmp_with_int_rhs(n: int):
             shots=32,
             context={"rhs": rhs_val},
             input_sampler=lambda: {
-                "lhs": (rhs_val + random.randrange(-5, 6)) % (1 << n)
-                if random.randrange(2)
-                else random.randrange(1 << n),
+                "lhs": (
+                    (rhs_val + random.randrange(-5, 6)) % (1 << n)
+                    if random.randrange(2)
+                    else random.randrange(1 << n)
+                ),
                 "target": random.randrange(2),
                 "control": random.randrange(2),
                 **({"or_equal": random.randrange(2)} if op_name != "flip_if_equal" else {}),
@@ -204,5 +205,3 @@ def test_flip_if_cmp_positional_args():
         builder.flip_if_less_than(lhs, 3, target)
     with pytest.raises(TypeError):
         builder.flip_if_greater_than(lhs, 2, target)
-
-

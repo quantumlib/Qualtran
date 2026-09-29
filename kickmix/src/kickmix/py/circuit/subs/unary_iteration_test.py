@@ -10,7 +10,9 @@ import pytest
 from src.kickmix.py.circuit.subs.fuzz_test_util import assert_fuzz_testing_acts_like
 
 
-def expected_toffolis(num_address_bits: int, address_values: Iterable[int], *, controlled: bool) -> int:
+def expected_toffolis(
+    num_address_bits: int, address_values: Iterable[int], *, controlled: bool
+) -> int:
     """Returns the Toffoli count for visiting in-range `address_values` in order.
 
     Positioning on the first value costs `num_address_bits` Toffolis when controlled,
@@ -63,7 +65,11 @@ def test_full_sweep_toffoli_count(n: int):
     with builder.unary_iteration(address) as it:
         for _ in it:
             pass
-    assert builder.finish_circuit().max_magic() == expected_toffolis(n, range(1 << n), controlled=False) == (1 << n) - 2
+    assert (
+        builder.finish_circuit().max_magic()
+        == expected_toffolis(n, range(1 << n), controlled=False)
+        == (1 << n) - 2
+    )
 
     builder = km.CircuitBuilder()
     address = builder.create_quantum_register(n, name="address")
@@ -71,7 +77,11 @@ def test_full_sweep_toffoli_count(n: int):
     with builder.unary_iteration(address, control=control[0]) as it:
         for _ in it:
             pass
-    assert builder.finish_circuit().max_magic() == expected_toffolis(n, range(1 << n), controlled=True) == (1 << n) - 1
+    assert (
+        builder.finish_circuit().max_magic()
+        == expected_toffolis(n, range(1 << n), controlled=True)
+        == (1 << n) - 1
+    )
 
 
 def test_partial_sweep_toffoli_count():
@@ -199,7 +209,8 @@ def test_empty_address_register_tracks_the_control():
         """
             out ^= control
         """,
-        shots=16)
+        shots=16,
+    )
 
 
 def test_lazy_cursor_emits_nothing_until_opened():
@@ -394,7 +405,9 @@ def test_numpy_integers_are_accepted():
     builder = km.CircuitBuilder()
     address = builder.create_quantum_register(3, name="address")
     assert visited_address_values(builder.unary_iteration(address, range(np.int64(3)))) == [0, 1, 2]
-    assert visited_address_values(builder.unary_iteration(address, range(np.int64(2), np.int64(5)))) == [2, 3, 4]
+    assert visited_address_values(
+        builder.unary_iteration(address, range(np.int64(2), np.int64(5)))
+    ) == [2, 3, 4]
     with builder.unary_iteration(address) as it:
         it.move_to(np.uint8(6))
         assert it.cur_address_value == 6
@@ -424,11 +437,31 @@ def test_address_values_argument():
     address = builder.create_quantum_register(4, name="address")
     assert visited_address_values(builder.unary_iteration(address)) == list(range(16))
     assert visited_address_values(builder.unary_iteration(address, range(11))) == list(range(11))
-    assert visited_address_values(builder.unary_iteration(address, range(3, 11))) == list(range(3, 11))
+    assert visited_address_values(builder.unary_iteration(address, range(3, 11))) == list(
+        range(3, 11)
+    )
     # Out-of-range values (negative or >= 16) are visited with match_qubit at |0>.
-    assert visited_address_values(builder.unary_iteration(address, range(-2, 3))) == [-2, -1, 0, 1, 2]
-    assert visited_address_values(builder.unary_iteration(address, range(14, 19))) == [14, 15, 16, 17, 18]
-    assert visited_address_values(builder.unary_iteration(address, range(20, 25))) == [20, 21, 22, 23, 24]
+    assert visited_address_values(builder.unary_iteration(address, range(-2, 3))) == [
+        -2,
+        -1,
+        0,
+        1,
+        2,
+    ]
+    assert visited_address_values(builder.unary_iteration(address, range(14, 19))) == [
+        14,
+        15,
+        16,
+        17,
+        18,
+    ]
+    assert visited_address_values(builder.unary_iteration(address, range(20, 25))) == [
+        20,
+        21,
+        22,
+        23,
+        24,
+    ]
     with pytest.raises(Exception, match="step 1"):
         builder.unary_iteration(address, range(0, 16, 2))
     builder.finish_circuit()
@@ -453,7 +486,10 @@ def test_repr():
     )
 
     it_ctrl = builder.unary_iteration(address, control=ctrl[0])
-    assert repr(it_ctrl) == "<km.UnaryIterationCursor address=km.array([km.q(0), km.q(1)]), control=km.q(2)>"
+    assert (
+        repr(it_ctrl)
+        == "<km.UnaryIterationCursor address=km.array([km.q(0), km.q(1)]), control=km.q(2)>"
+    )
 
 
 def test_direct_construction():
@@ -481,7 +517,8 @@ def test_fuzz_sequential_sweep(n_address: int):
             target ^= table[address]
         """,
         shots=64,
-        context={'table': table})
+        context={'table': table},
+    )
 
 
 @pytest.mark.parametrize("n_address", range(1, 5))
@@ -504,7 +541,8 @@ def test_fuzz_controlled_sweep(n_address: int):
                 target ^= table[address]
         """,
         shots=64,
-        context={'table': table})
+        context={'table': table},
+    )
 
 
 @pytest.mark.parametrize("n_address_values", [1, 5, 11, 16])
@@ -528,7 +566,8 @@ def test_fuzz_partial_address_value_range(n_address_values: int):
             target ^= table[address]
         """,
         shots=64,
-        context={'table': table})
+        context={'table': table},
+    )
 
 
 def test_fuzz_random_access_order():
@@ -558,7 +597,8 @@ def test_fuzz_random_access_order():
             target ^= visits[address]
         """,
         shots=64,
-        context={'visits': visits})
+        context={'visits': visits},
+    )
 
 
 def test_fuzz_nested_iterations():
@@ -574,7 +614,9 @@ def test_fuzz_nested_iterations():
     target = builder.create_quantum_register(1, name="target")
     with builder.unary_iteration(outer, range(outer_size)) as outer_it:
         for i, match_qubit_outer in outer_it:
-            with builder.unary_iteration(inner, range(inner_size), control=match_qubit_outer) as inner_it:
+            with builder.unary_iteration(
+                inner, range(inner_size), control=match_qubit_outer
+            ) as inner_it:
                 for j, match_qubit_inner in inner_it:
                     if table[i][j]:
                         builder.cx(match_qubit_inner, target[0])
@@ -590,7 +632,8 @@ def test_fuzz_nested_iterations():
             'outer': random.randrange(outer_size),
             'inner': random.randrange(inner_size),
             'target': random.randrange(2),
-        })
+        },
+    )
 
 
 # Comparison flags can be maintained alongside a cursor by toggling a clean qubit
@@ -624,7 +667,8 @@ def test_fuzz_less_than_flag_by_hand(pivot: int):
                 out ^= address < pivot
         """,
         shots=64,
-        context={'pivot': pivot})
+        context={'pivot': pivot},
+    )
 
 
 @pytest.mark.parametrize("pivot", [0, 1, 6, 11, 16])
@@ -654,7 +698,8 @@ def test_fuzz_greater_equal_flag_by_hand(pivot: int):
             out ^= address >= pivot
         """,
         shots=64,
-        context={'pivot': pivot})
+        context={'pivot': pivot},
+    )
 
 
 def test_fuzz_flags_with_independent_controls_share_one_cursor():
@@ -690,7 +735,8 @@ def test_fuzz_flags_with_independent_controls_share_one_cursor():
             out ^= ((taps & 1) and address < pivot) | (((taps >> 1) and address >= pivot) << 1)
         """,
         shots=64,
-        context={'pivot': pivot})
+        context={'pivot': pivot},
+    )
 
 
 def test_fuzz_lockstep_cursors_like_the_dqi_eea_loop():
@@ -737,4 +783,5 @@ def test_fuzz_lockstep_cursors_like_the_dqi_eea_loop():
             'c0': random.randrange(2),
             'c3': random.randrange(2),
             'out': random.randrange(1 << (3 * m)),
-        })
+        },
+    )

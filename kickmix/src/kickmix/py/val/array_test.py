@@ -8,12 +8,7 @@ def test_qcarray_empty():
 
 def test_qcarray_bool():
     c = km.array([False, True])
-    assert c._UNSTABLE_internal_values() == {
-        'common_type': 0,
-        'len': 2,
-        'offset': 0,
-        'stride': 1,
-    }
+    assert c._UNSTABLE_internal_values() == {'common_type': 0, 'len': 2, 'offset': 0, 'stride': 1}
     assert str(c) == "km.array([False, True])"
     assert c[0] == False
     assert c[1] == True
@@ -41,12 +36,7 @@ def test_qcarray_bool_values():
 
 def test_qcarray_qubit():
     c = km.array([km.q(k) for k in range(10)])
-    assert c._UNSTABLE_internal_values() == {
-        'common_type': 2,
-        'len': 10,
-        'offset': 0,
-        'stride': 1,
-    }
+    assert c._UNSTABLE_internal_values() == {'common_type': 2, 'len': 10, 'offset': 0, 'stride': 1}
     assert str(c) == "km.array([q0, q1, q2, q3, q4, q5, q6, q7, q8, q9])"
     assert c[3].id == 3
     assert c[3] == km.q(3)
@@ -54,12 +44,7 @@ def test_qcarray_qubit():
 
 def test_qcarray_bit():
     c = km.array([km.b(k) for k in range(10)])
-    assert c._UNSTABLE_internal_values() == {
-        'common_type': 1,
-        'len': 10,
-        'offset': 0,
-        'stride': 1,
-    }
+    assert c._UNSTABLE_internal_values() == {'common_type': 1, 'len': 10, 'offset': 0, 'stride': 1}
     assert str(c) == "km.array([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9])"
     assert c[3].id == 3
     assert c[3] == km.b(3)

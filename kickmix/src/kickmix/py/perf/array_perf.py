@@ -14,8 +14,10 @@ def benchmark_construct():
         items.append(km.b(k))
     for k in range(100):
         items.append(k % 2 == 0)
+
     def run():
         km.array(items)
+
     return benchmark.go(run, rates={'items': len(items)})
 
 

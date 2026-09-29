@@ -53,7 +53,7 @@ def test_builder_broadcast_x_behaves_identically_to_repeated_appends(t: Any):
     circuit = builder.finish_circuit()
 
     reference_builder = km.CircuitBuilder()
-    t, = util.broadcast_logic(t)
+    (t,) = util.broadcast_logic(t)
     for k in range(len(t)):
         reference_builder.x(t[k])
     reference_circuit = reference_builder.finish_circuit()

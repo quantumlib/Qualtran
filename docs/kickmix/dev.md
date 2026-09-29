@@ -17,13 +17,13 @@ bazel test :all
 ## Run C++ Command Line Tool
 
 ```bash
-bazel run :kickmix
+bazel run kickmix:kickmix
 ```
 
 ## Build Python Wheel
 
 ```bash
-bazel build :kickmix_dev_wheel
+bazel build kickmix:kickmix_dev_wheel
 # output is at bazel-bin/kickmix-0.0.dev0-py3-none-any.whl
 ```
 
@@ -60,10 +60,10 @@ python kickmix/src/kickmix/py/perf/run_all_perf.py
 ## Run C++ Performance Tests
 
 ```bash
-bazel run :kickmix_perf
+bazel run kickmix:kickmix_perf
 
 # example usage:
-#     bazel run :kickmix_perf -- --target_seconds 0.1 --only "sim_sample_*"
+#     bazel run kickmix:kickmix_perf -- --target_seconds 0.1 --only "sim_sample_*"
 ```
 
 ## Regenerate python api reference

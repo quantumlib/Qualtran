@@ -24,10 +24,8 @@ def test_builder_iadd(n: int):
         """,
         shots=64,
         context={'n': n},
-        input_sampler=lambda: {
-            'a': random.randrange(1 << n),
-            'b': random.randrange(1 << n),
-        })
+        input_sampler=lambda: {'a': random.randrange(1 << n), 'b': random.randrange(1 << n)},
+    )
 
 
 @pytest.mark.parametrize('n', [0, 1, 2, 10, 20, 256])
@@ -46,10 +44,8 @@ def test_builder_isub(n: int):
         """,
         shots=64,
         context={'n': n},
-        input_sampler=lambda: {
-            'a': random.randrange(1 << n),
-            'b': random.randrange(1 << n),
-        })
+        input_sampler=lambda: {'a': random.randrange(1 << n), 'b': random.randrange(1 << n)},
+    )
 
 
 @pytest.mark.parametrize('n', [0, 1, 2, 10, 20, 70, 256])
@@ -71,10 +67,8 @@ def test_builder_iadd_classical(n: int):
         """,
         shots=64,
         context={'n': n, 'offset': offset},
-        input_sampler=lambda: {
-            'a': random.randrange(1 << n),
-            'c': random.randrange(2),
-        })
+        input_sampler=lambda: {'a': random.randrange(1 << n), 'c': random.randrange(2)},
+    )
 
 
 @pytest.mark.parametrize('n', [0, 1, 2, 10, 20, 70, 256])
@@ -96,10 +90,8 @@ def test_builder_isub_classical(n: int):
         """,
         shots=64,
         context={'n': n, 'offset': offset},
-        input_sampler=lambda: {
-            'a': random.randrange(1 << n),
-            'c': random.randrange(2),
-        })
+        input_sampler=lambda: {'a': random.randrange(1 << n), 'c': random.randrange(2)},
+    )
 
 
 def test_builder_iadd_auto_and_errors():
@@ -132,5 +124,3 @@ def test_iadd_positional_args():
         builder.iadd(b, a)
     with pytest.raises(TypeError):
         builder.isub(b, a)
-
-

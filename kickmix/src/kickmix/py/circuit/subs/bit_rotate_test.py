@@ -21,7 +21,8 @@ def test_fuzz_left_rotate_no_control(n: int):
                 target = ((target << 1) | target >> (n - 1)) & mask
         """,
         context={'n': n},
-        shots=64)
+        shots=64,
+    )
 
 
 @pytest.mark.parametrize("n", [0, 1, 2, 8, 64])
@@ -29,10 +30,7 @@ def test_fuzz_left_rotate_classical_control(n: int):
     builder = km.CircuitBuilder()
     target = builder.create_quantum_register(n, name="target")
     control = builder.create_classical_register(1, name="control")[0]
-    builder.left_rotate(
-        target,
-        control=control,
-    )
+    builder.left_rotate(target, control=control)
     circuit = builder.finish_circuit()
 
     assert_fuzz_testing_acts_like(
@@ -43,7 +41,8 @@ def test_fuzz_left_rotate_classical_control(n: int):
                 target = ((target << 1) | target >> (n - 1)) & mask
         """,
         context={'n': n},
-        shots=64)
+        shots=64,
+    )
 
 
 @pytest.mark.parametrize("n", [0, 1, 2, 8, 64])
@@ -51,10 +50,7 @@ def test_fuzz_left_rotate(n: int):
     builder = km.CircuitBuilder()
     target = builder.create_quantum_register(n, name="target")
     control = builder.create_quantum_register(1, name="control")[0]
-    builder.left_rotate(
-        target,
-        control=control,
-    )
+    builder.left_rotate(target, control=control)
     circuit = builder.finish_circuit()
 
     assert_fuzz_testing_acts_like(
@@ -65,7 +61,8 @@ def test_fuzz_left_rotate(n: int):
                 target = ((target << 1) | target >> (n - 1)) & mask
         """,
         context={'n': n},
-        shots=64)
+        shots=64,
+    )
 
 
 @pytest.mark.parametrize("n", [0, 1, 2, 8, 64])
@@ -73,10 +70,7 @@ def test_fuzz_right_rotate(n: int):
     builder = km.CircuitBuilder()
     target = builder.create_quantum_register(n, name="target")
     control = builder.create_quantum_register(1, name="control")[0]
-    builder.right_rotate(
-        target,
-        control=control,
-    )
+    builder.right_rotate(target, control=control)
     circuit = builder.finish_circuit()
 
     assert_fuzz_testing_acts_like(
@@ -87,4 +81,5 @@ def test_fuzz_right_rotate(n: int):
                 target = ((target >> 1) | target << (n - 1)) & mask
         """,
         context={'n': n},
-        shots=64)
+        shots=64,
+    )

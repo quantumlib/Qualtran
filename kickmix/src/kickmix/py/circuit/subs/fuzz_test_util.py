@@ -30,13 +30,13 @@ def neg():
 
 
 def assert_fuzz_testing_acts_like(
-        circuit: km.Circuit,
-        code: str,
-        *,
-        shots: int,
-        context: dict[str, Any] | None = None,
-        input_sampler: Callable[[], dict[str, int]] | None = None,
-        ignore_phase: bool = False,
+    circuit: km.Circuit,
+    code: str,
+    *,
+    shots: int,
+    context: dict[str, Any] | None = None,
+    input_sampler: Callable[[], dict[str, int]] | None = None,
+    ignore_phase: bool = False,
 ):
     __tracebackhide__ = True
     if context is None:

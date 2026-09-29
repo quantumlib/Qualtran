@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 """Runs doctests on a module, including any objects imported into the module."""
+
 import argparse
 import doctest
 import inspect
 import sys
 from typing import Dict
-
 
 SKIPPED_FIELDS = {
     '__base__',
@@ -51,6 +51,7 @@ SKIPPED_EXAMPLE_WARNING_FIELDS = {
 def no_really_i_have_a_doc_why_is_this_needed_argh(v: object, fullname: str) -> object:
     def so_much_doc():
         pass
+
     so_much_doc.__doc__ = v.__doc__
     so_much_doc.__qualname__ = fullname
     return so_much_doc
@@ -59,7 +60,12 @@ def no_really_i_have_a_doc_why_is_this_needed_argh(v: object, fullname: str) -> 
 def gen(*, obj: object, fullname: str, out: Dict[str, object]) -> None:
     if obj is None:
         return
-    if inspect.isfunction(obj) or inspect.ismethod(obj) or inspect.isbuiltin(obj) or inspect.isroutine(obj):
+    if (
+        inspect.isfunction(obj)
+        or inspect.ismethod(obj)
+        or inspect.isbuiltin(obj)
+        or inspect.isroutine(obj)
+    ):
         if hasattr(obj, '__doc__'):
             out[fullname] = obj
         return
@@ -90,27 +96,24 @@ def main():
         required=True,
         nargs='+',
         help="The module to test. "
-             "This module will be imported, "
-             "its imported values will be recursively explored, "
-             "and doctests will be run on them.")
+        "This module will be imported, "
+        "its imported values will be recursively explored, "
+        "and doctests will be run on them.",
+    )
     parser.add_argument(
-        '--import',
-        default=(),
-        nargs='*',
-        type=str,
-        help="Modules to import for each doctest.")
+        '--import', default=(), nargs='*', type=str, help="Modules to import for each doctest."
+    )
     parser.add_argument(
         '--suppress_examples_warning_for',
         default=(),
         nargs='*',
         type=str,
-        help="Objects that don't need an 'examples:' section in their documentation.")
+        help="Objects that don't need an 'examples:' section in their documentation.",
+    )
     args = parser.parse_args()
     suppressed = args.suppress_examples_warning_for
 
-    globs = {
-        k: __import__(k) for k in getattr(args, 'import')
-    }
+    globs = {k: __import__(k) for k in getattr(args, 'import')}
     any_failed = False
     for module_name in args.module:
         module = __import__(module_name)
@@ -120,11 +123,21 @@ def main():
             if v.__doc__ is None:
                 continue
             v = v.__doc__.lower()
-            if '\n' in v.strip() and 'examples:' not in v and 'example:' not in v and '[deprecated]' not in v:
+            if (
+                '\n' in v.strip()
+                and 'examples:' not in v
+                and 'example:' not in v
+                and '[deprecated]' not in v
+            ):
                 if k.split('.')[-1] not in SKIPPED_EXAMPLE_WARNING_FIELDS:
-                    if all(not (e.startswith('_') and not e.startswith('__')) for e in k.split('.')):
+                    if all(
+                        not (e.startswith('_') and not e.startswith('__')) for e in k.split('.')
+                    ):
                         if all(not k.startswith(prefix) for prefix in suppressed):
-                            print(f"    Warning: Missing 'examples:' section in docstring of {k!r}", file=sys.stderr)
+                            print(
+                                f"    Warning: Missing 'examples:' section in docstring of {k!r}",
+                                file=sys.stderr,
+                            )
 
         module.__test__ = {k: v for k, v in out.items()}
         if doctest.testmod(module, globs=globs).failed:

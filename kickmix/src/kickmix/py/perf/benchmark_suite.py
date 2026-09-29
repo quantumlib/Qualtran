@@ -53,13 +53,13 @@ def _si2(val: float) -> str:
 
 class _BenchmarkResult:
     def __init__(
-            self,
-            *,
-            name: str | None,
-            total_seconds: float,
-            total_reps: int,
-            rates: Iterable[tuple[str, float]],
-            goal_seconds: None | float,
+        self,
+        *,
+        name: str | None,
+        total_seconds: float,
+        total_reps: int,
+        rates: Iterable[tuple[str, float]],
+        goal_seconds: None | float,
     ):
         self.name = name
         self.total_seconds = total_seconds
@@ -71,7 +71,10 @@ class _BenchmarkResult:
         parts = []
         actual_seconds_per_rep = self.total_seconds / self.total_reps
         if self.goal_seconds is not None:
-            deviation = round((math.log(self.goal_seconds) - math.log(actual_seconds_per_rep)) / (math.log(10) / 10.0))
+            deviation = round(
+                (math.log(self.goal_seconds) - math.log(actual_seconds_per_rep))
+                / (math.log(10) / 10.0)
+            )
             parts.append("[")
             for k in range(-20, 21):
                 if (k < deviation and k < 0) or (k > deviation and k > 0):
@@ -107,19 +110,24 @@ class BenchmarkSuite:
     def __init__(self, name: str, *, target_wait_time_seconds: float | None = None):
         self.name = name
         self.benchmarks = []
-        self.target_wait_time_seconds = 0.5 if target_wait_time_seconds is None else target_wait_time_seconds
+        self.target_wait_time_seconds = (
+            0.5 if target_wait_time_seconds is None else target_wait_time_seconds
+        )
 
     def __call__(
-            self,
-            original_method: Callable[[], _BenchmarkResult] | None = None,
-            /,
-            *,
-            goal_nanos: float | None = None,
-            goal_micros: float | None = None,
-            goal_millis: float | None = None,
-            units: dict[str, float | int] | None = None):
+        self,
+        original_method: Callable[[], _BenchmarkResult] | None = None,
+        /,
+        *,
+        goal_nanos: float | None = None,
+        goal_micros: float | None = None,
+        goal_millis: float | None = None,
+        units: dict[str, float | int] | None = None,
+    ):
         """A decorator marking a method as a benchmark."""
-        assert (goal_micros is not None) + (goal_millis is not None) + (goal_nanos is not None) <= 1, "Specified multiple goal units."
+        assert (goal_micros is not None) + (goal_millis is not None) + (
+            goal_nanos is not None
+        ) <= 1, "Specified multiple goal units."
         goal_seconds: float | None = None
         if goal_micros is not None:
             goal_seconds = goal_micros * 1e-6
@@ -138,6 +146,7 @@ class BenchmarkSuite:
                     rates=tuple([*(() if units is None else units.items()), *result.rates]),
                     goal_seconds=goal_seconds,
                 )
+
             self.benchmarks.append(run)
             return run
 
@@ -147,13 +156,10 @@ class BenchmarkSuite:
             return wrap(original_method)
 
     def go(
-            self,
-            body: Callable,
-            *,
-            rates: dict[str, float | int] | None = None,
+        self, body: Callable, *, rates: dict[str, float | int] | None = None
     ) -> _BenchmarkResult:
         """Benchmarks how long it takes to run a method.
-    
+
         Args:
             body: The method to time.
             rates: Describes the names and per-shot quantities of rates to print.
@@ -161,10 +167,10 @@ class BenchmarkSuite:
         Returns:
             Benchmark data, such as number of shots completed and amount of time spent.
         """
-    
+
         total_reps: int = 0
         total_seconds: float = 0.0
-    
+
         rep_limit = 1
         while total_seconds < self.target_wait_time_seconds:
             remaining_time: float = self.target_wait_time_seconds - total_seconds
@@ -201,7 +207,7 @@ class BenchmarkSuite:
             total_reps += reps
             total_seconds += dt_s
             rep_limit *= 100
-    
+
         return _BenchmarkResult(
             total_seconds=total_seconds,
             total_reps=total_reps,
@@ -209,6 +215,7 @@ class BenchmarkSuite:
             rates=() if rates is None else tuple(rates.items()),
             goal_seconds=None,
         )
+
     def main(self):
         for e in self.benchmarks:
             print(e())

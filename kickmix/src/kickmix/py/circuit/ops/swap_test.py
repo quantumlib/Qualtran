@@ -20,11 +20,7 @@ def test_builder_swap_simple():
     """)
 
 
-@pytest.mark.parametrize("c1,c2", [
-    (km.q(0), km.q(1)),
-    (km.b(0), km.b(1)),
-    (km.xb(0), km.xb(1)),
-])
+@pytest.mark.parametrize("c1,c2", [(km.q(0), km.q(1)), (km.b(0), km.b(1)), (km.xb(0), km.xb(1))])
 def test_builder_swap_produces_a_circuit_behaving_as_expected(c1: Any, c2: Any):
     builder = km.CircuitBuilder()
     builder.swap(c1, c2)
@@ -39,17 +35,20 @@ def test_builder_swap_produces_a_circuit_behaving_as_expected(c1: Any, c2: Any):
     assert sim.read_phase_flipped_across_shots(out=int) == 0
 
 
-@pytest.mark.parametrize("c1,c2", [
-    ([km.q(k) for k in range(256)], [km.q(k) for k in range(256, 512)]),
-    ([km.b(k) for k in range(256)], [km.b(k) for k in range(256, 512)]),
-    (km.q(0), km.q(1)),
-    (km.b(0), km.b(1)),
-    (km.q(0), [km.q(1), km.q(2)]),
-    (km.q(0), km.array([km.q(1), km.q(2)])),
-    ([km.q(1), km.q(2)], km.q(0)),
-    (km.b(0), [km.b(1), km.b(2)]),
-    ([km.b(0), km.q(0)], [km.b(1), km.q(1)]),
-])
+@pytest.mark.parametrize(
+    "c1,c2",
+    [
+        ([km.q(k) for k in range(256)], [km.q(k) for k in range(256, 512)]),
+        ([km.b(k) for k in range(256)], [km.b(k) for k in range(256, 512)]),
+        (km.q(0), km.q(1)),
+        (km.b(0), km.b(1)),
+        (km.q(0), [km.q(1), km.q(2)]),
+        (km.q(0), km.array([km.q(1), km.q(2)])),
+        ([km.q(1), km.q(2)], km.q(0)),
+        (km.b(0), [km.b(1), km.b(2)]),
+        ([km.b(0), km.q(0)], [km.b(1), km.q(1)]),
+    ],
+)
 def test_builder_broadcast_swap_behaves_identically_to_repeated_appends(c1: Any, c2: Any):
     builder = km.CircuitBuilder()
     builder.swap(c1, c2)
@@ -86,4 +85,3 @@ def test_builder_cswap(control: Any):
         active = control if isinstance(control, bool) else bool(shot)
         assert sim.read_within_shot("r1", shot, out=int) == (0b0101 if active else 0b1010)
         assert sim.read_within_shot("r2", shot, out=int) == (0b1010 if active else 0b0101)
-

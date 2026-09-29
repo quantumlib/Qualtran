@@ -63,4 +63,3 @@ def test_builder_bit_store_broadcast_modes(value: bool):
         for t, c in zip(targets, cs):
             ref.bit_store(t, value, control=c)
         assert builder.finish_circuit() == ref.finish_circuit()
-

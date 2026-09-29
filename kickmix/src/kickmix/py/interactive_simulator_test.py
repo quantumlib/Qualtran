@@ -53,30 +53,17 @@ def test_read_across_shots():
     assert sim.read_across_shots(km.q(1), out=int) == 0b00100
     assert sim.read_across_shots(km.q(2), out=int) == 0b00011
     assert sim.read_across_shots(km.q(3), out=int) == 0b11111
-    np.testing.assert_array_equal(
-        sim.read_across_shots("test", out=int),
-        [8, 4, 3, 31],
-    )
-    np.testing.assert_array_equal(
-        sim.read_across_shots(km.r(0), out=int),
-        [8, 4, 3, 31],
-    )
-    np.testing.assert_array_equal(
-        sim.read_across_shots([km.q(3), km.q(1)], out=int),
-        [31, 4],
-    )
+    np.testing.assert_array_equal(sim.read_across_shots("test", out=int), [8, 4, 3, 31])
+    np.testing.assert_array_equal(sim.read_across_shots(km.r(0), out=int), [8, 4, 3, 31])
+    np.testing.assert_array_equal(sim.read_across_shots([km.q(3), km.q(1)], out=int), [31, 4])
 
-    np.testing.assert_array_equal(
-        sim.read_across_shots(km.q(0)),
-        [0, 0, 0, 1, 0],
-    )
+    np.testing.assert_array_equal(sim.read_across_shots(km.q(0)), [0, 0, 0, 1, 0])
     np.testing.assert_array_equal(
         sim.read_across_shots(km.r(0)),
         [[0, 0, 0, 1, 0], [0, 0, 1, 0, 0], [1, 1, 0, 0, 0], [1, 1, 1, 1, 1]],
     )
     np.testing.assert_array_equal(
-        sim.read_across_shots([km.q(3), km.q(1)]),
-        [[1, 1, 1, 1, 1], [0, 0, 1, 0, 0]],
+        sim.read_across_shots([km.q(3), km.q(1)]), [[1, 1, 1, 1, 1], [0, 0, 1, 0, 0]]
     )
     np.testing.assert_array_equal(
         sim.read_across_shots("test"),
@@ -276,10 +263,9 @@ def test_write_across_shots_multiple_indices():
 def test_write_across_shots_multiple_indices_bool_array():
     sim = km.Simulator(batch_size=8)
     indices = km.array([km.q(0), km.q(1)])
-    sim.write_across_shots(indices, np.array([
-        [1, 0, 1, 0, 1, 1, 0, 1],
-        [0, 0, 0, 0, 1, 1, 1, 1],
-    ], dtype=np.bool_))
+    sim.write_across_shots(
+        indices, np.array([[1, 0, 1, 0, 1, 1, 0, 1], [0, 0, 0, 0, 1, 1, 1, 1]], dtype=np.bool_)
+    )
     assert sim.read_across_shots(km.q(0), out=int) == 0b10110101
     assert sim.read_across_shots(km.q(1), out=int) == 0b11110000
 
@@ -406,7 +392,10 @@ def test_read_write_phase():
     """))
     for k in range(sim.batch_size):
         offset = fractions.Fraction(1) if k != 5 else fractions.Fraction(0)
-        assert sim.read_shot_phase(k) == fractions.Fraction(eps * k) + fractions.Fraction(0.25) + offset
+        assert (
+            sim.read_shot_phase(k)
+            == fractions.Fraction(eps * k) + fractions.Fraction(0.25) + offset
+        )
 
 
 def test_read_phase_flipped_across_shots():
@@ -431,5 +420,5 @@ def test_read_phase_flipped_across_shots():
         sim.write_shot_phase(k, k * 0.101)
     assert sim.read_phase_flipped_across_shots(out=int) == 0b111111111100000
     np.testing.assert_array_equal(
-        sim.read_phase_flipped_across_shots(),
-        [False] * 5 + [True] * 10 + [False] * 394)
+        sim.read_phase_flipped_across_shots(), [False] * 5 + [True] * 10 + [False] * 394
+    )

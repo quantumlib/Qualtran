@@ -133,4 +133,3 @@ def test_builder_init_and_behaves_identically_to_repeated_appends(c2: Any, c1: A
     reference_circuit = reference_builder.finish_circuit()
 
     assert circuit == reference_circuit
-

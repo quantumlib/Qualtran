@@ -35,7 +35,8 @@ def test_fuzz_multi_controlled_x(n_controls: int, n_targets: int):
         input_sampler=lambda: {
             'controls': rand_controls(n_controls),
             'targets': random.randrange(1 << n_targets),
-        })
+        },
+    )
 
 
 @pytest.mark.parametrize('b', [False, True])
@@ -59,4 +60,5 @@ def test_fuzz_multi_controlled_x_mixed_controls(b: bool):
             'q_controls': rand_controls(4),
             'c_controls': rand_controls(3),
             'targets': random.randrange(2),
-        })
+        },
+    )

@@ -322,10 +322,7 @@ def test_init_and_del_gf2_inverse_fuzz(m: int):
         """,
         shots=64,
         context={"field": field},
-        input_sampler=lambda: {
-            "inp": random.randrange(1 << m),
-            "target": 0,
-        },
+        input_sampler=lambda: {"inp": random.randrange(1 << m), "target": 0},
     )
 
     builder_del = km.CircuitBuilder()
@@ -340,10 +337,7 @@ def test_init_and_del_gf2_inverse_fuzz(m: int):
             target = 0
         """,
         shots=64,
-        input_sampler=lambda: {
-            "inp": (a := random.randrange(1 << m)),
-            "target": field.invert(a),
-        },
+        input_sampler=lambda: {"inp": (a := random.randrange(1 << m)), "target": field.invert(a)},
     )
 
 
@@ -565,7 +559,7 @@ def test_gf2_phase_by_product_exhaustive(m: int):
     sim = km.Simulator(batch_size=64)
     sim.use_same_registers_as(circuit)
     for start in range(0, len(cases), 64):
-        batch = cases[start:start + 64]
+        batch = cases[start : start + 64]
         sim.clear_for_shot()
         for slot, (a, b, c) in enumerate(batch):
             sim.write_within_shot("lhs", slot, a)

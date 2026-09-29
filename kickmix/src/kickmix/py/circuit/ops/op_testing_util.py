@@ -4,7 +4,6 @@ from typing import Any
 
 import kickmix as km
 
-
 U64_FALSE = 0b0000000000000000000000000000000000000000000000000000000000000000
 U64_TRUE = 0b1111111111111111111111111111111111111111111111111111111111111111
 U64_BIT5 = 0b1111111111111111111111111111111100000000000000000000000000000000
@@ -106,10 +105,7 @@ def broadcast_logic(*xs: Any) -> list[Any]:
     else:
         n = 1
 
-    result = [
-        [x] * n if isinstance(x, (km.b, km.xb, km.q, km.xbool, bool)) else x
-        for x in xs
-    ]
+    result = [[x] * n if isinstance(x, (km.b, km.xb, km.q, km.xbool, bool)) else x for x in xs]
     for x in result:
         assert len(x) == n
     return result

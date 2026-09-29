@@ -1,6 +1,4 @@
-"""Helper code for producing the kickmix python API reference, as well as a .pyi stub file.
-"""
-
+"""Helper code for producing the kickmix python API reference, as well as a .pyi stub file."""
 
 import dataclasses
 import types
@@ -95,8 +93,7 @@ def normalize_doc_string(d: str) -> str:
 
 def indented(*, paragraph: str, indentation: str) -> str:
     return "".join(
-        indentation * (line != '\n') + line
-        for line in paragraph.splitlines(keepends=True)
+        indentation * (line != '\n') + line for line in paragraph.splitlines(keepends=True)
     )
 
 
@@ -145,12 +142,7 @@ def splay_signature(sig: str) -> List[str]:
 
 
 def _handle_pybind_method(
-    *,
-    obj: Any,
-    is_property: bool,
-    out_obj: DescribedObject,
-    parent: Any,
-    full_name: str,
+    *, obj: Any, is_property: bool, out_obj: DescribedObject, parent: Any, full_name: str
 ) -> Tuple[str, bool, str, str]:
     doc = normalize_doc_string(getattr(obj, "__doc__", ""))
     if is_property:
@@ -164,7 +156,7 @@ def _handle_pybind_method(
     term_name = full_name.split(".")[-1]
     for line in doc_lines:
         if was_args and line.strip().startswith('*') and ':' in line:
-            new_args_name = line[line.index('*'):line.index(':')]
+            new_args_name = line[line.index('*') : line.index(':')]
         if '@overload ' in line:
             _, sig = line.split('@overload ')
             out_obj.lines.append("@overload")
@@ -177,7 +169,9 @@ def _handle_pybind_method(
             _, sig = line.split('@signature ')
             is_static = '(self' not in sig and inspect.isclass(parent)
             if term_name not in sig:
-                raise ValueError(f"Expected name {term_name!r} to appear in signature override for {full_name!r}:\n    {line}")
+                raise ValueError(
+                    f"Expected name {term_name!r} to appear in signature override for {full_name!r}:\n    {line}"
+                )
             if is_static:
                 out_obj.lines.append("@staticmethod")
             out_obj.lines.extend(splay_signature(sig))
@@ -194,7 +188,7 @@ def _handle_pybind_method(
         if getattr(obj, 'fset', None) is not None:
             has_setter = True
     elif doc_lines_left[0].startswith(term_name):
-        sig_name = term_name + doc_lines_left[0][len(term_name):]
+        sig_name = term_name + doc_lines_left[0][len(term_name) :]
         doc_lines_left = doc_lines_left[1:]
     else:
         sig_name = term_name
@@ -205,7 +199,8 @@ def _handle_pybind_method(
         if "(self: " in sig_name:
             k_low = sig_name.index("(self: ") + len('(self')
             k_high = len(sig_name)
-            if '->' in sig_name: k_high = sig_name.index('->', k_low, k_high)
+            if '->' in sig_name:
+                k_high = sig_name.index('->', k_low, k_high)
             k_high = sig_name.index(", " if ", " in sig_name[k_low:k_high] else ")", k_low, k_high)
             sig_name = sig_name[:k_low] + sig_name[k_high:]
         if not sig_handled:
@@ -220,7 +215,9 @@ def _handle_pybind_method(
     return text, has_setter, doc, sig_name
 
 
-def print_doc(*, full_name: str, parent: object, obj: object, level: int) -> Optional[DescribedObject]:
+def print_doc(
+    *, full_name: str, parent: object, obj: object, level: int
+) -> Optional[DescribedObject]:
     out_obj = DescribedObject()
     out_obj.full_name = full_name
     out_obj.level = level
@@ -255,11 +252,7 @@ def print_doc(*, full_name: str, parent: object, obj: object, level: int) -> Opt
         text = text.replace('numpy.', 'np.')
     elif is_method or is_property:
         text, has_setter, doc, sig_name = _handle_pybind_method(
-            obj=obj,
-            is_property=is_property,
-            out_obj=out_obj,
-            parent=parent,
-            full_name=full_name,
+            obj=obj, is_property=is_property, out_obj=out_obj, parent=parent, full_name=full_name
         )
     elif isinstance(obj, (int, str)):
         text = f"{term_name}: {type(obj).__name__} = {obj!r}"
@@ -274,12 +267,11 @@ def print_doc(*, full_name: str, parent: object, obj: object, level: int) -> Opt
     if doc:
         if text:
             text += "\n"
-        text += indented(paragraph=f"\"\"\"{doc.rstrip()}\n\"\"\"",
-                         indentation="    ")
+        text += indented(paragraph=f"\"\"\"{doc.rstrip()}\n\"\"\"", indentation="    ")
 
     dataclass_fields = getattr(obj, "__dataclass_fields__", [])
     if dataclass_fields:
-        dataclass_prop ='@dataclasses.dataclass'
+        dataclass_prop = '@dataclasses.dataclass'
         if getattr(obj, '__dataclass_params__').frozen:
             dataclass_prop += '(frozen=True)'
         out_obj.lines.append(dataclass_prop)
@@ -287,7 +279,7 @@ def print_doc(*, full_name: str, parent: object, obj: object, level: int) -> Opt
     out_obj.lines.append(text.replace('._stim_avx2', '').replace('._stim_sse2', ''))
     if has_setter:
         if '->' in sig_name:
-            setter_type = sig_name[sig_name.index('->') + 2:].strip().replace('._stim_avx2', '')
+            setter_type = sig_name[sig_name.index('->') + 2 :].strip().replace('._stim_avx2', '')
         else:
             setter_type = 'Any'
         out_obj.lines.append(f"@{term_name}.setter")
@@ -300,7 +292,10 @@ def print_doc(*, full_name: str, parent: object, obj: object, level: int) -> Opt
                 t = str(f.type).replace('typing.', '')
             else:
                 t = f.type.__name__
-            t = t.replace('''Union[Dict[str, ForwardRef('JSON_TYPE')], List[ForwardRef('JSON_TYPE')], str, int, float]''', 'Any')
+            t = t.replace(
+                '''Union[Dict[str, ForwardRef('JSON_TYPE')], List[ForwardRef('JSON_TYPE')], str, int, float]''',
+                'Any',
+            )
             if f.default is dataclasses.MISSING:
                 out_obj.lines.append(f'    {f.name}: {t}')
             else:
@@ -331,7 +326,4 @@ def generate_documentation(*, obj: object, level: int, full_name: str) -> Iterat
         v = print_doc(full_name=sub_full_name, obj=sub_obj, level=level + 1, parent=obj)
         if v is not None:
             yield v
-        yield from generate_documentation(
-            obj=sub_obj,
-            level=level + 1,
-            full_name=sub_full_name)
+        yield from generate_documentation(obj=sub_obj, level=level + 1, full_name=sub_full_name)

@@ -4,52 +4,52 @@ package(default_visibility = ["//visibility:public"])
 
 SOURCE_FILES_NO_MAIN = glob(
     [
-        "kickmix/src/**/*.cc",
-        "kickmix/src/**/*.h",
-        "kickmix/src/**/*.inl",
+        "src/**/*.cc",
+        "src/**/*.h",
+        "src/**/*.inl",
     ],
     exclude = glob([
-        "kickmix/src/**/*.test.cc",
-        "kickmix/src/**/*.test.h",
-        "kickmix/src/**/*.perf.cc",
-        "kickmix/src/**/*.perf.h",
-        "kickmix/src/**/*.pybind.cc",
-        "kickmix/src/**/*.pybind.h",
-        "kickmix/src/**/main.cc",
+        "src/**/*.test.cc",
+        "src/**/*.test.h",
+        "src/**/*.perf.cc",
+        "src/**/*.perf.h",
+        "src/**/*.pybind.cc",
+        "src/**/*.pybind.h",
+        "src/**/main.cc",
     ]),
 )
 
 TEST_FILES = glob(
     [
-        "kickmix/src/**/*.test.cc",
-        "kickmix/src/**/*.test.h",
+        "src/**/*.test.cc",
+        "src/**/*.test.h",
     ],
 )
 
 PERF_FILES = glob(
     [
-        "kickmix/src/**/*.perf.cc",
-        "kickmix/src/**/*.perf.h",
+        "src/**/*.perf.cc",
+        "src/**/*.perf.h",
     ],
 )
 
 PYBIND_FILES = glob(
     [
-        "kickmix/src/**/*.pybind.cc",
-        "kickmix/src/**/*.pybind.h",
+        "src/**/*.pybind.cc",
+        "src/**/*.pybind.h",
     ],
 )
 
 cc_binary(
     name = "kickmix",
-    srcs = SOURCE_FILES_NO_MAIN + ["kickmix/src/kickmix/main.cc"],
+    srcs = SOURCE_FILES_NO_MAIN + ["src/kickmix/main.cc"],
     copts = [
         "-O3",
         "-std=c++20",
         "-fno-strict-aliasing",
         "-march=native",
     ],
-    includes = ["kickmix/src/"],
+    includes = ["src/"],
     deps = [
         "@googletest//:gtest",
         "@googletest//:gtest_main",
@@ -66,7 +66,7 @@ cc_binary(
         "-march=native",
     ],
     data = glob(["testdata/**"]),
-    includes = ["kickmix/src/"],
+    includes = ["src/"],
 )
 
 cc_test(
@@ -82,7 +82,7 @@ cc_test(
         "-march=native",
     ],
     data = glob(["testdata/**"]),
-    includes = ["kickmix/src/"],
+    includes = ["src/"],
     linkopts = [
         "-fsanitize=undefined",
         "-fsanitize=address",
@@ -103,7 +103,7 @@ cc_binary(
         "-fno-strict-aliasing",
         "-march=native",
     ],
-    includes = ["kickmix/src/"],
+    includes = ["src/"],
     # Python supplies the extension's Python API symbols when importing it.
     linkopts = select({
         "@platforms//os:osx": ["-Wl,-undefined,dynamic_lookup"],

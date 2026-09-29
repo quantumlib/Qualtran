@@ -11,7 +11,7 @@ find kickmix/src | grep "\.\(cc\|h\)$" | xargs clang-format-21 -i
 bazel build :all
 
 # Check C++ unit tests.
-bazel test :kickmix_test
+bazel test kickmix:kickmix_test
 
 # Run kickmix python unit tests.
 PYTHONPATH=kickmix pytest kickmix/src
