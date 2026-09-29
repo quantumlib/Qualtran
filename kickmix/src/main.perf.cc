@@ -13,6 +13,7 @@ uint64_t registry_initialized = 0;
 
 std::string resolve_testdata_file_path(std::string_view name) {
     std::vector<std::string> prefixes{
+        "kickmix/testdata/",
         "testdata/",
         "../testdata/",
     };
@@ -32,7 +33,9 @@ std::string resolve_testdata_file_path(std::string_view name) {
             return full_path;
         }
     }
-    throw std::invalid_argument("Run unit tests from the repo root so they can find the testdata/ directory.");
+    std::stringstream ss;
+    ss << "Failed to find testdata/" << name << "\n";
+    throw std::invalid_argument(ss.str());
 }
 
 /// Describe quantity as an SI-prefixed value with two significant figures.

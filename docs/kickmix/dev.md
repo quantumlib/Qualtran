@@ -24,13 +24,13 @@ bazel run kickmix:kickmix
 
 ```bash
 bazel build kickmix:kickmix_dev_wheel
-# output is at bazel-bin/kickmix-0.0.dev0-py3-none-any.whl
+# output is at bazel-bin/kickmix/kickmix-0.0.dev0-py3-none-any.whl
 ```
 
 ### ... and install the wheel
 
 ```
-pip install bazel-bin/kickmix-0.0.dev0-py3-none-any.whl
+pip install bazel-bin/kickmix/kickmix-0.0.dev0-py3-none-any.whl
 ```
 
 ### ... and run python unit tests

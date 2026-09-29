@@ -8,6 +8,7 @@ static std::mt19937_64 shared_test_rng;
 
 std::string resolve_testdata_file_path(std::string_view name) {
     std::vector<std::string> prefixes{
+        "kickmix/testdata/",
         "testdata/",
         "../testdata/",
     };
@@ -27,7 +28,9 @@ std::string resolve_testdata_file_path(std::string_view name) {
             return full_path;
         }
     }
-    throw std::invalid_argument("Run unit tests from the repo root so they can find the testdata/ directory.");
+    std::stringstream ss;
+    ss << "Failed to find testdata/" << name << "\n";
+    throw std::invalid_argument(ss.str());
 }
 
 std::mt19937_64 externally_seeded_rng() {
