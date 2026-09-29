@@ -1,6 +1,6 @@
-import kickmix as km
-
 import benchmark_suite
+
+import kickmix as km
 
 benchmark = benchmark_suite.BenchmarkSuite("CircuitBuilder")
 

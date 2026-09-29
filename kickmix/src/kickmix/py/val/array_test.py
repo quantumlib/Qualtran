@@ -1,5 +1,6 @@
-import kickmix as km
 import pytest
+
+import kickmix as km
 
 
 def test_qcarray_empty():

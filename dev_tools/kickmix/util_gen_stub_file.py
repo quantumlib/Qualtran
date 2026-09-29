@@ -1,12 +1,9 @@
 """Helper code for producing the kickmix python API reference, as well as a .pyi stub file."""
 
 import dataclasses
-import types
-from typing import Any
-from typing import Optional, Iterator, List
-
 import inspect
-from typing import Tuple
+import types
+from typing import Any, Iterator, List, Optional, Tuple
 
 keep = {
     "__add__",

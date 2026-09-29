@@ -3,11 +3,11 @@ from __future__ import annotations
 import random
 from typing import Iterable
 
-import kickmix as km
 import numpy as np
 import pytest
-
 from src.kickmix.py.circuit.subs.fuzz_test_util import assert_fuzz_testing_acts_like
+
+import kickmix as km
 
 
 def expected_toffolis(

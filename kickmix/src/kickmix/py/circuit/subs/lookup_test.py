@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import random
 
-import kickmix as km
 import pytest
-
 from src.kickmix.py.circuit.subs.fuzz_test_util import assert_fuzz_testing_acts_like
+
+import kickmix as km
 
 
 def test_init_lookup_diagram():

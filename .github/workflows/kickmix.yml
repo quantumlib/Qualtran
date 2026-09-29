@@ -107,7 +107,7 @@ jobs:
       - run: bazel build kickmix:kickmix_dev_wheel
       - run: pip install bazel-bin/kickmix/kickmix-0.0.dev0-py3-none-any.whl
       - run: pip install pytest
-      - run: PYTHONPATH=kickmix pytest src
+      - run: PYTHONPATH=kickmix pytest kickmix/src
   run_kickmix_pytest_no_avx:
     runs-on: ubuntu-26.04
     steps:
@@ -122,7 +122,7 @@ jobs:
       - run: bazel build kickmix:kickmix_dev_wheel --copt="-mno-avx"
       - run: pip install bazel-bin/kickmix/kickmix-0.0.dev0-py3-none-any.whl
       - run: pip install pytest
-      - run: PYTHONPATH=kickmix pytest src
+      - run: PYTHONPATH=kickmix pytest kickmix/src
   run_kickmix_macos:
     strategy:
       fail-fast: false
@@ -144,4 +144,4 @@ jobs:
       - run: bazel build kickmix:all
       - run: bazel test kickmix:kickmix_test --test_output=errors
       - run: python -m pip install bazel-bin/kickmix/kickmix-0.0.dev0-py3-none-any.whl pytest
-      - run: PYTHONPATH=kickmix python -m pytest src
+      - run: PYTHONPATH=kickmix python -m pytest kickmix/src

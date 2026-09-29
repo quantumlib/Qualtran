@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import kickmix as km
 import pytest
-
 from src.kickmix.py.circuit.subs.fuzz_test_util import assert_fuzz_testing_acts_like
+
+import kickmix as km
 
 
 @pytest.mark.parametrize("n", [0, 1, 2, 8, 64])

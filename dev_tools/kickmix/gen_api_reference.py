@@ -2,11 +2,11 @@
 Iterates over modules and classes, listing their attributes and methods in markdown.
 """
 
-import kickmix
-
 import sys
 
 from util_gen_stub_file import generate_documentation
+
+import kickmix
 
 
 def main():

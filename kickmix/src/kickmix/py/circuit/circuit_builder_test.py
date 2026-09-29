@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import kickmix as km
 import pytest
+
+import kickmix as km
 
 
 def test_builder_create_quantum_register():

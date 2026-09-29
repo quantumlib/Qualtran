@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import random
 
-import kickmix as km
 import pytest
-
 from fuzz_test_util import assert_fuzz_testing_acts_like
+
+import kickmix as km
 
 
 @pytest.mark.parametrize('n', [0, 1, 2, 10, 20, 256])

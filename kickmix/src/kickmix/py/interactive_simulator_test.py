@@ -4,9 +4,10 @@ import fractions
 import random
 from typing import Any
 
-import kickmix as km
 import numpy as np
 import pytest
+
+import kickmix as km
 
 
 def test_sim_storage_int():

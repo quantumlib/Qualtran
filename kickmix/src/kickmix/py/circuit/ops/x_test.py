@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-import kickmix as km
+import op_testing_util as util
 import pytest
 
-import op_testing_util as util
+import kickmix as km
 
 
 def test_builder_append_x_simple():
