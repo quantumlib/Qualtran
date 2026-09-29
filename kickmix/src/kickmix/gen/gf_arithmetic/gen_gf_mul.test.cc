@@ -188,7 +188,7 @@ TEST(gen_gf_mul, phase_by_product_matches_product_parity_fuzz) {
 }
 
 TEST(gen_gf_mul, large_degree_is_buildable) {
-    // The original implementation capped the field degree at 63. Building at 512 must work, and
+    // Building at the maximum supported degree (512) must work, and
     // must stay far below the m^2 Toffolis a schoolbook product would need.
     GF2Field field(512);
     CircuitBuilder builder;
