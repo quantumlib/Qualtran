@@ -33,7 +33,7 @@ inline void write_u64_be(FILE *file, uint64_t val) {
     fwrite_else_throw(&val, sizeof(uint64_t), file);
 }
 
-bool write_u32_block_be(FILE *file, const uint32_t *data, size_t count);
+void write_u32_block_be(FILE *file, const uint32_t *data, size_t count);
 
 }  // namespace kickmix
 
