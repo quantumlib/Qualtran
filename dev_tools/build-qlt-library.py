@@ -49,7 +49,7 @@ from typing import Dict, List
 from qualtran_dev_tools.bloq_finder import get_bloq_examples
 
 from qualtran.qlt_ir import build_library_entry, BuildOutcome, QltBuildResult
-from qualtran.qlt_ir._library import SYMBOLIC_NAME_PATTERN
+from qualtran.qlt_ir._library import _BuildTimeout, _time_limit, SYMBOLIC_NAME_PATTERN
 
 
 def build_all(
@@ -84,7 +84,14 @@ def build_all(
             result = QltBuildResult(be.name, BuildOutcome.SKIPPED, 'Skipped symbolic example')
         else:
             try:
-                bloq = be.make()
+                # TODO: Investigate and fix any hard-to-construct BloqExample instances so
+                #       that it is not necessary to handle `be.make()` as a timeout.
+                with _time_limit(timeout):
+                    bloq = be.make()
+            except _BuildTimeout:
+                result = QltBuildResult(
+                    be.name, BuildOutcome.TIMEOUT, f'exceeded {timeout}s during construct'
+                )
             except Exception as e:  # pylint: disable=broad-except
                 summary = f'{type(e).__name__}: {e}'.replace('\n', ' ')[:300]
                 result = QltBuildResult(

@@ -51,6 +51,7 @@ from __future__ import annotations
 
 import contextlib
 import enum
+import gc
 import io
 import re
 import signal
@@ -157,6 +158,12 @@ class _BuildTimeout(BaseException):
     """
 
 
+# Interval (in seconds) at which SIGALRM repeats after the initial timeout expires,
+# in case the first signal is swallowed by an unraisable context (e.g. a GC callback
+# or `__del__` finalizer via `PyErr_WriteUnraisable`).
+_RETRY_INTERVAL_SECONDS = 0.01
+
+
 @contextlib.contextmanager
 def _time_limit(seconds: Optional[float]) -> Iterator[None]:
     """Context manager that raises `_BuildTimeout` after `seconds` (Unix only).
@@ -164,6 +171,15 @@ def _time_limit(seconds: Optional[float]) -> Iterator[None]:
     Uses `SIGALRM`, so this interrupts pure-Python work (deep recursion, large
     decomposition walks) but cannot preempt long-running C extension calls that
     do not return to the interpreter.
+
+    A repeating interval (`_RETRY_INTERVAL_SECONDS`) is configured on `setitimer`
+    because a one-shot `SIGALRM` can arrive during garbage collection and be
+    delivered on the first instruction of a `gc.callbacks` function (such as
+    JAX's `_xla_gc_callback`) or a `__del__` finalizer, where CPython's
+    `PyErr_WriteUnraisable` catches and ignores all exceptions (including
+    `BaseException`). Repeating the signal every 10ms until the `finally` block
+    disarms the timer ensures `_BuildTimeout` is raised as soon as execution
+    returns to normal Python frames.
 
     Args:
         seconds: The time budget in seconds. If `None` or non-positive, no limit
@@ -173,11 +189,17 @@ def _time_limit(seconds: Optional[float]) -> Iterator[None]:
         yield
         return
 
+    gc_callback_codes = {getattr(cb, '__code__', None) for cb in gc.callbacks} - {None}
+
     def _handler(signum, frame):  # noqa: ANN001
+        if frame is not None and frame.f_code in gc_callback_codes:
+            # Defer to the next repeating timer tick outside the GC callback so
+            # CPython does not swallow the exception with "Exception ignored in: ...".
+            return
         raise _BuildTimeout()
 
     old_handler = signal.signal(signal.SIGALRM, _handler)
-    signal.setitimer(signal.ITIMER_REAL, seconds)
+    signal.setitimer(signal.ITIMER_REAL, seconds, _RETRY_INTERVAL_SECONDS)
     try:
         yield
     finally:

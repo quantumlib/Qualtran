@@ -109,3 +109,28 @@ def test_symbolic_name_pattern():
         assert SYMBOLIC_NAME_PATTERN.search(name), f'Expected match for {name}'
     for name in should_not_match:
         assert not SYMBOLIC_NAME_PATTERN.search(name), f'Expected no match for {name}'
+
+
+def test_time_limit_survives_gc_callback():
+    import gc
+    import time
+
+    import pytest
+
+    from qualtran.qlt_ir._library import _BuildTimeout, _time_limit
+
+    def dummy_gc_cb(phase, info):
+        pass
+
+    gc.callbacks.append(dummy_gc_cb)
+    try:
+        t0 = time.monotonic()
+        with pytest.raises(_BuildTimeout):
+            with _time_limit(0.05):
+                # Continuously trigger GC callbacks while busy-looping.
+                while time.monotonic() - t0 < 1.0:
+                    gc.collect(0)
+        elapsed = time.monotonic() - t0
+        assert elapsed < 0.5
+    finally:
+        gc.callbacks.remove(dummy_gc_cb)
