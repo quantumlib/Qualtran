@@ -19,7 +19,7 @@ This script finds all Bloq classes and examples in the library, serializes the e
 to their objectstring representation, and writes the list of class names and
 example objectstrings to `qualtran/bloqs/manifest.py`.
 
-See `qualtran.l1.load_objectstring()` to load bloq objects from these strings.
+See `qualtran.qlt_ir.load_objectstring()` to load bloq objects from these strings.
 """
 
 from functools import cached_property
@@ -29,8 +29,8 @@ from qualtran_dev_tools.bloq_finder import get_bloq_classes, get_bloq_examples
 from qualtran_dev_tools.git_tools import get_git_root
 
 from qualtran import Bloq
-from qualtran.l1 import eval_cvalue_node, parse_objectstring, to_cobject_node
-from qualtran.l1.nodes import CArgNode, CObjectNode, LiteralNode
+from qualtran.qlt_ir import eval_cvalue_node, parse_objectstring, to_cobject_node
+from qualtran.qlt_ir.nodes import CArgNode, CObjectNode, LiteralNode
 
 MAXLEN = 300
 """If the objectstring is too long, we make the executive decision to truncate it."""

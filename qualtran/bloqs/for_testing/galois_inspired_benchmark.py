@@ -11,10 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-"""Synthetic multi-register benchmark for Qualtran compiler and L1 IR performance testing.
+"""Synthetic multi-register benchmark for Qualtran compiler and QLT IR performance testing.
 
 This script constructs a mock bloq hierarchy using Qualtran infrastructure to serve as
-a compiler and L1 IR serialization performance benchmark:
+a compiler and QLT IR serialization performance benchmark:
 
 Hierarchy:
   - Primitive Bloqs: CNOT, Split, Join
@@ -34,10 +34,10 @@ from typing import Dict
 import attrs
 import numpy as np
 
-import qualtran.l1 as ql1
+import qualtran.qlt_ir as qlt_ir
 from qualtran import Bloq, BloqBuilder, QUInt, Register, Signature, SoquetT
 from qualtran.bloqs.basic_gates import CNOT
-from qualtran.l1._ast_to_code_fast import FastL1ASTPrinter
+from qualtran.qlt_ir import FastQltASTPrinter
 
 logging.basicConfig(level=logging.ERROR)
 logging.disable(logging.WARNING)
@@ -149,7 +149,7 @@ class MockAllRoundsBenchmark(Bloq):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Synthetic multi-register benchmark for Qualtran L1 IR performance testing."
+        description="Synthetic multi-register benchmark for QLT IR performance testing."
     )
     parser.add_argument(
         "--num_regs", type=int, default=140, help="Number of registers (default: 140)"
@@ -199,27 +199,27 @@ def main():
     # Instantiate the top-level bloq
     bloq = MockAllRoundsBenchmark(num_regs=num_regs, degree=degree)
 
-    # Serialize bloq to generate Qualtran L1 IR (.qlt format)
-    print("\nSerializing bloq to Qualtran L1 IR (.qlt format)...")
-    t0_l1 = time.time()
+    # Serialize bloq to generate QLT IR (.qlt format)
+    print("\nSerializing bloq to QLT IR (.qlt format)...")
+    t0_qlt = time.time()
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    mb = ql1.L1ModuleBuilder()
+    mb = qlt_ir.QltModuleBuilder()
     mb.add_bloqs(bloq, skip_aliases=True)
-    l1_mod = mb.finalize()
-    l1_txt = FastL1ASTPrinter().visit(l1_mod)
+    qlt_mod = mb.finalize()
+    qlt_txt = FastQltASTPrinter().visit(qlt_mod)
     with open(output_path, "w") as f:
-        f.write(l1_txt)
-    t1_l1 = time.time()
-    l1_time = t1_l1 - t0_l1
+        f.write(qlt_txt)
+    t1_qlt = time.time()
+    qlt_time = t1_qlt - t0_qlt
     file_size = os.path.getsize(output_path)
-    print(f"✓ L1 IR generation completed in {l1_time:.2f} seconds.")
-    print(f"✓ Generated Qualtran L1 IR file: {output_path} ({file_size:,} bytes)")
+    print(f"✓ QLT IR generation completed in {qlt_time:.2f} seconds.")
+    print(f"✓ Generated QLT IR file: {output_path} ({file_size:,} bytes)")
 
     # Print summary of timings
     print("\n" + "=" * 80)
     print("TIMING BENCHMARK RESULTS")
     print("=" * 80)
-    print(f"  Qualtran L1 IR serialization (.qlt)  : {l1_time:.2f} s")
+    print(f"  QLT IR serialization (.qlt)  : {qlt_time:.2f} s")
     print("=" * 80)
 
 

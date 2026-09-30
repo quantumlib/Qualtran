@@ -4,10 +4,9 @@ This directory contains scripts, modules, and configuration data used by develop
 
 `conf/` contains configuration files (for typecheckers, formatters, ...)
 
-`requirements/` contain the sources-of-truth for the various dependencies of the project.
-Notably, `requirements/deps/runtime.txt` contains the requirements that `pip install qualtran`
-will try to satisfy. The `requirements/` directory contains additional developer dependencies
-as well as pinned-version environment specifications.
+`requirements/` contains documentation and scripts for managing dependencies with `uv`.
+End-user install requirements live in `pyproject.toml` at the repo root; pinned dev/CI
+environments are defined in `uv.lock`. See `requirements/README` for install instructions.
 
 `templates/` is used by the reference doc generation script.
 

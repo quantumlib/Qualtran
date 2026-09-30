@@ -27,7 +27,7 @@ cd "$( dirname "${BASH_SOURCE[0]}" )" || exit 1
 cd "$(git rev-parse --show-toplevel)" || exit 1
 
 cd ./dev_tools/requirements/
-uvoptions=(--project ../../ export --format requirements-txt --frozen --no-hashes)
+uvoptions=(--project ../../ export --format requirements-txt --frozen --no-hashes --no-emit-project)
 
 mkdir -p ./envs
 uv "${uvoptions[@]}"                         -o ./envs/dev.env.txt

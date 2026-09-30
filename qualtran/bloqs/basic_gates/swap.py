@@ -35,7 +35,6 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.cirq_interop import CirqQuregT
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
 

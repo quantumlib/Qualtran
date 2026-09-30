@@ -159,3 +159,20 @@ jupyter_kernel.lock
 
 # FLASQ generated PDFs
 *.pdf
+
+# Working files.
+*.swp
+.ninja_lock
+
+# Perf
+perf.data
+perf.data.old
+
+# Bazel
+bazel-bin
+bazel-kickmix
+bazel-out
+bazel-testlogs
+bazel-Qualtran
+MODULE.bazel.lock
+.bazelrc

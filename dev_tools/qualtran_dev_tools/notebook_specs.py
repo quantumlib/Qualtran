@@ -310,6 +310,7 @@ CHEMISTRY: list[NotebookSpecV2] = [
             qualtran.bloqs.chemistry.thc.prepare._THC_UNI_PREP,
             qualtran.bloqs.chemistry.thc.prepare._THC_PREPARE,
             qualtran.bloqs.chemistry.thc.select_bloq._THC_SELECT,
+            qualtran.bloqs.chemistry.thc.select_bloq._THC_ROTATIONS,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/thc',
     ),

@@ -1,0 +1,343 @@
+#  Copyright 2025 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+"""The QLT IR AST Nodes."""
+
+import abc
+from typing import Any, Optional, Protocol, Sequence, Tuple, TypeAlias, Union
+
+import attrs
+
+
+class QltASTNode(metaclass=abc.ABCMeta):
+    """Every QLT IR AST Node inherits from this base class.
+
+    For walking the AST, we use a visitor pattern.
+    See `qualtran.qlt_ir.QltVisitorBase` and its descendants for more.
+    If you introduce a new node type, you will likely need to add corresponding
+    methods to the various visitor classes.
+    """
+
+
+class CValueNode(QltASTNode, metaclass=abc.ABCMeta):
+    """Nodes corresponding to classical values.
+
+    This includes
+     - LiteralNode
+     - TupleNode
+     - CObjectNode
+    """
+
+    @abc.abstractmethod
+    def canonical_str(self): ...
+
+
+@attrs.frozen
+class LiteralNode(CValueNode):
+    """A literal classical value."""
+
+    value: Union[int, float, str]
+
+    def canonical_str(self):
+        return f'{self.value!r}'
+
+
+@attrs.frozen
+class TupleNode(CValueNode):
+    """A sequence (tuple) of classical values."""
+
+    items: Sequence[CValueNode] = attrs.field(converter=tuple[CValueNode])
+
+    def canonical_str(self):
+        if len(self.items) == 1:
+            return f'({self.items[0].canonical_str()},)'
+        item_str = ', '.join(i.canonical_str() for i in self.items)
+        return f'({item_str})'
+
+
+@attrs.frozen
+class CArgNode(QltASTNode):
+    """A classical value optionally associated with a string key."""
+
+    key: Optional[str]
+    value: CValueNode
+
+    def canonical_str(self) -> str:
+        if self.key:
+            return f'{self.key}={self.value.canonical_str()}'
+        return self.value.canonical_str()
+
+
+@attrs.frozen
+class CObjectNode(CValueNode):
+    """A classical 'object'.
+
+    In QLT IR, an 'object' is a container data structure with
+     - an object name (analogous to a class name)
+     - a sequence of contained classical values. Each may be given a string key.
+    """
+
+    name: str
+    cargs: Sequence[CArgNode] = attrs.field(converter=tuple[CArgNode])
+
+    def canonical_str(self) -> str:
+        carg_str = ', '.join(carg.canonical_str() for carg in self.cargs)
+        if carg_str:
+            return f'{self.name}({carg_str})'
+        return self.name
+
+
+@attrs.frozen
+class QDTypeNode(QltASTNode):
+    """A quantum data type, optionally with a shape."""
+
+    dtype: CObjectNode
+    shape: Optional[Sequence[int]]
+
+
+@attrs.frozen
+class QSignatureEntry(QltASTNode):
+    """A quantum signature entry."""
+
+    name: str
+    dtype: Union[QDTypeNode, Tuple[Optional[QDTypeNode], Optional[QDTypeNode]]]
+    annotation: Optional[CValueNode] = None
+
+
+@attrs.frozen
+class LValueNode(QltASTNode):
+    """An l-value with an optional annotation."""
+
+    name: str
+    annotation: Optional[CValueNode] = None
+
+    def __str__(self):
+        if self.annotation:
+            return f'{self.name} @ {self.annotation.canonical_str()}'
+        return self.name
+
+
+class StatementNode(QltASTNode, metaclass=abc.ABCMeta):
+    """Nodes which can serve as statements in a qdef.
+
+    This base class's implementers include:
+     - `AliasAssignmentNode`
+     - `QCallNode`
+     - `QReturnNode`
+    """
+
+
+@attrs.frozen
+class AliasAssignmentNode(StatementNode):
+    """A statement that assigns `bloq_key` to `alias`."""
+
+    alias: str
+    bloq_key: str
+
+    def __str__(self):
+        return f'[AA] {self.alias} = {self.bloq_key}'
+
+
+@attrs.frozen
+class QArgValueNode(QltASTNode):
+    """A quantum argument (specifically the value, not the kv pair).
+
+    In general, a quantum argument is referenced by a local variable name and optional
+    indices into the local variable.
+    """
+
+    name: str
+    idx: Sequence[int]
+
+
+NestedQArgValue: TypeAlias = Union[QArgValueNode, Sequence['NestedQArgValue']]
+
+
+@attrs.frozen
+class QArgNode(QltASTNode):
+    """A quantum argument given as a key-value pair.
+
+    During a quantum call, we provide quantum arguments (always by keyword). The value
+    being passed can be a local variable, an indexed local variable, or an arbitrarily nested
+    list of indexed local variables.
+    """
+
+    key: str
+    value: NestedQArgValue  # TODO: turn all to tuple
+    annotation: Optional[CValueNode] = None
+
+
+@attrs.frozen
+class QCallNode(StatementNode):
+    """A statement that calls a quantum subroutine."""
+
+    bloq_key: str
+    lvalues: Sequence[LValueNode] = attrs.field(converter=tuple[LValueNode])
+    qargs: Sequence[QArgNode] = attrs.field(converter=tuple[QArgNode])
+    annotation: Optional[CValueNode] = None
+
+
+@attrs.frozen
+class QReturnNode(StatementNode):
+    """A statement that returns from a subroutine."""
+
+    ret_mapping: Sequence[QArgNode]
+
+
+class QDefNode(QltASTNode, metaclass=abc.ABCMeta):
+    """Nodes that serve as 'qdefs'.
+
+    This base class's implementers include:
+     - `QDefImplNode`
+     - `QDefExternNode`
+    """
+
+    @property
+    @abc.abstractmethod
+    def bloq_key(self) -> str: ...
+
+    @property
+    @abc.abstractmethod
+    def qsignature(self) -> Sequence[QSignatureEntry]: ...
+
+    @property
+    @abc.abstractmethod
+    def cobject_from(self) -> Optional[CObjectNode]: ...
+
+
+@attrs.frozen
+class QDefImplNode(QDefNode):
+    """A qdef defining a quantum subroutine.
+
+    Args:
+        bloq_key: The bloq_key this qdef defines.
+        qsignature: The qdef's signature
+        body: The sequence of statements forming the qdef's body.
+        cobject_from: Optional classical object in the "from" clause.
+
+    ```qlt
+    qdef bloq1 [ ..qsignature.. ]
+    from ..cobject_from..
+    { ..body.. }
+    ```
+    """
+
+    bloq_key: str
+    qsignature: Sequence[QSignatureEntry] = attrs.field(converter=tuple[QSignatureEntry])
+    body: Sequence[StatementNode] = attrs.field(converter=tuple[StatementNode])
+    cobject_from: Optional[CObjectNode]
+
+
+@attrs.frozen
+class QDefExternNode(QDefNode):
+    """A qdef declaring an external quantum subroutine.
+
+    Args:
+        bloq_key: The bloq_key this qdef declares.
+        qsignature: The signature of the external subroutine.
+        cobject_from: Classical object in the "from" clause. This is mandatory, but that
+            should be enforced by the evaluation logic.
+
+    ```qlt
+    extern qdef X
+    from qualtran.bloqs.basic_gates.XGate()
+    [q: QBit()]
+    ```
+    """
+
+    bloq_key: str
+    qsignature: Sequence[QSignatureEntry] = attrs.field(converter=tuple[QSignatureEntry])
+    cobject_from: Optional[CObjectNode]
+
+
+@attrs.frozen
+class QCastNode(QDefNode):
+    """A qcast declaring a casting (bookkeeping) operation.
+
+    A ``qcast`` is syntactic sugar for bookkeeping bloqs such as Split, Join,
+    Partition, Destructure, and Restructure. Unlike ``extern qdef``, it does
+    *not* have a ``from`` clause — the casting is fully determined by the
+    quantum signature.
+
+    Args:
+        bloq_key: The symbol id for this casting operation.
+        qsignature: The quantum signature describing the cast.
+
+    ```qlt
+    qcast Split(QUInt(4))
+    [reg: QUInt(4) -> QBit[4]]
+    ```
+    """
+
+    bloq_key: str
+    qsignature: Sequence[QSignatureEntry] = attrs.field(converter=tuple[QSignatureEntry])
+
+    @property
+    def cobject_from(self) -> Optional[CObjectNode]:
+        return None
+
+
+@attrs.frozen
+class QltModule(QltASTNode):
+    """A module consisting of a sequence of qdefs.
+
+    In QLT IR, a text file containing a module must begin with the
+    string "# QLT IR", followed by a newline, followed by a syntax
+    version specifier "# {major}.{minor}.{patch}".
+
+    Args:
+        qdefs: The sequence of qdefs.
+
+    ```qlt
+    # QLT IR
+    # 1.0.0
+
+    qdef bloq1 [x: QBit()] { ... }
+    qdef bloq2 [...] {...}
+    ```
+    """
+
+    qdefs: Sequence[QDefNode] = attrs.field(converter=tuple[QDefNode])
+
+
+class QltNodes(Protocol):
+    def LiteralNode(self, value: Union[int, float, str]) -> Any: ...
+    def TupleNode(self, items: Sequence[Any]) -> Any: ...
+    def CArgNode(self, key: Optional[str], value: Any) -> Any: ...
+    def CObjectNode(self, name: str, cargs: Sequence[Any]) -> Any: ...
+    def QDTypeNode(self, dtype: Any, shape: Optional[Sequence[int]]) -> Any: ...
+    def QSignatureEntry(self, name: str, dtype: Any, annotation: Optional[Any] = None) -> Any: ...
+    def LValueNode(self, name: str, annotation: Optional[Any] = None) -> Any: ...
+    def AliasAssignmentNode(self, alias: str, bloq_key: str) -> Any: ...
+    def QArgValueNode(self, name: str, idx: Sequence[int]) -> Any: ...
+    def QArgNode(self, key: str, value: Any, annotation: Optional[Any] = None) -> Any: ...
+    def QCallNode(
+        self,
+        bloq_key: str,
+        lvalues: Sequence[Any],
+        qargs: Sequence[Any],
+        annotation: Optional[Any] = None,
+    ) -> Any: ...
+    def QReturnNode(self, ret_mapping: Sequence[Any]) -> Any: ...
+    def QDefImplNode(
+        self,
+        bloq_key: str,
+        qsignature: Sequence[Any],
+        body: Sequence[Any],
+        cobject_from: Optional[Any],
+    ) -> Any: ...
+    def QDefExternNode(
+        self, bloq_key: str, qsignature: Sequence[Any], cobject_from: Optional[Any]
+    ) -> Any: ...
+    def QCastNode(self, bloq_key: str, qsignature: Sequence[Any]) -> Any: ...
+    def QltModule(self, qdefs: Sequence[Any]) -> Any: ...
