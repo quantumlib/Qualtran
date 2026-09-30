@@ -484,3 +484,6 @@ class L1Module(L1ASTNode):
                 raise TypeError(f"L1Module qstructs must be QStructNode, got {type(qs)}")
 
         return _rsqlt.L1Module(qdefs_list)
+
+
+QltModule = L1Module

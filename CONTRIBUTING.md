@@ -71,6 +71,10 @@ Guides](https://google.github.io/styleguide/) in your code, particularly the
 
 Do your work and `git commit` your changes to your branch as needed.
 
+Using [`uv`](https://docs.astral.sh/uv/) for development is recommended but not required.
+See [`dev_tools/requirements/README`](./dev_tools/requirements/README) for dependency
+management details.
+
 We use several tools to test code and perform other activities such as
 checking formatting against the style guidelines. You can run those tools
 locally during development. Wrapper scripts are located in the

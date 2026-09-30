@@ -46,7 +46,8 @@ jobs:
           enable-cache: true
       - name: Install dependencies
         run: |
-          uv sync --frozen --no-dev --group test
+          uv sync --frozen --no-dev --group test --no-install-project
+          uv pip install --no-deps -e .
       - run: |
           uv run --no-sync check/pytest-quick -n logical
 
@@ -67,7 +68,8 @@ jobs:
           enable-cache: true
       - name: Install dependencies
         run: |
-          uv sync --frozen
+          uv sync --frozen --no-install-project
+          uv pip install --no-deps -e .
       - run: |
           uv run --no-sync check/pytest-dev-tools -n logical
           uv run --no-sync check/mypy-dev-tools
@@ -89,7 +91,8 @@ jobs:
           enable-cache: true
       - name: Install dependencies
         run: |
-          uv sync --frozen --no-dev --group test
+          uv sync --frozen --no-dev --group test --no-install-project
+          uv pip install --no-deps -e .
       - run: |
           uv run --no-sync python dev_tools/execute-notebooks.py --n-workers=8
         env:
@@ -113,7 +116,8 @@ jobs:
           enable-cache: true
       - name: Install dependencies
         run: |
-          uv sync --frozen --no-dev --group format
+          uv sync --frozen --no-dev --group format --no-install-project
+          uv pip install --no-deps -e .
       - name: Set up problem matcher for Black output
         run: echo '::add-matcher::.github/problem-matchers/black.json'
       - run: |
@@ -135,7 +139,8 @@ jobs:
           enable-cache: true
       - name: Install dependencies
         run: |
-          uv sync --frozen --no-dev --group lint
+          uv sync --frozen --no-dev --group lint --no-install-project
+          uv pip install --no-deps -e .
       - run: |
           uv run --no-sync check/ruff
 
@@ -157,7 +162,8 @@ jobs:
           enable-cache: true
       - name: Install dependencies
         run: |
-          uv sync --frozen --no-dev --group typing
+          uv sync --frozen --no-dev --group typing --no-install-project
+          uv pip install --no-deps -e .
       - name: Set up problem matcher for Mypy output
         run: echo '::add-matcher::.github/problem-matchers/mypy.json'
       - run: |
@@ -180,7 +186,8 @@ jobs:
           enable-cache: true
       - name: Install dependencies
         run: |
-          uv sync --frozen --no-dev --group doc
+          uv sync --frozen --no-dev --group doc --no-install-project
+          uv pip install --no-deps -e .
       - run: |
           uv run --no-sync check/autogenerate-notebooks
 
@@ -227,6 +234,8 @@ jobs:
           enable-cache: true
       - name: Install dependencies
         run: |
-          uv sync --frozen --directory experimental/rsqualtran
+          uv sync --frozen --directory experimental/rsqualtran --no-install-project --no-install-package qualtran
+          uv pip install --directory experimental/rsqualtran --no-deps -e ../..
+          uv pip install --directory experimental/rsqualtran --no-deps -e .
       - run: |
           uv run --no-sync check/experimental-rsqualtran

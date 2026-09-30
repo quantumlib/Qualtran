@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -21,6 +21,7 @@ from attrs import evolve, frozen
 from qualtran import (
     Bloq,
     bloq_example,
+    BloqBuilder,
     BloqDocSpec,
     ConnectionT,
     DecomposeTypeError,
@@ -30,9 +31,12 @@ from qualtran import (
     Register,
     Side,
     Signature,
+    Soquet,
+    SoquetT,
 )
 from qualtran.bloqs.arithmetic.subtraction import Subtract
 from qualtran.bloqs.basic_gates import CNOT, TGate, Toffoli, XGate
+from qualtran.bloqs.bookkeeping import Join2, Split2
 from qualtran.bloqs.mcmt import MultiControlX
 from qualtran.drawing import Text, WireSymbol
 from qualtran.symbolics import ceil, HasLength, is_symbolic, log2, smax, SymbolicInt
@@ -42,10 +46,11 @@ if TYPE_CHECKING:
 
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.simulation.verification import ClassicalSimTestCase
 
 
 @frozen
-class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
+class PlusEqualProduct(GateWithRegisters):
     """Performs result += a * b.
 
     Args:
@@ -94,27 +99,40 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     def result_dtype(self):
         return QUInt(self.result_bitsize)
 
-    def registers(self) -> Sequence[Union[int, Sequence[int]]]:
-        if is_symbolic(self.a_bitsize):
-            raise ValueError(f'Symbolic bitsize {self.a_bitsize} not supported')
-        if is_symbolic(self.b_bitsize):
-            raise ValueError(f'Symbolic bitsize {self.b_bitsize} not supported')
-        if is_symbolic(self.result_bitsize):
-            raise ValueError(f'Symbolic bitsize {self.result_bitsize} not supported')
-        return [2] * self.a_bitsize, [2] * self.b_bitsize, [2] * self.result_bitsize
-
     def adjoint(self) -> 'PlusEqualProduct':
         return evolve(self, is_adjoint=not self.is_adjoint)
-
-    def apply(self, a: int, b: int, result: int) -> Union[int, Iterable[int]]:
-        return a, b, (result + a * b * ((-1) ** self.is_adjoint)) % (2**self.result_bitsize)
-
-    def with_registers(self, *new_registers: Union[int, Sequence[int]]):
-        raise NotImplementedError("Not needed.")
 
     def on_classical_vals(self, a: int, b: int, result: int) -> Dict[str, 'ClassicalValT']:
         result_out = (result + a * b * ((-1) ** self.is_adjoint)) % (2**self.result_bitsize)
         return {'a': a, 'b': b, 'result': result_out}
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', a: 'Soquet', b: 'Soquet', result: 'Soquet'
+    ) -> Dict[str, 'SoquetT']:
+        from qualtran.bloqs.arithmetic.controlled_addition import CAdd
+
+        if is_symbolic(self.a_bitsize, self.b_bitsize, self.result_bitsize):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic bitsizes.")
+
+        a_split = bb.split(a)
+
+        for i in range(self.a_bitsize):  # type: ignore[arg-type]
+            a_bit_idx = self.a_bitsize - 1 - i
+            upper_len = self.result_bitsize - i
+
+            cadd: Bloq = CAdd(a_dtype=QUInt(self.b_bitsize), b_dtype=QUInt(upper_len))
+            if self.is_adjoint:
+                cadd = cadd.adjoint()
+
+            if i == 0:
+                a_split[a_bit_idx], b, result = bb.add(cadd, ctrl=a_split[a_bit_idx], a=b, b=result)
+            else:
+                upper, lower = bb.add(Split2(upper_len, i), x=result)
+                a_split[a_bit_idx], b, upper = bb.add(cadd, ctrl=a_split[a_bit_idx], a=b, b=upper)
+                result = bb.add(Join2(upper_len, i), y1=upper, y2=lower)
+
+        a = bb.join(a_split, QUInt(self.a_bitsize))
+        return {'a': a, 'b': b, 'result': result}
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         if is_symbolic(self.a_bitsize):
@@ -127,12 +145,30 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         wire_symbols += ['c-=a*b' if self.is_adjoint else 'c+=a*b'] * self.result_bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
-        from qualtran.cirq_interop._cirq_to_bloq import _my_tensors_from_gate
+    def _has_unitary_(self) -> bool:
+        return not is_symbolic(self.a_bitsize, self.b_bitsize, self.result_bitsize)
 
-        return _my_tensors_from_gate(self, self.signature, incoming=incoming, outgoing=outgoing)
+    def _apply_unitary_(self, args: 'cirq.ApplyUnitaryArgs') -> np.ndarray:
+        if is_symbolic(self.a_bitsize, self.b_bitsize, self.result_bitsize):
+            return NotImplemented
+        a_len = int(self.a_bitsize)
+        b_len = int(self.b_bitsize)
+        res_len = int(self.result_bitsize)
+        sub_shape = (1 << a_len, 1 << b_len, 1 << res_len)
+
+        transposed_args = args.with_axes_transposed_to_start()
+        src = transposed_args.target_tensor.reshape(*sub_shape, -1)
+        dst = transposed_args.available_buffer.reshape(*sub_shape, -1)
+
+        a = np.arange(1 << a_len)[:, None, None]
+        b = np.arange(1 << b_len)[None, :, None]
+        res = np.arange(1 << res_len)[None, None, :]
+        sign = -1 if self.is_adjoint else 1
+        out = (res + sign * a * b) % (1 << res_len)
+
+        dst[a, b, out, :] = src
+        transposed_args.target_tensor[...] = dst.reshape(transposed_args.available_buffer.shape)
+        return args.target_tensor
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # TODO: The T-complexity here is approximate.
@@ -331,6 +367,24 @@ class Product(Bloq):
                 Register("result", QUInt(2 * max(self.a_bitsize, self.b_bitsize)), side=Side.RIGHT),
             ]
         )
+
+    def on_classical_vals(self, a: int, b: int) -> Dict[str, 'ClassicalValT']:
+        return {'a': a, 'b': b, 'result': a * b}
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', a: 'Soquet', b: 'Soquet'
+    ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.a_bitsize, self.b_bitsize):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic bitsizes.")
+        result_bitsize = 2 * max(self.a_bitsize, self.b_bitsize)
+        result = bb.allocate(dtype=QUInt(result_bitsize))
+        a, b, result = bb.add(
+            PlusEqualProduct(self.a_bitsize, self.b_bitsize, result_bitsize),
+            a=a,
+            b=b,
+            result=result,
+        )
+        return {'a': a, 'b': b, 'result': result}
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
@@ -605,3 +659,45 @@ def _invert_real_number() -> InvertRealNumber:
 
 
 _INVERT_REAL_NUMBER_DOC = BloqDocSpec(bloq_cls=InvertRealNumber, examples=[_invert_real_number])
+
+
+def _get_product_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+    """Test case registrations for the `Product` bloq."""
+    from qualtran.simulation.verification import ClassicalSimTestCase
+
+    return [
+        # One small equal bitsize.
+        ClassicalSimTestCase(bloq=Product(a_bitsize=2, b_bitsize=2), name="Product(a=2, b=2)"),
+        # Two uneven small bitsizes.
+        ClassicalSimTestCase(bloq=Product(a_bitsize=2, b_bitsize=3), name="Product(a=2, b=3)"),
+        ClassicalSimTestCase(bloq=Product(a_bitsize=3, b_bitsize=2), name="Product(a=3, b=2)"),
+        # One large bitsize.
+        ClassicalSimTestCase(bloq=Product(a_bitsize=8, b_bitsize=8), name="Product(a=8, b=8)"),
+    ]
+
+
+def _get_plus_equal_product_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+    """Test case registrations for the `PlusEqualProduct` bloq."""
+    from qualtran.simulation.verification import ClassicalSimTestCase
+
+    return [
+        # One small equal bitsize.
+        ClassicalSimTestCase(
+            bloq=PlusEqualProduct(a_bitsize=2, b_bitsize=2, result_bitsize=4),
+            name="PlusEqualProduct(a=2, b=2, res=4)",
+        ),
+        # Two uneven small bitsizes.
+        ClassicalSimTestCase(
+            bloq=PlusEqualProduct(a_bitsize=2, b_bitsize=3, result_bitsize=5),
+            name="PlusEqualProduct(a=2, b=3, res=5)",
+        ),
+        ClassicalSimTestCase(
+            bloq=PlusEqualProduct(a_bitsize=3, b_bitsize=2, result_bitsize=5),
+            name="PlusEqualProduct(a=3, b=2, res=5)",
+        ),
+        # One large bitsize.
+        ClassicalSimTestCase(
+            bloq=PlusEqualProduct(a_bitsize=8, b_bitsize=8, result_bitsize=16),
+            name="PlusEqualProduct(a=8, b=8, res=16)",
+        ),
+    ]
