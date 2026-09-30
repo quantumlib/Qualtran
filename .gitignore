@@ -160,27 +160,6 @@ jupyter_kernel.lock
 # FLASQ generated PDFs
 *.pdf
 
-# Temporary files.
-tmp.kmb
-tmp.kmx
-tmp.html
-tmp1.html
-tmp2.html
-tmp3.html
-tmp4.html
-tmp.svg
-tmp2.svg
-tmp3.svg
-tmp4.svg
-tmp5.svg
-tmp6.svg
-tmp.csv
-tmp.png
-tmp.py
-tmp2.csv
-tmp.cc
-tmp.s
-
 # Working files.
 *.swp
 .ninja_lock
