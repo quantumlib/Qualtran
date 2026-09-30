@@ -1,0 +1,157 @@
+#ifndef _PERF_PERF_H
+#define _PERF_PERF_H
+
+#include <chrono>
+#include <concepts>
+#include <functional>
+#include <string>
+#include <vector>
+
+extern double BENCHMARK_CONFIG_TARGET_SECONDS;
+std::string resolve_testdata_file_path(std::string_view name);
+
+struct BenchmarkResult {
+    double total_seconds;
+    size_t total_reps;
+    std::vector<std::pair<std::string, double>> marginal_rates;
+    double goal_seconds;
+
+    BenchmarkResult(double total_seconds, size_t total_reps)
+        : total_seconds(total_seconds), total_reps(total_reps), marginal_rates(), goal_seconds(-1) {
+    }
+
+    BenchmarkResult &show_rate(std::string_view new_unit_name, double new_multiplier) {
+        marginal_rates.emplace_back(new_unit_name, new_multiplier);
+        return *this;
+    }
+
+    BenchmarkResult &show_rate(std::string_view new_unit_name, uint64_t new_multiplier) {
+        show_rate(new_unit_name, static_cast<double>(new_multiplier));
+        return *this;
+    }
+    BenchmarkResult &show_rate(std::string_view new_unit_name, int64_t new_multiplier) {
+        show_rate(new_unit_name, static_cast<double>(new_multiplier));
+        return *this;
+    }
+    BenchmarkResult &show_rate(std::string_view new_unit_name, int32_t new_multiplier) {
+        show_rate(new_unit_name, static_cast<double>(new_multiplier));
+        return *this;
+    }
+    BenchmarkResult &show_rate(std::string_view new_unit_name, uint32_t new_multiplier) {
+        show_rate(new_unit_name, static_cast<double>(new_multiplier));
+        return *this;
+    }
+    BenchmarkResult &show_rate(std::string_view new_unit_name, int16_t new_multiplier) {
+        show_rate(new_unit_name, static_cast<double>(new_multiplier));
+        return *this;
+    }
+    BenchmarkResult &show_rate(std::string_view new_unit_name, uint16_t new_multiplier) {
+        show_rate(new_unit_name, static_cast<double>(new_multiplier));
+        return *this;
+    }
+    BenchmarkResult &show_rate(std::string_view new_unit_name, int8_t new_multiplier) {
+        show_rate(new_unit_name, static_cast<double>(new_multiplier));
+        return *this;
+    }
+    BenchmarkResult &show_rate(std::string_view new_unit_name, uint8_t new_multiplier) {
+        show_rate(new_unit_name, static_cast<double>(new_multiplier));
+        return *this;
+    }
+
+    template <std::integral T>
+    BenchmarkResult &show_rate(std::string_view new_unit_name, T new_multiplier) {
+        return show_rate(new_unit_name, static_cast<double>(new_multiplier));
+    }
+
+    BenchmarkResult &goal_nanos(double nanos) {
+        goal_seconds = nanos / 1000 / 1000 / 1000;
+        return *this;
+    }
+
+    BenchmarkResult &goal_micros(double micros) {
+        goal_seconds = micros / 1000 / 1000;
+        return *this;
+    }
+
+    BenchmarkResult &goal_millis(double millis) {
+        goal_seconds = millis / 1000;
+        return *this;
+    }
+};
+
+struct RegisteredBenchmark {
+    std::string name;
+    std::function<void(void)> func;
+    std::vector<BenchmarkResult> results;
+};
+extern RegisteredBenchmark *running_benchmark;
+extern std::vector<RegisteredBenchmark> *all_registered_benchmarks_data;
+extern uint64_t registry_initialized;
+inline void add_benchmark(const RegisteredBenchmark &benchmark) {
+    if (all_registered_benchmarks_data == nullptr || registry_initialized != 4620243525989388168ULL) {
+        registry_initialized = 4620243525989388168ULL;
+        all_registered_benchmarks_data = new std::vector<RegisteredBenchmark>();
+    }
+    all_registered_benchmarks_data->push_back(benchmark);
+}
+
+#define BENCHMARK(name)                                             \
+    void BENCH_##name##_METHOD();                                   \
+    struct BENCH_STARTUP_TYPE_##name {                              \
+        BENCH_STARTUP_TYPE_##name() {                               \
+            add_benchmark({#name, BENCH_##name##_METHOD});          \
+        }                                                           \
+    };                                                              \
+    static BENCH_STARTUP_TYPE_##name BENCH_STARTUP_INSTANCE_##name; \
+    void BENCH_##name##_METHOD()
+
+// HACK: Templating the body function type makes inlining significantly more likely.
+template <typename FUNC>
+BenchmarkResult &benchmark_go(FUNC body) {
+    size_t total_reps = 0;
+    double total_seconds = 0.0;
+    double target_wait_time_seconds = BENCHMARK_CONFIG_TARGET_SECONDS;
+
+    for (size_t rep_limit = 1; total_seconds < target_wait_time_seconds; rep_limit *= 100) {
+        if (rep_limit == 0) {
+            throw std::invalid_argument(
+                "During '" + running_benchmark->name +
+                "', rep_limit hit SIZE_MAX. This suggests the 'benchmark_go' block is taking 0 time due to being "
+                "compiled away.");
+        }
+        double remaining_time = target_wait_time_seconds - total_seconds;
+        size_t reps = rep_limit;
+        if (total_seconds > 0) {
+            double d_reps = remaining_time * total_reps / total_seconds;
+            if (d_reps > 1e15) {
+                throw std::invalid_argument(
+                    "During '" + running_benchmark->name +
+                    "', expected repetitions exceeded 1e15. This suggests the 'benchmark_go' block is taking 0 time "
+                    "due to being compiled away.");
+            }
+            reps = static_cast<size_t>(d_reps);
+            if (reps < total_reps * 0.1) {
+                break;
+            }
+            if (reps > rep_limit) {
+                reps = rep_limit;
+            }
+            if (reps < 1) {
+                reps = 1;
+            }
+        }
+        auto start = std::chrono::steady_clock::now();
+        for (size_t rep = 0; rep < reps; rep++) {
+            body();
+        }
+        auto end = std::chrono::steady_clock::now();
+        auto nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        total_reps += reps;
+        total_seconds += static_cast<double>(nanos) / 1000000000.0;
+    }
+
+    running_benchmark->results.push_back({total_seconds, total_reps});
+    return running_benchmark->results.back();
+}
+
+#endif

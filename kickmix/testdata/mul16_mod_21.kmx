@@ -1,0 +1,688 @@
+APPEND_TO_REGISTER q8 r0
+APPEND_TO_REGISTER q9 r0
+APPEND_TO_REGISTER q10 r0
+APPEND_TO_REGISTER q11 r0
+APPEND_TO_REGISTER q12 r0
+APPEND_TO_REGISTER q13 r1
+APPEND_TO_REGISTER q0 r2
+APPEND_TO_REGISTER q1 r2
+APPEND_TO_REGISTER q2 r2
+APPEND_TO_REGISTER q3 r2
+APPEND_TO_REGISTER q4 r2
+APPEND_TO_REGISTER q5 r2
+APPEND_TO_REGISTER q6 r2
+APPEND_TO_REGISTER q7 r2
+CX q8 q11
+CCX q13 q11 q8
+CX q8 q11
+CX q9 q12
+CCX q13 q12 q9
+CX q9 q12
+CX q8 q10
+CCX q13 q10 q8
+CX q8 q10
+CX q9 q10
+CCX q13 q10 q9
+CX q9 q10
+X q13
+R q5
+R q4
+R q3
+R q2
+R q1
+R q0
+X q4
+X q3
+X q2
+X q8
+X q9
+X q10
+X q11
+X q12
+X q13
+X q8
+CX q8 q4
+X q8
+X q9
+X q4
+CCX q4 q9 q3
+X q4
+X q9
+X q10
+X q3
+CCX q3 q10 q2
+X q3
+X q10
+CCX q2 q11 q1
+CCX q1 q12 q0
+CCX q0 q13 q5
+HMR q0 b0
+CZ q1 q12 if b0
+HMR q1 b1
+CZ q2 q11 if b1
+HMR q2 b2
+X q10
+X q3
+CZ q3 q10 if b2
+X q3
+X q10
+NEG if b2
+HMR q3 b3
+X q9
+X q4
+CZ q4 q9 if b3
+X q4
+X q9
+NEG if b3
+HMR q4 b4
+X q8
+Z q8 if b4
+X q8
+NEG if b4
+X q8
+X q9
+X q10
+X q11
+X q12
+X q13
+R q6
+R q4
+R q3
+R q2
+R q1
+R q0
+X q3
+X q2
+X q1
+X q8
+X q9
+X q10
+X q11
+X q12
+X q13
+X q9
+X q4
+CCX q4 q9 q3
+X q4
+X q9
+X q10
+X q3
+CCX q3 q10 q2
+X q3
+X q10
+X q11
+X q2
+CCX q2 q11 q1
+X q2
+X q11
+CCX q1 q12 q0
+CCX q0 q13 q6
+HMR q0 b5
+CZ q1 q12 if b5
+HMR q1 b6
+X q11
+X q2
+CZ q2 q11 if b6
+X q2
+X q11
+NEG if b6
+HMR q2 b7
+X q10
+X q3
+CZ q3 q10 if b7
+X q3
+X q10
+NEG if b7
+HMR q3 b8
+X q9
+X q4
+CZ q4 q9 if b8
+X q4
+X q9
+NEG if b8
+HMR q4 b9
+X q8
+X q9
+X q10
+X q11
+X q12
+X q13
+R q7
+R q4
+R q3
+R q2
+R q1
+R q0
+X q4
+X q2
+X q0
+X q8
+X q9
+X q10
+X q11
+X q12
+X q13
+X q8
+CX q8 q4
+X q8
+CCX q4 q9 q3
+X q10
+X q3
+CCX q3 q10 q2
+X q3
+X q10
+CCX q2 q11 q1
+X q12
+X q1
+CCX q1 q12 q0
+X q1
+X q12
+CCX q0 q13 q7
+HMR q0 b10
+X q12
+X q1
+CZ q1 q12 if b10
+X q1
+X q12
+NEG if b10
+HMR q1 b11
+CZ q2 q11 if b11
+HMR q2 b12
+X q10
+X q3
+CZ q3 q10 if b12
+X q3
+X q10
+NEG if b12
+HMR q3 b13
+CZ q4 q9 if b13
+HMR q4 b14
+X q8
+Z q8 if b14
+X q8
+NEG if b14
+X q8
+X q9
+X q10
+X q11
+X q12
+X q13
+R q4
+X q5
+CCX q6 q5 q4
+X q5
+R q0
+R q1
+R q2
+CX q4 q12
+CX q4 q11
+CCX q0 q9 q1
+CCX q1 q10 q2
+CX q4 q2
+CCX q2 q11 q12
+CX q4 q2
+CX q2 q11
+HMR q2 b15
+CZ q1 q10 if b15
+CX q1 q10
+HMR q1 b16
+CZ q0 q9 if b16
+CX q0 q9
+HMR q0 b17
+HMR q4 b18
+R q4
+X q13
+X q6
+CCX q6 q13 q4
+X q6
+X q13
+R q0
+R q1
+R q2
+CX q4 q1
+CX q4 q2
+CX q4 q12
+CX q4 q9
+CX q4 q10
+CX q4 q11
+CX q4 q0
+CCX q0 q9 q1
+CX q4 q0
+CX q4 q1
+CCX q1 q10 q2
+CX q4 q1
+CX q4 q2
+CCX q2 q11 q12
+CX q4 q2
+CX q2 q11
+HMR q2 b19
+CX q4 q1
+CZ q1 q10 if b19
+CX q4 q1
+Z q4 if b19
+CX q1 q10
+HMR q1 b20
+CX q4 q0
+CZ q0 q9 if b20
+CX q4 q0
+Z q4 if b20
+CX q0 q9
+HMR q0 b21
+HMR q4 b22
+R q4
+X q6
+CCX q7 q6 q4
+X q6
+R q0
+R q1
+R q2
+CX q4 q0
+CX q4 q2
+CX q4 q12
+CX q4 q8
+CX q4 q10
+CX q4 q11
+CCX q4 q8 q0
+CCX q0 q9 q1
+CX q4 q1
+CCX q1 q10 q2
+CX q4 q1
+CX q4 q2
+CCX q2 q11 q12
+CX q4 q2
+CX q2 q11
+HMR q2 b23
+CX q4 q1
+CZ q1 q10 if b23
+CX q4 q1
+Z q4 if b23
+CX q1 q10
+HMR q1 b24
+CZ q0 q9 if b24
+CX q0 q9
+HMR q0 b25
+CZ q4 q8 if b25
+Z q4 if b25
+HMR q4 b26
+X q6
+CZ q7 q6 if b26
+X q6
+X q5
+CZ q6 q5 if b18
+X q5
+X q13
+X q6
+CZ q6 q13 if b22
+X q6
+X q13
+HMR q6 b27
+HMR q7 b28
+Z q5 if b28
+Z q5 if b27
+HMR q5 b29
+NEG if b27
+R q0 if b28
+R q1 if b28
+R q2 if b28
+R q3 if b28
+X q0 if b28
+X q1 if b28
+X q3 if b28
+X q8 if b28
+X q9 if b28
+X q10 if b28
+X q11 if b28
+X q12 if b28
+X q13 if b28
+X q8
+CX q8 q0 if b28
+X q8
+X q9
+X q0
+CCX q0 q9 q1 if b28
+X q0
+X q9
+CCX q1 q10 q2 if b28
+X q11
+X q2
+CCX q2 q11 q3 if b28
+X q2
+X q11
+CCZ q3 q12 q13 if b28
+HMR q3 b30 if b28
+X q11
+X q2
+BIT_STORE1 b46
+BIT_INVERT b30
+BIT_STORE0 b46 if b30
+BIT_INVERT b30
+BIT_INVERT b28
+BIT_STORE0 b46 if b28
+BIT_INVERT b28
+CZ q2 q11 if b46
+X q2
+X q11
+BIT_STORE1 b46
+BIT_INVERT b30
+BIT_STORE0 b46 if b30
+BIT_INVERT b30
+BIT_INVERT b28
+BIT_STORE0 b46 if b28
+BIT_INVERT b28
+NEG if b46
+HMR q2 b31 if b28
+BIT_STORE1 b46
+BIT_INVERT b31
+BIT_STORE0 b46 if b31
+BIT_INVERT b31
+BIT_INVERT b28
+BIT_STORE0 b46 if b28
+BIT_INVERT b28
+CZ q1 q10 if b46
+HMR q1 b32 if b28
+X q9
+X q0
+BIT_STORE1 b46
+BIT_INVERT b32
+BIT_STORE0 b46 if b32
+BIT_INVERT b32
+BIT_INVERT b28
+BIT_STORE0 b46 if b28
+BIT_INVERT b28
+CZ q0 q9 if b46
+X q0
+X q9
+BIT_STORE1 b46
+BIT_INVERT b32
+BIT_STORE0 b46 if b32
+BIT_INVERT b32
+BIT_INVERT b28
+BIT_STORE0 b46 if b28
+BIT_INVERT b28
+NEG if b46
+HMR q0 b33 if b28
+X q8
+BIT_STORE1 b46
+BIT_INVERT b33
+BIT_STORE0 b46 if b33
+BIT_INVERT b33
+BIT_INVERT b28
+BIT_STORE0 b46 if b28
+BIT_INVERT b28
+Z q8 if b46
+X q8
+BIT_STORE1 b46
+BIT_INVERT b33
+BIT_STORE0 b46 if b33
+BIT_INVERT b33
+BIT_INVERT b28
+BIT_STORE0 b46 if b28
+BIT_INVERT b28
+NEG if b46
+X q8 if b28
+X q9 if b28
+X q10 if b28
+X q11 if b28
+X q12 if b28
+X q13 if b28
+R q0 if b29
+R q1 if b29
+R q2 if b29
+R q3 if b29
+X q1 if b29
+X q2 if b29
+X q8 if b29
+X q9 if b29
+X q10 if b29
+X q11 if b29
+X q12 if b29
+X q13 if b29
+X q9
+X q0
+CCX q0 q9 q1 if b29
+X q0
+X q9
+X q10
+X q1
+CCX q1 q10 q2 if b29
+X q1
+X q10
+CCX q2 q11 q3 if b29
+CCZ q3 q12 q13 if b29
+HMR q3 b34 if b29
+BIT_STORE1 b46
+BIT_INVERT b34
+BIT_STORE0 b46 if b34
+BIT_INVERT b34
+BIT_INVERT b29
+BIT_STORE0 b46 if b29
+BIT_INVERT b29
+CZ q2 q11 if b46
+HMR q2 b35 if b29
+X q10
+X q1
+BIT_STORE1 b46
+BIT_INVERT b35
+BIT_STORE0 b46 if b35
+BIT_INVERT b35
+BIT_INVERT b29
+BIT_STORE0 b46 if b29
+BIT_INVERT b29
+CZ q1 q10 if b46
+X q1
+X q10
+BIT_STORE1 b46
+BIT_INVERT b35
+BIT_STORE0 b46 if b35
+BIT_INVERT b35
+BIT_INVERT b29
+BIT_STORE0 b46 if b29
+BIT_INVERT b29
+NEG if b46
+HMR q1 b36 if b29
+X q9
+X q0
+BIT_STORE1 b46
+BIT_INVERT b36
+BIT_STORE0 b46 if b36
+BIT_INVERT b36
+BIT_INVERT b29
+BIT_STORE0 b46 if b29
+BIT_INVERT b29
+CZ q0 q9 if b46
+X q0
+X q9
+BIT_STORE1 b46
+BIT_INVERT b36
+BIT_STORE0 b46 if b36
+BIT_INVERT b36
+BIT_INVERT b29
+BIT_STORE0 b46 if b29
+BIT_INVERT b29
+NEG if b46
+HMR q0 b37 if b29
+X q8 if b29
+X q9 if b29
+X q10 if b29
+X q11 if b29
+X q12 if b29
+X q13 if b29
+R q0 if b28
+R q1 if b28
+R q2 if b28
+R q3 if b28
+X q0 if b28
+X q2 if b28
+X q8 if b28
+X q9 if b28
+X q10 if b28
+X q11 if b28
+X q12 if b28
+X q13 if b28
+X q8
+CX q8 q0 if b28
+X q8
+CCX q0 q9 q1 if b28
+X q10
+X q1
+CCX q1 q10 q2 if b28
+X q1
+X q10
+CCX q2 q11 q3 if b28
+BIT_STORE1 b46
+BIT_INVERT b28
+BIT_STORE0 b46 if b28
+BIT_INVERT b28
+BIT_INVERT b28
+BIT_STORE0 b46 if b28
+BIT_INVERT b28
+Z q13 if b46
+X q12
+X q3
+CCZ q3 q12 q13 if b28
+X q3
+X q12
+HMR q3 b38 if b28
+BIT_STORE1 b46
+BIT_INVERT b38
+BIT_STORE0 b46 if b38
+BIT_INVERT b38
+BIT_INVERT b28
+BIT_STORE0 b46 if b28
+BIT_INVERT b28
+CZ q2 q11 if b46
+HMR q2 b39 if b28
+X q10
+X q1
+BIT_STORE1 b46
+BIT_INVERT b39
+BIT_STORE0 b46 if b39
+BIT_INVERT b39
+BIT_INVERT b28
+BIT_STORE0 b46 if b28
+BIT_INVERT b28
+CZ q1 q10 if b46
+X q1
+X q10
+BIT_STORE1 b46
+BIT_INVERT b39
+BIT_STORE0 b46 if b39
+BIT_INVERT b39
+BIT_INVERT b28
+BIT_STORE0 b46 if b28
+BIT_INVERT b28
+NEG if b46
+HMR q1 b40 if b28
+BIT_STORE1 b46
+BIT_INVERT b40
+BIT_STORE0 b46 if b40
+BIT_INVERT b40
+BIT_INVERT b28
+BIT_STORE0 b46 if b28
+BIT_INVERT b28
+CZ q0 q9 if b46
+HMR q0 b41 if b28
+X q8
+BIT_STORE1 b46
+BIT_INVERT b41
+BIT_STORE0 b46 if b41
+BIT_INVERT b41
+BIT_INVERT b28
+BIT_STORE0 b46 if b28
+BIT_INVERT b28
+Z q8 if b46
+X q8
+BIT_STORE1 b46
+BIT_INVERT b41
+BIT_STORE0 b46 if b41
+BIT_INVERT b41
+BIT_INVERT b28
+BIT_STORE0 b46 if b28
+BIT_INVERT b28
+NEG if b46
+X q8 if b28
+X q9 if b28
+X q10 if b28
+X q11 if b28
+X q12 if b28
+X q13 if b28
+X q13
+R q0 if b27
+R q1 if b27
+R q2 if b27
+R q3 if b27
+X q8 if b27
+X q9 if b27
+X q10 if b27
+X q11 if b27
+X q12 if b27
+X q13 if b27
+CCX q0 q9 q1 if b27
+CCX q1 q10 q2 if b27
+CCX q2 q11 q3 if b27
+BIT_STORE1 b46
+BIT_INVERT b27
+BIT_STORE0 b46 if b27
+BIT_INVERT b27
+BIT_INVERT b27
+BIT_STORE0 b46 if b27
+BIT_INVERT b27
+Z q13 if b46
+BIT_STORE1 b46
+BIT_INVERT b27
+BIT_STORE0 b46 if b27
+BIT_INVERT b27
+BIT_INVERT b27
+BIT_STORE0 b46 if b27
+BIT_INVERT b27
+NEG if b46
+X q13
+X q12
+X q3
+CCZ q3 q12 q13 if b27
+X q3
+X q12
+X q13
+BIT_STORE1 b46
+BIT_INVERT b27
+BIT_STORE0 b46 if b27
+BIT_INVERT b27
+BIT_INVERT b27
+BIT_STORE0 b46 if b27
+BIT_INVERT b27
+Z q13 if b46
+HMR q3 b42 if b27
+BIT_STORE1 b46
+BIT_INVERT b42
+BIT_STORE0 b46 if b42
+BIT_INVERT b42
+BIT_INVERT b27
+BIT_STORE0 b46 if b27
+BIT_INVERT b27
+CZ q2 q11 if b46
+HMR q2 b43 if b27
+BIT_STORE1 b46
+BIT_INVERT b43
+BIT_STORE0 b46 if b43
+BIT_INVERT b43
+BIT_INVERT b27
+BIT_STORE0 b46 if b27
+BIT_INVERT b27
+CZ q1 q10 if b46
+HMR q1 b44 if b27
+BIT_STORE1 b46
+BIT_INVERT b44
+BIT_STORE0 b46 if b44
+BIT_INVERT b44
+BIT_INVERT b27
+BIT_STORE0 b46 if b27
+BIT_INVERT b27
+CZ q0 q9 if b46
+HMR q0 b45 if b27
+X q8 if b27
+X q9 if b27
+X q10 if b27
+X q11 if b27
+X q12 if b27
+X q13 if b27
+
