@@ -17,7 +17,7 @@
 import dataclasses
 import inspect
 import types
-from typing import Any, Iterator, List, Optional, Tuple
+from typing import Any, cast, Iterator, List, Optional, Tuple
 
 keep = {
     "__add__",
@@ -165,6 +165,7 @@ def _handle_pybind_method(
     has_setter = False
     doc_lines_left = []
     term_name = full_name.rsplit(".", maxsplit=1)[-1]
+    sig: str
     for line in doc_lines:
         if was_args and line.strip().startswith('*') and ':' in line:
             new_args_name = line[line.index('*') : line.index(':')]
@@ -226,9 +227,7 @@ def _handle_pybind_method(
     return text, has_setter, doc, sig_name
 
 
-def print_doc(
-    *, full_name: str, parent: object, obj: object, level: int
-) -> Optional[DescribedObject]:
+def print_doc(*, full_name: str, parent: object, obj: Any, level: int) -> Optional[DescribedObject]:
     out_obj = DescribedObject()
     out_obj.full_name = full_name
     out_obj.level = level
@@ -299,10 +298,12 @@ def print_doc(
 
     if dataclass_fields:
         for f in dataclasses.fields(obj):
-            if str(f.type).startswith('typing'):
+            f_type: str | type = f.type
+            t: str
+            if str(f_type).startswith('typing'):
                 t = str(f.type).replace('typing.', '')
             else:
-                t = f.type.__name__
+                t = cast(type, f_type).__name__
             t = t.replace(
                 '''Union[Dict[str, ForwardRef('JSON_TYPE')], List[ForwardRef('JSON_TYPE')], str, int, float]''',
                 'Any',
