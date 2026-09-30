@@ -132,7 +132,7 @@ def main():
     any_failed = False
     for module_name in args.module:
         module = importlib.import_module(module_name)
-        out = {}
+        out: dict[str, object] = {}
         gen(obj=module, fullname=module_name, out=out)
         for k, v in out.items():
             if v.__doc__ is None:
@@ -154,7 +154,7 @@ def main():
                                 file=sys.stderr,
                             )
 
-        module.__test__ = {k: v for k, v in out.items()}
+        setattr(module, '__test__', {k: v for k, v in out.items()})
         if doctest.testmod(module, globs=globs).failed:
             any_failed = True
     if any_failed:
