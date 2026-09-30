@@ -354,4 +354,3 @@ def test_bloq_with_no_output_registers_emits_return():
     assert "return" in l1_txt
     loaded = load_module(l1_txt)
     assert "QIntEffect(-5)" in loaded
-
