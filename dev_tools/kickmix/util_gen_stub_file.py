@@ -1,3 +1,17 @@
+#  Copyright 2026 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 """Helper code for producing the kickmix python API reference, as well as a .pyi stub file."""
 
 import dataclasses
@@ -150,7 +164,7 @@ def _handle_pybind_method(
     sig_handled = False
     has_setter = False
     doc_lines_left = []
-    term_name = full_name.split(".")[-1]
+    term_name = full_name.rsplit(".", maxsplit=1)[-1]
     for line in doc_lines:
         if was_args and line.strip().startswith('*') and ':' in line:
             new_args_name = line[line.index('*') : line.index(':')]
@@ -223,7 +237,7 @@ def print_doc(
     if full_name.endswith("__") and len(doc.splitlines()) <= 2:
         return None
 
-    term_name = full_name.split(".")[-1]
+    term_name = full_name.rsplit(".", maxsplit=1)[-1]
     is_property = isinstance(obj, property)
     is_method = doc.startswith(term_name)
     has_setter = False
@@ -281,7 +295,7 @@ def print_doc(
             setter_type = 'Any'
         out_obj.lines.append(f"@{term_name}.setter")
         out_obj.lines.append(f"def {term_name}(self, value: {setter_type}):")
-        out_obj.lines.append(f"    pass")
+        out_obj.lines.append("    pass")
 
     if dataclass_fields:
         for f in dataclasses.fields(obj):
