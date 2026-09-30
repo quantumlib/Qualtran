@@ -15,10 +15,10 @@
 #  limitations under the License.
 
 ################################################################################
-# Build and regenerate the Qualtran-L1 world library under `qualtran/l1/world`.
+# Build and regenerate the QLT IR world library under `qualtran/qlt_ir/world`.
 #
 # Usage:
-#     uv run dev_tools/build-l1-world.sh
+#     uv run dev_tools/build-qlt-world.sh
 ################################################################################
 
 set -e
@@ -29,11 +29,11 @@ topdir="$(git -C "${thisdir}" rev-parse --show-toplevel)" || exit $?
 cd "${topdir}" || exit $?
 
 # Ensure destination directory exists
-mkdir -p qualtran/l1/world
+mkdir -p qualtran/qlt_ir/world
 
-python dev_tools/build-l1-library.py \
+python dev_tools/build-qlt-library.py \
     --regenerate \
-    qualtran/l1/world \
-    --report qualtran/l1/world/report.md \
+    qualtran/qlt_ir/world \
+    --report qualtran/qlt_ir/world/report.md \
     "$@" \
-    2> qualtran/l1/world/compile.stderr
+    2> qualtran/qlt_ir/world/compile.stderr

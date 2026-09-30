@@ -638,23 +638,24 @@ def dump_qlt_ir(
     skip_aliases: bool = False,
     nodes: QltNodes = qualtran_qlt_nodes,
 ) -> Optional[str]:
-    """Serialize a bloq (and its decomposition) to Qualtran-L1 source text.
+    """Serialize a bloq (and its decomposition) to QLT IR source text.
 
     Args:
         bloq: The root bloq to serialize.
-        f: An optional writable file-like object. If provided, the L1 text is
-            written to it and the root bloq key is returned. If `None`, the L1
+        f: An optional writable file-like object. If provided, the QLT IR text is
+            written to it and the root bloq key is returned. If `None`, the QLT IR
             text itself is returned.
         root_bloq_key: An optional key to assign to the root `bloq`. When given,
             the root is emitted with exactly this `qdef` name instead of a name
             derived from `str(bloq)`. Keys for sub-bloqs are still generated automatically.
         annotate_costs: Whether to annotate the output with cost information.
-        extern_only_from: Whether to only include a `from` clause for `exern` bloqs.
+        extern_only_from: Whether to only include a `from` clause for `extern` bloqs.
         force_extern_pred: A predicate selecting bloqs to force to `extern`.
-        nodes: The set of L1 AST node classes to build with (advanced).
+        skip_aliases: Whether to skip generating alias declarations for long bloq keys.
+        nodes: The set of QLT IR AST node classes to build with (advanced).
 
     Returns:
-        If `f` is `None`, the serialized L1 text. Otherwise, the `BloqKey`
+        If `f` is `None`, the serialized QLT IR text. Otherwise, the `BloqKey`
         assigned to the root `bloq`.
     """
     from ._ast_to_code import QltASTPrinter
@@ -662,7 +663,7 @@ def dump_qlt_ir(
     qlt_mb = QltModuleBuilder(nodes=nodes)
     if root_bloq_key is not None:
         # Seed the globals so the root is emitted with exactly this key.
-        l1_mb.qglobals[bloq] = root_bloq_key
+        qlt_mb.qglobals[bloq] = root_bloq_key
     assigned_root_key = qlt_mb.add_bloqs(
         root=bloq,
         annotate_costs=annotate_costs,

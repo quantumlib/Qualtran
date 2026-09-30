@@ -13,10 +13,10 @@
 #  limitations under the License.
 import sympy
 
-from qualtran import QInt
-from qualtran.bloqs.arithmetic import Add
+from qualtran import QUInt
+from qualtran.bloqs.arithmetic import AddK
 from qualtran.bloqs.basic_gates import CNOT
-from qualtran.l1 import build_library_entry, BuildOutcome, library_qlt_path
+from qualtran.qlt_ir import build_library_entry, BuildOutcome, library_qlt_path
 
 
 def test_build_outcome_is_hard_failure():
@@ -74,17 +74,17 @@ def test_build_library_entry_reuse_is_idempotent(tmp_path):
 
 
 def test_build_library_entry_soft_failure_stays_in_partial(tmp_path):
-    # A symbolic `Add` compiles and reloads fine, but the VM cannot execute it
+    # `AddK` with a symbolic `k` compiles and reloads fine, but the VM cannot execute it
     # (it reaches the VM as an unsupported atomic bloq), so it is a soft failure.
-    n = sympy.Symbol('n')
-    result = build_library_entry(Add(QInt(n)), 'add_symb', tmp_path)
+    k = sympy.Symbol('k')
+    result = build_library_entry(AddK(QUInt(4), k=k), 'add_k_symb', tmp_path)
 
     assert result.outcome is BuildOutcome.EXECUTION_WITH_PROBLEMS
     assert not result.outcome.is_hard_failure
     assert result.n_problems and result.n_problems >= 1
 
     partial_file = (
-        tmp_path / 'partial' / 'qualtran' / 'bloqs' / 'arithmetic' / 'Add' / 'add_symb.qlt'
+        tmp_path / 'partial' / 'qualtran' / 'bloqs' / 'arithmetic' / 'AddK' / 'add_k_symb.qlt'
     )
     assert result.qlt_path == str(partial_file)
     assert partial_file.exists()
@@ -94,21 +94,7 @@ def test_build_library_entry_soft_failure_stays_in_partial(tmp_path):
 
 
 def test_symbolic_name_pattern():
-    import importlib.util
-    import sys
-    from pathlib import Path
-
-    dev_tools_dir = str(Path(__file__).parents[2] / 'dev_tools')
-    if dev_tools_dir not in sys.path:
-        sys.path.insert(0, dev_tools_dir)
-
-    spec = importlib.util.spec_from_file_location(
-        "build_l1_library", "dev_tools/build-l1-library.py"
-    )
-    assert spec is not None and spec.loader is not None
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    SYMBOLIC_NAME_PATTERN = mod.SYMBOLIC_NAME_PATTERN
+    from qualtran.qlt_ir._library import SYMBOLIC_NAME_PATTERN
 
     should_match = [
         'bloq_ex_symb',

@@ -11,16 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-"""Build an on-disk library of Qualtran-L1 (`.qlt`) files from every `BloqExample`.
+"""Build an on-disk library of QLT IR (`.qlt`) files from every `BloqExample`.
 
-This is a thin driver around `qualtran.l1.build_library_entry`. It discovers every
+This is a thin driver around `qualtran.qlt_ir.build_library_entry`. It discovers every
 `BloqExample` via `qualtran_dev_tools.bloq_finder`, constructs each one, and hands
 the resulting `(bloq, name)` pair to the library, which compiles, reloads, and
 executes it, filing the `.qlt` file under `<output_dir>/lib/` (on success) or
-`<output_dir>/partial/` (on a soft failure); see `qualtran.l1._library`.
+`<output_dir>/partial/` (on a soft failure); see `qualtran.qlt_ir._library`.
 
 The dividing line: everything that understands `BloqExample` lives here; the
-per-bloq compile/verify flow lives in `qualtran.l1`.
+per-bloq compile/verify flow lives in `qualtran.qlt_ir`.
 
 Each example lands in exactly one `BuildOutcome`. In addition to the outcomes the
 library reports, this driver assigns:
@@ -31,17 +31,16 @@ library reports, this driver assigns:
 Usage:
 
 ```
-python dev_tools/build-l1-library.py /tmp/qlt                 # build everything
-python dev_tools/build-l1-library.py /tmp/qlt --limit 20      # first 20 examples
-python dev_tools/build-l1-library.py /tmp/qlt --regenerate    # overwrite existing files
-python dev_tools/build-l1-library.py /tmp/qlt --report report.md  # write a markdown report
+python dev_tools/build-qlt-library.py /tmp/qlt                 # build everything
+python dev_tools/build-qlt-library.py /tmp/qlt --limit 20      # first 20 examples
+python dev_tools/build-qlt-library.py /tmp/qlt --regenerate    # overwrite existing files
+python dev_tools/build-qlt-library.py /tmp/qlt --report report.md  # write a markdown report
 ```
 """
 
 from __future__ import annotations
 
 import argparse
-import re
 import sys
 import traceback
 from pathlib import Path
@@ -49,21 +48,8 @@ from typing import Dict, List
 
 from qualtran_dev_tools.bloq_finder import get_bloq_examples
 
-from qualtran.l1 import build_library_entry, BuildOutcome, L1BuildResult
-
-# Regex that matches 'symb' or 'symbolic' as a standalone word in snake_case names.
-#
-# Word-boundary matching for snake_case identifier names:
-#  - `(?<![a-zA-Z0-9])` asserts the preceding character is not an alphanumeric character.
-#  - `(?:symbolic|symb)` matches either 'symbolic' or 'symb'.
-#  - `(?![a-zA-Z0-9])` asserts the following character is not an alphanumeric character.
-#
-# This matches identifier words like `bloq_ex_symb`, `bloq_ex_symb_small`,
-# `bloq_ex_symbolic`, and `symbolic_qft`, but does NOT match words where
-# 'symb' is a substring of a larger word, such as `bloq_ex_symbiotic` or `bloq_symbiotic_ex`.
-SYMBOLIC_NAME_PATTERN = re.compile(
-    r'(?<![a-zA-Z0-9])(?:symbolic|symb)(?![a-zA-Z0-9])', re.IGNORECASE
-)
+from qualtran.qlt_ir import build_library_entry, BuildOutcome, QltBuildResult
+from qualtran.qlt_ir._library import SYMBOLIC_NAME_PATTERN
 
 
 def build_all(
@@ -73,7 +59,7 @@ def build_all(
     timeout: float | None = None,
     regenerate: bool = False,
     skip_symbolic: bool = True,
-) -> List[L1BuildResult]:
+) -> List[QltBuildResult]:
     """Build a library entry for every (or the first `limit`) `BloqExample`.
 
     Args:
@@ -84,24 +70,24 @@ def build_all(
         skip_symbolic: Whether to skip examples whose name matches `SYMBOLIC_NAME_PATTERN`.
 
     Returns:
-        A list of `L1BuildResult`, one per example, in discovery order.
+        A list of `QltBuildResult`, one per example, in discovery order.
     """
     examples = get_bloq_examples()
     if limit is not None:
         examples = examples[:limit]
 
-    results: List[L1BuildResult] = []
+    results: List[QltBuildResult] = []
     total = len(examples)
     for i, be in enumerate(examples):
         print(f'[{i + 1:4d}/{total}] {be.name} ...', end='', flush=True)
         if skip_symbolic and SYMBOLIC_NAME_PATTERN.search(be.name):
-            result = L1BuildResult(be.name, BuildOutcome.SKIPPED, 'Skipped symbolic example')
+            result = QltBuildResult(be.name, BuildOutcome.SKIPPED, 'Skipped symbolic example')
         else:
             try:
                 bloq = be.make()
             except Exception as e:  # pylint: disable=broad-except
                 summary = f'{type(e).__name__}: {e}'.replace('\n', ' ')[:300]
-                result = L1BuildResult(
+                result = QltBuildResult(
                     be.name, BuildOutcome.CONSTRUCT_FAILED, summary, traceback.format_exc()
                 )
             else:
@@ -113,14 +99,14 @@ def build_all(
     return results
 
 
-def print_summary(results: List[L1BuildResult]) -> None:
+def print_summary(results: List[QltBuildResult]) -> None:
     """Print a categorized summary of build results to stdout."""
-    by_outcome: Dict[BuildOutcome, List[L1BuildResult]] = {o: [] for o in BuildOutcome}
+    by_outcome: Dict[BuildOutcome, List[QltBuildResult]] = {o: [] for o in BuildOutcome}
     for r in results:
         by_outcome[r.outcome].append(r)
 
     print('\n' + '=' * 72)
-    print(f'Qualtran-L1 library build: {len(results)} BloqExample(s)')
+    print(f'QLT IR library build: {len(results)} BloqExample(s)')
     print('=' * 72)
     for outcome in BuildOutcome:
         print(f'  {outcome.value:26s}: {len(by_outcome[outcome]):4d}')
@@ -135,14 +121,14 @@ def print_summary(results: List[L1BuildResult]) -> None:
             print(f'  - {r.name}: {r.detail}')
 
 
-def write_report(results: List[L1BuildResult], path: Path) -> None:
+def write_report(results: List[QltBuildResult], path: Path) -> None:
     """Write a markdown report of the build to `path`."""
-    by_outcome: Dict[BuildOutcome, List[L1BuildResult]] = {o: [] for o in BuildOutcome}
+    by_outcome: Dict[BuildOutcome, List[QltBuildResult]] = {o: [] for o in BuildOutcome}
     for r in results:
         by_outcome[r.outcome].append(r)
 
     lines: List[str] = []
-    lines.append('# Qualtran-L1 Library Build Report\n')
+    lines.append('# QLT IR Library Build Report\n')
     lines.append(f'Built **{len(results)}** `BloqExample`s through compile → reload → execute.\n')
     lines.append('## Summary\n')
     lines.append('| Outcome | Count |')

@@ -11,13 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-"""Build an on-disk library of verified Qualtran-L1 (`.qlt`) files from bloqs.
+"""Build an on-disk library of verified QLT IR (`.qlt`) files from bloqs.
 
 Given a `(bloq, name)` pair and a root directory, `build_library_entry` runs the
-full L1 pipeline for that bloq:
+full QLT IR pipeline for that bloq:
 
- 1. Compiles it to a `.qlt` file (`qualtran.l1.dump_l1`).
- 2. Loads that `.qlt` file back into bloqs (`qualtran.l1.load_module`).
+ 1. Compiles it to a `.qlt` file (`qualtran.qlt_ir.dump_qlt_ir`).
+ 2. Loads that `.qlt` file back into bloqs (`qualtran.qlt_ir.load_module`).
  3. Executes the root bloq through the
     `StandardQualtranArchitectureAgnosticVirtualMachine`.
 
@@ -32,7 +32,7 @@ The outcome of building one entry is a `BuildOutcome`:
 
  - `SUCCESS`: compiled, reloaded, and executed with no reported problems.
  - `SKIPPED`: skipped by caller filtering or configuration.
- - `COMPILE_FAILED`: `dump_l1` raised.
+ - `COMPILE_FAILED`: `dump_qlt_ir` raised.
  - `RELOAD_FAILED`: `load_module` raised, the root key was lost, or the root
    reloaded as a `_PlaceholderBloq` (an extern that could not be re-linked).
  - `EXECUTION_CATASTROPHIC`: the VM raised an uncaught exception.
@@ -52,6 +52,7 @@ from __future__ import annotations
 import contextlib
 import enum
 import io
+import re
 import signal
 import traceback
 from pathlib import Path
@@ -60,11 +61,25 @@ from typing import Dict, Iterator, Optional, Type, TYPE_CHECKING, Union
 import attrs
 
 from ._parse_eval import load_module
-from ._to_l1 import dump_l1
+from ._to_qlt_ir import dump_qlt_ir
 from ._vm import StandardQualtranArchitectureAgnosticVirtualMachine
 
 if TYPE_CHECKING:
     import qualtran as qlt
+
+# Regex that matches 'symb' or 'symbolic' as a standalone word in snake_case names.
+#
+# Word-boundary matching for snake_case identifier names:
+#  - `(?<![a-zA-Z0-9])` asserts the preceding character is not an alphanumeric character.
+#  - `(?:symbolic|symb)` matches either 'symbolic' or 'symb'.
+#  - `(?![a-zA-Z0-9])` asserts the following character is not an alphanumeric character.
+#
+# This matches identifier words like `bloq_ex_symb`, `bloq_ex_symb_small`,
+# `bloq_ex_symbolic`, and `symbolic_qft`, but does NOT match words where
+# 'symb' is a substring of a larger word, such as `bloq_ex_symbiotic` or `bloq_symbiotic_ex`.
+SYMBOLIC_NAME_PATTERN = re.compile(
+    r'(?<![a-zA-Z0-9])(?:symbolic|symb)(?![a-zA-Z0-9])', re.IGNORECASE
+)
 
 
 class BuildOutcome(enum.Enum):
@@ -108,7 +123,7 @@ _HARD_FAILURES = frozenset(
 
 
 @attrs.frozen
-class L1BuildResult:
+class QltBuildResult:
     """The result of building a single library entry.
 
     Attributes:
@@ -200,7 +215,9 @@ def library_qlt_path(
     return root.joinpath(subdir, *class_in_pkg.split('.'), f'{name}.qlt')
 
 
-def _finalize_placement(result: L1BuildResult, partial_path: Path, lib_path: Path) -> L1BuildResult:
+def _finalize_placement(
+    result: QltBuildResult, partial_path: Path, lib_path: Path
+) -> QltBuildResult:
     """Move/remove the working `.qlt` file based on the outcome.
 
     Establishes the invariant:
@@ -246,7 +263,7 @@ def build_library_entry(
     timeout: Optional[float] = None,
     regenerate: bool = False,
     extern_only_from: bool = False,
-) -> L1BuildResult:
+) -> QltBuildResult:
     """Compile, reload, and execute one bloq, filing it into an on-disk library.
 
     The `.qlt` file is compiled into `<root>/partial/<rel>`. On success it is
@@ -266,10 +283,10 @@ def build_library_entry(
         regenerate: If `True`, always recompile (overwriting `partial/`). If
             `False` (default) and a `lib/` file already exists, the compile step
             is skipped and that file is reused for loading/execution.
-        extern_only_from: Passed through to `dump_l1`.
+        extern_only_from: Passed through to `dump_qlt_ir`.
 
     Returns:
-        An `L1BuildResult` describing the outcome. `build_library_entry` never
+        A `QltBuildResult` describing the outcome. `build_library_entry` never
         returns `BuildOutcome.CONSTRUCT_FAILED`.
     """
     from ._eval import _PlaceholderBloq
@@ -279,7 +296,7 @@ def build_library_entry(
     # Mutable holder so the timeout handler can report which stage was running.
     stage = 'setup'
 
-    def _inner() -> L1BuildResult:
+    def _inner() -> QltBuildResult:
         nonlocal stage
 
         # 1. Compile into partial/, unless a successfully-built lib/ file already
@@ -294,21 +311,21 @@ def build_library_entry(
                 buf = io.StringIO()
                 # Assign the root a deterministic, known key (`name`) so it can be
                 # looked up unambiguously after reloading.
-                dump_l1(bloq, buf, root_bloq_key=name, extern_only_from=extern_only_from)
+                dump_qlt_ir(bloq, buf, root_bloq_key=name, extern_only_from=extern_only_from)
                 partial_path.parent.mkdir(parents=True, exist_ok=True)
                 partial_path.write_text(buf.getvalue())
             except Exception as e:  # pylint: disable=broad-except
-                return L1BuildResult(
+                return QltBuildResult(
                     name, BuildOutcome.COMPILE_FAILED, _short_exc(e), traceback.format_exc()
                 )
 
         # 2. Reload from the .qlt file.
         stage = 'reload'
         try:
-            l1_text = source_path.read_text()
-            loaded: Dict[str, object] = load_module(l1_text)  # type: ignore[assignment]
+            qlt_text = source_path.read_text()
+            loaded: Dict[str, object] = load_module(qlt_text)  # type: ignore[assignment]
         except Exception as e:  # pylint: disable=broad-except
-            return L1BuildResult(
+            return QltBuildResult(
                 name,
                 BuildOutcome.RELOAD_FAILED,
                 _short_exc(e),
@@ -317,7 +334,7 @@ def build_library_entry(
             )
 
         if not loaded:
-            return L1BuildResult(
+            return QltBuildResult(
                 name,
                 BuildOutcome.RELOAD_FAILED,
                 'load_module returned no bloqs',
@@ -333,7 +350,7 @@ def build_library_entry(
             root_bloq = loaded[next(iter(loaded))]
 
         if isinstance(root_bloq, _PlaceholderBloq):
-            return L1BuildResult(
+            return QltBuildResult(
                 name,
                 BuildOutcome.RELOAD_FAILED,
                 f'root {name!r} reloaded as a placeholder (extern failed to re-link)',
@@ -346,7 +363,7 @@ def build_library_entry(
         try:
             vm.execute(root_bloq)  # type: ignore[arg-type]
         except Exception as e:  # pylint: disable=broad-except
-            return L1BuildResult(
+            return QltBuildResult(
                 name,
                 BuildOutcome.EXECUTION_CATASTROPHIC,
                 _short_exc(e),
@@ -359,7 +376,7 @@ def build_library_entry(
         if vm.problems:
             summaries = sorted({p.get_summary().strip() for p in vm.problems})
             detail = f'{len(vm.problems)} problem(s): ' + '; '.join(summaries[:3])
-            return L1BuildResult(
+            return QltBuildResult(
                 name,
                 BuildOutcome.EXECUTION_WITH_PROBLEMS,
                 detail,
@@ -369,7 +386,7 @@ def build_library_entry(
                 n_problems=len(vm.problems),
             )
 
-        return L1BuildResult(
+        return QltBuildResult(
             name,
             BuildOutcome.SUCCESS,
             f'{vm.n_atoms} ISA ops through {vm.n_calls} calls',
@@ -383,6 +400,6 @@ def build_library_entry(
         with _time_limit(timeout):
             result = _inner()
     except _BuildTimeout:
-        result = L1BuildResult(name, BuildOutcome.TIMEOUT, f'exceeded {timeout}s during {stage}')
+        result = QltBuildResult(name, BuildOutcome.TIMEOUT, f'exceeded {timeout}s during {stage}')
 
     return _finalize_placement(result, partial_path, lib_path)
