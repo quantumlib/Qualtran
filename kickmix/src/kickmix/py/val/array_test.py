@@ -1,3 +1,17 @@
+#  Copyright 2026 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 import pytest
 
 import kickmix as km
@@ -11,17 +25,17 @@ def test_qcarray_bool():
     c = km.array([False, True])
     assert c._UNSTABLE_internal_values() == {'common_type': 0, 'len': 2, 'offset': 0, 'stride': 1}
     assert str(c) == "km.array([False, True])"
-    assert c[0] == False
-    assert c[1] == True
+    assert c[0] == bool(False)
+    assert c[1] == bool(True)
     assert list(c) == [False, True]
 
 
 def test_qcarray_bool_values():
     c = km.array([False, True, 0, 1])
-    assert c[0] == False
-    assert c[1] == True
-    assert c[2] == False
-    assert c[3] == True
+    assert c[0] == bool(False)
+    assert c[1] == bool(True)
+    assert c[2] == bool(False)
+    assert c[3] == bool(True)
 
     with pytest.raises(TypeError, match="Expected a q | b | bool"):
         km.array([""])

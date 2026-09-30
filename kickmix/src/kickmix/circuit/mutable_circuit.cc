@@ -420,7 +420,7 @@ void MutableCircuit::append_from_kmx_line(std::string_view kmx_line) {
 void MutableCircuit::append_from_kmx_file(FILE *file) {
     std::string buffer;
     while (true) {
-        int c = getc_unlocked(file);
+        int c = getc(file);
         if (c == EOF || c == '\n' || c == '\r') {
             append_from_kmx_line(buffer);
             if (c == EOF) {

@@ -107,7 +107,7 @@ Circuit Circuit::from_kmx_or_kmb_file(FILE *file) {
     } else if (i == KMB_MAGIC_BYTES[0]) {
         // Read rest of magic bytes.
         for (size_t k = 1; k < KMB_MAGIC_BYTES.size(); k++) {
-            if (getc_unlocked(file) != KMB_MAGIC_BYTES[k]) {
+            if (getc(file) != KMB_MAGIC_BYTES[k]) {
                 throw std::invalid_argument(
                     "File deviated from the magic bytes identifying a kickmix binary format file.");
             }
@@ -1139,7 +1139,7 @@ Circuit Circuit::from_kmb_file(FILE *file, bool skip_magic) {
     // Header
     if (!skip_magic) {
         for (auto e : KMB_MAGIC_BYTES) {
-            if (getc_unlocked(file) != e) {
+            if (getc(file) != e) {
                 throw std::invalid_argument(
                     "File didn't start with the magic bytes identifying a kickmix binary format file.");
             }
