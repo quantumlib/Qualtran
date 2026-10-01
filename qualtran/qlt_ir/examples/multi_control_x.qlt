@@ -33,11 +33,11 @@ from qualtran.bloqs.mcmt.CtrlSpecAnd(qualtran.CtrlSpec(qdtypes=(QBit), cvs=(NDAr
     target: | -> QBit,
 ] {
     x                    = Partition        [ctrl_0=[ctrl_0[0], ctrl_0[1], ctrl_0[2]]]
-    reg                  = Split            [reg=x]             
+    reg                  = Split(3)         [reg=x]             
     ctrl, junk, target   = MultiAnd(n=3)    [ctrl=[reg[0], reg[1], reg[2]]]
-    reg2                 = Join             [reg=[ctrl[0], ctrl[1], ctrl[2]]]
+    reg2                 = Join(3)          [reg=[ctrl[0], ctrl[1], ctrl[2]]]
     ctrl_02              = Partition(variant=1)[x=reg2]            
-    reg3                 = Join(variant=1)  [reg=[junk[0]]]     
+    reg3                 = Join(1)          [reg=[junk[0]]]     
                            return           [ctrl_0=[ctrl_02[0], ctrl_02[1], ctrl_02[2]], junk=reg3, target=target]
 }
 
@@ -53,11 +53,11 @@ from qualtran.Adjoint(qualtran.bloqs.mcmt.CtrlSpecAnd(qualtran.CtrlSpec(qdtypes=
     junk: QAny(1) -> |,
     target: QBit -> |,
 ] {
-    reg                  = Split(variant=1) [reg=junk]          
+    reg                  = Split(1)         [reg=junk]          
     x                    = Partition        [ctrl_0=[ctrl_0[0], ctrl_0[1], ctrl_0[2]]]
-    reg2                 = Split            [reg=x]             
+    reg2                 = Split(3)         [reg=x]             
     ctrl                 = Adj(MultiAnd(n=3))[ctrl=[reg2[0], reg2[1], reg2[2]], junk=[reg[0]], target=target]
-    reg3                 = Join             [reg=[ctrl[0], ctrl[1], ctrl[2]]]
+    reg3                 = Join(3)          [reg=[ctrl[0], ctrl[1], ctrl[2]]]
     ctrl_02              = Partition(variant=1)[x=reg3]            
                            return           [ctrl_0=[ctrl_02[0], ctrl_02[1], ctrl_02[2]]]
 }
@@ -66,7 +66,7 @@ from qualtran.Adjoint(qualtran.bloqs.mcmt.CtrlSpecAnd(qualtran.CtrlSpec(qdtypes=
 qcast Partition
 [x: | -> QAny(3), ctrl_0: QBit[3] -> |]
 
-qcast Split
+qcast Split(3)
 [reg: QAny(3) -> QBit[3]]
 
 qdef MultiAnd(n=3)
@@ -82,16 +82,16 @@ from qualtran.bloqs.mcmt.MultiAnd((1, 0, 1))
 }
 
 
-qcast Join
+qcast Join(3)
 [reg: QBit[3] -> QAny(3)]
 
 qcast Partition(variant=1)
 [x: QAny(3) -> |, ctrl_0: | -> QBit[3]]
 
-qcast Join(variant=1)
+qcast Join(1)
 [reg: QBit[1] -> QAny(1)]
 
-qcast Split(variant=1)
+qcast Split(1)
 [reg: QAny(1) -> QBit[1]]
 
 qdef Adj(MultiAnd(n=3))

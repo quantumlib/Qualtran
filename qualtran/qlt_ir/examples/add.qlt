@@ -7,8 +7,8 @@ from qualtran.bloqs.arithmetic.Add(QUInt(4), QUInt(4))
     a: QUInt(4),
     b: QUInt(4),
 ] {
-    reg                  = Split            [reg=a]             
-    reg2                 = Split            [reg=b]             
+    reg                  = Split(4)         [reg=a]             
+    reg2                 = Split(4)         [reg=b]             
     ctrl, target         = And              [ctrl=[reg[3], reg2[3]]]
     ctrl2, target2       = CNOT             [ctrl=target, target=reg[2]]
     ctrl3, target3       = CNOT             [ctrl=ctrl2, target=reg2[2]]
@@ -30,13 +30,13 @@ from qualtran.bloqs.arithmetic.Add(QUInt(4), QUInt(4))
     ctrl19               = And_adj          [ctrl=[ctrl[0], ctrl[1]], target=ctrl18]
     ctrl20, target17     = CNOT             [ctrl=target16, target=ctrl17[1]]
     ctrl21, target18     = CNOT             [ctrl=ctrl19[0], target=ctrl19[1]]
-    reg3                 = Join             [reg=[ctrl11, ctrl15, ctrl20, ctrl21]]
-    reg4                 = Join             [reg=[target11, target14, target17, target18]]
+    reg3                 = Join(4)          [reg=[ctrl11, ctrl15, ctrl20, ctrl21]]
+    reg4                 = Join(4)          [reg=[target11, target14, target17, target18]]
                            return           [a=reg3, b=reg4]    
 }
 
 
-qcast Split
+qcast Split(4)
 [reg: QUInt(4) -> QBit[4]]
 
 extern qdef And
@@ -51,5 +51,5 @@ extern qdef And_adj
 from qualtran.bloqs.mcmt.And(1, 1, True)
 [ctrl: QBit[2], target: QBit -> |]
 
-qcast Join
+qcast Join(4)
 [reg: QBit[4] -> QUInt(4)]

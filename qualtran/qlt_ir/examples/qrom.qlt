@@ -7,7 +7,7 @@ from qualtran.bloqs.data_loading.QROM((NDArr(shape=(4), data=(1, 2, 3, 4))), (2)
     selection: BQUInt(2, 4),
     target0_: QAny(3),
 ] {
-    reg                  = Split            [reg=selection]     
+    reg                  = Split(2)         [reg=selection]     
     q                    = X                [q=reg[0]]          
     ctrl, target         = And10            [ctrl=[q, reg[1]]]  
     ctrl2, x             = C(XorK(1))       [ctrl=target, x=target0_]
@@ -20,12 +20,12 @@ from qualtran.bloqs.data_loading.QROM((NDArr(shape=(4), data=(1, 2, 3, 4))), (2)
     ctrl8, target4       = CNOT             [ctrl=ctrl6[0], target=ctrl7]
     ctrl9, x4            = C(XorK(4))       [ctrl=target4, x=x3]
     ctrl10               = And_adj          [ctrl=[ctrl8, ctrl6[1]], target=ctrl9]
-    reg2                 = Join             [reg=[ctrl10[0], ctrl10[1]]]
+    reg2                 = Join(2)          [reg=[ctrl10[0], ctrl10[1]]]
                            return           [selection=reg2, target0_=x4]
 }
 
 
-qcast Split
+qcast Split(2)
 [reg: BQUInt(2, 4) -> QBit[2]]
 
 extern qdef X
@@ -42,9 +42,9 @@ from qualtran.Controlled(qualtran.bloqs.arithmetic.XorK(QUInt(3), 1), qualtran.C
     ctrl: QBit @ dot,
     x: QUInt(3),
 ] {
-    reg                  = Split(variant=1) [reg=x]             
+    reg                  = Split(3)         [reg=x]             
     ctrl2, target        = CNOT             [ctrl=ctrl, target=reg[2]]
-    reg2                 = Join(variant=1)  [reg=[reg[0], reg[1], target]]
+    reg2                 = Join(3)          [reg=[reg[0], reg[1], target]]
                            return           [ctrl=ctrl2, x=reg2]
 }
 
@@ -59,9 +59,9 @@ from qualtran.Controlled(qualtran.bloqs.arithmetic.XorK(QUInt(3), 2), qualtran.C
     ctrl: QBit @ dot,
     x: QUInt(3),
 ] {
-    reg                  = Split(variant=1) [reg=x]             
+    reg                  = Split(3)         [reg=x]             
     ctrl2, target        = CNOT             [ctrl=ctrl, target=reg[1]]
-    reg2                 = Join(variant=1)  [reg=[reg[0], target, reg[2]]]
+    reg2                 = Join(3)          [reg=[reg[0], target, reg[2]]]
                            return           [ctrl=ctrl2, x=reg2]
 }
 
@@ -76,10 +76,10 @@ from qualtran.Controlled(qualtran.bloqs.arithmetic.XorK(QUInt(3), 3), qualtran.C
     ctrl: QBit @ dot,
     x: QUInt(3),
 ] {
-    reg                  = Split(variant=1) [reg=x]             
+    reg                  = Split(3)         [reg=x]             
     ctrl2, target        = CNOT             [ctrl=ctrl, target=reg[1]]
     ctrl3, target2       = CNOT             [ctrl=ctrl2, target=reg[2]]
-    reg2                 = Join(variant=1)  [reg=[reg[0], target, target2]]
+    reg2                 = Join(3)          [reg=[reg[0], target, target2]]
                            return           [ctrl=ctrl3, x=reg2]
 }
 
@@ -90,18 +90,18 @@ from qualtran.Controlled(qualtran.bloqs.arithmetic.XorK(QUInt(3), 4), qualtran.C
     ctrl: QBit @ dot,
     x: QUInt(3),
 ] {
-    reg                  = Split(variant=1) [reg=x]             
+    reg                  = Split(3)         [reg=x]             
     ctrl2, target        = CNOT             [ctrl=ctrl, target=reg[0]]
-    reg2                 = Join(variant=1)  [reg=[target, reg[1], reg[2]]]
+    reg2                 = Join(3)          [reg=[target, reg[1], reg[2]]]
                            return           [ctrl=ctrl2, x=reg2]
 }
 
 
-qcast Join
+qcast Join(2)
 [reg: QBit[2] -> BQUInt(2, 4)]
 
-qcast Split(variant=1)
+qcast Split(3)
 [reg: QUInt(3) -> QBit[3]]
 
-qcast Join(variant=1)
+qcast Join(3)
 [reg: QBit[3] -> QUInt(3)]

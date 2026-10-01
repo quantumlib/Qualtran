@@ -41,7 +41,7 @@ from qualtran.bloqs.basic_gates.OnEach(8, qualtran.bloqs.basic_gates.XGate, QInt
 [
     q: QInt(8),
 ] {
-    reg                  = Split            [reg=q]             
+    reg                  = Split(8)         [reg=q]             
     q2                   = X                [q=reg[0]]          
     q3                   = X                [q=reg[1]]          
     q4                   = X                [q=reg[2]]          
@@ -50,7 +50,7 @@ from qualtran.bloqs.basic_gates.OnEach(8, qualtran.bloqs.basic_gates.XGate, QInt
     q7                   = X                [q=reg[5]]          
     q8                   = X                [q=reg[6]]          
     q9                   = X                [q=reg[7]]          
-    reg2                 = Join             [reg=[q2, q3, q4, q5, q6, q7, q8, q9]]
+    reg2                 = Join(8)          [reg=[q2, q3, q4, q5, q6, q7, q8, q9]]
                            return           [q=reg2]            
 }
 
@@ -64,9 +64,9 @@ from qualtran.bloqs.arithmetic.XorK(QInt(8), 1)
 [
     x: QInt(8),
 ] {
-    reg                  = Split            [reg=x]             
+    reg                  = Split(8)         [reg=x]             
     q                    = X                [q=reg[7]]          
-    reg2                 = Join             [reg=[reg[0], reg[1], reg[2], reg[3], reg[4], reg[5], reg[6], q]]
+    reg2                 = Join(8)          [reg=[reg[0], reg[1], reg[2], reg[3], reg[4], reg[5], reg[6], q]]
                            return           [x=reg2]            
 }
 
@@ -86,14 +86,14 @@ extern qdef Free(QInt(8))
 from qualtran.bloqs.bookkeeping.Free(QInt(8), False)
 [reg: QInt(8) -> |]
 
-qcast Split
+qcast Split(8)
 [reg: QInt(8) -> QBit[8]]
 
 extern qdef X
 from qualtran.bloqs.basic_gates.XGate
 [q: QBit @ oplus]
 
-qcast Join
+qcast Join(8)
 [reg: QBit[8] -> QInt(8)]
 
 qdef Add(variant=1)
@@ -102,8 +102,8 @@ from qualtran.bloqs.arithmetic.Add(QInt(8), QInt(8))
     a: QInt(8),
     b: QInt(8),
 ] {
-    reg                  = Split            [reg=a]             
-    reg2                 = Split            [reg=b]             
+    reg                  = Split(8)         [reg=a]             
+    reg2                 = Split(8)         [reg=b]             
     ctrl, target         = And              [ctrl=[reg[7], reg2[7]]]
     ctrl2, target2       = CNOT             [ctrl=target, target=reg[6]]
     ctrl3, target3       = CNOT             [ctrl=ctrl2, target=reg2[6]]
@@ -157,8 +157,8 @@ from qualtran.bloqs.arithmetic.Add(QInt(8), QInt(8))
     ctrl51               = And_adj          [ctrl=[ctrl[0], ctrl[1]], target=ctrl50]
     ctrl52, target45     = CNOT             [ctrl=target44, target=ctrl49[1]]
     ctrl53, target46     = CNOT             [ctrl=ctrl51[0], target=ctrl51[1]]
-    reg3                 = Join             [reg=[ctrl27, ctrl31, ctrl35, ctrl39, ctrl43, ctrl47, ctrl52, ctrl53]]
-    reg4                 = Join             [reg=[target27, target30, target33, target36, target39, target42, target45, target46]]
+    reg3                 = Join(8)          [reg=[ctrl27, ctrl31, ctrl35, ctrl39, ctrl43, ctrl47, ctrl52, ctrl53]]
+    reg4                 = Join(8)          [reg=[target27, target30, target33, target36, target39, target42, target45, target46]]
                            return           [a=reg3, b=reg4]    
 }
 

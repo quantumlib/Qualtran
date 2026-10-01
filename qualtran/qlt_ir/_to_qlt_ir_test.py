@@ -343,3 +343,14 @@ def test_dump_qlt_ir_skip_aliases():
     assert isinstance(txt_with_aliases, str)
     assert isinstance(txt_without_aliases, str)
     assert "alias" not in txt_without_aliases
+
+
+def test_bloq_with_no_output_registers_emits_return():
+    from qualtran.bloqs.basic_gates.qconst import QIntEffect
+    from qualtran.qlt_ir import load_module
+
+    bloq = QIntEffect(-5, bitsize=8)
+    qlt_txt = dump_root_qlt_ir(bloq)
+    assert "return" in qlt_txt
+    loaded = load_module(qlt_txt)
+    assert "QIntEffect(-5)" in loaded
