@@ -511,10 +511,7 @@ def _should_use_stave_mode(bloq: qlt.Bloq) -> bool:
 
     if _is_qcast_bloq(bloq):
         return False
-    try:
-        title_symbol = bloq.wire_symbol(reg=None)
-    except (TypeError, AttributeError):
-        return False
+    title_symbol = bloq.wire_symbol(reg=None)
     if not (isinstance(title_symbol, Text) and title_symbol.text == ''):
         return False
     # Exclude split/join-like bloqs whose per-register wire symbols are also all empty Text('').

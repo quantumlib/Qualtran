@@ -41,12 +41,14 @@ class MyBloq(qlt.Bloq):
             [qlt.Register('ctrl', qdt.QBit()), qlt.Register('neg_ctrl', qdt.QBit())]
         )
 
-    def wire_symbol(self, reg: qlt.Register):
+    def wire_symbol(self, reg: qlt.Register | None, idx: tuple[int, ...] = ()):
+        if reg is None:
+            return super().wire_symbol(reg, idx)
         if reg.name == 'ctrl':
             return Circle(filled=False)
         elif reg.name == 'neg_ctrl':
             return Circle(filled=True)
-        return super().wire_symbol(reg)
+        return super().wire_symbol(reg, idx)
 
 
 def test_wire_symbol_annotations():
