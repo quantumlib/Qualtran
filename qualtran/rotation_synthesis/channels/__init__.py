@@ -18,3 +18,4 @@ from qualtran.rotation_synthesis.channels._channel import (
     ProjectiveChannel,
     UnitaryChannel,
 )
+from qualtran.rotation_synthesis.channels._diamond_norm import diamond_norm, diamond_norm_distance
