@@ -153,4 +153,3 @@ def test_array_repr():
     actual = eval(repr(expected), {'km': km}, {})
     assert actual == expected
     assert repr(actual) == repr(expected)
-
