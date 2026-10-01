@@ -5,7 +5,7 @@ qdef MultiControlX(3)
 from qualtran.bloqs.mcmt.MultiControlX((1, 0, 1))
 [
     controls: QBit[3],
-    target: QBit @ oplus,
+    target: QBit,
 ] {
     ctrl, q              = C(X)             [ctrl=[controls[0], controls[1], controls[2]], q=target]
                            return           [controls=[ctrl[0], ctrl[1], ctrl[2]], target=q]
@@ -16,7 +16,7 @@ qdef C(X)
 from qualtran.bloqs.mcmt.ControlledViaAnd(qualtran.bloqs.basic_gates.XGate, qualtran.CtrlSpec(qdtypes=(QBit), cvs=(NDArr(shape=(3), data=(1, 0, 1)))))
 [
     ctrl: QBit[3],
-    q: QBit @ oplus,
+    q: QBit,
 ] {
     ctrl_0, junk, target = CtrlSpecAnd      [ctrl_0=[ctrl[0], ctrl[1], ctrl[2]]]
     ctrl2, target2       = CNOT             [ctrl=target, target=q]
@@ -44,7 +44,7 @@ from qualtran.bloqs.mcmt.CtrlSpecAnd(qualtran.CtrlSpec(qdtypes=(QBit), cvs=(NDAr
 
 extern qdef CNOT
 from qualtran.bloqs.basic_gates.CNOT
-[ctrl: QBit @ dot, target: QBit @ oplus]
+[ctrl: QBit, target: QBit]
 
 qdef Adj(CtrlSpecAnd)
 from qualtran.Adjoint(qualtran.bloqs.mcmt.CtrlSpecAnd(qualtran.CtrlSpec(qdtypes=(QBit), cvs=(NDArr(shape=(3), data=(1, 0, 1))))))

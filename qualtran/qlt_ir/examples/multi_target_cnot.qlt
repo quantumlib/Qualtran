@@ -4,8 +4,8 @@
 qdef MultiTargetCNOT
 from qualtran.bloqs.mcmt.MultiTargetCNOT(4)
 [
-    control: QBit @ dot,
-    targets: QAny(4) @ oplus,
+    control: QBit,
+    targets: QAny(4),
 ] {
     reg                  = Split(4)         [reg=targets]       
     ctrl, target         = CNOT             [ctrl=reg[0], target=reg[2]]
@@ -25,7 +25,7 @@ qcast Split(4)
 
 extern qdef CNOT
 from qualtran.bloqs.basic_gates.CNOT
-[ctrl: QBit @ dot, target: QBit @ oplus]
+[ctrl: QBit, target: QBit]
 
 qcast Join(4)
 [reg: QBit[4] -> QAny(4)]

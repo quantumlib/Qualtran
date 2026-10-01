@@ -285,6 +285,7 @@ def build_library_entry(
     timeout: Optional[float] = None,
     regenerate: bool = False,
     extern_only_from: bool = False,
+    include_annotations: bool = False,
 ) -> QltBuildResult:
     """Compile, reload, and execute one bloq, filing it into an on-disk library.
 
@@ -306,6 +307,8 @@ def build_library_entry(
             `False` (default) and a `lib/` file already exists, the compile step
             is skipped and that file is reused for loading/execution.
         extern_only_from: Passed through to `dump_qlt_ir`.
+        include_annotations: Whether to include visual display annotations
+            derived from `bloq.wire_symbol` (defaults to `False`).
 
     Returns:
         A `QltBuildResult` describing the outcome. `build_library_entry` never
@@ -333,7 +336,13 @@ def build_library_entry(
                 buf = io.StringIO()
                 # Assign the root a deterministic, known key (`name`) so it can be
                 # looked up unambiguously after reloading.
-                dump_qlt_ir(bloq, buf, root_bloq_key=name, extern_only_from=extern_only_from)
+                dump_qlt_ir(
+                    bloq,
+                    buf,
+                    root_bloq_key=name,
+                    extern_only_from=extern_only_from,
+                    include_annotations=include_annotations,
+                )
                 partial_path.parent.mkdir(parents=True, exist_ok=True)
                 partial_path.write_text(buf.getvalue())
             except Exception as e:  # pylint: disable=broad-except

@@ -99,7 +99,7 @@ from qualtran.bloqs.basic_gates.ZGate
 qdef CSwap
 from qualtran.bloqs.basic_gates.CSwap(1)
 [
-    ctrl: QBit @ dot,
+    ctrl: QBit,
     x: QBit,
     y: QBit,
 ] {
@@ -114,7 +114,7 @@ from qualtran.bloqs.basic_gates.CSwap(1)
 
 extern qdef TwoBitCSwap
 from qualtran.bloqs.basic_gates.TwoBitCSwap
-[ctrl: QBit @ dot, x: QBit, y: QBit]
+[ctrl: QBit, x: QBit, y: QBit]
 
 qdef HubbardMajorannaOperator(2, 2, X)
 from qualtran.bloqs.chemistry.hubbard_model.qubitization.HubbardMajorannaOperator(2, 2, 'X', control_val=None)
@@ -180,7 +180,7 @@ from qualtran.bloqs.chemistry.hubbard_model.qubitization.HubbardMajorannaOperato
 qdef HubbardSpinUpZ(2, 2)
 from qualtran.bloqs.chemistry.hubbard_model.qubitization.HubbardSpinUpZ(2, 2, control_val=None)
 [
-    V: BQUInt(1, 2) @ dot,
+    V: BQUInt(1, 2),
     x: BQUInt(1, 2),
     y: BQUInt(1, 2),
     target: QAny(8),
@@ -212,7 +212,7 @@ from qualtran.bloqs.basic_gates.GlobalPhase(exponent=-0.5, eps=1e-11)
 
 extern qdef X
 from qualtran.bloqs.basic_gates.XGate
-[q: QBit @ oplus]
+[q: QBit]
 
 qcast Split(8)
 [reg: QAny(8) -> QBit[8]]
@@ -227,15 +227,15 @@ from qualtran.bloqs.bookkeeping.Allocate(QAny(1), False)
 
 extern qdef CNOT
 from qualtran.bloqs.basic_gates.CNOT
-[ctrl: QBit @ dot, target: QBit @ oplus]
+[ctrl: QBit, target: QBit]
 
 extern qdef CYGate
 from qualtran.bloqs.basic_gates.CYGate
-[ctrl: QBit @ dot, target: QBit]
+[ctrl: QBit, target: QBit]
 
 extern qdef CZ
 from qualtran.bloqs.basic_gates.CZ
-[q1: QBit @ dot, q2: QBit @ dot]
+[q1: QBit, q2: QBit]
 
 extern qdef And_adj
 from qualtran.bloqs.mcmt.And(1, 1, True)

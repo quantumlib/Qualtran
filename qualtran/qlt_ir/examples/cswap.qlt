@@ -4,7 +4,7 @@
 qdef CSwap
 from qualtran.bloqs.basic_gates.CSwap(5)
 [
-    ctrl: QBit @ dot,
+    ctrl: QBit,
     x: QAny(5),
     y: QAny(5),
 ] {
@@ -26,7 +26,7 @@ qcast Split(5)
 
 extern qdef TwoBitCSwap
 from qualtran.bloqs.basic_gates.TwoBitCSwap
-[ctrl: QBit @ dot, x: QBit, y: QBit]
+[ctrl: QBit, x: QBit, y: QBit]
 
 qcast Join(5)
 [reg: QBit[5] -> QAny(5)]

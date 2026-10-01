@@ -30,7 +30,7 @@ qcast Split(2)
 
 extern qdef X
 from qualtran.bloqs.basic_gates.XGate
-[q: QBit @ oplus]
+[q: QBit]
 
 extern qdef And10
 from qualtran.bloqs.mcmt.And(1, 0, False)
@@ -39,7 +39,7 @@ from qualtran.bloqs.mcmt.And(1, 0, False)
 qdef C(XorK(1))
 from qualtran.Controlled(qualtran.bloqs.arithmetic.XorK(QUInt(3), 1), qualtran.CtrlSpec(qdtypes=(QBit), cvs=(NDArr(shape=(), data=(1)))))
 [
-    ctrl: QBit @ dot,
+    ctrl: QBit,
     x: QUInt(3),
 ] {
     reg                  = Split(3)         [reg=x]             
@@ -51,12 +51,12 @@ from qualtran.Controlled(qualtran.bloqs.arithmetic.XorK(QUInt(3), 1), qualtran.C
 
 extern qdef CNOT
 from qualtran.bloqs.basic_gates.CNOT
-[ctrl: QBit @ dot, target: QBit @ oplus]
+[ctrl: QBit, target: QBit]
 
 qdef C(XorK(2))
 from qualtran.Controlled(qualtran.bloqs.arithmetic.XorK(QUInt(3), 2), qualtran.CtrlSpec(qdtypes=(QBit), cvs=(NDArr(shape=(), data=(1)))))
 [
-    ctrl: QBit @ dot,
+    ctrl: QBit,
     x: QUInt(3),
 ] {
     reg                  = Split(3)         [reg=x]             
@@ -73,7 +73,7 @@ from qualtran.bloqs.mcmt.And(1, 1, True)
 qdef C(XorK(3))
 from qualtran.Controlled(qualtran.bloqs.arithmetic.XorK(QUInt(3), 3), qualtran.CtrlSpec(qdtypes=(QBit), cvs=(NDArr(shape=(), data=(1)))))
 [
-    ctrl: QBit @ dot,
+    ctrl: QBit,
     x: QUInt(3),
 ] {
     reg                  = Split(3)         [reg=x]             
@@ -87,7 +87,7 @@ from qualtran.Controlled(qualtran.bloqs.arithmetic.XorK(QUInt(3), 3), qualtran.C
 qdef C(XorK(4))
 from qualtran.Controlled(qualtran.bloqs.arithmetic.XorK(QUInt(3), 4), qualtran.CtrlSpec(qdtypes=(QBit), cvs=(NDArr(shape=(), data=(1)))))
 [
-    ctrl: QBit @ dot,
+    ctrl: QBit,
     x: QUInt(3),
 ] {
     reg                  = Split(3)         [reg=x]             

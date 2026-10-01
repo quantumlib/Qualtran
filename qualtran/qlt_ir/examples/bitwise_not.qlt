@@ -31,7 +31,7 @@ qcast Split(4)
 
 extern qdef X
 from qualtran.bloqs.basic_gates.XGate
-[q: QBit @ oplus]
+[q: QBit]
 
 qcast Join(4)
 [reg: QBit[4] -> QUInt(4)]

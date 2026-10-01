@@ -31,7 +31,7 @@ from qualtran.bloqs.basic_gates.Hadamard
 qdef PhaseGradientUnitary
 from qualtran.bloqs.rotations.PhaseGradientUnitary(1, 0.5, True, 1e-10)
 [
-    ctrl: QBit @ dot,
+    ctrl: QBit,
     phase_grad: QFxp(1, 1, signed=False),
 ] {
     q                    = CZ(pow=0.5)      [q=[ctrl, phase_grad]]
@@ -45,7 +45,7 @@ qcast Join(2)
 qdef PhaseGradientUnitary(variant=1)
 from qualtran.bloqs.rotations.PhaseGradientUnitary(2, 0.5, True, 1e-10)
 [
-    ctrl: QBit @ dot,
+    ctrl: QBit,
     phase_grad: QFxp(2, 2, signed=False),
 ] {
     cz                   = CZ(pow=0.5, variant=1)
