@@ -1,14 +1,18 @@
 #include "kickmix/py/circuit/circuit.pybind.h"
 
-#include <kickmix/id/register_id.h>
-#include <kickmix/py/val/array.pybind.h>
 #include <pybind11/iostream.h>
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <sstream>
 
+#include "kickmix/circuit/mutable_circuit.h"
+#include "kickmix/id/register_id.h"
+#include "kickmix/py/util.pybind.h"
+#include "kickmix/py/val/array.pybind.h"
+
 using namespace kickmix;
+using namespace kickmix_py;
 
 void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
     c_circuit.def(
@@ -120,4 +124,131 @@ void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
 
     c_circuit.def(pybind11::self == pybind11::self, "Determines if two circuits have identical instructions.");
     c_circuit.def(pybind11::self != pybind11::self, "Determines if two circuits have different instructions.");
+
+    c_circuit.def(
+        "__add__",
+        [](const Circuit &self, const Circuit &other) -> Circuit {
+            MutableCircuit m;
+            m.append(self);
+            m.append(other);
+            m.register_data = self.register_data.empty() ? other.register_data : self.register_data;
+            return m.to_validated_circuit();
+        },
+        clean_doc_string(R"DOC(
+            Returns the concatenation of two circuits.
+
+            Note: register instructions are not part of the concatenation.
+            This method arbitrarily chooses the register data of the result to correspond
+            to the register data of the left hand side of the addition, unless the left
+            hand side has no register data, in which case the right hand side is used.
+
+            Examples:
+                >>> import kickmix as km
+                >>> km.Circuit('CX q0 q1') + km.Circuit('Z q2')
+                km.Circuit('''
+                    CX q0 q1
+                    Z q2
+                ''')
+
+                >>> a = km.Circuit('''
+                ...     REGISTER r0 "test"
+                ...     APPEND_TO_REGISTER q0 r0
+                ...     APPEND_TO_REGISTER q1 r0
+                ...     APPEND_TO_REGISTER q2 r0
+                ...     CCX q0 q1 q2
+                ... ''')
+                >>> b = km.Circuit('''
+                ...     CZ q0 q1
+                ... ''')
+                >>> a + b
+                km.Circuit('''
+                    APPEND_TO_REGISTER q0 r0
+                    APPEND_TO_REGISTER q1 r0
+                    APPEND_TO_REGISTER q2 r0
+                    REGISTER r0 "test"
+                    CCX q0 q1 q2
+                    CZ q0 q1
+                ''')
+                >>> b + a
+                km.Circuit('''
+                    APPEND_TO_REGISTER q0 r0
+                    APPEND_TO_REGISTER q1 r0
+                    APPEND_TO_REGISTER q2 r0
+                    REGISTER r0 "test"
+                    CZ q0 q1
+                    CCX q0 q1 q2
+                ''')
+                >>> a + a
+                km.Circuit('''
+                    APPEND_TO_REGISTER q0 r0
+                    APPEND_TO_REGISTER q1 r0
+                    APPEND_TO_REGISTER q2 r0
+                    REGISTER r0 "test"
+                    CCX q0 q1 q2
+                    CCX q0 q1 q2
+                ''')
+                >>> b + b
+                km.Circuit('''
+                    CZ q0 q1
+                    CZ q0 q1
+                ''')
+        )DOC")
+            .data());
+
+    auto mul_doc = clean_doc_string(R"DOC(
+            Repeats the contents of a circuit the given number of times.
+
+            Note: register data is not repeated.
+
+            Examples:
+                >>> import kickmix as km
+                >>> km.Circuit('CX q0 q1') * 3
+                km.Circuit('''
+                    CX q0 q1
+                    CX q0 q1
+                    CX q0 q1
+                ''')
+
+                >>> km.Circuit('CX q0 q1') * 0
+                km.Circuit('''
+                ''')
+
+                >>> 5 * km.Circuit('''
+                ...     REGISTER r0 "test"
+                ...     APPEND_TO_REGISTER q0 r0
+                ...     APPEND_TO_REGISTER q1 r0
+                ...     APPEND_TO_REGISTER q2 r0
+                ...     CCX q0 q1 q2
+                ...     X q0
+                ... ''')
+                km.Circuit('''
+                    APPEND_TO_REGISTER q0 r0
+                    APPEND_TO_REGISTER q1 r0
+                    APPEND_TO_REGISTER q2 r0
+                    REGISTER r0 "test"
+                    CCX q0 q1 q2
+                    X q0
+                    CCX q0 q1 q2
+                    X q0
+                    CCX q0 q1 q2
+                    X q0
+                    CCX q0 q1 q2
+                    X q0
+                    CCX q0 q1 q2
+                    X q0
+                ''')
+        )DOC");
+
+    c_circuit.def(
+        "__mul__",
+        [](const Circuit &self, size_t repetitions) -> Circuit {
+            return self * repetitions;
+        },
+        mul_doc.data());
+    c_circuit.def(
+        "__rmul__",
+        [](const Circuit &self, size_t repetitions) -> Circuit {
+            return self * repetitions;
+        },
+        mul_doc.data());
 }

@@ -1292,3 +1292,20 @@ std::ostream &kickmix::operator<<(std::ostream &out, const Op &op) {
     out << "}";
     return out;
 }
+
+Circuit Circuit::operator*(size_t repetitions) const {
+    MutableCircuit m;
+    m.register_data = register_data;
+    for (size_t k = 0; k < repetitions; k++) {
+        m.append(*this);
+    }
+    return m.to_validated_circuit();
+}
+
+Circuit Circuit::operator+(const Circuit &other) const {
+    MutableCircuit m;
+    m.append(*this);
+    m.append(other);
+    m.register_data = register_data.empty() ? other.register_data : register_data;
+    return m.to_validated_circuit();
+}
