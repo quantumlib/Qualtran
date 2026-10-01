@@ -2,11 +2,14 @@
 
 ## Index
 - [`kickmix.Circuit`](#kickmix.Circuit)
+    - [`kickmix.Circuit.__add__`](#kickmix.Circuit.__add__)
     - [`kickmix.Circuit.__eq__`](#kickmix.Circuit.__eq__)
     - [`kickmix.Circuit.__init__`](#kickmix.Circuit.__init__)
     - [`kickmix.Circuit.__len__`](#kickmix.Circuit.__len__)
+    - [`kickmix.Circuit.__mul__`](#kickmix.Circuit.__mul__)
     - [`kickmix.Circuit.__ne__`](#kickmix.Circuit.__ne__)
     - [`kickmix.Circuit.__repr__`](#kickmix.Circuit.__repr__)
+    - [`kickmix.Circuit.__rmul__`](#kickmix.Circuit.__rmul__)
     - [`kickmix.Circuit.__str__`](#kickmix.Circuit.__str__)
     - [`kickmix.Circuit.html_diagram`](#kickmix.Circuit.html_diagram)
     - [`kickmix.Circuit.max_magic`](#kickmix.Circuit.max_magic)
@@ -187,6 +190,75 @@ class Circuit:
     """
 ```
 
+<a name="kickmix.Circuit.__add__"></a>
+```python
+# kickmix.Circuit.__add__
+
+# (in class kickmix.Circuit)
+def __add__(
+    self,
+    arg0: kickmix.Circuit,
+) -> kickmix.Circuit:
+    """Returns the concatenation of two circuits.
+
+    Note: register instructions are not part of the concatenation.
+    This method arbitrarily chooses the register data of the result to correspond
+    to the register data of the left hand side of the addition, unless the left
+    hand side has no register data, in which case the right hand side is used.
+
+    Examples:
+        >>> import kickmix as km
+        >>> km.Circuit('CX q0 q1') + km.Circuit('Z q2')
+        km.Circuit('''
+            CX q0 q1
+            Z q2
+        ''')
+
+        >>> a = km.Circuit('''
+        ...     REGISTER r0 "test"
+        ...     APPEND_TO_REGISTER q0 r0
+        ...     APPEND_TO_REGISTER q1 r0
+        ...     APPEND_TO_REGISTER q2 r0
+        ...     CCX q0 q1 q2
+        ... ''')
+        >>> b = km.Circuit('''
+        ...     CZ q0 q1
+        ... ''')
+        >>> a + b
+        km.Circuit('''
+            APPEND_TO_REGISTER q0 r0
+            APPEND_TO_REGISTER q1 r0
+            APPEND_TO_REGISTER q2 r0
+            REGISTER r0 "test"
+            CCX q0 q1 q2
+            CZ q0 q1
+        ''')
+        >>> b + a
+        km.Circuit('''
+            APPEND_TO_REGISTER q0 r0
+            APPEND_TO_REGISTER q1 r0
+            APPEND_TO_REGISTER q2 r0
+            REGISTER r0 "test"
+            CZ q0 q1
+            CCX q0 q1 q2
+        ''')
+        >>> a + a
+        km.Circuit('''
+            APPEND_TO_REGISTER q0 r0
+            APPEND_TO_REGISTER q1 r0
+            APPEND_TO_REGISTER q2 r0
+            REGISTER r0 "test"
+            CCX q0 q1 q2
+            CCX q0 q1 q2
+        ''')
+        >>> b + b
+        km.Circuit('''
+            CZ q0 q1
+            CZ q0 q1
+        ''')
+    """
+```
+
 <a name="kickmix.Circuit.__eq__"></a>
 ```python
 # kickmix.Circuit.__eq__
@@ -225,6 +297,59 @@ def __len__(
     """
 ```
 
+<a name="kickmix.Circuit.__mul__"></a>
+```python
+# kickmix.Circuit.__mul__
+
+# (in class kickmix.Circuit)
+def __mul__(
+    self,
+    arg0: int,
+) -> kickmix.Circuit:
+    """Repeats the contents of a circuit the given number of times.
+
+    Note: register data is not repeated.
+
+    Examples:
+        >>> import kickmix as km
+        >>> km.Circuit('CX q0 q1') * 3
+        km.Circuit('''
+            CX q0 q1
+            CX q0 q1
+            CX q0 q1
+        ''')
+
+        >>> km.Circuit('CX q0 q1') * 0
+        km.Circuit('''
+        ''')
+
+        >>> 5 * km.Circuit('''
+        ...     REGISTER r0 "test"
+        ...     APPEND_TO_REGISTER q0 r0
+        ...     APPEND_TO_REGISTER q1 r0
+        ...     APPEND_TO_REGISTER q2 r0
+        ...     CCX q0 q1 q2
+        ...     X q0
+        ... ''')
+        km.Circuit('''
+            APPEND_TO_REGISTER q0 r0
+            APPEND_TO_REGISTER q1 r0
+            APPEND_TO_REGISTER q2 r0
+            REGISTER r0 "test"
+            CCX q0 q1 q2
+            X q0
+            CCX q0 q1 q2
+            X q0
+            CCX q0 q1 q2
+            X q0
+            CCX q0 q1 q2
+            X q0
+            CCX q0 q1 q2
+            X q0
+        ''')
+    """
+```
+
 <a name="kickmix.Circuit.__ne__"></a>
 ```python
 # kickmix.Circuit.__ne__
@@ -247,6 +372,59 @@ def __repr__(
     self,
 ) -> str:
     """Returns a description of the circuit.
+    """
+```
+
+<a name="kickmix.Circuit.__rmul__"></a>
+```python
+# kickmix.Circuit.__rmul__
+
+# (in class kickmix.Circuit)
+def __rmul__(
+    self,
+    arg0: int,
+) -> kickmix.Circuit:
+    """Repeats the contents of a circuit the given number of times.
+
+    Note: register data is not repeated.
+
+    Examples:
+        >>> import kickmix as km
+        >>> km.Circuit('CX q0 q1') * 3
+        km.Circuit('''
+            CX q0 q1
+            CX q0 q1
+            CX q0 q1
+        ''')
+
+        >>> km.Circuit('CX q0 q1') * 0
+        km.Circuit('''
+        ''')
+
+        >>> 5 * km.Circuit('''
+        ...     REGISTER r0 "test"
+        ...     APPEND_TO_REGISTER q0 r0
+        ...     APPEND_TO_REGISTER q1 r0
+        ...     APPEND_TO_REGISTER q2 r0
+        ...     CCX q0 q1 q2
+        ...     X q0
+        ... ''')
+        km.Circuit('''
+            APPEND_TO_REGISTER q0 r0
+            APPEND_TO_REGISTER q1 r0
+            APPEND_TO_REGISTER q2 r0
+            REGISTER r0 "test"
+            CCX q0 q1 q2
+            X q0
+            CCX q0 q1 q2
+            X q0
+            CCX q0 q1 q2
+            X q0
+            CCX q0 q1 q2
+            X q0
+            CCX q0 q1 q2
+            X q0
+        ''')
     """
 ```
 
