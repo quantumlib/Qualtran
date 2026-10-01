@@ -45,7 +45,7 @@ from qualtran.bloqs.mcmt.And(1, 1, False)
 
 extern qdef CNOT
 from qualtran.bloqs.basic_gates.CNOT
-[ctrl: QBit @ dot, target: QBit @ oplus]
+[ctrl: QBit, target: QBit]
 
 extern qdef And_adj
 from qualtran.bloqs.mcmt.And(1, 1, True)

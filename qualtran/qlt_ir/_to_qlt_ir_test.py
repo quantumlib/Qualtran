@@ -41,23 +41,123 @@ class MyBloq(qlt.Bloq):
             [qlt.Register('ctrl', qdt.QBit()), qlt.Register('neg_ctrl', qdt.QBit())]
         )
 
-    def wire_symbol(self, reg: qlt.Register):
+    def wire_symbol(self, reg: qlt.Register | None, idx: tuple[int, ...] = ()):
+        if reg is None:
+            return super().wire_symbol(reg, idx)
         if reg.name == 'ctrl':
             return Circle(filled=False)
         elif reg.name == 'neg_ctrl':
             return Circle(filled=True)
-        return super().wire_symbol(reg)
+        return super().wire_symbol(reg, idx)
 
 
 def test_wire_symbol_annotations():
     bloq = MyBloq()
+
+    # Default (include_annotations=False) omits annotations
+    qlt_mb_default = QltModuleBuilder()
+    qlt_mb_default.add_bloqs(bloq, force_extern_pred=lambda b: True)
+    qlt_txt_default = QltASTPrinter().visit(qlt_mb_default.finalize())
+    assert "@" not in qlt_txt_default
+
+    # With include_annotations=True, wire symbol annotations are emitted
     qlt_mb = QltModuleBuilder()
-    qlt_mb.add_bloqs(bloq, force_extern_pred=lambda b: True)
+    qlt_mb.add_bloqs(bloq, force_extern_pred=lambda b: True, include_annotations=True)
     qlt_mod = qlt_mb.finalize()
     qlt_txt = QltASTPrinter().visit(qlt_mod)
 
     assert "ctrl: QBit @ circle" in qlt_txt
     assert "neg_ctrl: QBit @ dot" in qlt_txt
+
+
+class _RichWSBloq(qlt.Bloq):
+    """Test bloq exercising cross, oplus, custom box labels, and shaped registers."""
+
+    @property
+    def signature(self) -> qlt.Signature:
+        return qlt.Signature(
+            [
+                qlt.Register('default_reg', qdt.QBit()),
+                qlt.Register('swap_reg', qdt.QBit()),
+                qlt.Register('target_reg', qdt.QBit()),
+                qlt.Register('labeled_reg', qdt.QBit()),
+                qlt.Register('homog_ctrl', qdt.QBit(), shape=(2,)),
+                qlt.Register('hetero_ctrl', qdt.QBit(), shape=(2,)),
+                qlt.Register('mixed_arr', qdt.QBit(), shape=(2,)),
+            ]
+        )
+
+    def wire_symbol(self, reg: qlt.Register | None, idx: tuple[int, ...] = ()):
+        from qualtran.drawing import ModPlus, Text, TextBox
+
+        if reg is None:
+            return Text('')
+        if reg.name == 'swap_reg':
+            return TextBox('×')
+        if reg.name == 'target_reg':
+            return ModPlus()
+        if reg.name == 'labeled_reg':
+            return TextBox('H')
+        if reg.name == 'homog_ctrl':
+            return Circle(filled=True)
+        if reg.name == 'hetero_ctrl':
+            return Circle(filled=(idx == (0,)))
+        if reg.name == 'mixed_arr':
+            if idx == (0,):
+                return TextBox('gamma')
+            return super().wire_symbol(reg, idx)
+        return super().wire_symbol(reg, idx)
+
+
+def test_rich_wire_symbol_and_stave_call_annotations():
+    from qualtran.qlt_ir._parse import parse_module
+
+    bb = BloqBuilder()
+    q0 = bb.add_register('q0', 1)
+    q1 = bb.add_register('q1', 1)
+    q2 = bb.add_register('q2', 1)
+    q3 = bb.add_register('q3', 1)
+    hc = bb.add_register(Register('hc', qdt.QBit(), shape=(2,)))
+    htc = bb.add_register(Register('htc', qdt.QBit(), shape=(2,)))
+    ma = bb.add_register(Register('ma', qdt.QBit(), shape=(2,)))
+    assert hc is not None and htc is not None and ma is not None
+
+    # _RichWSBloq returns Text('') for reg=None -> stave mode (@ (False,))
+    q0, q1, q2, q3, hc, htc, ma = bb.add(
+        _RichWSBloq(),
+        default_reg=q0,
+        swap_reg=q1,
+        target_reg=q2,
+        labeled_reg=q3,
+        homog_ctrl=hc,
+        hetero_ctrl=htc,
+        mixed_arr=ma,
+    )
+    # MyBloq returns non-empty Text for reg=None -> schematic mode (no @ (False,))
+    q0, q1 = bb.add(MyBloq(), ctrl=q0, neg_ctrl=q1)
+    cbloq = bb.finalize(q0=q0, q1=q1, q2=q2, q3=q3, hc=hc, htc=htc, ma=ma)
+
+    # Default dump_qlt_ir omits annotations
+    qlt_txt_default = dump_qlt_ir(cbloq)
+    assert qlt_txt_default is not None
+    assert "@" not in qlt_txt_default
+
+    qlt_txt = dump_qlt_ir(cbloq, include_annotations=True)
+    assert qlt_txt is not None
+    assert "default_reg: QBit," in qlt_txt or "default_reg: QBit]" in qlt_txt
+    assert "swap_reg: QBit @ cross" in qlt_txt
+    assert "target_reg: QBit @ oplus" in qlt_txt
+    assert "labeled_reg: QBit @ box('H')" in qlt_txt
+    assert "homog_ctrl: QBit[2] @ dot" in qlt_txt
+    assert "hetero_ctrl: QBit[2] @ (dot, circle)" in qlt_txt
+    assert "mixed_arr: QBit[2] @ (box('gamma'), box)" in qlt_txt
+    assert "= _RichWSBloq @ (False,)" in qlt_txt
+    assert "= MyBloq           [" in qlt_txt
+    assert "= MyBloq @" not in qlt_txt
+
+    # Annotated QLT IR should parse back cleanly into a valid QltModule AST.
+    parsed = parse_module(qlt_txt)
+    assert len(parsed.qdefs) == 3
 
 
 def test_alloc_free_are_extern_not_qcast():

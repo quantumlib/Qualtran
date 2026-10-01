@@ -53,9 +53,18 @@ def test_build_library_entry_success_lands_in_lib(tmp_path):
     lib_file = tmp_path / 'lib' / 'qualtran' / 'bloqs' / 'basic_gates' / 'CNOT' / 'cnot.qlt'
     assert result.qlt_path == str(lib_file)
     assert lib_file.exists()
+    assert '@' not in lib_file.read_text()
 
     # A success leaves nothing under partial/.
     assert not list(tmp_path.glob('partial/**/*.qlt'))
+
+    # With include_annotations=True, wire symbol annotations are included and still reload/execute.
+    annotated = build_library_entry(
+        CNOT(), 'cnot', tmp_path, regenerate=True, include_annotations=True
+    )
+    assert annotated.outcome is BuildOutcome.SUCCESS
+    assert 'ctrl: QBit @ dot' in lib_file.read_text()
+    assert 'target: QBit @ oplus' in lib_file.read_text()
 
 
 def test_build_library_entry_reuse_is_idempotent(tmp_path):
