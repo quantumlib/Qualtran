@@ -1293,10 +1293,10 @@ std::ostream &kickmix::operator<<(std::ostream &out, const Op &op) {
     return out;
 }
 
-Circuit Circuit::operator*(size_t repetitions) const {
+Circuit Circuit::operator*(uint64_t repetitions) const {
     MutableCircuit m;
     m.register_data = register_data;
-    for (size_t k = 0; k < repetitions; k++) {
+    for (uint64_t k = 0; k < repetitions; k++) {
         m.append(*this);
     }
     return m.to_validated_circuit();

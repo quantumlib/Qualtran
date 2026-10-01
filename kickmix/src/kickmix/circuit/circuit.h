@@ -99,7 +99,7 @@ struct Circuit {
     void write_kmb_to(FILE *file) const;
 
     Circuit operator+(const Circuit &other) const;
-    Circuit operator*(size_t n) const;
+    Circuit operator*(uint64_t n) const;
 
     template <typename TCallback>
     void iter_ops(const TCallback &op_callback) const {

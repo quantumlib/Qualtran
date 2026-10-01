@@ -128,11 +128,7 @@ void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
     c_circuit.def(
         "__add__",
         [](const Circuit &self, const Circuit &other) -> Circuit {
-            MutableCircuit m;
-            m.append(self);
-            m.append(other);
-            m.register_data = self.register_data.empty() ? other.register_data : self.register_data;
-            return m.to_validated_circuit();
+            return self + other;
         },
         clean_doc_string(R"DOC(
             Returns the concatenation of two circuits.
@@ -241,14 +237,20 @@ void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
 
     c_circuit.def(
         "__mul__",
-        [](const Circuit &self, size_t repetitions) -> Circuit {
-            return self * repetitions;
+        [](const Circuit &self, int64_t repetitions) -> Circuit {
+            if (repetitions < 0) {
+                repetitions = 0;
+            }
+            return self * (uint64_t)repetitions;
         },
         mul_doc.data());
     c_circuit.def(
         "__rmul__",
-        [](const Circuit &self, size_t repetitions) -> Circuit {
-            return self * repetitions;
+        [](const Circuit &self, int64_t repetitions) -> Circuit {
+            if (repetitions < 0) {
+                repetitions = 0;
+            }
+            return self * (uint64_t)repetitions;
         },
         mul_doc.data());
 }

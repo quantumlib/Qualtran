@@ -90,6 +90,8 @@ def test_mul():
         CCX q0 q1 q2
         CZ q0 q1
     ''')
+    assert a * -999 == -999 * a == km.Circuit()
+    assert a * -1 == -1 * a == km.Circuit()
     assert a * 0 == 0 * a == km.Circuit()
     assert a * 1 == 1 * a == a
     assert a * 2 == 2 * a == km.Circuit('''
@@ -114,7 +116,7 @@ def test_mul_with_register_data():
         CCX q0 q1 q2
         CZ q0 q1
     ''')
-    assert a * 0 == 0 * a == km.Circuit('''
+    assert a * 0 == 0 * a == a * -1 == -1 * a == km.Circuit('''
         REGISTER r0 "test"
     ''')
     assert a * 1 == 1 * a == a
