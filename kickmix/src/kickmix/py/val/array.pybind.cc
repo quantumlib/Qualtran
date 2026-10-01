@@ -40,7 +40,7 @@ std::string QXZArray_str(const PyArrayXZ &obj) {
         } else if (e.is_xbit()) {
             ss << "xb" << e.untagged_id();
         } else if (e.is_xbool()) {
-            ss << (e.is_minus_ket() ? "|->" : "|+>");
+            ss << (e.is_minus_ket() ? "xbool(True)" : "xbool(False)");
         } else if (e.is_bool()) {
             ss << ((bool)e ? "True" : "False");
         } else {
@@ -62,13 +62,13 @@ std::string QXZArray_repr(const PyArrayXZ &obj) {
             ss << ", ";
         }
         if (e.is_qubit()) {
-            ss << "q(" << e.untagged_id() << ")";
+            ss << "km.q(" << e.untagged_id() << ")";
         } else if (e.is_bit()) {
-            ss << "b(" << e.untagged_id() << ")";
+            ss << "km.b(" << e.untagged_id() << ")";
         } else if (e.is_xbit()) {
-            ss << "xb(" << e.untagged_id() << ")";
+            ss << "km.xb(" << e.untagged_id() << ")";
         } else if (e.is_xbool()) {
-            ss << (e.is_minus_ket() ? "xbool(True)" : "xbool(False)");
+            ss << (e.is_minus_ket() ? "km.xbool(True)" : "km.xbool(False)");
         } else if (e.is_bool()) {
             ss << ((bool)e ? "True" : "False");
         } else {
