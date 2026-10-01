@@ -3707,54 +3707,54 @@ TEST(FixedPrecisionAngle128, add_int) {
 }
 
 TEST(FixedPrecisionAngle128, from_power_of_2_half_turns) {
- ASSERT_EQ(
-     FixedPrecisionAngle128::from_power_of_2_half_turns(1),
-     FixedPrecisionAngle128::from_half_turns_exact_double(0.0));
- ASSERT_EQ(
-     FixedPrecisionAngle128::from_power_of_2_half_turns(0),
-     FixedPrecisionAngle128::from_half_turns_exact_double(1.0));
- ASSERT_EQ(
-     FixedPrecisionAngle128::from_power_of_2_half_turns(-1),
-     FixedPrecisionAngle128::from_half_turns_exact_double(0.5));
- ASSERT_EQ(
-     FixedPrecisionAngle128::from_power_of_2_half_turns(-2),
-     FixedPrecisionAngle128::from_half_turns_exact_double(0.25));
- ASSERT_EQ(FixedPrecisionAngle128::from_power_of_2_half_turns(-128), FixedPrecisionAngle128{});
- ASSERT_EQ(FixedPrecisionAngle128::from_power_of_2_half_turns(-500), FixedPrecisionAngle128{});
+    ASSERT_EQ(
+        FixedPrecisionAngle128::from_power_of_2_half_turns(1),
+        FixedPrecisionAngle128::from_half_turns_exact_double(0.0));
+    ASSERT_EQ(
+        FixedPrecisionAngle128::from_power_of_2_half_turns(0),
+        FixedPrecisionAngle128::from_half_turns_exact_double(1.0));
+    ASSERT_EQ(
+        FixedPrecisionAngle128::from_power_of_2_half_turns(-1),
+        FixedPrecisionAngle128::from_half_turns_exact_double(0.5));
+    ASSERT_EQ(
+        FixedPrecisionAngle128::from_power_of_2_half_turns(-2),
+        FixedPrecisionAngle128::from_half_turns_exact_double(0.25));
+    ASSERT_EQ(FixedPrecisionAngle128::from_power_of_2_half_turns(-128), FixedPrecisionAngle128{});
+    ASSERT_EQ(FixedPrecisionAngle128::from_power_of_2_half_turns(-500), FixedPrecisionAngle128{});
 
- for (int k = -127; k <= 0; k++) {
-  ASSERT_EQ(
-      FixedPrecisionAngle128::from_power_of_2_half_turns(k),
-      FixedPrecisionAngle128::from_half_turns_exact_double(pow(2, k)))
-      << k;
- }
+    for (int k = -127; k <= 0; k++) {
+        ASSERT_EQ(
+            FixedPrecisionAngle128::from_power_of_2_half_turns(k),
+            FixedPrecisionAngle128::from_half_turns_exact_double(pow(2, k)))
+            << k;
+    }
 }
 
 TEST(FixedPrecisionAngle128, mul) {
- auto check = [](double d1, uint64_t d2) {
-  EXPECT_EQ(
-      FixedPrecisionAngle128::from_half_turns_exact_double(d1) * d2,
-      FixedPrecisionAngle128::from_half_turns_exact_double(d1 * d2))
-      << d1 << ", " << d2;
- };
- check(std::ldexp(1, -127), 0);
- check(std::ldexp(1, -127), 1);
- check(std::ldexp(1, -127), 2);
- check(std::ldexp(31, -127), 3);
- check(std::ldexp(1, -127), 4);
- check(std::ldexp(52, -127), uint64_t{1} << 63);
- check(0.125, 2);
- check(0.125, 3);
- check(0.125, 3);
- check(0.125, int64_t{1} << 63);
+    auto check = [](double d1, uint64_t d2) {
+        EXPECT_EQ(
+            FixedPrecisionAngle128::from_half_turns_exact_double(d1) * d2,
+            FixedPrecisionAngle128::from_half_turns_exact_double(d1 * d2))
+            << d1 << ", " << d2;
+    };
+    check(std::ldexp(1, -127), 0);
+    check(std::ldexp(1, -127), 1);
+    check(std::ldexp(1, -127), 2);
+    check(std::ldexp(31, -127), 3);
+    check(std::ldexp(1, -127), 4);
+    check(std::ldexp(52, -127), uint64_t{1} << 63);
+    check(0.125, 2);
+    check(0.125, 3);
+    check(0.125, 3);
+    check(0.125, int64_t{1} << 63);
 }
 
 TEST(FixedPrecisionAngle128, imul) {
- FixedPrecisionAngle128 angle{};
- angle.words[0] = 3;
- angle *= 3;
- ASSERT_EQ(angle, (FixedPrecisionAngle128{9, 0}));
- angle *= uint64_t{1} << 63;
- angle *= 2;
- ASSERT_EQ(angle, (FixedPrecisionAngle128{0, 9}));
+    FixedPrecisionAngle128 angle{};
+    angle.words[0] = 3;
+    angle *= 3;
+    ASSERT_EQ(angle, (FixedPrecisionAngle128{9, 0}));
+    angle *= uint64_t{1} << 63;
+    angle *= 2;
+    ASSERT_EQ(angle, (FixedPrecisionAngle128{0, 9}));
 }

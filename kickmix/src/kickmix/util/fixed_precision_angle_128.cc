@@ -9,6 +9,16 @@
 
 using namespace kickmix;
 
+FixedPrecisionAngle128 FixedPrecisionAngle128::from_power_of_2_half_turns(int exponent) {
+    if (exponent > 0 || exponent <= -128) {
+        return {};
+    }
+    size_t d = (size_t)(exponent + 127);
+    FixedPrecisionAngle128 result{};
+    result.words[d / 64] |= uint64_t{1} << (d % 64);
+    return result;
+}
+
 FixedPrecisionAngle128::operator bool() const {
     return words[0] != 0 || words[1] != 0;
 }
