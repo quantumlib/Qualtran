@@ -11,6 +11,7 @@
 #include <sstream>
 
 #include "kickmix/py/util.pybind.h"
+#include "kickmix/util/binary_file_tools.h"
 
 using namespace kickmix;
 using namespace kickmix_py;
@@ -23,7 +24,7 @@ static std::string resolve_file_path(const pybind11::handle &path) {
     if (pybind11::isinstance<pybind11::str>(fspath) || pybind11::isinstance<pybind11::bytes>(fspath)) {
         return pybind11::cast<std::string>(fspath);
     }
-    throw pybind11::type_error("Expected path to be a str or pathlib.Path.");
+    throw pybind11::type_error("Expected path to be a str, pathlib.Path, or open file object.");
 }
 
 void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
@@ -137,14 +138,32 @@ void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
     c_circuit.def_static(
         "from_file",
         [](const pybind11::object &path, std::string_view format) -> Circuit {
-            std::string path_str = resolve_file_path(path);
-            if (format != "kmx" && format != "kmb") {
+            if (format != "auto" && format != "kmx" && format != "kmb") {
                 throw std::invalid_argument(
-                    "Unrecognized format '" + std::string(format) + "'. Expected 'kmx' or 'kmb'.");
+                    "Unrecognized format '" + std::string(format) + "'. Expected 'auto', 'kmx', or 'kmb'.");
             }
-            std::unique_ptr<FILE, int (*)(FILE *)> file(fopen(path_str.c_str(), "rb"), &fclose);
-            if (file == nullptr) {
-                throw std::invalid_argument("Failed to open file for reading: '" + path_str + "'.");
+            std::unique_ptr<FILE, int (*)(FILE *)> file(nullptr, &fclose);
+            if (pybind11::hasattr(path, "read")) {
+                pybind11::object content = path.attr("read")();
+                if (pybind11::isinstance<pybind11::str>(content)) {
+                    if (format == "kmb") {
+                        throw std::invalid_argument("format='kmb' requires a binary file.");
+                    }
+                    return Circuit(pybind11::cast<std::string_view>(content));
+                }
+                auto data = pybind11::cast<std::string_view>(pybind11::bytes(content));
+                file.reset(tmpfile());
+                fwrite_else_throw(data.data(), data.size(), file.get());
+                rewind(file.get());
+            } else {
+                std::string path_str = resolve_file_path(path);
+                file.reset(fopen(path_str.c_str(), "rb"));
+                if (file == nullptr) {
+                    throw std::invalid_argument("Failed to open file for reading: '" + path_str + "'.");
+                }
+            }
+            if (format == "auto") {
+                return Circuit::from_kmx_or_kmb_file(file.get());
             }
             if (format == "kmx") {
                 return Circuit::from_kmx_file(file.get());
@@ -152,16 +171,22 @@ void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
             return Circuit::from_kmb_file(file.get());
         },
         pybind11::arg("path"),
-        pybind11::arg("format") = "kmx",
+        pybind11::arg("format") = "auto",
         clean_doc_string(R"DOC(
-            @signature def from_file(path: str | pathlib.Path, format: Literal['kmx', 'kmb'] = 'kmx') -> km.Circuit:
+            @signature def from_file(path: str | pathlib.Path | io.IOBase, format: Literal['auto', 'kmx', 'kmb'] = 'auto') -> km.Circuit:
             Reads a `km.Circuit` from a file.
 
             Args:
-                path: The path to the file to read from.
-                format: The file format to parse. Defaults to `'kmx'`.
-                    `'kmx'`: Human-readable text kickmix format.
-                    `'kmb'`: Binary kickmix format.
+                path: The path or open file object to read from.
+                format: The file format to parse. Defaults to `'auto'`.
+                    `'auto'`: Automatically detect whether the file is in `'kmx'`
+                        or `'kmb'` format.
+                    `'kmx'`: Human-readable text kickmix format. Can be read from
+                        a text or binary file. See
+                        https://github.com/quantumlib/Qualtran/blob/main/docs/kickmix/kickmix_format.md
+                    `'kmb'`: Binary kickmix format. Requires a binary file if
+                        passing an open file object. See
+                        https://github.com/quantumlib/Qualtran/blob/main/docs/kickmix/kickmix_binary_format.md
 
             Returns:
                 The parsed `km.Circuit`.
@@ -187,11 +212,28 @@ void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
     c_circuit.def(
         "to_file",
         [](const Circuit &self, const pybind11::object &path, std::string_view format) {
-            std::string path_str = resolve_file_path(path);
             if (format != "kmx" && format != "kmb") {
                 throw std::invalid_argument(
                     "Unrecognized format '" + std::string(format) + "'. Expected 'kmx' or 'kmb'.");
             }
+            if (pybind11::hasattr(path, "write")) {
+                std::unique_ptr<FILE, int (*)(FILE *)> tmp(tmpfile(), &fclose);
+                if (format == "kmx") {
+                    self.write_kmx_to(tmp.get());
+                } else {
+                    self.write_kmb_to(tmp.get());
+                }
+                std::string data(ftell(tmp.get()), '\0');
+                rewind(tmp.get());
+                fread_else_throw(data.data(), data.size(), tmp.get());
+                if (format == "kmx" && pybind11::isinstance(path, pybind11::module_::import("io").attr("TextIOBase"))) {
+                    path.attr("write")(pybind11::str(data));
+                } else {
+                    path.attr("write")(pybind11::bytes(data));
+                }
+                return;
+            }
+            std::string path_str = resolve_file_path(path);
             std::unique_ptr<FILE, int (*)(FILE *)> file(fopen(path_str.c_str(), "wb"), &fclose);
             if (file == nullptr) {
                 throw std::invalid_argument("Failed to open file for writing: '" + path_str + "'.");
@@ -205,14 +247,18 @@ void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
         pybind11::arg("path"),
         pybind11::arg("format") = "kmx",
         clean_doc_string(R"DOC(
-            @signature def to_file(self, path: str | pathlib.Path, format: Literal['kmx', 'kmb'] = 'kmx') -> None:
+            @signature def to_file(self, path: str | pathlib.Path | io.IOBase, format: Literal['kmx', 'kmb'] = 'kmx') -> None:
             Writes the circuit to a file.
 
             Args:
-                path: The path to the file to write to.
+                path: The path or open file object to write to.
                 format: The file format to write. Defaults to `'kmx'`.
-                    `'kmx'`: Human-readable text kickmix format.
-                    `'kmb'`: Binary kickmix format.
+                    `'kmx'`: Human-readable text kickmix format. Can be written
+                        to a text or binary file. See
+                        https://github.com/quantumlib/Qualtran/blob/main/docs/kickmix/kickmix_format.md
+                    `'kmb'`: Binary kickmix format. Requires a binary file if
+                        passing an open file object. See
+                        https://github.com/quantumlib/Qualtran/blob/main/docs/kickmix/kickmix_binary_format.md
 
             Examples:
                 >>> import pathlib

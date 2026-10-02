@@ -271,16 +271,22 @@ def __str__(
 # (in class kickmix.Circuit)
 @staticmethod
 def from_file(
-    path: str | pathlib.Path,
-    format: Literal['kmx', 'kmb'] = 'kmx',
+    path: str | pathlib.Path | io.IOBase,
+    format: Literal['auto', 'kmx', 'kmb'] = 'auto',
 ) -> km.Circuit:
     """Reads a `km.Circuit` from a file.
 
     Args:
-        path: The path to the file to read from.
-        format: The file format to parse. Defaults to `'kmx'`.
-            `'kmx'`: Human-readable text kickmix format.
-            `'kmb'`: Binary kickmix format.
+        path: The path or open file object to read from.
+        format: The file format to parse. Defaults to `'auto'`.
+            `'auto'`: Automatically detect whether the file is in `'kmx'`
+                or `'kmb'` format.
+            `'kmx'`: Human-readable text kickmix format. Can be read from
+                a text or binary file. See
+                https://github.com/quantumlib/Qualtran/blob/main/docs/kickmix/kickmix_format.md
+            `'kmb'`: Binary kickmix format. Requires a binary file if
+                passing an open file object. See
+                https://github.com/quantumlib/Qualtran/blob/main/docs/kickmix/kickmix_binary_format.md
 
     Returns:
         The parsed `km.Circuit`.
@@ -410,16 +416,20 @@ def text_diagram(
 # (in class kickmix.Circuit)
 def to_file(
     self,
-    path: str | pathlib.Path,
+    path: str | pathlib.Path | io.IOBase,
     format: Literal['kmx', 'kmb'] = 'kmx',
 ) -> None:
     """Writes the circuit to a file.
 
     Args:
-        path: The path to the file to write to.
+        path: The path or open file object to write to.
         format: The file format to write. Defaults to `'kmx'`.
-            `'kmx'`: Human-readable text kickmix format.
-            `'kmb'`: Binary kickmix format.
+            `'kmx'`: Human-readable text kickmix format. Can be written
+                to a text or binary file. See
+                https://github.com/quantumlib/Qualtran/blob/main/docs/kickmix/kickmix_format.md
+            `'kmb'`: Binary kickmix format. Requires a binary file if
+                passing an open file object. See
+                https://github.com/quantumlib/Qualtran/blob/main/docs/kickmix/kickmix_binary_format.md
 
     Examples:
         >>> import pathlib

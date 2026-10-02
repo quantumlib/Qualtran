@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import io
 import pathlib
 
 import pytest
@@ -42,11 +43,12 @@ def test_circuit_file_io(tmp_path: pathlib.Path):
         Z_POW q0 0.25 if b0
     """)
 
-    # Default format ('kmx') with pathlib.Path and str.
+    # Default format ('kmx' for to_file, 'auto' for from_file) with pathlib.Path and str.
     kmx_path = tmp_path / "test.kmx"
     circuit.to_file(kmx_path)
     assert kmx_path.read_text() == f"{circuit}\n"
     assert km.Circuit.from_file(kmx_path) == circuit
+    assert km.Circuit.from_file(kmx_path, format="auto") == circuit
     assert km.Circuit.from_file(str(kmx_path), format="kmx") == circuit
 
     # Explicit format='kmx' with str path.
@@ -59,8 +61,54 @@ def test_circuit_file_io(tmp_path: pathlib.Path):
     circuit.to_file(kmb_path, format="kmb")
     raw_kmb = kmb_path.read_bytes()
     assert raw_kmb.startswith(bytes.fromhex("d750c7d5c329d326e3cc9f6834f2b8bf"))
+    assert km.Circuit.from_file(kmb_path) == circuit
+    assert km.Circuit.from_file(kmb_path, format="auto") == circuit
     assert km.Circuit.from_file(kmb_path, format="kmb") == circuit
     assert km.Circuit.from_file(str(kmb_path), format="kmb") == circuit
+
+    # Opened file objects: 'kmx' supports both text and binary modes.
+    kmx_open_text_path = tmp_path / "open_text.kmx"
+    with open(kmx_open_text_path, "w") as f:
+        circuit.to_file(f)
+    with open(kmx_open_text_path, "r") as f:
+        assert km.Circuit.from_file(f) == circuit
+    with open(kmx_open_text_path, "r") as f:
+        assert km.Circuit.from_file(f, format="kmx") == circuit
+
+    kmx_open_bin_path = tmp_path / "open_bin.kmx"
+    with open(kmx_open_bin_path, "wb") as f:
+        circuit.to_file(f, format="kmx")
+    with open(kmx_open_bin_path, "rb") as f:
+        assert km.Circuit.from_file(f) == circuit
+    with open(kmx_open_bin_path, "rb") as f:
+        assert km.Circuit.from_file(f, format="kmx") == circuit
+
+    # Opened file objects: 'kmb' in binary mode.
+    kmb_open_bin_path = tmp_path / "open_bin.kmb"
+    with open(kmb_open_bin_path, "wb") as f:
+        circuit.to_file(f, format="kmb")
+    with open(kmb_open_bin_path, "rb") as f:
+        assert km.Circuit.from_file(f) == circuit
+    with open(kmb_open_bin_path, "rb") as f:
+        assert km.Circuit.from_file(f, format="kmb") == circuit
+
+    # In-memory StringIO and BytesIO streams.
+    sio = io.StringIO()
+    circuit.to_file(sio, format="kmx")
+    sio.seek(0)
+    assert km.Circuit.from_file(sio) == circuit
+
+    bio_kmx = io.BytesIO()
+    circuit.to_file(bio_kmx, format="kmx")
+    bio_kmx.seek(0)
+    assert km.Circuit.from_file(bio_kmx) == circuit
+
+    bio_kmb = io.BytesIO()
+    circuit.to_file(bio_kmb, format="kmb")
+    bio_kmb.seek(0)
+    assert km.Circuit.from_file(bio_kmb) == circuit
+    bio_kmb.seek(0)
+    assert km.Circuit.from_file(bio_kmb, format="kmb") == circuit
 
     # Empty circuit round-trip in both formats.
     empty = km.Circuit()
@@ -69,6 +117,7 @@ def test_circuit_file_io(tmp_path: pathlib.Path):
     empty.to_file(empty_kmx)
     empty.to_file(empty_kmb, format="kmb")
     assert km.Circuit.from_file(empty_kmx) == empty
+    assert km.Circuit.from_file(empty_kmb) == empty
     assert km.Circuit.from_file(empty_kmb, format="kmb") == empty
 
 
@@ -93,6 +142,17 @@ def test_circuit_file_io_errors(tmp_path: pathlib.Path):
         km.Circuit.from_file(kmx_path, format="kmb")
     with pytest.raises(ValueError):
         km.Circuit.from_file(kmb_path, format="kmx")
+
+    # 'kmb' requires binary mode when passing an open file object.
+    with open(tmp_path / "bad_text.kmb", "w") as f:
+        with pytest.raises((TypeError, ValueError)):
+            circuit.to_file(f, format="kmb")
+    with open(kmb_path, "r") as f:
+        with pytest.raises((TypeError, ValueError)):
+            km.Circuit.from_file(f, format="kmb")
+    with open(kmb_path, "r") as f:
+        with pytest.raises((TypeError, ValueError)):
+            km.Circuit.from_file(f)
 
     # Missing file / unwritable file.
     with pytest.raises(ValueError, match="Failed to open file for reading"):
