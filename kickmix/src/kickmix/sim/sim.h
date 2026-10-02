@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <kickmix/id/qubit_or_bit_or_bool.h>
+#include <map>
 #include <random>
 #include <span>
 #include <vector>
@@ -64,6 +65,8 @@ struct EmptyCounters {
     }
 };
 
+struct EmptyAngleCounters {};
+
 template <typename TWord, bool count_shots>
 struct Sim {
     using ubits_t = TWord;
@@ -85,6 +88,8 @@ struct Sim {
     std::array<std::vector<FixedWidthInt>, BATCH_SIZE> register_buffers2;
 
     std::conditional_t<count_shots, std::array<PopCounter<TWord>, 256>, EmptyCounters<TWord>> new_op_counters{};
+    std::conditional_t<count_shots, std::map<FixedPrecisionAngle128, PopCounter<TWord>>, EmptyAngleCounters>
+        z_pow_angle_counters{};
 
     inline std::span<TWord> qubit_span() {
         return {state_block.data() + 5, num_qubits};
@@ -343,6 +348,9 @@ struct Sim {
                     cond &= bits[*data_bit_cond++];
                 case OpType::Z_POW: {
                     auto angle = *data_angles++;
+                    if constexpr (count_shots) {
+                        z_pow_angle_counters[angle].masked_increments(cond);
+                    }
                     auto mask = qubits[*data_q0++] & cond;
                     for (size_t b = 0; b < BATCH_SIZE; b++) {
                         if (mask.bit(b)) {
@@ -420,7 +428,7 @@ struct Sim {
                 case OpType::DEBUG_PRINT_Q_IF:
                     cond &= bits[*data_bit_cond++];
                 case OpType::DEBUG_PRINT_Q: {
-                    auto q = *data_bit_targ++;
+                    auto q = *data_q0++;
                     if (cond.bit(0) && !ignore_debug_print_operations) {
                         std::cerr << (qubits[q].bit(0) ? '1' : '0');
                     }
@@ -437,11 +445,13 @@ struct Sim {
                 case OpType::PUSH_CONDITION:
                     current_base_condition &= bits[*data_bit_cond++];
                     condition_stack.push_back(current_base_condition);
+                    cond = ~TWord{};
                     break;
 
                 case OpType::POP_CONDITION:
                     condition_stack.pop_back();
                     current_base_condition = condition_stack.empty() ? ~TWord{} : condition_stack.back();
+                    cond = ~TWord{};
                     break;
 
                 default: {

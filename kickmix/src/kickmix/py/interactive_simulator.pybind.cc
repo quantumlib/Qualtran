@@ -21,22 +21,28 @@ static std::mt19937_64 externally_seeded_rng() {
 }
 
 static void sim_clear_for_shot(PyInteractiveSimulator &self) {
-    for (auto &sim : self.simulators) {
-        sim.clear_for_shot();
-    }
+    self.with_sims([](auto &sims) {
+        for (auto &sim : sims) {
+            sim.clear_for_shot();
+        }
+    });
 }
 bool peek_single_bit(const PyInteractiveSimulator &self, QubitOrBitOrBool index, size_t shot) {
     if (shot >= self.batch_size) {
         throw pybind11::index_error("Need shot_index < sim.batch_size");
     }
-    return self.simulators[shot / PY_SIM_WORD_BITS].safe_read_val(index).bit(shot % PY_SIM_WORD_BITS);
+    return self.with_sims([&](const auto &sims) {
+        return sims[shot / PY_SIM_WORD_BITS].safe_read_val(index).bit(shot % PY_SIM_WORD_BITS);
+    });
 }
 
 void set_single_bit(PyInteractiveSimulator &self, QubitOrBit index, size_t shot, bool new_value) {
     if (shot >= self.batch_size) {
         throw pybind11::index_error("Need shot_index < sim.batch_size");
     }
-    self.simulators[shot / PY_SIM_WORD_BITS].val_for(index).set_bit(shot % PY_SIM_WORD_BITS, new_value);
+    self.with_sims([&](auto &sims) {
+        sims[shot / PY_SIM_WORD_BITS].val_for(index).set_bit(shot % PY_SIM_WORD_BITS, new_value);
+    });
 }
 
 /// Writes the bytes of a python int in range(0, 2**max_bits) into the given byte buffer.
@@ -98,12 +104,110 @@ pybind11::object int_obj_from_bytes_with_max_bits(uint8_t *bytes_buffer, size_t 
     return pybind11::reinterpret_steal<pybind11::object>(py_long);
 }
 
-PyInteractiveSimulator::PyInteractiveSimulator(size_t init_batch_size) {
+PyInteractiveSimulator::PyInteractiveSimulator(
+    size_t init_batch_size, bool init_ignore_debug_prints, bool init_count_operations) {
     batch_size = init_batch_size;
-    for (size_t k = 0; k < batch_size; k += PY_SIM_WORD_BITS) {
-        simulators.emplace_back(externally_seeded_rng());
+    count_operations = init_count_operations;
+    with_sims([&](auto &sims) {
+        for (size_t k = 0; k < batch_size; k += PY_SIM_WORD_BITS) {
+            sims.emplace_back(externally_seeded_rng());
+        }
+        ensure_byte_buf_can_store_bits(sims.size() * PY_SIM_WORD_BITS);
+    });
+    set_ignore_debug_prints(init_ignore_debug_prints);
+}
+
+void PyInteractiveSimulator::set_ignore_debug_prints(bool value) {
+    ignore_debug_prints = value;
+    with_sims([&](auto &sims) {
+        for (size_t k = 0; k < sims.size(); k++) {
+            sims[k].ignore_debug_print_operations = value || (k > 0);
+        }
+    });
+}
+
+void PyInteractiveSimulator::clear_op_counts() {
+    for (auto &sim : counting_simulators) {
+        for (auto &c : sim.new_op_counters) {
+            c.clear();
+        }
+        sim.z_pow_angle_counters.clear();
     }
-    ensure_byte_buf_can_store_bits(simulators.size() * PY_SIM_WORD_BITS);
+}
+
+static pybind11::dict sim_op_counts(
+    const PyInteractiveSimulator &self, std::optional<int64_t> shot_index, const pybind11::object &z_pow_key) {
+    if (!self.count_operations) {
+        throw std::invalid_argument(
+            "Operation counting is not enabled on this simulator. "
+            "Pass count_operations=True to km.Simulator(...).");
+    }
+    bool custom_z_pow = !z_pow_key.is_none();
+    pybind11::dict result;
+    if (shot_index.has_value()) {
+        if (*shot_index < 0 || static_cast<size_t>(*shot_index) >= self.batch_size) {
+            throw pybind11::index_error("Need 0 <= shot_index < sim.batch_size");
+        }
+        size_t s = static_cast<size_t>(*shot_index);
+        size_t sim_idx = s / PY_SIM_WORD_BITS;
+        size_t bit_idx = s % PY_SIM_WORD_BITS;
+        const auto &sim = self.counting_simulators[sim_idx];
+        const auto &counters = sim.new_op_counters;
+        for (const auto &[name, ops] : OP_COUNT_GROUPS) {
+            if (custom_z_pow && name == "Z_POW") {
+                continue;
+            }
+            uint64_t total = 0;
+            for (OpType op : ops) {
+                total += counters[static_cast<uint8_t>(op)].compute_total(bit_idx);
+            }
+            result[pybind11::str(name.data(), name.size())] = total;
+        }
+        if (custom_z_pow) {
+            std::map<FixedPrecisionAngle128, uint64_t> angle_counts;
+            for (const auto &[angle, counter] : sim.z_pow_angle_counters) {
+                angle_counts.emplace(angle, counter.compute_total(bit_idx));
+            }
+            populate_z_pow_counts(result, z_pow_key, angle_counts);
+        }
+        return result;
+    }
+
+    for (const auto &[name, ops] : OP_COUNT_GROUPS) {
+        if (custom_z_pow && name == "Z_POW") {
+            continue;
+        }
+        uint64_t total = 0;
+        for (size_t s_base = 0; s_base < self.batch_size; s_base += PY_SIM_WORD_BITS) {
+            size_t sim_idx = s_base / PY_SIM_WORD_BITS;
+            size_t n_bits = std::min(self.batch_size - s_base, size_t{PY_SIM_WORD_BITS});
+            const auto &counters = self.counting_simulators[sim_idx].new_op_counters;
+            for (OpType op : ops) {
+                const auto &counter = counters[static_cast<uint8_t>(op)];
+                for (size_t r = 0; r < n_bits; r++) {
+                    total += counter.compute_total(r);
+                }
+            }
+        }
+        result[pybind11::str(name.data(), name.size())] = total;
+    }
+    if (custom_z_pow && !self.counting_simulators.empty()) {
+        std::map<FixedPrecisionAngle128, uint64_t> angle_counts;
+        for (const auto &[angle, _] : self.counting_simulators[0].z_pow_angle_counters) {
+            uint64_t total = 0;
+            for (size_t s_base = 0; s_base < self.batch_size; s_base += PY_SIM_WORD_BITS) {
+                size_t sim_idx = s_base / PY_SIM_WORD_BITS;
+                size_t n_bits = std::min(self.batch_size - s_base, size_t{PY_SIM_WORD_BITS});
+                const auto &counter = self.counting_simulators[sim_idx].z_pow_angle_counters.at(angle);
+                for (size_t r = 0; r < n_bits; r++) {
+                    total += counter.compute_total(r);
+                }
+            }
+            angle_counts.emplace(angle, total);
+        }
+        populate_z_pow_counts(result, z_pow_key, angle_counts);
+    }
+    return result;
 }
 
 pybind11::class_<PyInteractiveSimulator> kickmix_py::register_interactive_simulator_class(pybind11::module &m) {
@@ -131,9 +235,11 @@ void PyInteractiveSimulator::ensure_byte_buf_can_store_bits(size_t num_bits) {
     }
 }
 void PyInteractiveSimulator::ensure_big_enough_state_for(size_t num_qubits, size_t num_bits) {
-    for (auto &sim : simulators) {
-        sim.ensure_big_enough_state_for(num_qubits, num_bits);
-    }
+    with_sims([&](auto &sims) {
+        for (auto &sim : sims) {
+            sim.ensure_big_enough_state_for(num_qubits, num_bits);
+        }
+    });
 }
 
 pybind11::object peek_within_shot_2d_np_bool(
@@ -192,17 +298,19 @@ pybind11::object peek_across_shots_2d_np_bool(
     }
 
     auto s1 = buf.strides(1);
-    for (size_t k0 = 0; k0 < items.size(); k0++) {
-        auto out_ptr = buf.mutable_data(k0, 0);
-        for (size_t k1_a = 0; k1_a < self.batch_size; k1_a += PY_SIM_WORD_BITS) {
-            auto v = self.simulators[k1_a / PY_SIM_WORD_BITS].safe_read_val(items[k0]);
-            size_t e = std::min(self.batch_size - k1_a, size_t{PY_SIM_WORD_BITS});
-            for (size_t k1_b = 0; k1_b < e; k1_b++) {
-                *out_ptr = v.bit(k1_b % PY_SIM_WORD_BITS);
-                out_ptr += s1;
+    self.with_sims([&](const auto &sims) {
+        for (size_t k0 = 0; k0 < items.size(); k0++) {
+            auto out_ptr = buf.mutable_data(k0, 0);
+            for (size_t k1_a = 0; k1_a < self.batch_size; k1_a += PY_SIM_WORD_BITS) {
+                auto v = sims[k1_a / PY_SIM_WORD_BITS].safe_read_val(items[k0]);
+                size_t e = std::min(self.batch_size - k1_a, size_t{PY_SIM_WORD_BITS});
+                for (size_t k1_b = 0; k1_b < e; k1_b++) {
+                    *out_ptr = v.bit(k1_b % PY_SIM_WORD_BITS);
+                    out_ptr += s1;
+                }
             }
         }
-    }
+    });
 
     return out;
 }
@@ -251,14 +359,16 @@ pybind11::object peek_across_shots_1d_np_bool(
 
     auto s1 = buf.strides(0);
     auto out_ptr = buf.mutable_data(0);
-    for (size_t k1_a = 0; k1_a < self.batch_size; k1_a += PY_SIM_WORD_BITS) {
-        auto v = self.simulators[k1_a / PY_SIM_WORD_BITS].safe_read_val(index);
-        size_t e = std::min(self.batch_size - k1_a, size_t{PY_SIM_WORD_BITS});
-        for (size_t k1_b = 0; k1_b < e; k1_b++) {
-            *out_ptr = v.bit(k1_b % PY_SIM_WORD_BITS);
-            out_ptr += s1;
+    self.with_sims([&](const auto &sims) {
+        for (size_t k1_a = 0; k1_a < self.batch_size; k1_a += PY_SIM_WORD_BITS) {
+            auto v = sims[k1_a / PY_SIM_WORD_BITS].safe_read_val(index);
+            size_t e = std::min(self.batch_size - k1_a, size_t{PY_SIM_WORD_BITS});
+            for (size_t k1_b = 0; k1_b < e; k1_b++) {
+                *out_ptr = v.bit(k1_b % PY_SIM_WORD_BITS);
+                out_ptr += s1;
+            }
         }
-    }
+    });
 
     return out;
 }
@@ -287,17 +397,19 @@ pybind11::object peek_across_shots_1d_np_u64(
     }
 
     auto s1 = buf.strides(1);
-    for (size_t k0 = 0; k0 < items.size(); k0++) {
-        auto out_ptr = buf.mutable_data(k0, 0);
-        for (size_t k1_a = 0; k1_a < self.batch_size; k1_a += PY_SIM_WORD_BITS) {
-            auto v = self.simulators[k1_a / PY_SIM_WORD_BITS].safe_read_val(items[k0]);
-            size_t e = (std::min(self.batch_size - k1_a, size_t{PY_SIM_WORD_BITS}) + 63) / 64;
-            for (size_t k1_b = 0; k1_b < e; k1_b++) {
-                *out_ptr = v.u64(k1_b % PY_SIM_WORD_BITS);
-                out_ptr += s1;
+    self.with_sims([&](const auto &sims) {
+        for (size_t k0 = 0; k0 < items.size(); k0++) {
+            auto out_ptr = buf.mutable_data(k0, 0);
+            for (size_t k1_a = 0; k1_a < self.batch_size; k1_a += PY_SIM_WORD_BITS) {
+                auto v = sims[k1_a / PY_SIM_WORD_BITS].safe_read_val(items[k0]);
+                size_t e = (std::min(self.batch_size - k1_a, size_t{PY_SIM_WORD_BITS}) + 63) / 64;
+                for (size_t k1_b = 0; k1_b < e; k1_b++) {
+                    *out_ptr = v.u64(k1_b % PY_SIM_WORD_BITS);
+                    out_ptr += s1;
+                }
             }
         }
-    }
+    });
 
     return out;
 }
@@ -323,11 +435,13 @@ pybind11::object peek_within_shot_2d_int(PyInteractiveSimulator &self, const str
 
 pybind11::object peek_across_shots_1d_int(PyInteractiveSimulator &self, QubitOrBitOrBool index) {
     uint8_t *out = self.byte_buf.data();
-    for (const auto &sim : self.simulators) {
-        auto v = sim.safe_read_val(index);
-        memcpy(out, &v, sizeof(v));
-        out += sizeof(v);
-    }
+    self.with_sims([&](const auto &sims) {
+        for (const auto &sim : sims) {
+            auto v = sim.safe_read_val(index);
+            memcpy(out, &v, sizeof(v));
+            out += sizeof(v);
+        }
+    });
     return int_obj_from_bytes_with_max_bits(self.byte_buf.data(), self.batch_size);
 }
 
@@ -344,25 +458,28 @@ pybind11::object sim_read_phase(PyInteractiveSimulator &self, size_t shot_index)
         throw pybind11::index_error("Need shot_index < sim.batch_size");
     }
 
-    const auto &sim = self.simulators[shot_index / PY_SIM_WORD_BITS];
-    size_t k2 = shot_index % PY_SIM_WORD_BITS;
-    const auto &angle = sim.angles[k2];
-    uint64_t w0 = angle.words[0];
-    uint64_t w1 = angle.words[1];
-    if (sim.global_phase_ref().bit(k2)) {
-        w1 ^= uint64_t{1} << 63;
-    }
-    if (w0 == 0 && w1 == 0) {
-        return pybind11::cast(0);
-    }
-    if (w0 == 0 && w1 == uint64_t{1} << 63) {
-        return pybind11::cast(1);
-    }
+    return self.with_sims([&](const auto &sims) -> pybind11::object {
+        const auto &sim = sims[shot_index / PY_SIM_WORD_BITS];
+        size_t k2 = shot_index % PY_SIM_WORD_BITS;
+        const auto &angle = sim.angles[k2];
+        uint64_t w0 = angle.words[0];
+        uint64_t w1 = angle.words[1];
+        if (sim.global_phase_ref().bit(k2)) {
+            w1 ^= uint64_t{1} << 63;
+        }
+        if (w0 == 0 && w1 == 0) {
+            return pybind11::cast(0);
+        }
+        if (w0 == 0 && w1 == uint64_t{1} << 63) {
+            return pybind11::cast(1);
+        }
 
-    // Pack into a fraction.
-    return pybind11::module_::import("fractions")
-        .attr("Fraction")(
-            pybind11::cast(w0) | (pybind11::cast(w1) << pybind11::cast(64)), pybind11::cast(1) << pybind11::cast(127));
+        // Pack into a fraction.
+        return pybind11::module_::import("fractions")
+            .attr("Fraction")(
+                pybind11::cast(w0) | (pybind11::cast(w1) << pybind11::cast(64)),
+                pybind11::cast(1) << pybind11::cast(127));
+    });
 }
 
 void sim_write_phase(PyInteractiveSimulator &self, size_t shot_index, pybind11::object new_value) {
@@ -371,10 +488,12 @@ void sim_write_phase(PyInteractiveSimulator &self, size_t shot_index, pybind11::
     if (shot_index >= self.batch_size) {
         throw pybind11::index_error("Need shot_index < sim.batch_size");
     }
-    auto &sim = self.simulators[shot_index / PY_SIM_WORD_BITS];
-    size_t k2 = shot_index % PY_SIM_WORD_BITS;
-    sim.angles[k2] = new_angle;
-    sim.global_phase_ref().set_bit(k2, false);
+    self.with_sims([&](auto &sims) {
+        auto &sim = sims[shot_index / PY_SIM_WORD_BITS];
+        size_t k2 = shot_index % PY_SIM_WORD_BITS;
+        sim.angles[k2] = new_angle;
+        sim.global_phase_ref().set_bit(k2, false);
+    });
 }
 
 void write_across_shots_1d_int(PyInteractiveSimulator &self, QubitOrBit index, const pybind11::object &value_obj) {
@@ -382,11 +501,13 @@ void write_across_shots_1d_int(PyInteractiveSimulator &self, QubitOrBit index, c
 
     const uint8_t *in = self.byte_buf.data();
     self.ensure_big_enough_state_for(index);
-    for (auto &e : self.simulators) {
-        auto &v = e.val_for(index);
-        memcpy(&v, in, sizeof(v));
-        in += sizeof(v);
-    }
+    self.with_sims([&](auto &sims) {
+        for (auto &e : sims) {
+            auto &v = e.val_for(index);
+            memcpy(&v, in, sizeof(v));
+            in += sizeof(v);
+        }
+    });
 }
 
 void write_across_shots_1d_array(PyInteractiveSimulator &self, QubitOrBit index, const pybind11::object &value_obj) {
@@ -519,20 +640,22 @@ ConvertedArrayXZ index_to_sim_items(const PyInteractiveSimulator &self, const py
 
 pybind11::object read_phase_flipped_across_shots_int(PyInteractiveSimulator &self) {
     uint8_t *out = self.byte_buf.data();
-    for (size_t k = 0; k < self.batch_size; k++) {
-        auto r = k % PY_SIM_WORD_BITS;
-        const auto &sim = self.simulators[k / PY_SIM_WORD_BITS];
-        auto angle = sim.angles[r];
-        if (sim.global_phase_ref().bit(r)) {
-            angle = angle.rotated180();
+    self.with_sims([&](const auto &sims) {
+        for (size_t k = 0; k < self.batch_size; k++) {
+            auto r = k % PY_SIM_WORD_BITS;
+            const auto &sim = sims[k / PY_SIM_WORD_BITS];
+            auto angle = sim.angles[r];
+            if (sim.global_phase_ref().bit(r)) {
+                angle = angle.rotated180();
+            }
+            bool bit = angle.is_closer_to_half_turn_than_no_turn();
+            uint8_t &out_byte = out[k / 8];
+            if (k % 8 == 0) {
+                out_byte = 0;
+            }
+            out_byte |= uint8_t{bit} << (k % 8);
         }
-        bool bit = angle.is_closer_to_half_turn_than_no_turn();
-        uint8_t &out_byte = out[k / 8];
-        if (k % 8 == 0) {
-            out_byte = 0;
-        }
-        out_byte |= uint8_t{bit} << (k % 8);
-    }
+    });
     return int_obj_from_bytes_with_max_bits(self.byte_buf.data(), self.batch_size);
 }
 
@@ -560,22 +683,24 @@ pybind11::object peek_phase_flipped_across_shots_np_bool(const PyInteractiveSimu
     auto s1 = buf.strides(0);
     auto out_ptr = buf.mutable_data(0);
     size_t out_bit = 0;
-    for (const auto &sim : self.simulators) {
-        for (size_t k = 0; k < PY_SIM_WORD_BITS; k++) {
-            if (out_bit >= self.batch_size) {
-                break;
-            }
-            auto angle = sim.angles[k];
-            if (sim.global_phase_ref().bit(k)) {
-                angle = angle.rotated180();
-            }
+    self.with_sims([&](const auto &sims) {
+        for (const auto &sim : sims) {
+            for (size_t k = 0; k < PY_SIM_WORD_BITS; k++) {
+                if (out_bit >= self.batch_size) {
+                    break;
+                }
+                auto angle = sim.angles[k];
+                if (sim.global_phase_ref().bit(k)) {
+                    angle = angle.rotated180();
+                }
 
-            bool bit = angle.is_closer_to_half_turn_than_no_turn();
-            *out_ptr = bit;
-            out_ptr += s1;
-            out_bit++;
+                bool bit = angle.is_closer_to_half_turn_than_no_turn();
+                *out_ptr = bit;
+                out_ptr += s1;
+                out_bit++;
+            }
         }
-    }
+    });
     return out;
 }
 
@@ -670,17 +795,27 @@ void write_within_shot(
 
 void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInteractiveSimulator> &c_sim) {
     c_sim.def(
-        pybind11::init([](size_t batch_size) -> PyInteractiveSimulator {
-            return PyInteractiveSimulator(batch_size);
-        }),
+        pybind11::init(
+            [](size_t batch_size, bool ignore_debug_prints, bool count_operations) -> PyInteractiveSimulator {
+                return PyInteractiveSimulator(batch_size, ignore_debug_prints, count_operations);
+            }),
         pybind11::arg("batch_size"),
+        pybind11::kw_only(),
+        pybind11::arg("ignore_debug_prints") = false,
+        pybind11::arg("count_operations") = false,
         clean_doc_string(R"DOC(
-            @signature def __init__(batch_size: int):
+            @signature def __init__(self, batch_size: int, *, ignore_debug_prints: bool = False, count_operations: bool = False):
             Initializes an interactive simulator with the given batch size.
 
             Args:
-                batch_size: Determines how many simultaneous shots are being tracked by the
-                    simulator.
+                batch_size: Determines how many simultaneous shots are being
+                    tracked by the simulator.
+                ignore_debug_prints: If `True`, `DEBUG_PRINT` instructions are
+                    ignored during simulation instead of writing to stderr.
+                    Defaults to `False`.
+                count_operations: If `True`, tracks per-shot operation counts
+                    during `do(...)` that can be queried with `op_counts()`.
+                    Defaults to `False`.
         )DOC")
             .data());
 
@@ -692,9 +827,11 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
         "do",
         [](PyInteractiveSimulator &self, const Circuit &circuit) {
             self.ensure_big_enough_state_for(circuit.num_qubits, circuit.num_bits);
-            for (auto &sim : self.simulators) {
-                sim.apply(circuit);
-            }
+            self.with_sims([&](auto &sims) {
+                for (auto &sim : sims) {
+                    sim.apply(circuit);
+                }
+            });
         },
         pybind11::arg("circuit"),
         clean_doc_string(R"DOC(
@@ -713,6 +850,113 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
         },
         clean_doc_string(R"DOC(
             The number of shots being tracked by the simulator.
+        )DOC")
+            .data());
+
+    c_sim.def_property(
+        "ignore_debug_prints",
+        [](const PyInteractiveSimulator &self) -> bool {
+            return self.ignore_debug_prints;
+        },
+        [](PyInteractiveSimulator &self, bool value) {
+            self.set_ignore_debug_prints(value);
+        },
+        clean_doc_string(R"DOC(
+            Whether `DEBUG_PRINT` instructions are suppressed during simulation.
+        )DOC")
+            .data());
+
+    c_sim.def_property_readonly(
+        "count_operations",
+        [](const PyInteractiveSimulator &self) -> bool {
+            return self.count_operations;
+        },
+        clean_doc_string(R"DOC(
+            Whether operation execution counts are recorded during `do(...)`.
+        )DOC")
+            .data());
+
+    c_sim.def(
+        "op_counts",
+        &sim_op_counts,
+        pybind11::arg("shot_index") = pybind11::none(),
+        pybind11::arg("z_pow_key") = pybind11::none(),
+        clean_doc_string(R"DOC(
+            @signature def op_counts(self, shot_index: int | None = None, z_pow_key: Callable[[fractions.Fraction], str] | None = None) -> dict[str, int]:
+            Returns the number of times each operation type was executed.
+
+            Conditional operations (`OP_IF` and operations inside
+            `PUSH_CONDITION` blocks) are only counted in shots where their
+            condition was satisfied. Unconditional and conditional variants of
+            an operation (e.g. `CCX` and `CCX_IF`) are summed under the base
+            operation name (`'CCX'`), matching C++ `count_operations_sampled`.
+
+            Args:
+                shot_index: Optional index of a single shot in
+                    `range(sim.batch_size)`. If `None` (the default), returns
+                    the sum of operation counts across all `sim.batch_size`
+                    shots.
+                z_pow_key: Optional callable taking a `Z_POW` angle (in half
+                    turns in `[0, 2)` as a `fractions.Fraction`) and returning
+                    a dictionary key `str` under which to accumulate its count.
+                    If `None` (the default), all `Z_POW` operations are summed
+                    under `'Z_POW'`.
+
+            Returns:
+                A dictionary mapping each operation name (`'NEG'`,
+                `'BIT_INVERT'`, `'BIT_STORE0'`, `'BIT_STORE1'`, `'X'`, `'Z'`,
+                `'R'`, `'HMR'`, `'CX'`, `'CZ'`, `'SWAP'`, `'CCX'`, `'CCZ'`,
+                `'Z_POW'`, `'DEBUG_PRINT'`, `'POP_CONDITION'`,
+                `'PUSH_CONDITION'`, or custom `z_pow_key` names) to its count.
+
+            Raises:
+                ValueError: Operation counting has not been enabled on this
+                    simulator.
+                IndexError: `shot_index` is out of `range(sim.batch_size)`.
+
+            Examples:
+                >>> import kickmix as km
+                >>> sim = km.Simulator(batch_size=4, count_operations=True)
+                >>> sim.write_across_shots(km.b(0), 0b0101)
+                >>> sim.do(km.Circuit('''
+                ...     X q0
+                ...     CCX q0 q1 q2 if b0
+                ...     Z_POW q0 0.25 if b0
+                ...     Z_POW q0 0.125
+                ... '''))
+                >>> sim.op_counts()['X']
+                4
+                >>> sim.op_counts()['CCX']
+                2
+                >>> sim.op_counts(shot_index=0)['CCX']
+                1
+                >>> sim.op_counts(shot_index=1)['CCX']
+                0
+                >>> by_group = sim.op_counts(
+                ...     z_pow_key=lambda a: 'T' if a.denominator == 4 else 'ROT'
+                ... )
+                >>> by_group['T'], by_group['ROT']
+                (2, 4)
+        )DOC")
+            .data());
+
+    c_sim.def(
+        "clear_op_counts",
+        [](PyInteractiveSimulator &self) {
+            self.clear_op_counts();
+        },
+        clean_doc_string(R"DOC(
+            Zeroes all accumulated operation counts on the simulator.
+
+            Examples:
+                >>> import kickmix as km
+                >>> sim = km.Simulator(batch_size=4, count_operations=True)
+                >>> sim.do(km.Circuit('X q0'))
+                >>> sim.op_counts()['X']
+                4
+                >>> sim.clear_op_counts()
+                >>> sim.op_counts()['X']
+                0
         )DOC")
             .data());
 

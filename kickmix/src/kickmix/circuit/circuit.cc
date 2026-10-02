@@ -685,6 +685,22 @@ size_t Circuit::max_magic() const {
     return num_qqq_ops;
 }
 
+size_t Circuit::max_t() const {
+    size_t total = 0;
+    for (size_t k = 0; k < num_angle_ops; k++) {
+        total += angles[k].is_multiple_of_45_degrees() && !angles[k].is_multiple_of_90_degrees();
+    }
+    return total;
+}
+
+size_t Circuit::max_rotations() const {
+    size_t total = 0;
+    for (size_t k = 0; k < num_angle_ops; k++) {
+        total += !angles[k].is_multiple_of_45_degrees();
+    }
+    return total;
+}
+
 void Circuit::write_kmx_to(std::ostream &out) const {
     bool has_output = false;
     for (size_t k = 0; k < register_data.size(); k++) {

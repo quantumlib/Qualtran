@@ -125,6 +125,7 @@ TEST(sim, supports_all_gates) {
 
     testing::internal::CaptureStderr();  // The debug instructions can produce stderr output.
     sim.apply(circuit);
+    testing::internal::GetCapturedStderr();
 }
 
 TEST(sim, SimInitInstruction_from_str_many) {
@@ -161,6 +162,8 @@ TEST(sim, count_instructions) {
     size_t ccx = 0;
     size_t ccz = 0;
     size_t cx = 0;
+    size_t push_cond = 0;
+    size_t pop_cond = 0;
     for (size_t k = 0; k < 64; k++) {
         ccx += sim.new_op_counters[(size_t)OpType::CCX].compute_total(k);
         ccx += sim.new_op_counters[(size_t)OpType::CCX_IF].compute_total(k);
@@ -168,10 +171,14 @@ TEST(sim, count_instructions) {
         ccz += sim.new_op_counters[(size_t)OpType::CCZ_IF].compute_total(k);
         cx += sim.new_op_counters[(size_t)OpType::CX].compute_total(k);
         cx += sim.new_op_counters[(size_t)OpType::CX_IF].compute_total(k);
+        push_cond += sim.new_op_counters[(size_t)OpType::PUSH_CONDITION].compute_total(k);
+        pop_cond += sim.new_op_counters[(size_t)OpType::POP_CONDITION].compute_total(k);
     }
     EXPECT_TRUE(3200 - 200 < ccx && ccx < 3200 + 200) << "ccx=" << ccx;
     EXPECT_TRUE(1600 - 200 < ccz && ccz < 1600 + 200) << "ccz=" << ccz;
     EXPECT_TRUE(3200 - 200 < cx && cx < 3200 + 200) << "cx=" << cx;
+    EXPECT_EQ(push_cond, 6400);
+    EXPECT_EQ(pop_cond, 6400);
 }
 
 TEST(sim, hmr_condition) {
@@ -249,4 +256,26 @@ TEST(sim, z_pow_if) {
     ASSERT_EQ(sim.angles[1], FixedPrecisionAngle128::from_half_turns_exact_double(0.0));
     ASSERT_EQ(sim.angles[2], FixedPrecisionAngle128::from_half_turns_exact_double(0.0));
     ASSERT_EQ(sim.angles[3], FixedPrecisionAngle128::from_half_turns_exact_double(0.0));
+}
+
+TEST(sim, debug_print_q_and_b) {
+    Sim<b64, false> sim(INDEPENDENT_TEST_RNG());
+    Circuit circuit(R"CIRCUIT(
+        X q2
+        BIT_STORE1 b1
+        DEBUG_PRINT q2
+        DEBUG_PRINT b1
+    )CIRCUIT");
+    sim.configure_for(circuit);
+    sim.clear_for_shot();
+    testing::internal::CaptureStderr();
+    sim.apply(circuit);
+    std::string output = testing::internal::GetCapturedStderr();
+    EXPECT_EQ(output, "11");
+
+    sim.ignore_debug_print_operations = true;
+    testing::internal::CaptureStderr();
+    sim.apply(circuit);
+    output = testing::internal::GetCapturedStderr();
+    EXPECT_EQ(output, "");
 }

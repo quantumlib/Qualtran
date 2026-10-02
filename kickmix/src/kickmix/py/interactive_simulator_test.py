@@ -437,3 +437,193 @@ def test_read_phase_flipped_across_shots():
     np.testing.assert_array_equal(
         sim.read_phase_flipped_across_shots(), [False] * 5 + [True] * 10 + [False] * 394
     )
+
+
+def test_ignore_debug_prints(capfd: pytest.CaptureFixture[str]):
+    c = km.Circuit("""
+        X q0
+        BIT_STORE1 b0
+        DEBUG_PRINT q0
+        DEBUG_PRINT b0
+        DEBUG_PRINT
+    """)
+
+    sim = km.Simulator(batch_size=4)
+    assert not sim.ignore_debug_prints
+    sim.do(c)
+    captured = capfd.readouterr()
+    assert "11 (phase=" in captured.err
+
+    sim.ignore_debug_prints = True
+    assert sim.ignore_debug_prints
+    sim.do(c)
+    captured = capfd.readouterr()
+    assert captured.err == ""
+
+    sim.ignore_debug_prints = False
+    assert not sim.ignore_debug_prints
+    sim.do(c)
+    captured = capfd.readouterr()
+    assert "11 (phase=" in captured.err
+
+    sim_quiet = km.Simulator(batch_size=300, ignore_debug_prints=True)
+    assert sim_quiet.ignore_debug_prints
+    sim_quiet.do(c)
+    captured = capfd.readouterr()
+    assert captured.err == ""
+
+
+def test_count_operations():
+    sim = km.Simulator(batch_size=4)
+    assert not sim.count_operations
+    with pytest.raises(AttributeError):
+        sim.count_operations = True  # type: ignore[misc]
+    with pytest.raises(ValueError, match="Operation counting is not enabled"):
+        sim.op_counts()
+
+    sim = km.Simulator(batch_size=4, count_operations=True, ignore_debug_prints=True)
+    assert sim.count_operations
+    with pytest.raises(AttributeError):
+        sim.count_operations = False  # type: ignore[misc]
+    assert all(v == 0 for v in sim.op_counts().values())
+
+    # Set b0 in shots 0 and 2 (0b0101), b1 in shots 0 and 1 (0b0011)
+    sim.write_across_shots(km.b(0), 0b0101)
+    sim.write_across_shots(km.b(1), 0b0011)
+
+    c = km.Circuit("""
+        X q0
+        CX q0 q1 if b0
+        PUSH_CONDITION if b0
+        CCX q0 q1 q2
+        CCZ q0 q1 q2 if b1
+        Z_POW q0 0.25
+        POP_CONDITION
+        DEBUG_PRINT
+        DEBUG_PRINT q0
+        DEBUG_PRINT b0 if b1
+    """)
+    sim.do(c)
+
+    totals = sim.op_counts()
+    assert totals["X"] == 4
+    assert totals["CX"] == 2
+    assert totals["PUSH_CONDITION"] == 4
+    assert totals["POP_CONDITION"] == 4
+    assert totals["CCX"] == 2
+    assert totals["CCZ"] == 1
+    assert totals["Z_POW"] == 2
+    assert totals["DEBUG_PRINT"] == 4 + 4 + 2
+    assert totals["CZ"] == 0
+
+    shot0 = sim.op_counts(0)
+    assert shot0["X"] == 1
+    assert shot0["CX"] == 1
+    assert shot0["CCX"] == 1
+    assert shot0["CCZ"] == 1
+    assert shot0["Z_POW"] == 1
+    assert shot0["DEBUG_PRINT"] == 3
+
+    shot1 = sim.op_counts(1)
+    assert shot1["X"] == 1
+    assert shot1["CX"] == 0
+    assert shot1["CCX"] == 0
+    assert shot1["CCZ"] == 0
+    assert shot1["Z_POW"] == 0
+    assert shot1["DEBUG_PRINT"] == 3
+
+    shot2 = sim.op_counts(2)
+    assert shot2["X"] == 1
+    assert shot2["CX"] == 1
+    assert shot2["CCX"] == 1
+    assert shot2["CCZ"] == 0
+    assert shot2["Z_POW"] == 1
+    assert shot2["DEBUG_PRINT"] == 2
+
+    shot3 = sim.op_counts(3)
+    assert shot3["X"] == 1
+    assert shot3["CX"] == 0
+    assert shot3["CCX"] == 0
+    assert shot3["CCZ"] == 0
+    assert shot3["Z_POW"] == 0
+    assert shot3["DEBUG_PRINT"] == 2
+
+    with pytest.raises(IndexError, match="batch_size"):
+        sim.op_counts(4)
+
+    # Counts persist across clear_for_shot() and accumulate across multiple do() calls.
+    sim.clear_for_shot()
+    sim.do(km.Circuit("X q0"))
+    assert sim.op_counts()["X"] == 8
+
+    # clear_op_counts() resets all counters to 0.
+    sim.clear_op_counts()
+    assert all(v == 0 for v in sim.op_counts().values())
+
+
+@pytest.mark.parametrize("batch_size", [0, 1, 5, 255, 256, 257, 513])
+def test_count_operations_batch_sizes(batch_size: int):
+    sim = km.Simulator(batch_size=batch_size, count_operations=True)
+    sim.do(km.Circuit("X q0\nZ q0"))
+    counts = sim.op_counts()
+    assert counts["X"] == batch_size
+    assert counts["Z"] == batch_size
+    if batch_size > 0:
+        assert sim.op_counts(batch_size - 1)["X"] == 1
+    with pytest.raises(IndexError, match="batch_size"):
+        sim.op_counts(batch_size)
+
+
+def test_count_operations_z_pow_key():
+    sim = km.Simulator(batch_size=300, count_operations=True)
+    # Set b0 in shots 0 and 299
+    sim.write_across_shots(km.b(0), 1 | (1 << 299))
+
+    c = km.Circuit("""
+        Z_POW q0 0.5
+        Z_POW q0 1.0 if b0
+        Z_POW q0 0.25
+        Z_POW q0 -0.25 if b0
+        Z_POW q0 0.125 if b0
+        Z_POW q0 0.0625
+    """)
+    sim.do(c)
+
+    def classify_z_pow(angle: fractions.Fraction) -> str:
+        if angle.denominator <= 2:
+            return "Z_POW_CLIFFORD"
+        if angle.denominator == 4:
+            return "T"
+        return f"Z_POW_2^-{angle.denominator.bit_length() - 1}"
+
+    totals = sim.op_counts(z_pow_key=classify_z_pow)
+    assert "Z_POW" not in totals
+    assert totals["Z_POW_CLIFFORD"] == 300 + 2
+    assert totals["T"] == 300 + 2
+    assert totals["Z_POW_2^-3"] == 2
+    assert totals["Z_POW_2^-4"] == 300
+
+    shot0 = sim.op_counts(0, z_pow_key=classify_z_pow)
+    assert shot0["Z_POW_CLIFFORD"] == 2
+    assert shot0["T"] == 2
+    assert shot0["Z_POW_2^-3"] == 1
+    assert shot0["Z_POW_2^-4"] == 1
+
+    shot1 = sim.op_counts(1, z_pow_key=classify_z_pow)
+    assert shot1["Z_POW_CLIFFORD"] == 1
+    assert shot1["T"] == 1
+    assert shot1["Z_POW_2^-3"] == 0
+    assert shot1["Z_POW_2^-4"] == 1
+
+    shot299 = sim.op_counts(299, z_pow_key=classify_z_pow)
+    assert shot299["Z_POW_CLIFFORD"] == 2
+    assert shot299["T"] == 2
+    assert shot299["Z_POW_2^-3"] == 1
+    assert shot299["Z_POW_2^-4"] == 1
+
+    with pytest.raises(TypeError, match="z_pow_key must return a str"):
+        sim.op_counts(z_pow_key=lambda _: 123)  # type: ignore[arg-type, return-value]
+
+    sim.clear_op_counts()
+    cleared = sim.op_counts(z_pow_key=classify_z_pow)
+    assert all(v == 0 for v in cleared.values())

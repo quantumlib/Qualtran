@@ -14,6 +14,9 @@ struct FixedPrecisionAngle128 {
     uint64_t words[2];
 
     bool operator==(const FixedPrecisionAngle128 &rhs) const = default;
+    bool operator<(const FixedPrecisionAngle128 &rhs) const {
+        return words[1] != rhs.words[1] ? words[1] < rhs.words[1] : words[0] < rhs.words[0];
+    }
     explicit operator bool() const;
 
     /// Returns the given double (mod 2) as a FixedPrecisionAngle128, or else throws.

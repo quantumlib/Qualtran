@@ -10,6 +10,9 @@
     - [`kickmix.Circuit.__str__`](#kickmix.Circuit.__str__)
     - [`kickmix.Circuit.html_diagram`](#kickmix.Circuit.html_diagram)
     - [`kickmix.Circuit.max_magic`](#kickmix.Circuit.max_magic)
+    - [`kickmix.Circuit.max_op_counts`](#kickmix.Circuit.max_op_counts)
+    - [`kickmix.Circuit.max_rotations`](#kickmix.Circuit.max_rotations)
+    - [`kickmix.Circuit.max_t`](#kickmix.Circuit.max_t)
     - [`kickmix.Circuit.num_bits`](#kickmix.Circuit.num_bits)
     - [`kickmix.Circuit.num_qubits`](#kickmix.Circuit.num_qubits)
     - [`kickmix.Circuit.num_registers`](#kickmix.Circuit.num_registers)
@@ -99,7 +102,11 @@
     - [`kickmix.Simulator.__init__`](#kickmix.Simulator.__init__)
     - [`kickmix.Simulator.batch_size`](#kickmix.Simulator.batch_size)
     - [`kickmix.Simulator.clear_for_shot`](#kickmix.Simulator.clear_for_shot)
+    - [`kickmix.Simulator.clear_op_counts`](#kickmix.Simulator.clear_op_counts)
+    - [`kickmix.Simulator.count_operations`](#kickmix.Simulator.count_operations)
     - [`kickmix.Simulator.do`](#kickmix.Simulator.do)
+    - [`kickmix.Simulator.ignore_debug_prints`](#kickmix.Simulator.ignore_debug_prints)
+    - [`kickmix.Simulator.op_counts`](#kickmix.Simulator.op_counts)
     - [`kickmix.Simulator.read_across_shots`](#kickmix.Simulator.read_across_shots)
     - [`kickmix.Simulator.read_phase_flipped_across_shots`](#kickmix.Simulator.read_phase_flipped_across_shots)
     - [`kickmix.Simulator.read_shot_phase`](#kickmix.Simulator.read_shot_phase)
@@ -283,6 +290,116 @@ def max_magic(
     self,
 ) -> int:
     """Returns an upper bound on the number of CCX/CCZ gates run by the circuit.
+    """
+```
+
+<a name="kickmix.Circuit.max_op_counts"></a>
+```python
+# kickmix.Circuit.max_op_counts
+
+# (in class kickmix.Circuit)
+def max_op_counts(
+    self,
+    z_pow_key: Callable[[fractions.Fraction], str] | None = None,
+) -> Dict[str, int]:
+    """Returns an upper bound on the execution count of each operation type.
+
+    Counts how many times each operation type appears in the circuit,
+    including conditional operations (`OP_IF` and operations inside
+    `PUSH_CONDITION` blocks). Unconditional and conditional variants of
+    an operation (e.g. `CCX` and `CCX_IF`) are summed under the base
+    operation name (`'CCX'`), matching C++ `count_operations` and
+    `Simulator.op_counts()`.
+
+    Args:
+        z_pow_key: Optional callable taking a `Z_POW` angle (in half
+            turns in `[0, 2)` as a `fractions.Fraction`) and returning
+            a dictionary key `str` under which to accumulate its count.
+            If `None` (the default), all `Z_POW` operations are summed
+            under `'Z_POW'`.
+
+    Returns:
+        A dictionary mapping each operation name (`'NEG'`,
+        `'BIT_INVERT'`, `'BIT_STORE0'`, `'BIT_STORE1'`, `'X'`, `'Z'`,
+        `'R'`, `'HMR'`, `'CX'`, `'CZ'`, `'SWAP'`, `'CCX'`, `'CCZ'`,
+        `'Z_POW'`, `'DEBUG_PRINT'`, `'POP_CONDITION'`,
+        `'PUSH_CONDITION'`, or custom `z_pow_key` names) to its count.
+
+    Examples:
+        >>> import kickmix as km
+        >>> c = km.Circuit('''
+        ...     X q0
+        ...     CX q0 q1 if b0
+        ...     Z_POW q0 0.5
+        ...     Z_POW q0 0.25
+        ...     Z_POW q0 -0.25 if b0
+        ...     Z_POW q0 0.125
+        ... ''')
+        >>> c.max_op_counts()['X']
+        1
+        >>> c.max_op_counts()['Z_POW']
+        4
+        >>> def classify_z_pow(angle):
+        ...     if angle.denominator <= 2:
+        ...         return 'Z_POW_CLIFFORD'
+        ...     if angle.denominator == 4:
+        ...         return 'T'
+        ...     return f'Z_POW_2^-{angle.denominator.bit_length() - 1}'
+        >>> grouped = c.max_op_counts(z_pow_key=classify_z_pow)
+        >>> grouped['Z_POW_CLIFFORD'], grouped['T'], grouped['Z_POW_2^-3']
+        (1, 2, 1)
+    """
+```
+
+<a name="kickmix.Circuit.max_rotations"></a>
+```python
+# kickmix.Circuit.max_rotations
+
+# (in class kickmix.Circuit)
+def max_rotations(
+    self,
+) -> int:
+    """Returns an upper bound on the number of arbitrary-angle rotations.
+
+    Rotations are `Z_POW` operations whose angle is not a multiple of
+    0.25 half turns (i.e. neither Clifford nor T).
+
+    Examples:
+        >>> import kickmix as km
+        >>> c = km.Circuit('''
+        ...     Z_POW q0 0.5
+        ...     Z_POW q0 0.25
+        ...     Z_POW q0 0.125
+        ...     Z_POW q0 0.1 if b0
+        ... ''')
+        >>> c.max_rotations()
+        2
+    """
+```
+
+<a name="kickmix.Circuit.max_t"></a>
+```python
+# kickmix.Circuit.max_t
+
+# (in class kickmix.Circuit)
+def max_t(
+    self,
+) -> int:
+    """Returns an upper bound on the number of T gates run by the circuit.
+
+    T gates are `Z_POW` operations whose angle is an odd multiple of
+    0.25 half turns (45 degrees).
+
+    Examples:
+        >>> import kickmix as km
+        >>> c = km.Circuit('''
+        ...     Z_POW q0 0.5
+        ...     Z_POW q0 0.25
+        ...     Z_POW q0 -0.25 if b0
+        ...     Z_POW q0 0.125
+        ... ''')
+        >>> c.max_t()
+        2
     """
 ```
 
@@ -2681,15 +2798,24 @@ class Simulator:
 # kickmix.Simulator.__init__
 
 # (in class kickmix.Simulator)
-@staticmethod
 def __init__(
+    self,
     batch_size: int,
+    *,
+    ignore_debug_prints: bool = False,
+    count_operations: bool = False,
 ):
     """Initializes an interactive simulator with the given batch size.
 
     Args:
-        batch_size: Determines how many simultaneous shots are being tracked by the
-            simulator.
+        batch_size: Determines how many simultaneous shots are being
+            tracked by the simulator.
+        ignore_debug_prints: If `True`, `DEBUG_PRINT` instructions are
+            ignored during simulation instead of writing to stderr.
+            Defaults to `False`.
+        count_operations: If `True`, tracks per-shot operation counts
+            during `do(...)` that can be queried with `op_counts()`.
+            Defaults to `False`.
     """
 ```
 
@@ -2742,6 +2868,41 @@ def clear_for_shot(
     """
 ```
 
+<a name="kickmix.Simulator.clear_op_counts"></a>
+```python
+# kickmix.Simulator.clear_op_counts
+
+# (in class kickmix.Simulator)
+def clear_op_counts(
+    self,
+) -> None:
+    """Zeroes all accumulated operation counts on the simulator.
+
+    Examples:
+        >>> import kickmix as km
+        >>> sim = km.Simulator(batch_size=4, count_operations=True)
+        >>> sim.do(km.Circuit('X q0'))
+        >>> sim.op_counts()['X']
+        4
+        >>> sim.clear_op_counts()
+        >>> sim.op_counts()['X']
+        0
+    """
+```
+
+<a name="kickmix.Simulator.count_operations"></a>
+```python
+# kickmix.Simulator.count_operations
+
+# (in class kickmix.Simulator)
+@property
+def count_operations(
+    self,
+) -> bool:
+    """Whether operation execution counts are recorded during `do(...)`.
+    """
+```
+
 <a name="kickmix.Simulator.do"></a>
 ```python
 # kickmix.Simulator.do
@@ -2755,6 +2916,89 @@ def do(
 
     Args:
         circuit: The circuit with instructions to apply.
+    """
+```
+
+<a name="kickmix.Simulator.ignore_debug_prints"></a>
+```python
+# kickmix.Simulator.ignore_debug_prints
+
+# (in class kickmix.Simulator)
+@property
+def ignore_debug_prints(
+    self,
+) -> bool:
+    """Whether `DEBUG_PRINT` instructions are suppressed during simulation.
+    """
+@ignore_debug_prints.setter
+def ignore_debug_prints(self, value: bool):
+    pass
+```
+
+<a name="kickmix.Simulator.op_counts"></a>
+```python
+# kickmix.Simulator.op_counts
+
+# (in class kickmix.Simulator)
+def op_counts(
+    self,
+    shot_index: int | None = None,
+    z_pow_key: Callable[[fractions.Fraction], str] | None = None,
+) -> Dict[str, int]:
+    """Returns the number of times each operation type was executed.
+
+    Conditional operations (`OP_IF` and operations inside
+    `PUSH_CONDITION` blocks) are only counted in shots where their
+    condition was satisfied. Unconditional and conditional variants of
+    an operation (e.g. `CCX` and `CCX_IF`) are summed under the base
+    operation name (`'CCX'`), matching C++ `count_operations_sampled`.
+
+    Args:
+        shot_index: Optional index of a single shot in
+            `range(sim.batch_size)`. If `None` (the default), returns
+            the sum of operation counts across all `sim.batch_size`
+            shots.
+        z_pow_key: Optional callable taking a `Z_POW` angle (in half
+            turns in `[0, 2)` as a `fractions.Fraction`) and returning
+            a dictionary key `str` under which to accumulate its count.
+            If `None` (the default), all `Z_POW` operations are summed
+            under `'Z_POW'`.
+
+    Returns:
+        A dictionary mapping each operation name (`'NEG'`,
+        `'BIT_INVERT'`, `'BIT_STORE0'`, `'BIT_STORE1'`, `'X'`, `'Z'`,
+        `'R'`, `'HMR'`, `'CX'`, `'CZ'`, `'SWAP'`, `'CCX'`, `'CCZ'`,
+        `'Z_POW'`, `'DEBUG_PRINT'`, `'POP_CONDITION'`,
+        `'PUSH_CONDITION'`, or custom `z_pow_key` names) to its count.
+
+    Raises:
+        ValueError: Operation counting has not been enabled on this
+            simulator.
+        IndexError: `shot_index` is out of `range(sim.batch_size)`.
+
+    Examples:
+        >>> import kickmix as km
+        >>> sim = km.Simulator(batch_size=4, count_operations=True)
+        >>> sim.write_across_shots(km.b(0), 0b0101)
+        >>> sim.do(km.Circuit('''
+        ...     X q0
+        ...     CCX q0 q1 q2 if b0
+        ...     Z_POW q0 0.25 if b0
+        ...     Z_POW q0 0.125
+        ... '''))
+        >>> sim.op_counts()['X']
+        4
+        >>> sim.op_counts()['CCX']
+        2
+        >>> sim.op_counts(shot_index=0)['CCX']
+        1
+        >>> sim.op_counts(shot_index=1)['CCX']
+        0
+        >>> by_group = sim.op_counts(
+        ...     z_pow_key=lambda a: 'T' if a.denominator == 4 else 'ROT'
+        ... )
+        >>> by_group['T'], by_group['ROT']
+        (2, 4)
     """
 ```
 

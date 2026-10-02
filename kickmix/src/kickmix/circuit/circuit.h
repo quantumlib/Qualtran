@@ -72,6 +72,8 @@ struct Circuit {
     static Circuit from_kmx_or_kmb_file(FILE *file);
 
     size_t max_magic() const;
+    size_t max_t() const;
+    size_t max_rotations() const;
     size_t reaction_depth() const;
     size_t compute_max_condition_depth() const;
     std::string text_diagram() const;

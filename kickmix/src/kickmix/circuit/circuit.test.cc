@@ -147,6 +147,79 @@ TEST(circuit, max_magic) {
         0);
 }
 
+TEST(circuit, max_t) {
+    ASSERT_EQ(
+        Circuit(R"CIRCUIT(
+        )CIRCUIT")
+            .max_t(),
+        0);
+    ASSERT_EQ(
+        Circuit(R"CIRCUIT(
+            CCX q0 q1 q2
+            CCZ q0 q1 q2
+            Z q0
+            Z_POW q0 0.0
+            Z_POW q0 0.5
+            Z_POW q0 1.0
+            Z_POW q0 1.5
+            Z_POW q0 -0.5 if b0
+            Z_POW q0 0.125
+            Z_POW q0 0.1 if b1
+        )CIRCUIT")
+            .max_t(),
+        0);
+    ASSERT_EQ(
+        Circuit(R"CIRCUIT(
+            Z_POW q0 0.25
+            Z_POW q0 0.75
+            Z_POW q0 1.25
+            Z_POW q0 1.75
+            Z_POW q0 -0.25 if b0
+            Z_POW q0 -0.75 if b1
+            Z_POW q0 0.5
+            Z_POW q0 0.125
+        )CIRCUIT")
+            .max_t(),
+        6);
+}
+
+TEST(circuit, max_rotations) {
+    ASSERT_EQ(
+        Circuit(R"CIRCUIT(
+        )CIRCUIT")
+            .max_rotations(),
+        0);
+    ASSERT_EQ(
+        Circuit(R"CIRCUIT(
+            CCX q0 q1 q2
+            CCZ q0 q1 q2
+            Z q0
+            Z_POW q0 0.0
+            Z_POW q0 0.25
+            Z_POW q0 0.5
+            Z_POW q0 0.75
+            Z_POW q0 1.0
+            Z_POW q0 1.25
+            Z_POW q0 1.5
+            Z_POW q0 1.75
+            Z_POW q0 -0.25 if b0
+            Z_POW q0 -0.5 if b1
+        )CIRCUIT")
+            .max_rotations(),
+        0);
+    ASSERT_EQ(
+        Circuit(R"CIRCUIT(
+            Z_POW q0 0.125
+            Z_POW q0 -0.125 if b0
+            Z_POW q0 0.1
+            Z_POW q0 0.3333333333333333 if b1
+            Z_POW q0 0.25
+            Z_POW q0 0.5
+        )CIRCUIT")
+            .max_rotations(),
+        4);
+}
+
 TEST(circuit, reaction_depth) {
     ASSERT_EQ(
         Circuit(R"CIRCUIT(
