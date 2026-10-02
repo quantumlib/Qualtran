@@ -58,7 +58,7 @@ import attrs
 import numpy as np
 
 from qualtran import Bloq, DecomposeNotImplementedError, DecomposeTypeError, Register
-from qualtran.l1 import dump_objectstring, StandardQualtranArchitectureAgnosticVirtualMachine
+from qualtran.qlt_ir import dump_objectstring, StandardQualtranArchitectureAgnosticVirtualMachine
 from qualtran.simulation.classical_sim import ClassicalSimState, ClassicalValT, QCDTypeDomainError
 
 

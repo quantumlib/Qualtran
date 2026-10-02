@@ -1,0 +1,77 @@
+APPEND_TO_REGISTER q0 r1
+APPEND_TO_REGISTER q1 r1
+APPEND_TO_REGISTER q2 r1
+APPEND_TO_REGISTER q3 r1
+APPEND_TO_REGISTER q4 r1
+APPEND_TO_REGISTER q5 r0
+CX q3 q2
+CX q5 q0
+CCX q4 q5 q2
+CX q3 q5
+CCX q2 q5 q4
+CX q3 q5
+CCX q4 q5 q2
+CCX q2 q3 q0
+CCX q0 q5 q2
+CX q5 q3
+CCX q2 q3 q0
+CCX q0 q2 q4
+CX q5 q3
+X q4
+CCX q3 q4 q1
+X q4
+CCX q0 q2 q4
+CX q5 q2
+CCX q1 q5 q3
+CX q3 q4
+CCX q3 q5 q0
+CCX q3 q4 q1
+X q2
+CCX q2 q3 q4
+CCX q1 q5 q2
+CX q2 q3
+CCX q0 q3 q4
+CX q2 q3
+CCX q1 q5 q3
+CCX q3 q5 q0
+CCX q0 q3 q2
+CCX q1 q5 q0
+CX q3 q4
+CCX q0 q2 q4
+CX q3 q0
+CX q3 q5
+CX q4 q5
+CCX q0 q5 q2
+CX q4 q5
+CX q3 q5
+CCX q2 q3 q0
+CCX q1 q5 q3
+CCX q2 q3 q0
+CX q3 q4
+CCX q0 q4 q2
+CCX q1 q5 q0
+CCX q0 q3 q2
+CCX q2 q3 q0
+CX q3 q4
+CCX q1 q5 q3
+CX q3 q4
+CCX q0 q3 q1
+CCX q1 q5 q0
+X q2
+CCX q0 q2 q1
+CCX q1 q3 q0
+X q3
+CCX q2 q3 q5
+CCX q0 q5 q1
+CCX q2 q3 q5
+X q3
+CX q2 q1
+CCX q1 q3 q0
+CX q2 q1
+X q3
+CCX q0 q4 q1
+CCX q3 q5 q4
+CCX q0 q4 q1
+CCX q3 q5 q4
+X q3
+

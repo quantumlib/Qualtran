@@ -179,19 +179,23 @@ class _TracingBloqIntermediate:
         ret_dict = self.func(bb, *args, **kwargs)
         return tuple(ret_dict.values())
 
-    def dump_l1(
+    def dump_qlt_ir(
         self, signature: Optional['qlt.Signature'] = None, *classical_args, **classical_kwargs
     ):
-        """Trace the function and return its L1 representation."""
-        from qualtran.l1 import dump_root_l1
+        """Trace the function and return its QLT IR representation."""
+        from qualtran.qlt_ir import dump_root_qlt_ir
 
-        return dump_root_l1(self.make(signature, *classical_args, **classical_kwargs))
+        return dump_root_qlt_ir(self.make(signature, *classical_args, **classical_kwargs))
 
-    def print_l1(
+    def print_qlt_ir(
         self, signature: Optional['qlt.Signature'] = None, *classical_args, **classical_kwargs
     ):
-        """Trace the function and print its L1 representation."""
-        print(self.dump_l1(signature, *classical_args, **classical_kwargs))
+        """Trace the function and print its QLT IR representation."""
+        print(self.dump_qlt_ir(signature, *classical_args, **classical_kwargs))
+
+    # Deprecated aliases from when QLT IR was called "L1".
+    dump_l1 = dump_qlt_ir
+    print_l1 = print_qlt_ir
 
     def draw(
         self, signature: Optional['qlt.Signature'] = None, *classical_args, **classical_kwargs

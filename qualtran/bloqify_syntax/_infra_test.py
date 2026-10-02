@@ -81,10 +81,12 @@ def test_bloqify_inline():
     assert isinstance(cbloq, qlt.CompositeBloq)
 
 
-def test_bloqify_l1():
+def test_bloqify_qlt_ir():
     sig = qlt.Signature.build(x=1)
-    l1_str = minimal_bloq.dump_l1(sig)
-    assert isinstance(l1_str, str)
+    qlt_str = minimal_bloq.dump_qlt_ir(sig)
+    assert isinstance(qlt_str, str)
+    # Deprecated alias
+    assert minimal_bloq.dump_l1(sig) == qlt_str
 
 
 def test_bloqify_non_dict_return():
