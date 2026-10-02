@@ -16,6 +16,7 @@
 
 import abc
 import numbers
+import re
 from functools import cached_property
 from typing import cast, Dict, Optional, Tuple, Type, TypeVar, Union
 
@@ -33,6 +34,21 @@ QROM_T = TypeVar('QROM_T', bound='QROMBase')
 
 def _data_or_shape_to_tuple(data_or_shape: Tuple[Union[NDArray, Shaped], ...]) -> Tuple:
     return tuple(tuple(d.flatten()) if isinstance(d, np.ndarray) else d for d in data_or_shape)
+
+
+def _format_data_or_shape_element(d: Union[NDArray, Shaped]) -> str:
+    if isinstance(d, np.ndarray):
+        with np.printoptions(threshold=6, edgeitems=2):
+            s = np.array_repr(d)
+        return re.sub(r'\s*\n[\s\n]*', ' ', s)
+    return repr(d)
+
+
+def _data_or_shape_repr(data_or_shape: Tuple[Union[NDArray, Shaped], ...]) -> str:
+    elements = [_format_data_or_shape_element(d) for d in data_or_shape]
+    if len(elements) == 1:
+        return f"({elements[0]},)"
+    return f"({', '.join(elements)})"
 
 
 @attrs.frozen
@@ -154,6 +170,7 @@ class QROMBase(metaclass=abc.ABCMeta):
     data_or_shape: Tuple[Union[NDArray, Shaped], ...] = attrs.field(
         converter=lambda x: tuple(np.array(y) if isinstance(y, (list, tuple)) else y for y in x),
         eq=_data_or_shape_to_tuple,
+        repr=_data_or_shape_repr,
     )
     selection_bitsizes: Tuple[SymbolicInt, ...] = attrs.field(
         converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)

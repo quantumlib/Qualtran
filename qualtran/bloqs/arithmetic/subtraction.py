@@ -229,15 +229,15 @@ def _sub_diff_size_regs() -> Subtract:
 
 
 @bloq_example
-def _sub_symp_decomposition() -> CompositeBloq:
+def _sub_symb_decomposition() -> CompositeBloq:
     n = sympy.Symbol('n')
-    sub_symp_decomposition = Subtract(QInt(bitsize=n)).decompose_bloq()
-    return sub_symp_decomposition
+    sub_symb_decomposition = Subtract(QInt(bitsize=n)).decompose_bloq()
+    return sub_symb_decomposition
 
 
 _SUB_DOC = BloqDocSpec(
     bloq_cls=Subtract,
-    examples=[_sub_symb, _sub_small, _sub_large, _sub_diff_size_regs, _sub_symp_decomposition],
+    examples=[_sub_symb, _sub_small, _sub_large, _sub_diff_size_regs, _sub_symb_decomposition],
 )
 
 

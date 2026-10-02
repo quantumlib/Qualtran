@@ -2,12 +2,12 @@
 #define KICKMIX_SIM_H
 
 #include <iostream>
-#include <kickmix/id/qubit_or_bit_or_bool.h>
 #include <random>
 #include <span>
 #include <vector>
 
 #include "kickmix/circuit/circuit.h"
+#include "kickmix/id/qubit_or_bit_or_bool.h"
 #include "kickmix/id/register_id.h"
 #include "kickmix/util/fixed_width_int.h"
 #include "kickmix/util/pop_counter.h"

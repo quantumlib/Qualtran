@@ -256,6 +256,7 @@ remove_redundant_aliases = true
 skip_glob = ["qualtran/protos/*"]
 
 [tool.pytest.ini_options]
+pythonpath = ["kickmix"]
 filterwarnings = [
     'ignore::DeprecationWarning:quimb.linalg.approx_spectral:',
     'ignore:.*standard platformdirs.*:DeprecationWarning:jupyter_client.*'
