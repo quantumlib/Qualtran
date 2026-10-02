@@ -254,13 +254,13 @@ class Split2(_PartitionBase):
 
 
 @bloq_example
-def _split2() -> Split2:
+def _split2_symb() -> Split2:
     n1, n2 = sympy.symbols('n1 n2')
-    split2 = Split2(n1, n2)
-    return split2
+    split2_symb = Split2(n1, n2)
+    return split2_symb
 
 
-_SPLIT2_DOC = BloqDocSpec(bloq_cls=Split2, examples=[_split2], call_graph_example=None)
+_SPLIT2_DOC = BloqDocSpec(bloq_cls=Split2, examples=[_split2_symb], call_graph_example=None)
 
 
 @frozen
@@ -315,13 +315,13 @@ class Join2(_PartitionBase):
 
 
 @bloq_example
-def _join2() -> Join2:
+def _join2_symb() -> Join2:
     n1, n2 = sympy.symbols('n1 n2')
-    join2 = Join2(n1, n2)
-    return join2
+    join2_symb = Join2(n1, n2)
+    return join2_symb
 
 
-_JOIN2_DOC = BloqDocSpec(bloq_cls=Join2, examples=[_join2], call_graph_example=None)
+_JOIN2_DOC = BloqDocSpec(bloq_cls=Join2, examples=[_join2_symb], call_graph_example=None)
 
 
 @bloq_example
