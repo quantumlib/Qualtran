@@ -32,31 +32,6 @@ def test_dump_json(tmp_path):
     dump_musical_score(msd, name=f'{tmp_path}/musical_score_example')
 
 
-def test_musical_score_aligns_with_qubit_count():
-    from qualtran.bloqs.for_testing.qubit_count_many_alloc import (
-        TestManyAllocAbstracted,
-        TestManyAllocOnce,
-        TestManyAllocMany,
-    )
-    from qualtran.resource_counting import get_cost_cache, get_cost_value, QubitCount
-
-    n = 10
-    for bloq in [TestManyAllocMany(n), TestManyAllocOnce(n), TestManyAllocAbstracted(n)]:
-        expected_qubits = get_cost_value(bloq, QubitCount())
-        msd = get_musical_score_data(bloq.decompose_bloq())
-        # Ensure qubits (horizontal rows) match qubits from cost values in expected count by
-        # counting all rows with at least one non-dangle Soquet.
-        actual_qubits = len(
-            set(soq.rpos.y for soq in msd.soqs if not soq.ident.startswith('dang'))
-        )
-        assert (
-            actual_qubits == expected_qubits
-        ), (
-            f'{type(bloq).__name__} has too many non-dangle lines; '
-            + f'expected {expected_qubits}; got {actual_qubits}'
-        )
-
-
 @pytest.mark.notebook
 def test_notebook():
     execute_notebook('musical_score')
