@@ -277,21 +277,25 @@ def _update_assign_from_vals(
 def _binst_assign_line(
     binst: BloqInstance,
     pred_cxns: Iterable[Connection],
+    succ_cxns: Iterable[Connection],
     soq_assign: Dict[_Soquet, RegPosition],
+    y_to_score: Dict[int, List[_Soquet]],
     seq_x: int,
-    topo_gen: int,
     manager: LineManager,
 ):
-    """Assign positions for a binst.
+    """Assign register positions for a binst.
 
     Args:
         binst: The bloq instance whose bloq we will call `on_classical_vals`.
         pred_cxns: Predecessor connections for the bloq instance.
+        succ_cxns: Successor connections for the bloq instance.
         soq_assign: Current assignment of soquets to classical values.
         seq_x: The sequential x index of the binst.
-        topo_gen: The topological generation of the binst.
         manager: The LineManager.
     """
+
+    # Get preliminary topological generation as being just after its latest predecesor.
+    topo_gen = max((soq_assign[pred.left].topo_gen + 1 for pred in pred_cxns), default=0)
 
     # Track inter-Bloq name changes
     for cxn in pred_cxns:
@@ -319,6 +323,21 @@ def _binst_assign_line(
         manager=manager,
     )
 
+    # Push all soquets to the most recent topological generation according to the line assignment.
+    # This is to ensure bloqs reusing old `y` occur necessarily after the `y`'s last bloq.
+    neighbor_soqs = set([pred.right for pred in pred_cxns] + [succ.left for succ in succ_cxns])
+    neighbor_topo_gens = []
+    for soq in neighbor_soqs:
+        y = soq_assign[soq].y
+        if y in y_to_score:
+            prev_soc = y_to_score[soq_assign[soq].y][-1]
+            neighbor_topo_gens.append(soq_assign[prev_soc].topo_gen + 1)
+
+    max_topo_gen = max(neighbor_topo_gens + [topo_gen])
+    for soq in neighbor_soqs:
+        y_to_score.setdefault(soq_assign[soq].y, []).append(soq)
+        soq_assign[soq] = attrs.evolve(soq_assign[soq], topo_gen=max_topo_gen)
+
     # Free any purely-left registers.
     for reg in bloq.signature:
         if reg.side is Side.LEFT:
@@ -345,53 +364,70 @@ def _cbloq_musical_score(
     # Keep track of each soquet's position. Initialize by implicitly allocating new positions.
     # We introduce the convention that `LeftDangle`s are a seq_x=-1 and topo_gen=0
     soq_assign: Dict[_Soquet, RegPosition] = {}
-    topo_gen = 0
+    max_topo_gen = 0
     _update_assign_from_vals(
-        signature.lefts(), LeftDangle, {}, soq_assign, seq_x=-1, topo_gen=topo_gen, manager=manager
+        signature.lefts(), LeftDangle, {}, soq_assign, seq_x=-1, topo_gen=max_topo_gen, manager=manager
     )
 
-    # Bloq-by-bloq application
     seq_x = 0
-    # Maintain a mapping of the current depth of the rightmost ends of all qubits.
-    y_to_topo_gen = {}
+    y_to_score: Dict[int, List[_Soquet]] = {}
+
+    main_subgraph_binsts = nx.descendants(binst_graph, LeftDangle)
+    # Retain an ordered list of all bloqs, as well as all their left registers. This will be
+    # important later when we try to delay allocations by pushing their precedent registers as
+    # far as possible.
+    alloc_subgraph_binsts: List[Tuple[BloqInstance, List[Tuple[int, int]]]] = []
     for binst in greedy_topological_sort(binst_graph):
         if isinstance(binst, DanglingT):
             continue
         pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=binst_graph)
-        
-        # Compute the topological generation from predecesor nodes.
-        topo_gen = max((soq_assign[pred.left].topo_gen for pred in pred_cxns), default=0) + 1
-        
-        # Offload line assignment of bloq instance to LineManager.
+        # Provide preliminary register positions for each bloq.
         _binst_assign_line(
-            binst, pred_cxns, soq_assign, seq_x=seq_x, topo_gen=topo_gen, manager=manager
+            binst, pred_cxns, succ_cxns, soq_assign, y_to_score, seq_x=seq_x, manager=manager,
         )
 
-        # Using the line assignment from earlier, compute the topological generation as being at
-        # least after the furthest node on the line it is placed on. This is generally only
-        # required for allocations or right-side bloqs that may reuse a previous qubit.
-        topo_gen = max(
-            [y_to_topo_gen.get(soq_assign[succ.left].y, 0) + 1 for succ in succ_cxns]
-            + [topo_gen]
-        )
-        for succ in succ_cxns:
-            soq_assign[succ.left] = attrs.evolve(soq_assign[succ.left], topo_gen=topo_gen)
+        if not binst in main_subgraph_binsts:
+            reg_scorepos = [
+                (soq_assign[pred.right].y, len(y_to_score[soq_assign[pred.right].y]) - 1)
+                for pred in pred_cxns
+            ]
+            alloc_subgraph_binsts.append((binst, reg_scorepos))
 
-        # Update latest topological generation.
-        reg_idxs = set(
-            [soq_assign[pred.right].y for pred in pred_cxns]
-            + [soq_assign[succ.left].y for succ in succ_cxns]
-        )
-        for idx in reg_idxs:
-            y_to_topo_gen[idx] = topo_gen
+        # Currently, apply each bloq one-by-one across the musical score.
         seq_x += 1
 
     # Track bloq-to-dangle name changes
     if len(list(signature.rights())) > 0:
         final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=binst_graph)
+        max_topo_gen = max(
+            (soq_assign[pred.left].topo_gen for pred in final_preds),
+            default=0,
+        ) + 1
         for cxn in final_preds:
             soq_assign[cxn.right] = attrs.evolve(
-                soq_assign[cxn.left], seq_x=seq_x, topo_gen=topo_gen
+                soq_assign[cxn.left], seq_x=seq_x, topo_gen=max_topo_gen
+            )
+
+    for binst, pred_idxs in reversed(alloc_subgraph_binsts):
+        # Since alloc_subgraph_binsts is constructed from a topological sort, we can be assured
+        # reverse-iterating traverses all bloqs topologically in reverse.
+        pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=binst_graph)
+
+        # "Pull" all operations that do not have LeftDangle as an ancestor right, ensuring not to
+        # pass through later bloqs.
+        new_topo_gen = min(
+            (soq_assign[succ.right].topo_gen - 1 for succ in succ_cxns),
+            default=max_topo_gen,
+        )
+        for pred_y, pred_idx in pred_idxs:
+            if len(y_to_score[pred_y]) > pred_idx + 1:
+                new_topo_gen = min(new_topo_gen, soq_assign[y_to_score[pred_y][pred_idx + 1]].topo_gen - 1)
+
+        # Update all Soquet register positions involved in the bloq.
+        neighbor_soqs = set([pred.right for pred in pred_cxns] + [succ.left for succ in succ_cxns])
+        for soq in neighbor_soqs:
+            soq_assign[soq] = attrs.evolve(
+                soq_assign[soq], topo_gen=new_topo_gen
             )
 
     # Formulate output with expected API
