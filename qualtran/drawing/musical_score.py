@@ -366,16 +366,22 @@ def _cbloq_musical_score(
     soq_assign: Dict[_Soquet, RegPosition] = {}
     max_topo_gen = 0
     _update_assign_from_vals(
-        signature.lefts(), LeftDangle, {}, soq_assign, seq_x=-1, topo_gen=max_topo_gen, manager=manager
+        signature.lefts(),
+        LeftDangle,
+        {},
+        soq_assign,
+        seq_x=-1,
+        topo_gen=max_topo_gen,
+        manager=manager,
     )
 
     seq_x = 0
     y_to_score: Dict[int, List[_Soquet]] = {}
 
     main_subgraph_binsts = nx.descendants(binst_graph, LeftDangle)
-    # Retain an ordered list of all bloqs, as well as all their left registers. This will be
-    # important later when we try to delay allocations by pushing their precedent registers as
-    # far as possible.
+    # Retain an ordered list of all bloqs without LeftDangle in its lineagr, as well as all their
+    # left registers. This will be important later when we try to delay allocations by pushing
+    # their precedent registers as far as possible.
     alloc_subgraph_binsts: List[Tuple[BloqInstance, List[Tuple[int, int]]]] = []
     for binst in greedy_topological_sort(binst_graph):
         if isinstance(binst, DanglingT):
@@ -383,7 +389,7 @@ def _cbloq_musical_score(
         pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=binst_graph)
         # Provide preliminary register positions for each bloq.
         _binst_assign_line(
-            binst, pred_cxns, succ_cxns, soq_assign, y_to_score, seq_x=seq_x, manager=manager,
+            binst, pred_cxns, succ_cxns, soq_assign, y_to_score, seq_x=seq_x, manager=manager
         )
 
         if not binst in main_subgraph_binsts:
@@ -399,10 +405,7 @@ def _cbloq_musical_score(
     # Track bloq-to-dangle name changes
     if len(list(signature.rights())) > 0:
         final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=binst_graph)
-        max_topo_gen = max(
-            (soq_assign[pred.left].topo_gen for pred in final_preds),
-            default=0,
-        ) + 1
+        max_topo_gen = max((soq_assign[pred.left].topo_gen for pred in final_preds), default=0) + 1
         for cxn in final_preds:
             soq_assign[cxn.right] = attrs.evolve(
                 soq_assign[cxn.left], seq_x=seq_x, topo_gen=max_topo_gen
@@ -416,19 +419,18 @@ def _cbloq_musical_score(
         # "Pull" all operations that do not have LeftDangle as an ancestor right, ensuring not to
         # pass through later bloqs.
         new_topo_gen = min(
-            (soq_assign[succ.right].topo_gen - 1 for succ in succ_cxns),
-            default=max_topo_gen,
+            (soq_assign[succ.right].topo_gen - 1 for succ in succ_cxns), default=max_topo_gen
         )
         for pred_y, pred_idx in pred_idxs:
             if len(y_to_score[pred_y]) > pred_idx + 1:
-                new_topo_gen = min(new_topo_gen, soq_assign[y_to_score[pred_y][pred_idx + 1]].topo_gen - 1)
+                new_topo_gen = min(
+                    new_topo_gen, soq_assign[y_to_score[pred_y][pred_idx + 1]].topo_gen - 1
+                )
 
         # Update all Soquet register positions involved in the bloq.
         neighbor_soqs = set([pred.right for pred in pred_cxns] + [succ.left for succ in succ_cxns])
         for soq in neighbor_soqs:
-            soq_assign[soq] = attrs.evolve(
-                soq_assign[soq], topo_gen=new_topo_gen
-            )
+            soq_assign[soq] = attrs.evolve(soq_assign[soq], topo_gen=new_topo_gen)
 
     # Formulate output with expected API
     def _f_vals(reg: Register):
