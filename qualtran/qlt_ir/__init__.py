@@ -18,6 +18,7 @@ from ._ast_to_code_fast import FastQltASTPrinter
 from ._ast_visitor_base import QltVisitorBase
 from ._eval import eval_cvalue_node, eval_module
 from ._examples import get_qlt_ir_examples, QLT_IR_EXAMPLES, QltExample
+from ._library import build_library_entry, BuildOutcome, library_qlt_path, QltBuildResult
 from ._parse import dump_ast, parse_module, parse_objectstring, QltParser
 from ._parse_eval import load_bloq, load_module, load_objectstring
 from ._roundtrip import (

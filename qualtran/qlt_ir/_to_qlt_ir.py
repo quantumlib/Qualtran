@@ -51,6 +51,7 @@ from .nodes import QltNodes
 if TYPE_CHECKING:
     from .nodes import (
         CObjectNode,
+        CValueNode,
         QArgNode,
         QArgValueNode,
         QDefNode,
@@ -231,6 +232,7 @@ class QDefBuilder:
     qglobals: Union[QGlobals, Dict[qlt.Bloq, str]]
     nodes: QltNodes = attrs.field(default=qualtran_qlt_nodes)
     qlocals: Locals = attrs.field(factory=Locals)
+    include_annotations: bool = False
 
     _sig_entries: List[QSignatureEntry] = attrs.field(factory=list)
     _stmnts: List[StatementNode] = attrs.field(factory=list)
@@ -239,31 +241,71 @@ class QDefBuilder:
         if self.qlocals.nodes is qualtran_qlt_nodes and self.nodes is not qualtran_qlt_nodes:
             self.qlocals.nodes = self.nodes
 
-    def _get_sig_entry_annotation(self, reg: 'qlt.Register') -> Optional[CObjectNode]:
-        """Determine annotation based on wire symbol."""
+    def _get_single_wire_symbol_annotation(
+        self, reg: 'qlt.Register', idx: Tuple[int, ...] = ()
+    ) -> Optional[CObjectNode]:
+        """Convert a single `(reg, idx)` wire symbol into a `CObjectNode` if non-default."""
         from qualtran.drawing import Circle, ModPlus
 
-        if reg.shape:
-            # TODO: Support for shaped registers.
-            return None
+        if not idx:
+            symbol = self.bloq.wire_symbol(reg)
+        else:
+            try:
+                symbol = self.bloq.wire_symbol(reg, idx)
+            except TypeError:
+                symbol = self.bloq.wire_symbol(reg)
 
-        annotation: Optional[CObjectNode] = None
-        symbol = self.bloq.wire_symbol(reg)
         if isinstance(symbol, Circle):
             if symbol.filled:
-                annotation = self.nodes.CObjectNode('dot', cargs=())
-            else:
-                annotation = self.nodes.CObjectNode('circle', cargs=())
-        elif isinstance(symbol, ModPlus):
-            annotation = self.nodes.CObjectNode('oplus', cargs=())
-        return annotation
+                return self.nodes.CObjectNode('dot', cargs=())
+            return self.nodes.CObjectNode('circle', cargs=())
+        if isinstance(symbol, ModPlus):
+            return self.nodes.CObjectNode('oplus', cargs=())
+
+        text = getattr(symbol, 'text', None)
+        if isinstance(text, str):
+            # TODO: cross wire symbol
+            if text == '×':
+                return self.nodes.CObjectNode('cross', cargs=())
+
+            # TODO: less hacky way of determining whether its a default
+            default_texts = {reg.name}
+            if len(idx) > 0:
+                default_texts.add(f'{reg.name}[{", ".join(str(i) for i in idx)}]')
+                default_texts.add(f'{reg.name}[{",".join(str(i) for i in idx)}]')
+            if text != '' and text not in default_texts:
+                return self.nodes.CObjectNode(
+                    'box',
+                    cargs=(self.nodes.CArgNode(key=None, value=self.nodes.LiteralNode(text)),),
+                )
+        return None
+
+    def _get_sig_entry_annotation(self, reg: 'qlt.Register') -> Optional[CValueNode]:
+        """Determine signature entry annotation based on `bloq.wire_symbol`."""
+        if not reg.shape:
+            return self._get_single_wire_symbol_annotation(reg, ())
+
+        elem_annots = [self._get_single_wire_symbol_annotation(reg, idx) for idx in reg.all_idxs()]
+        if all(a is None for a in elem_annots):
+            return None
+        if all(a is not None and a == elem_annots[0] for a in elem_annots):
+            return elem_annots[0]
+        return self.nodes.TupleNode(
+            tuple(
+                a if a is not None else self.nodes.CObjectNode('box', cargs=()) for a in elem_annots
+            )
+        )
 
     def _get_sig_entry(self, reg_name: str, regs: Sequence['qlt.Register']) -> QSignatureEntry:
         entry = regs_to_sig_entry(reg_name, regs, nodes=self.nodes)
 
-        # Layer on annotation from wire symbols
-        # TODO: Handle the case for different r1 vs r2
-        annotation = self._get_sig_entry_annotation(regs[0])
+        # Layer on annotation from wire symbols when enabled and compatible across the register group
+        annotation: Optional[CValueNode] = None
+        if self.include_annotations and (len(regs) == 1 or regs[0].shape == regs[1].shape):
+            for r in regs:
+                annotation = self._get_sig_entry_annotation(r)
+                if annotation is not None:
+                    break
         if annotation is not None:
             entry = attrs.evolve(entry, annotation=annotation)
 
@@ -418,13 +460,20 @@ class QDefBuilder:
                 rets.append(basename)
 
         # C. Record the call itself to `binst.bloq`.
+        call_annotation: Optional[CValueNode] = None
+        if self.include_annotations and _should_use_stave_mode(binst.bloq):
+            call_annotation = self.nodes.TupleNode((self.nodes.CObjectNode('False', cargs=()),))
         self._stmnts.append(
             self.nodes.QCallNode(
                 bloq_key=self.qlocals.bloqvars[binst.bloq],
                 lvalues=[self.nodes.LValueNode(r) for r in rets],
                 qargs=kwargs,
+                annotation=call_annotation,
             )
         )
+
+    def add_empty_return(self) -> None:
+        self._stmnts.append(self.nodes.QReturnNode(ret_mapping=[]))
 
     def finalize(self, extern_only_from: bool) -> QDefWithContext:
         if extern_only_from:
@@ -446,6 +495,43 @@ class QDefBuilder:
         )
 
 
+def _is_qcast_bloq(bloq: qlt.Bloq) -> bool:
+    """Return whether `bloq` is a casting/bookkeeping bloq (excluding `Allocate` and `Free`)."""
+    from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
+    from qualtran.bloqs.bookkeeping.allocate import Allocate
+    from qualtran.bloqs.bookkeeping.free import Free
+    from qualtran.bloqs.bookkeeping.qcast import QCast
+
+    return isinstance(bloq, (_BookkeepingBloq, QCast)) and not isinstance(bloq, (Allocate, Free))
+
+
+def _should_use_stave_mode(bloq: qlt.Bloq) -> bool:
+    """Return whether `bloq` reports `Text('')` for `reg=None`, indicating stave mode (`showHeader=False`)."""
+    from qualtran.drawing import Text
+
+    if _is_qcast_bloq(bloq):
+        return False
+    title_symbol = bloq.wire_symbol(reg=None)
+    if not (isinstance(title_symbol, Text) and title_symbol.text == ''):
+        return False
+    # Exclude split/join-like bloqs whose per-register wire symbols are also all empty Text('').
+    regs = list(bloq.signature)
+    if regs:
+        all_empty = True
+        for r in regs:
+            idx = next(iter(r.all_idxs()), ())
+            try:
+                ws = bloq.wire_symbol(r, idx) if idx else bloq.wire_symbol(r)
+            except TypeError:
+                ws = bloq.wire_symbol(r)
+            if not (isinstance(ws, Text) and ws.text == ''):
+                all_empty = False
+                break
+        if all_empty:
+            return False
+    return True
+
+
 def bloq_to_ast(
     bloq: qlt.Bloq,
     qglobals: Union[QGlobals, Dict[qlt.Bloq, BloqKey]],
@@ -453,6 +539,7 @@ def bloq_to_ast(
     extern_only_from: bool,
     force_extern: bool = False,
     skip_aliases: bool = False,
+    include_annotations: bool = False,
     level: int = 0,
     nodes: QltNodes = qualtran_qlt_nodes,
 ) -> Tuple[QDefWithContext, List['qlt.Bloq']]:
@@ -473,7 +560,12 @@ def bloq_to_ast(
         qglobals[bloq] = bloq_key
 
     qdb = QDefBuilder(
-        bloq=bloq, bloq_key=bloq_key, qglobals=qglobals, nodes=nodes, qlocals=Locals(nodes=nodes)
+        bloq=bloq,
+        bloq_key=bloq_key,
+        qglobals=qglobals,
+        nodes=nodes,
+        qlocals=Locals(nodes=nodes),
+        include_annotations=include_annotations,
     )
     indent = ' ' * level
     log.info("%sCompiling %s -> %s", indent, repr(bloq), bloq_key)
@@ -486,14 +578,12 @@ def bloq_to_ast(
 
     # Detect bookkeeping / casting bloqs and emit as qcast.
     # Alloc and Free are _BookkeepingBloqs but are *not* casts.
-    from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
     from qualtran.bloqs.bookkeeping.allocate import Allocate
     from qualtran.bloqs.bookkeeping.free import Free
-    from qualtran.bloqs.bookkeeping.qcast import QCast
 
     if isinstance(bloq, (Allocate, Free)):
         return qdb.finalize_extern(reason='alloc/free'), []
-    if isinstance(bloq, (_BookkeepingBloq, QCast)):
+    if _is_qcast_bloq(bloq):
         return qdb.finalize_qcast(), []
     if isinstance(bloq, qlt.CompositeBloq):
         cbloq = bloq
@@ -519,6 +609,9 @@ def bloq_to_ast(
     for binst in sorted_binsts:
         preds, succs = _binst_to_cxns(binst, binst_graph=g)
         qdb.add_bloqnection(binst, preds, succs)
+
+    if qlt.RightDangle not in g:
+        qdb.add_empty_return()
 
     return qdb.finalize(extern_only_from=extern_only_from), list(qdb.qlocals.bloqvars.keys())
 
@@ -549,6 +642,7 @@ class QltModuleBuilder:
         root: qlt.Bloq,
         *,
         annotate_costs: bool = False,
+        include_annotations: bool = False,
         extern_only_from: bool = True,
         force_extern_pred: Callable[['qlt.Bloq'], bool] = lambda b: False,
         skip_aliases: bool = False,
@@ -574,6 +668,7 @@ class QltModuleBuilder:
                 extern_only_from=extern_only_from,
                 force_extern=force_extern,
                 skip_aliases=skip_aliases,
+                include_annotations=include_annotations,
                 level=level,
                 nodes=self.nodes,
             )
@@ -625,18 +720,46 @@ def dump_qlt_ir(
     bloq: qlt.Bloq,
     f: Optional[io.IOBase] = None,
     *,
+    root_bloq_key: Optional[str] = None,
     annotate_costs: bool = False,
+    include_annotations: bool = False,
     extern_only_from: bool = False,
     force_extern_pred: Callable[['qlt.Bloq'], bool] = lambda b: False,
     skip_aliases: bool = False,
     nodes: QltNodes = qualtran_qlt_nodes,
 ) -> Optional[str]:
+    """Serialize a bloq (and its decomposition) to QLT IR source text.
+
+    Args:
+        bloq: The root bloq to serialize.
+        f: An optional writable file-like object. If provided, the QLT IR text is
+            written to it and the root bloq key is returned. If `None`, the QLT IR
+            text itself is returned.
+        root_bloq_key: An optional key to assign to the root `bloq`. When given,
+            the root is emitted with exactly this `qdef` name instead of a name
+            derived from `str(bloq)`. Keys for sub-bloqs are still generated automatically.
+        annotate_costs: Whether to annotate the output with cost information.
+        include_annotations: Whether to include visual display annotations derived
+            from `bloq.wire_symbol` (defaults to `False`).
+        extern_only_from: Whether to only include a `from` clause for `extern` bloqs.
+        force_extern_pred: A predicate selecting bloqs to force to `extern`.
+        skip_aliases: Whether to skip generating alias declarations for long bloq keys.
+        nodes: The set of QLT IR AST node classes to build with (advanced).
+
+    Returns:
+        If `f` is `None`, the serialized QLT IR text. Otherwise, the `BloqKey`
+        assigned to the root `bloq`.
+    """
     from ._ast_to_code import QltASTPrinter
 
     qlt_mb = QltModuleBuilder(nodes=nodes)
-    root_bloq_key = qlt_mb.add_bloqs(
+    if root_bloq_key is not None:
+        # Seed the globals so the root is emitted with exactly this key.
+        qlt_mb.qglobals[bloq] = root_bloq_key
+    assigned_root_key = qlt_mb.add_bloqs(
         root=bloq,
         annotate_costs=annotate_costs,
+        include_annotations=include_annotations,
         extern_only_from=extern_only_from,
         force_extern_pred=force_extern_pred,
         skip_aliases=skip_aliases,
@@ -648,11 +771,15 @@ def dump_qlt_ir(
         return qlt_txt
 
     f.write(qlt_txt)
-    return root_bloq_key
+    return assigned_root_key
 
 
 def dump_root_qlt_ir(
-    bloq: qlt.Bloq, *, skip_aliases: bool = False, nodes: QltNodes = qualtran_qlt_nodes
+    bloq: qlt.Bloq,
+    *,
+    include_annotations: bool = False,
+    skip_aliases: bool = False,
+    nodes: QltNodes = qualtran_qlt_nodes,
 ) -> str:
     from ._ast_to_code import QltASTPrinter
 
@@ -664,6 +791,7 @@ def dump_root_qlt_ir(
     qlt_mb = QltModuleBuilder(nodes=nodes)
     _root_bloq_key = qlt_mb.add_bloqs(
         root=bloq,
+        include_annotations=include_annotations,
         extern_only_from=True,
         force_extern_pred=extern_all_but_root,
         skip_aliases=skip_aliases,
