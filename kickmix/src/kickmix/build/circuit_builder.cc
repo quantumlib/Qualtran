@@ -1338,7 +1338,7 @@ void CircuitBuilder::write_analysis_svg_to(std::ostream &out, size_t reference_q
                 title.append(")");
             }
             float box_width = group_toffoli_counts[k] * x_scale;
-            float font_size = box_width / title.size() * 2;
+            float font_size = title.empty() ? 0.5f : box_width / title.size() * 2;
             font_size = std::min(5.0f, font_size);
             font_size = std::max(0.5f, font_size);
             out << " font-size=\"" << font_size << "\"";

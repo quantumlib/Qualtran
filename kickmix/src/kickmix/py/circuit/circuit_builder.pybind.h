@@ -30,6 +30,13 @@ struct PyCircuitBuilder {
     std::unordered_set<std::string> mark_names;
     std::vector<std::string_view> active_mark_stack;
 
+    // Move-only: copies would keep `string_view`s into the original's `mark_names`.
+    PyCircuitBuilder() = default;
+    PyCircuitBuilder(const PyCircuitBuilder &) = delete;
+    PyCircuitBuilder &operator=(const PyCircuitBuilder &) = delete;
+    PyCircuitBuilder(PyCircuitBuilder &&) = default;
+    PyCircuitBuilder &operator=(PyCircuitBuilder &&) = default;
+
     void start_mark(std::string_view name) {
         std::string_view interned = *mark_names.emplace(name).first;
         active_mark_stack.push_back(interned);
