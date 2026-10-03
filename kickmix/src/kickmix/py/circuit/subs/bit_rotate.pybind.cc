@@ -15,14 +15,16 @@ static void controlled_reverse(CircuitBuilder &builder, stride_span<const QubitI
 }
 
 static void controlled_shifted_reverse(
-    CircuitBuilder &builder, stride_span<const QubitId> target, size_t offset, QubitOrTrue control = true) {
+    CircuitBuilder &builder, stride_span<const QubitId> target, int64_t offset, QubitOrTrue control = true) {
     if (target.empty()) {
         return;
     }
     size_t n = target.size();
-    offset %= n;
-    controlled_reverse(builder, target.keep(offset), control);
-    controlled_reverse(builder, target.skip(offset), control);
+    offset %= (int64_t)n;
+    offset += n;
+    offset %= (int64_t)n;
+    controlled_reverse(builder, target.keep((size_t)offset), control);
+    controlled_reverse(builder, target.skip((size_t)offset), control);
 }
 
 struct RaiiStoreXor {
@@ -120,7 +122,7 @@ static void controlled_fixed_left_rotate(
         return;
     }
     controlled_shifted_reverse(builder, target, 0, control);
-    controlled_shifted_reverse(builder, target, (size_t)shift, control);
+    controlled_shifted_reverse(builder, target, shift, control);
 }
 
 static void decomposed_left_rotate(
