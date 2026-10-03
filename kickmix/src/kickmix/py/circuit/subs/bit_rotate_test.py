@@ -68,7 +68,9 @@ def test_controlled_indexed_left_rotate_cost():
 
 
 @pytest.mark.parametrize("n", [*range(8), 13, 64])
-@pytest.mark.parametrize("shift", [-2, -1, 0, 1, 2, 13, km.q, km.b, [True], [True, False, True, True]])
+@pytest.mark.parametrize(
+    "shift", [-2, -1, 0, 1, 2, 13, km.q, km.b, [True], [True, False, True, True]]
+)
 @pytest.mark.parametrize("control", [km.q, km.b, False, True])
 def test_fuzz_left_rotate(n: int, shift: Any, control: Any):
     builder = km.CircuitBuilder()
@@ -110,7 +112,9 @@ def test_fuzz_left_rotate_simple(n: int):
 
 
 @pytest.mark.parametrize("n", [*range(8), 13, 64])
-@pytest.mark.parametrize("shift", [-2, -1, 0, 1, 2, 13, km.q, km.b, [True], [True, False, True, True]])
+@pytest.mark.parametrize(
+    "shift", [-2, -1, 0, 1, 2, 13, km.q, km.b, [True], [True, False, True, True]]
+)
 @pytest.mark.parametrize("control", [km.q, km.b, False, True])
 def test_fuzz_right_rotate(n: int, shift: Any, control: Any):
     builder = km.CircuitBuilder()

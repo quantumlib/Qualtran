@@ -82,7 +82,7 @@ def test_xbool():
     assert hash(km.xbool(False)) == hash(km.xbool(False))
     assert str(km.xbool(False)) == 'xbool(False)'
     assert str(km.xbool(True)) == 'xbool(True)'
-    assert repr(km.xbool(False)) == 'xbool(False)'
-    assert repr(km.xbool(True)) == 'xbool(True)'
+    assert repr(km.xbool(False)) == 'km.xbool(False)'
+    assert repr(km.xbool(True)) == 'km.xbool(True)'
     assert eval(repr(km.xbool(False)), {'km': km}, {}) == km.xbool(False)
     assert eval(repr(km.xbool(True)), {'km': km}, {}) == km.xbool(True)
