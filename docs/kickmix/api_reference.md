@@ -59,6 +59,7 @@
     - [`kickmix.CircuitBuilder.ixor_gf2_div`](#kickmix.CircuitBuilder.ixor_gf2_div)
     - [`kickmix.CircuitBuilder.ixor_gf2_mul`](#kickmix.CircuitBuilder.ixor_gf2_mul)
     - [`kickmix.CircuitBuilder.left_rotate`](#kickmix.CircuitBuilder.left_rotate)
+    - [`kickmix.CircuitBuilder.mark`](#kickmix.CircuitBuilder.mark)
     - [`kickmix.CircuitBuilder.max_qubits`](#kickmix.CircuitBuilder.max_qubits)
     - [`kickmix.CircuitBuilder.multi_controlled_x`](#kickmix.CircuitBuilder.multi_controlled_x)
     - [`kickmix.CircuitBuilder.neg`](#kickmix.CircuitBuilder.neg)
@@ -995,7 +996,29 @@ def finish_circuit(
 def flame_chart_svg(
     self,
 ) -> str:
-    """Returns a flame chart of CCX+CCZ and qubit utilization of the circuit being built.
+    """Returns a flame chart of CCX+CCZ and qubit utilization of the
+    circuit being built.
+
+    Use `builder.mark` to annotate regions of the circuit so they
+    appear as labeled blocks in the flame chart.
+
+    Returns:
+        An SVG string containing the flame chart.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> address = builder.create_quantum_register(4, name='address')
+        >>> total = builder.create_quantum_register(8, name='total')
+        >>> table = [k * k for k in range(16)]
+        >>> with builder.mark('iadd_lookup'):
+        ...     buf = builder.alloc_qubits(len(total))
+        ...     builder.init_lookup(table=table, address=address, target=buf)
+        ...     builder.iadd(buf, target=total)
+        ...     builder.del_lookup(table=table, address=address, target=buf)
+        ...     builder.free(buf)
+        >>> with open('/tmp/flame_chart.svg', 'w') as f:
+        ...     print(builder.flame_chart_svg(), file=f)
     """
 ```
 
@@ -1969,6 +1992,53 @@ def left_rotate(
     *,
     control: object = True,
 ) -> None:
+```
+
+<a name="kickmix.CircuitBuilder.mark"></a>
+```python
+# kickmix.CircuitBuilder.mark
+
+# (in class kickmix.CircuitBuilder)
+def mark(
+    self,
+    name: str | Callable | None = None,
+) -> Any:
+    """Marks a region of the circuit for flame chart analysis.
+
+    Can be used as a `with` block context manager or as a decorator on
+    functions and methods. When used as a decorator without an explicit
+    `name`, the decorated function's `__name__` is used as the mark
+    name. When used as `@km.CircuitBuilder.mark` on a method or
+    function without a bound builder, the `km.CircuitBuilder` instance
+    is automatically located from the call arguments or `self`.
+
+    Args:
+        name: The name of the marked block for
+            `builder.flame_chart_svg()`, or the function to decorate
+            when used as `@builder.mark` or `@km.CircuitBuilder.mark`.
+
+    Returns:
+        A context manager / decorator when given a `name` (or `None`),
+        or the wrapped callable when given a callable directly.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> address = builder.create_quantum_register(4, name='address')
+        >>> total = builder.create_quantum_register(8, name='total')
+        >>> @builder.mark
+        ... def iadd_lookup(table: list[int], idx: km.array, dst: km.array):
+        ...     buf = builder.alloc_qubits(len(dst))
+        ...     builder.init_lookup(table=table, address=idx, target=buf)
+        ...     builder.iadd(buf, target=dst)
+        ...     builder.del_lookup(table=table, address=idx, target=buf)
+        ...     builder.free(buf)
+        >>> with builder.mark('accumulate_tables'):
+        ...     iadd_lookup([3 * k for k in range(16)], address, total)
+        ...     iadd_lookup([k * k for k in range(16)], address, total)
+        >>> with open('/tmp/flame_chart.svg', 'w') as f:
+        ...     print(builder.flame_chart_svg(), file=f)
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.max_qubits"></a>

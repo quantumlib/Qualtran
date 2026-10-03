@@ -124,6 +124,7 @@ PYBIND11_MODULE(kickmix, m) {
     ;
 
     register_circuit_methods(c_circuit);
+    register_circuit_builder_mark_class(m);
     register_circuit_builder_methods(c_circuit_builder);
     register_qcarray_methods(c_qcarray);
     register_xbool_methods(c_xbool);

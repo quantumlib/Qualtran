@@ -1,6 +1,7 @@
 #include "kickmix/py/circuit/circuit_builder.pybind.h"
 
 #include <kickmix/py/val/converted_array.pybind.h>
+#include <pybind11/eval.h>
 
 #include "circuit.pybind.h"
 #include "kickmix/py/circuit/ops/bit_store.pybind.h"
@@ -21,6 +22,97 @@
 
 using namespace kickmix;
 using namespace kickmix_py;
+
+namespace {
+
+/// Locates the builder for an unbound `@km.CircuitBuilder.mark` call by scanning the
+/// call's arguments and then the attributes of `self` (the first argument).
+PyCircuitBuilder &find_builder(
+    const pybind11::object &bound, const pybind11::args &args, const pybind11::kwargs &kwargs) {
+    if (!bound.is_none()) {
+        return bound.cast<PyCircuitBuilder &>();
+    }
+    pybind11::list candidates(args);
+    candidates.attr("extend")(kwargs.attr("values")());
+    if (!args.empty()) {
+        candidates.attr("extend")(pybind11::getattr(args[0], "__dict__", pybind11::dict()).attr("values")());
+    }
+    for (pybind11::handle c : candidates) {
+        if (pybind11::isinstance<PyCircuitBuilder>(c)) {
+            return c.cast<PyCircuitBuilder &>();
+        }
+    }
+    throw std::invalid_argument(
+        "Could not find a CircuitBuilder instance for @CircuitBuilder.mark. "
+        "Pass a CircuitBuilder as an argument, store it as an attribute on self, or use @builder.mark.");
+}
+
+}  // namespace
+
+PyCircuitBuilder &PyCircuitBuilderMark::context_builder() const {
+    if (builder.is_none()) {
+        throw std::invalid_argument(
+            "Cannot use an unbound CircuitBuilder.mark as a 'with' context manager without a CircuitBuilder instance.");
+    }
+    if (!name.has_value()) {
+        throw std::invalid_argument(
+            "A mark name must be provided when using builder.mark(...) as a 'with' context manager.");
+    }
+    return builder.cast<PyCircuitBuilder &>();
+}
+
+pybind11::object PyCircuitBuilderMark::decorate(const pybind11::object &func) const {
+    std::string mark_name =
+        name.value_or(pybind11::str(pybind11::getattr(func, "__name__", pybind11::str("mark"))).cast<std::string>());
+    pybind11::cpp_function runner(
+        [builder = builder, func, mark_name](pybind11::args args, pybind11::kwargs kwargs) -> pybind11::object {
+            PyCircuitBuilder &py_builder = find_builder(builder, args, kwargs);
+            py_builder.start_mark(mark_name);
+            try {
+                pybind11::object result = func(*args, **kwargs);
+                py_builder.end_mark(mark_name);
+                return result;
+            } catch (...) {
+                py_builder.end_mark(mark_name, /*unwinding=*/true);
+                throw;
+            }
+        });
+    // `functools.wraps` can't write metadata onto a pybind11 function, so wrap it in a python lambda.
+    return pybind11::eval(
+        "lambda f, r: __import__('functools').wraps(f)(lambda *a, **k: r(*a, **k))", pybind11::dict())(func, runner);
+}
+
+void kickmix_py::register_circuit_builder_mark_class(pybind11::module &m) {
+    pybind11::class_<PyCircuitBuilderMark>(m, "_CircuitBuilderMark")
+        .def(
+            "__enter__",
+            [](PyCircuitBuilderMark &self) -> PyCircuitBuilderMark & {
+                self.context_builder().start_mark(*self.name);
+                return self;
+            })
+        .def(
+            "__exit__",
+            [](PyCircuitBuilderMark &self,
+               const pybind11::object &exc_type,
+               const pybind11::object &,
+               const pybind11::object &) -> bool {
+                self.context_builder().end_mark(*self.name, /*unwinding=*/!exc_type.is_none());
+                return false;
+            })
+        .def("__call__", &PyCircuitBuilderMark::decorate)
+        .def("__repr__", [](const PyCircuitBuilderMark &self) -> std::string {
+            std::stringstream ss;
+            ss << "<km._CircuitBuilderMark";
+            if (self.name.has_value()) {
+                ss << " name=" << pybind11::repr(pybind11::str(*self.name)).cast<std::string>();
+            }
+            if (self.builder.is_none()) {
+                ss << " unbound";
+            }
+            ss << ">";
+            return ss.str();
+        });
+}
 
 void broadcast_cz_struct(PyCircuitBuilder &self, const stride_span_z &c1, const stride_span_z &c2) {
     if (c1.count != c2.count) {
@@ -394,9 +486,98 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
             self.builder.write_analysis_svg_to(ss, 100);
             return ss.str();
         },
-        R"DOC(
-            Returns a flame chart of CCX+CCZ and qubit utilization of the circuit being built.
-        )DOC");
+        clean_doc_string(R"DOC(
+            @signature def flame_chart_svg(self) -> str:
+            Returns a flame chart of CCX+CCZ and qubit utilization of the
+            circuit being built.
+
+            Use `builder.mark` to annotate regions of the circuit so they
+            appear as labeled blocks in the flame chart.
+
+            Returns:
+                An SVG string containing the flame chart.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> address = builder.create_quantum_register(4, name='address')
+                >>> total = builder.create_quantum_register(8, name='total')
+                >>> table = [k * k for k in range(16)]
+                >>> with builder.mark('iadd_lookup'):
+                ...     buf = builder.alloc_qubits(len(total))
+                ...     builder.init_lookup(table=table, address=address, target=buf)
+                ...     builder.iadd(buf, target=total)
+                ...     builder.del_lookup(table=table, address=address, target=buf)
+                ...     builder.free(buf)
+                >>> with open('/tmp/flame_chart.svg', 'w') as f:
+                ...     print(builder.flame_chart_svg(), file=f)
+        )DOC")
+            .data());
+
+    c_circuit_builder.def(
+        "mark",
+        [](const pybind11::object &self_or_name, const pybind11::object &name) -> pybind11::object {
+            // `km.CircuitBuilder.mark(...)` is unbound, so the first positional may be the name.
+            PyCircuitBuilderMark mark;
+            pybind11::object arg = name;
+            if (pybind11::isinstance<PyCircuitBuilder>(self_or_name)) {
+                mark.builder = self_or_name;
+            } else if (name.is_none()) {
+                arg = self_or_name;
+            } else {
+                throw pybind11::type_error("mark() got multiple values for argument 'name'.");
+            }
+            if (PyCallable_Check(arg.ptr())) {
+                return mark.decorate(arg);
+            }
+            if (!arg.is_none()) {
+                if (!pybind11::isinstance<pybind11::str>(arg)) {
+                    throw pybind11::type_error("Expected mark argument to be a string name, a callable, or None.");
+                }
+                mark.name = arg.cast<std::string>();
+            }
+            return pybind11::cast(mark);
+        },
+        pybind11::arg("name") = pybind11::none(),
+        clean_doc_string(R"DOC(
+            @signature def mark(self, name: str | Callable | None = None) -> Any:
+            Marks a region of the circuit for flame chart analysis.
+
+            Can be used as a `with` block context manager or as a decorator on
+            functions and methods. When used as a decorator without an explicit
+            `name`, the decorated function's `__name__` is used as the mark
+            name. When used as `@km.CircuitBuilder.mark` on a method or
+            function without a bound builder, the `km.CircuitBuilder` instance
+            is automatically located from the call arguments or `self`.
+
+            Args:
+                name: The name of the marked block for
+                    `builder.flame_chart_svg()`, or the function to decorate
+                    when used as `@builder.mark` or `@km.CircuitBuilder.mark`.
+
+            Returns:
+                A context manager / decorator when given a `name` (or `None`),
+                or the wrapped callable when given a callable directly.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> address = builder.create_quantum_register(4, name='address')
+                >>> total = builder.create_quantum_register(8, name='total')
+                >>> @builder.mark
+                ... def iadd_lookup(table: list[int], idx: km.array, dst: km.array):
+                ...     buf = builder.alloc_qubits(len(dst))
+                ...     builder.init_lookup(table=table, address=idx, target=buf)
+                ...     builder.iadd(buf, target=dst)
+                ...     builder.del_lookup(table=table, address=idx, target=buf)
+                ...     builder.free(buf)
+                >>> with builder.mark('accumulate_tables'):
+                ...     iadd_lookup([3 * k for k in range(16)], address, total)
+                ...     iadd_lookup([k * k for k in range(16)], address, total)
+                >>> with open('/tmp/flame_chart.svg', 'w') as f:
+                ...     print(builder.flame_chart_svg(), file=f)
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "x",

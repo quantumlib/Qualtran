@@ -1293,7 +1293,7 @@ void CircuitBuilder::write_analysis_svg_to(std::ostream &out, size_t reference_q
         }
     }
 
-    out << R"SVG(<svg viewBox="0 0 1000.0 200.0" xmlns="http://www.w3.org/2000/svg">)SVG" << "\n";
+    out << R"SVG(<svg viewBox="-100 -140 1200.0 340.0" style="display: block; margin: auto;" xmlns="http://www.w3.org/2000/svg">)SVG" << "\n";
     double x_scale = 1000.0 / toffoli_count;
     double y_scale = 100.0 / circuit.num_qubits;
     std::vector<size_t> layer_xs{0};
@@ -1317,35 +1317,59 @@ void CircuitBuilder::write_analysis_svg_to(std::ostream &out, size_t reference_q
         out << " stroke=\"black\"";
         out << " fill=\"blue\"";
         out << " />\n";
-        out << "<rect";
-        out << " x=\"" << layer_x * x_scale << "\"";
-        out << " y=\"" << h * 10 - 10 << "\"";
-        out << " width=\"" << group_toffoli_counts[k] * x_scale << "\"";
-        out << " height=\"" << 10 << "\"";
-        out << " stroke=\"black\"";
-        out << " fill=\"red\"";
-        out << " opacity=\"0.8\"";
-        out << " />\n";
-        out << "<text";
-        out << " x=\"" << (layer_x + group_toffoli_counts[k] * 0.5) * x_scale << "\"";
-        out << " y=\"" << h * 10 - 3 << "\"";
-        std::string title;
-        title.append(group_name);
-        if (group_hits[k] > 1) {
-            title.append(" (x");
-            title.append(std::to_string(group_hits[k]));
-            title.append(")");
+        if (h > 1) {
+            out << "<rect";
+            out << " x=\"" << layer_x * x_scale << "\"";
+            out << " y=\"" << h * 10 - 20 << "\"";
+            out << " width=\"" << group_toffoli_counts[k] * x_scale << "\"";
+            out << " height=\"" << 10 << "\"";
+            out << " stroke=\"black\"";
+            out << " fill=\"red\"";
+            out << " opacity=\"0.8\"";
+            out << " />\n";
+            out << "<text";
+            out << " x=\"" << (layer_x + group_toffoli_counts[k] * 0.5) * x_scale << "\"";
+            out << " y=\"" << h * 10 - 13 << "\"";
+            std::string title;
+            title.append(group_name);
+            if (group_hits[k] > 1) {
+                title.append(" (x");
+                title.append(std::to_string(group_hits[k]));
+                title.append(")");
+            }
+            float box_width = group_toffoli_counts[k] * x_scale;
+            float font_size = box_width / title.size() * 2;
+            font_size = std::min(5.0f, font_size);
+            font_size = std::max(0.5f, font_size);
+            out << " font-size=\"" << font_size << "\"";
+            out << " dominant-baseline=\"bottom\"";
+            out << " text-anchor=\"middle\"";
+            out << " fill=\"black\"";
+            out << " >";
+            for (char ch : title) {
+                switch (ch) {
+                    case '&':
+                        out << "&amp;";
+                        break;
+                    case '\'':
+                        out << "&apos;";
+                        break;
+                    case '"':
+                        out << "&quot;";
+                        break;
+                    case '<':
+                        out << "&lt;";
+                        break;
+                    case '>':
+                        out << "&gt;";
+                        break;
+                    default:
+                        out << ch;
+                        break;
+                }
+            }
+            out << "</text>\n";
         }
-        float box_width = group_toffoli_counts[k] * x_scale;
-        float font_size = box_width / title.size() * 2;
-        font_size = std::min(5.0f, font_size);
-        font_size = std::max(0.5f, font_size);
-        out << " font-size=\"" << font_size << "\"";
-        out << " dominant-baseline=\"bottom\"";
-        out << " text-anchor=\"middle\"";
-        out << " fill=\"black\"";
-        out << " >" << title;
-        out << "</text>\n";
     }
     out << "<text";
     out << " x=\"500\"";

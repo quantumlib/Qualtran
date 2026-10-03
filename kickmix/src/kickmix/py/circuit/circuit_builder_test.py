@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+import xml.etree.ElementTree as ET
+
 import pytest
 
 import kickmix as km
@@ -67,3 +69,89 @@ def test_z_pow():
         Z_POW q3 0.125
         Z_POW q4 1.875
     """)
+
+
+def test_builder_mark():
+    builder = km.CircuitBuilder()
+    q = builder.create_quantum_register(4, name="q")
+
+    reused = builder.mark("reused")
+    assert repr(reused) == "<km._CircuitBuilderMark name='reused'>"
+    for _ in range(2):
+        with reused:
+            builder.ccx(q[0], q[1], q[2])
+
+    @builder.mark
+    def bound_fn(x: int, *, y: int = 1) -> int:
+        """Bound docstring."""
+        with builder.mark(name="inner <0 & 1>"):
+            builder.ccx(q[1], q[2], q[3])
+        return x + y
+
+    class Gadget:
+        def __init__(self, cb: km.CircuitBuilder):
+            self.cb = cb
+
+        @km.CircuitBuilder.mark("gadget_step")
+        def step(self) -> None:
+            self.cb.ccx(q[0], q[1], q[2])
+
+    @km.CircuitBuilder.mark
+    def unbound_fn(cb: km.CircuitBuilder) -> None:
+        cb.ccx(q[0], q[1], q[2])
+
+    assert bound_fn.__name__ == "bound_fn"
+    assert bound_fn.__doc__ == "Bound docstring."
+    assert bound_fn(3, y=4) == 7
+    Gadget(builder).step()
+    unbound_fn(builder)
+
+    svg = builder.flame_chart_svg()
+    ET.fromstring(svg)
+    assert "entire circuit" not in svg
+    for expected in [
+        ">reused (x2)</text>",
+        ">bound_fn</text>",
+        ">inner &lt;0 &amp; 1&gt;</text>",
+        ">gadget_step</text>",
+        ">unbound_fn</text>",
+        ">4 qubits, 5 toffolis</text>",
+    ]:
+        assert expected in svg
+
+
+def test_builder_mark_errors():
+    builder = km.CircuitBuilder()
+    q = builder.create_quantum_register(3, name="q")
+
+    with pytest.raises(RuntimeError, match="boom"):
+        with builder.mark("unwound"):
+            builder.ccx(q[0], q[1], q[2])
+            raise RuntimeError("boom")
+    assert ">unwound</text>" in builder.flame_chart_svg()
+
+    with pytest.raises(ValueError, match="mark name must be provided"):
+        with builder.mark():
+            pass
+    with pytest.raises(ValueError, match="unbound CircuitBuilder.mark"):
+        with km.CircuitBuilder.mark("unbound"):
+            pass
+    with pytest.raises(ValueError, match="Could not find a CircuitBuilder"):
+        km.CircuitBuilder.mark(lambda x: x)(5)
+
+    m1, m2 = builder.mark("m1"), builder.mark("m2")
+    m1.__enter__()
+    m2.__enter__()
+    with pytest.raises(ValueError, match="LIFO"):
+        m1.__exit__(None, None, None)
+    m2.__exit__(None, None, None)
+    m1.__exit__(None, None, None)
+
+    for bad_call in [
+        lambda: builder.mark(123),
+        lambda: builder.mark("a", "b"),
+        lambda: builder.mark("a", name="b"),
+        lambda: builder.mark(invalid_kw="a"),
+    ]:
+        with pytest.raises(TypeError):
+            bad_call()
