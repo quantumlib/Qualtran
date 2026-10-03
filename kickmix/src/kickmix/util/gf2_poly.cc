@@ -35,8 +35,109 @@ GF2Poly GF2Poly::from_fixed_width_int(const FixedWidthInt &value) {
     return result;
 }
 
-GF2Poly GF2Poly::from_str(std::string_view text) {
-    return GF2Poly::from_fixed_width_int(FixedWidthInt::from_str(text, MAX_BITS));
+namespace {
+
+std::string_view trim_ws(std::string_view s) {
+    while (!s.empty() && (s.front() == ' ' || s.front() == '\t' || s.front() == '\n' || s.front() == '\r')) {
+        s.remove_prefix(1);
+    }
+    while (!s.empty() && (s.back() == ' ' || s.back() == '\t' || s.back() == '\n' || s.back() == '\r')) {
+        s.remove_suffix(1);
+    }
+    return s;
+}
+
+}  // namespace
+
+GF2Poly GF2Poly::from_str(std::string_view raw_text) {
+    std::string_view text = trim_ws(raw_text);
+    if (text.empty()) {
+        throw std::invalid_argument(
+            "Cannot parse empty string as a GF(2) polynomial. Expected e.g. \"x^4 + x + 1\" or \"0x13\".");
+    }
+
+    if ((text.starts_with("0x") || text.starts_with("0X") || text.starts_with("0b") || text.starts_with("0B")) &&
+        text.find('+') == std::string_view::npos) {
+        std::string normalized(text);
+        if (normalized[1] == 'X') {
+            normalized[1] = 'x';
+        } else if (normalized[1] == 'B') {
+            normalized[1] = 'b';
+        }
+        return GF2Poly::from_fixed_width_int(FixedWidthInt::from_str(normalized, MAX_BITS));
+    }
+
+    GF2Poly result;
+    std::string_view remaining = text;
+    auto add_term = [&](size_t exp, std::string_view token) {
+        if (result.bit(exp)) {
+            throw std::invalid_argument(
+                "Polynomial term \"" + std::string(token) + "\" appears more than once in \"" + std::string(raw_text) +
+                "\". Over GF(2) repeated terms cancel, so write each power of x at most once (e.g. "
+                "\"x^4 + x + 1\").");
+        }
+        result.xor_bit(exp);
+    };
+    while (true) {
+        size_t plus_pos = remaining.find('+');
+        std::string_view token =
+            trim_ws(plus_pos == std::string_view::npos ? remaining : remaining.substr(0, plus_pos));
+        if (token.empty()) {
+            throw std::invalid_argument(
+                "Invalid empty polynomial term in \"" + std::string(raw_text) +
+                "\". Expected terms separated by '+', e.g. \"x^4 + x + 1\".");
+        }
+
+        if (token == "0") {
+            // Zero term contributes nothing.
+        } else if (token == "1") {
+            add_term(0, token);
+        } else if (token.front() == 'x' || token.front() == 'X') {
+            std::string_view rest = trim_ws(token.substr(1));
+            if (rest.empty()) {
+                add_term(1, token);
+            } else if (rest.starts_with("^") || rest.starts_with("**")) {
+                std::string_view exp_str = trim_ws(rest.substr(rest.starts_with("**") ? 2 : 1));
+                if (exp_str.empty()) {
+                    throw std::invalid_argument(
+                        "Missing exponent in polynomial term \"" + std::string(token) + "\" in \"" +
+                        std::string(raw_text) + "\". Expected e.g. \"x^4 + x + 1\".");
+                }
+                size_t exp = 0;
+                for (char c : exp_str) {
+                    if (c < '0' || c > '9') {
+                        throw std::invalid_argument(
+                            "Invalid exponent in polynomial term \"" + std::string(token) + "\" in \"" +
+                            std::string(raw_text) + "\". Expected a non-negative integer, e.g. \"x^4 + x + 1\".");
+                    }
+                    exp = exp * 10 + static_cast<size_t>(c - '0');
+                    if (exp >= MAX_BITS) {
+                        throw std::invalid_argument(
+                            "Polynomial term \"" + std::string(token) +
+                            "\" has exponent >= " + std::to_string(MAX_BITS) + " (maximum supported field degree is " +
+                            std::to_string(GF2_MAX_DEGREE) + ").");
+                    }
+                }
+                add_term(exp, token);
+            } else {
+                throw std::invalid_argument(
+                    "Invalid polynomial term \"" + std::string(token) + "\" in \"" + std::string(raw_text) +
+                    "\". Expected terms like \"x^4\", \"x\", or \"1\" (e.g. \"x^4 + x + 1\").");
+            }
+        } else {
+            throw std::invalid_argument(
+                "Invalid polynomial term \"" + std::string(token) + "\" in \"" + std::string(raw_text) +
+                "\". Expected terms like \"x^4\", \"x\", or \"1\" (e.g. \"x^4 + x + 1\"), or a hex/binary string "
+                "like \"0x13\".");
+        }
+
+        if (plus_pos == std::string_view::npos) {
+            break;
+        }
+        remaining = remaining.substr(plus_pos + 1);
+    }
+
+    return result;
 }
 
 void GF2Poly::set_bit(size_t k, bool value) {
@@ -319,6 +420,30 @@ std::string GF2Poly::str() const {
         ss << "0123456789ABCDEF"[nibble];
     }
     return ss.str();
+}
+
+std::string GF2Poly::algebraic_str() const {
+    if (is_zero()) {
+        return "0";
+    }
+    size_t deg = degree();
+    std::string out;
+    for (size_t k = deg + 1; k--;) {
+        if (!bit(k)) {
+            continue;
+        }
+        if (!out.empty()) {
+            out += " + ";
+        }
+        if (k == 0) {
+            out += "1";
+        } else if (k == 1) {
+            out += "x";
+        } else {
+            out += "x^" + std::to_string(k);
+        }
+    }
+    return out;
 }
 
 std::ostream &kickmix::operator<<(std::ostream &out, const GF2Poly &value) {

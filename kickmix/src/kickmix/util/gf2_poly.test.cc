@@ -317,6 +317,44 @@ TEST(gf2_poly, str) {
     ASSERT_EQ(GF2Poly::monomial(64).str(), "0x10000000000000000");
 }
 
+TEST(gf2_poly, from_str_and_algebraic_str) {
+    ASSERT_EQ(GF2Poly::from_str("0"), GF2Poly());
+    ASSERT_EQ(GF2Poly().algebraic_str(), "0");
+    ASSERT_EQ(GF2Poly::from_str("1"), GF2Poly::from_u64(1));
+    ASSERT_EQ(GF2Poly::from_u64(1).algebraic_str(), "1");
+    ASSERT_EQ(GF2Poly::from_str("x"), GF2Poly::from_u64(2));
+    ASSERT_EQ(GF2Poly::from_u64(2).algebraic_str(), "x");
+    ASSERT_EQ(GF2Poly::from_str("x^4 + x + 1"), GF2Poly::from_u64(0x13));
+    ASSERT_EQ(GF2Poly::from_str("x**4 + x + 1"), GF2Poly::from_u64(0x13));
+    ASSERT_EQ(GF2Poly::from_str("1 + x + X^4"), GF2Poly::from_u64(0x13));
+    ASSERT_EQ(GF2Poly::from_str("0x11B"), GF2Poly::from_u64(0x11B));
+    ASSERT_EQ(GF2Poly::from_str("0b10011"), GF2Poly::from_u64(0x13));
+    ASSERT_EQ(GF2Poly::from_u64(0x11B).algebraic_str(), "x^8 + x^4 + x^3 + x + 1");
+
+    GF2Poly p100 = GF2Poly::from_str("x^100 + x^10 + x^2 + 1");
+    ASSERT_EQ(p100.degree(), 100);
+    ASSERT_EQ(p100.weight(), 4);
+    ASSERT_TRUE(p100.bit(100));
+    ASSERT_TRUE(p100.bit(10));
+    ASSERT_TRUE(p100.bit(2));
+    ASSERT_TRUE(p100.bit(0));
+    ASSERT_EQ(p100.algebraic_str(), "x^100 + x^10 + x^2 + 1");
+    ASSERT_EQ(GF2Poly::from_str(p100.algebraic_str()), p100);
+
+    ASSERT_THROW({ GF2Poly::from_str(""); }, std::invalid_argument);
+    ASSERT_THROW({ GF2Poly::from_str("x^4 + "); }, std::invalid_argument);
+    ASSERT_THROW({ GF2Poly::from_str("+ x^4"); }, std::invalid_argument);
+    ASSERT_THROW({ GF2Poly::from_str("x^"); }, std::invalid_argument);
+    ASSERT_THROW({ GF2Poly::from_str("x^-1"); }, std::invalid_argument);
+    ASSERT_THROW({ GF2Poly::from_str("2*x + 1"); }, std::invalid_argument);
+    ASSERT_THROW({ GF2Poly::from_str("x^1024 + 1"); }, std::invalid_argument);
+    // Repeated terms would silently cancel over GF(2), so they are rejected.
+    ASSERT_THROW({ GF2Poly::from_str("x^4 + x^4 + x + 1"); }, std::invalid_argument);
+    ASSERT_THROW({ GF2Poly::from_str("x + x^1"); }, std::invalid_argument);
+    ASSERT_THROW({ GF2Poly::from_str("1 + x^0"); }, std::invalid_argument);
+    ASSERT_EQ(GF2Poly::from_str("x^4 + 0 + 1 + 0"), GF2Poly::from_u64(0x11));
+}
+
 TEST(gf2_poly, ixor_shifted_self_aliasing) {
     for (size_t shift : std::vector<size_t>{0, 1, 13, 63, 64, 65, 128, 192}) {
         GF2Poly a;
