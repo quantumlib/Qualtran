@@ -260,7 +260,7 @@ def test_controlled_parallel():
     bloq = Controlled(subbloq=TestParallelCombo(), ctrl_spec=CtrlSpec())
     cbloq = qlt_testing.assert_valid_bloq_decomposition(bloq)
     assert cbloq.debug_text() == """\
-Split<0>
+Split(3)<0>
   LeftDangle.reg -> reg
   reg[0] -> C(TestAtom)<1>.q
   reg[1] -> C(TestAtom)<2>.q
@@ -268,23 +268,23 @@ Split<0>
 --------------------
 C(TestAtom)<1>
   LeftDangle.ctrl -> ctrl
-  Split<0>.reg[0] -> q
+  Split(3)<0>.reg[0] -> q
   ctrl -> C(TestAtom)<2>.ctrl
-  q -> Join<4>.reg[0]
+  q -> Join(3)<4>.reg[0]
 --------------------
 C(TestAtom)<2>
   C(TestAtom)<1>.ctrl -> ctrl
-  Split<0>.reg[1] -> q
+  Split(3)<0>.reg[1] -> q
   ctrl -> C(TestAtom)<3>.ctrl
-  q -> Join<4>.reg[1]
+  q -> Join(3)<4>.reg[1]
 --------------------
 C(TestAtom)<3>
   C(TestAtom)<2>.ctrl -> ctrl
-  Split<0>.reg[2] -> q
-  q -> Join<4>.reg[2]
+  Split(3)<0>.reg[2] -> q
+  q -> Join(3)<4>.reg[2]
   ctrl -> RightDangle.ctrl
 --------------------
-Join<4>
+Join(3)<4>
   C(TestAtom)<1>.q -> reg[0]
   C(TestAtom)<2>.q -> reg[1]
   C(TestAtom)<3>.q -> reg[2]

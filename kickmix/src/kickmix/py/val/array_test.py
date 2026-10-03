@@ -146,3 +146,10 @@ def test_qcarray_add():
         items2.append(km.b(k + 100))
         items2.append(k % 3 == 0)
     assert km.array(items1) + km.array(items2) == km.array(items1 + items2)
+
+
+def test_array_repr():
+    expected = km.array([km.q(2), km.b(3), km.xbool(5), False, True, km.xb(7)])
+    actual = eval(repr(expected), {'km': km}, {})
+    assert actual == expected
+    assert repr(actual) == repr(expected)

@@ -40,7 +40,7 @@ from qualtran.bloqs.chemistry.hubbard_model.qubitization.HubbardMajorannaOperato
     target: QAny(8),
 ] {
     q                    = X                [q=x]               
-    reg                  = Split            [reg=target]        
+    reg                  = Split(8)         [reg=target]        
     ctrl, target2        = And10            [ctrl=[q, y]]       
     ctrl2, target3       = And10            [ctrl=[target2, spin]]
     reg2                 = Allocate         []                  
@@ -87,7 +87,7 @@ from qualtran.bloqs.chemistry.hubbard_model.qubitization.HubbardMajorannaOperato
     ctrl34               = And_adj          [ctrl=[ctrl26, ctrl18[1]], target=ctrl33[0]]
     q18, q29             = CZ               [q1=target28, q2=target29]
     |                    = Free(QBit)       [reg=q18]           
-    reg3                 = Join             [reg=[q22, q23, q24, q25, q26, q27, q28, q29]]
+    reg3                 = Join(8)          [reg=[q22, q23, q24, q25, q26, q27, q28, q29]]
                            return           [x=ctrl34[0], y=ctrl34[1], spin=ctrl33[1], target=reg3]
 }
 
@@ -99,22 +99,22 @@ from qualtran.bloqs.basic_gates.ZGate
 qdef CSwap
 from qualtran.bloqs.basic_gates.CSwap(1)
 [
-    ctrl: QBit @ dot,
+    ctrl: QBit,
     x: QBit,
     y: QBit,
 ] {
-    reg                  = Split(variant=1) [reg=x]             
-    reg2                 = Split(variant=1) [reg=y]             
+    reg                  = Split(1)         [reg=x]             
+    reg2                 = Split(1)         [reg=y]             
     ctrl2, x2, y2        = TwoBitCSwap      [ctrl=ctrl, x=reg[0], y=reg2[0]]
-    reg3                 = Join(variant=1)  [reg=[x2]]          
-    reg4                 = Join(variant=1)  [reg=[y2]]          
+    reg3                 = Join(1)          [reg=[x2]]          
+    reg4                 = Join(1)          [reg=[y2]]          
                            return           [ctrl=ctrl2, x=reg3, y=reg4]
 }
 
 
 extern qdef TwoBitCSwap
 from qualtran.bloqs.basic_gates.TwoBitCSwap
-[ctrl: QBit @ dot, x: QBit, y: QBit]
+[ctrl: QBit, x: QBit, y: QBit]
 
 qdef HubbardMajorannaOperator(2, 2, X)
 from qualtran.bloqs.chemistry.hubbard_model.qubitization.HubbardMajorannaOperator(2, 2, 'X', control_val=None)
@@ -125,7 +125,7 @@ from qualtran.bloqs.chemistry.hubbard_model.qubitization.HubbardMajorannaOperato
     target: QAny(8),
 ] {
     q                    = X                [q=x]               
-    reg                  = Split            [reg=target]        
+    reg                  = Split(8)         [reg=target]        
     ctrl, target2        = And10            [ctrl=[q, y]]       
     ctrl2, target3       = And10            [ctrl=[target2, spin]]
     reg2                 = Allocate         []                  
@@ -172,7 +172,7 @@ from qualtran.bloqs.chemistry.hubbard_model.qubitization.HubbardMajorannaOperato
     ctrl34               = And_adj          [ctrl=[ctrl26, ctrl18[1]], target=ctrl33[0]]
     q18, q29             = CZ               [q1=target28, q2=target29]
     |                    = Free(QBit)       [reg=q18]           
-    reg3                 = Join             [reg=[q22, q23, q24, q25, q26, q27, q28, q29]]
+    reg3                 = Join(8)          [reg=[q22, q23, q24, q25, q26, q27, q28, q29]]
                            return           [x=ctrl34[0], y=ctrl34[1], spin=ctrl33[1], target=reg3]
 }
 
@@ -180,13 +180,13 @@ from qualtran.bloqs.chemistry.hubbard_model.qubitization.HubbardMajorannaOperato
 qdef HubbardSpinUpZ(2, 2)
 from qualtran.bloqs.chemistry.hubbard_model.qubitization.HubbardSpinUpZ(2, 2, control_val=None)
 [
-    V: BQUInt(1, 2) @ dot,
+    V: BQUInt(1, 2),
     x: BQUInt(1, 2),
     y: BQUInt(1, 2),
     target: QAny(8),
 ] {
     y1, y2               = Split2(4, 4)     [x=target]          
-    reg                  = Split(variant=2) [reg=y2]            
+    reg                  = Split(4)         [reg=y2]            
     ctrl, target2        = And10            [ctrl=[V, y]]       
     ctrl2, target3       = And10            [ctrl=[target2, x]] 
     q1, q2               = CZ               [q1=target3, q2=reg[0]]
@@ -200,7 +200,7 @@ from qualtran.bloqs.chemistry.hubbard_model.qubitization.HubbardSpinUpZ(2, 2, co
     q14, q24             = CZ               [q1=target7, q2=reg[3]]
     ctrl8                = And_adj          [ctrl=[ctrl7, ctrl6[1]], target=q14]
     ctrl9                = And_adj          [ctrl=[ctrl5, ctrl[1]], target=ctrl8[0]]
-    reg2                 = Join(variant=2)  [reg=[q2, q22, q23, q24]]
+    reg2                 = Join(4)          [reg=[q2, q22, q23, q24]]
     x2                   = Join2(4, 4)      [y1=y1, y2=reg2]    
                            return           [V=ctrl9[0], x=ctrl8[1], y=ctrl9[1], target=x2]
 }
@@ -212,9 +212,9 @@ from qualtran.bloqs.basic_gates.GlobalPhase(exponent=-0.5, eps=1e-11)
 
 extern qdef X
 from qualtran.bloqs.basic_gates.XGate
-[q: QBit @ oplus]
+[q: QBit]
 
-qcast Split
+qcast Split(8)
 [reg: QAny(8) -> QBit[8]]
 
 extern qdef And10
@@ -227,15 +227,15 @@ from qualtran.bloqs.bookkeeping.Allocate(QAny(1), False)
 
 extern qdef CNOT
 from qualtran.bloqs.basic_gates.CNOT
-[ctrl: QBit @ dot, target: QBit @ oplus]
+[ctrl: QBit, target: QBit]
 
 extern qdef CYGate
 from qualtran.bloqs.basic_gates.CYGate
-[ctrl: QBit @ dot, target: QBit]
+[ctrl: QBit, target: QBit]
 
 extern qdef CZ
 from qualtran.bloqs.basic_gates.CZ
-[q1: QBit @ dot, q2: QBit @ dot]
+[q1: QBit, q2: QBit]
 
 extern qdef And_adj
 from qualtran.bloqs.mcmt.And(1, 1, True)
@@ -245,22 +245,22 @@ extern qdef Free(QBit)
 from qualtran.bloqs.bookkeeping.Free(QBit, False)
 [reg: QBit -> |]
 
-qcast Join
+qcast Join(8)
 [reg: QBit[8] -> QAny(8)]
 
-qcast Split(variant=1)
+qcast Split(1)
 [reg: QBit -> QBit[1]]
 
-qcast Join(variant=1)
+qcast Join(1)
 [reg: QBit[1] -> QAny(1)]
 
 qcast Split2(4, 4)
 [x: QAny(8) -> |, y1: | -> QAny(4), y2: | -> QAny(4)]
 
-qcast Split(variant=2)
+qcast Split(4)
 [reg: QAny(4) -> QBit[4]]
 
-qcast Join(variant=2)
+qcast Join(4)
 [reg: QBit[4] -> QAny(4)]
 
 qcast Join2(4, 4)

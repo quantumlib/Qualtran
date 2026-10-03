@@ -3,4 +3,4 @@
 
 extern qdef CNOT
 from qualtran.bloqs.basic_gates.CNOT
-[ctrl: QBit @ dot, target: QBit @ oplus]
+[ctrl: QBit, target: QBit]

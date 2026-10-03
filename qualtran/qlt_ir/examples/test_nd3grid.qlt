@@ -19,12 +19,12 @@ from qualtran.bloqs.for_testing.TestND3Grid
 
 extern qdef X
 from qualtran.bloqs.basic_gates.XGate
-[q: QBit @ oplus]
+[q: QBit]
 
 extern qdef CNOT
 from qualtran.bloqs.basic_gates.CNOT
-[ctrl: QBit @ dot, target: QBit @ oplus]
+[ctrl: QBit, target: QBit]
 
 extern qdef Toffoli
 from qualtran.bloqs.basic_gates.Toffoli
-[ctrl: QBit[2], target: QBit @ oplus]
+[ctrl: QBit[2], target: QBit]

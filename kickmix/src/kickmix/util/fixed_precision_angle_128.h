@@ -16,6 +16,8 @@ struct FixedPrecisionAngle128 {
     bool operator==(const FixedPrecisionAngle128 &rhs) const = default;
     explicit operator bool() const;
 
+    static FixedPrecisionAngle128 from_power_of_2_half_turns(int exponent);
+
     /// Returns the given double (mod 2) as a FixedPrecisionAngle128, or else throws.
     static FixedPrecisionAngle128 from_half_turns_exact_double(double value);
 
@@ -53,6 +55,8 @@ struct FixedPrecisionAngle128 {
     bool is_multiple_of_180_degrees() const;
     FixedPrecisionAngle128 &operator=(int half_turns);
     FixedPrecisionAngle128 &operator+=(int half_turns);
+    FixedPrecisionAngle128 &operator*=(uint64_t factor);
+    FixedPrecisionAngle128 operator*(uint64_t factor) const;
 };
 std::ostream &operator<<(std::ostream &out, const FixedPrecisionAngle128 &val);
 

@@ -1,4 +1,3 @@
-#include <kickmix/py/val/converted_array.pybind.h>
 #include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
 
@@ -6,6 +5,7 @@
 #include "kickmix/id/qubit_or_true.h"
 #include "kickmix/py/circuit/circuit.pybind.h"
 #include "kickmix/py/circuit/circuit_builder.pybind.h"
+#include "kickmix/py/val/converted_array.pybind.h"
 #include "kickmix/py/val/id.pybind.h"
 
 using namespace kickmix;

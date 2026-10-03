@@ -123,6 +123,10 @@ struct stride_span {
 
     /// Returns a reversed view of the same items.
     stride_span<T> reversed() const {
+        if (!count) {
+            // Avoid moving the ptr when the span is empty (causes warnings when ptr is null).
+            return stride_span(ptr, -stride, count);
+        }
         return stride_span(ptr + stride * count - stride, -stride, count);
     }
 
