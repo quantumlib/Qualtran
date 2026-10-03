@@ -169,6 +169,7 @@
     - [`kickmix.xbool.__lt__`](#kickmix.xbool.__lt__)
     - [`kickmix.xbool.__ne__`](#kickmix.xbool.__ne__)
     - [`kickmix.xbool.__repr__`](#kickmix.xbool.__repr__)
+    - [`kickmix.xbool.__str__`](#kickmix.xbool.__str__)
 ```python
 # Types used by the method definitions.
 from typing import overload, TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple, Union
@@ -1965,10 +1966,103 @@ def ixor_gf2_mul(
 # (in class kickmix.CircuitBuilder)
 def left_rotate(
     self,
-    target: object,
+    target: km.array | Sequence[km.q],
+    shift: int | km.array | Sequence[km.q | km.b | bool] = 1,
     *,
-    control: object = True,
+    control: km.q | km.b | bool = True,
 ) -> None:
+    """Left rotates the given qubits, cyclically permuting them.
+
+    A left rotation is a permutation that moves the value of the qubit target[k]
+    into the qubit target[(k + shift) % len(target)].
+
+    Args:
+        target: The qubits to permute.
+        shift: Defaults to 1. A little-endian value specifying how much to
+            left-rotate the target qubits.
+        control: Defaults to True. Determines if the left rotation actually occurs.
+
+    Examples:
+        >>> import kickmix as km
+
+        >>> builder = km.CircuitBuilder()
+        >>> target = builder.create_quantum_register(8, name='target')
+        >>> builder.left_rotate(target)
+        >>> print(builder.finish_circuit().text_diagram())
+        q0: -target[0]-SWAP-------------------------------
+                       |
+        q1: -target[1]-|----SWAP-----------SWAP-----------
+                       |    |              |
+        q2: -target[2]-|----|----SWAP------|----SWAP------
+                       |    |    |         |    |
+        q3: -target[3]-|----|----|----SWAP-|----|----SWAP-
+                       |    |    |    |    |    |    |
+        q4: -target[4]-|----|----|----SWAP-|----|----|----
+                       |    |    |         |    |    |
+        q5: -target[5]-|----|----SWAP------|----|----SWAP-
+                       |    |              |    |
+        q6: -target[6]-|----SWAP-----------|----SWAP------
+                       |                   |
+        q7: -target[7]-SWAP----------------SWAP-----------
+
+        >>> builder = km.CircuitBuilder()
+        >>> target = builder.create_quantum_register(8, name='target')
+        >>> builder.left_rotate(target, 3)
+        >>> print(builder.finish_circuit().text_diagram())
+        q0: -target[0]-SWAP-----------SWAP-----------
+                       |              |
+        q1: -target[1]-|----SWAP------|--------------
+                       |    |         |
+        q2: -target[2]-|----|----SWAP-SWAP-----------
+                       |    |    |
+        q3: -target[3]-|----|----|----SWAP-SWAP------
+                       |    |    |    |    |
+        q4: -target[4]-|----|----|----SWAP-|----SWAP-
+                       |    |    |         |    |
+        q5: -target[5]-|----|----SWAP------|----|----
+                       |    |              |    |
+        q6: -target[6]-|----SWAP-----------|----SWAP-
+                       |                   |
+        q7: -target[7]-SWAP----------------SWAP------
+
+        >>> builder = km.CircuitBuilder()
+        >>> target = builder.create_quantum_register(4, name='target')
+        >>> control = builder.create_quantum_register(1, name='control')[0]
+        >>> builder.left_rotate(target, 2, control=control)
+        >>> print(builder.finish_circuit().text_diagram())
+        q0: -target[0]--@-X-@-------@-X-@-----
+                        | | |       | | |
+        q1: -target[1]--|-|-|-@-X-@-X-@-X-----
+                        | | | | | |   |
+        q2: -target[2]--|-|-|-X-@-X---|-@-X-@-
+                        | | |   |     | | | |
+        q3: -target[3]--X-@-X---|-----|-X-@-X-
+                          |     |     |   |
+        q4: -control[0]---@-----@-----@---@---
+
+        >>> builder = km.CircuitBuilder()
+        >>> target = builder.create_quantum_register(6, name='target')
+        >>> shift = builder.create_quantum_register(3, name='shift')
+        >>> builder.left_rotate(target, shift)
+        >>> print(builder.finish_circuit().text_diagram())
+        q0: -target[0]-----------@-X-@-----------@-X-@---------@-X-@-----------
+                                 | | |           | | |         | | |
+        q1: -target[1]-@-X-@-----X-@-X-----------|-|-|-@-X-@---X-@-X-----------
+                       | | |       |             | | | | | |     |
+        q2: -target[2]-|-|-|-@-X-@-|-@-X-@-------|-|-|-X-@-X-----|-@-X-@-------
+                       | | | | | | | | | |       | | |   |       | | | |
+        q3: -target[3]-|-|-|-|-|-|-|-|-|-|-@-X-@-X-@-X---|-------|-|-|-|-@-X-@-
+                       | | | | | | | | | | | | |   |     |       | | | | | | |
+        q4: -target[4]-|-|-|-X-@-X-|-|-|-|-X-@-X---|-----|-@-X-@-|-|-|-|-X-@-X-
+                       | | |   |   | | | |   |     |     | | | | | | | |   |
+        q5: -target[5]-X-@-X---|---|-X-@-X---|-----|-----|-X-@-X-|-X-@-X---|---
+                         |     |   |   |     |     |     |   |   |   |     |
+        q6: -shift[0]----@-----@-@-|---|-----|-@---|-----|---|---|---|-----|---
+                                 | |   |     | |   |     |   |   |   |     |
+        q7: -shift[1]------------X-@---@-----@-X-@-|-----|---|-@-|---|-----|---
+                                                 | |     |   | | |   |     |
+        q8: -shift[2]----------------------------X-@-----@---@-X-@---@-----@---
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.max_qubits"></a>
@@ -2082,10 +2176,103 @@ def reset(
 # (in class kickmix.CircuitBuilder)
 def right_rotate(
     self,
-    target: object,
+    target: km.array | Sequence[km.q],
+    shift: int | km.array | Sequence[km.q | km.b | bool] = 1,
     *,
-    control: object = True,
+    control: km.q | km.b | bool = True,
 ) -> None:
+    """Right rotates the given qubits, cyclically permuting them.
+
+    A right rotation is a permutation that moves the value of the qubit target[k]
+    into the qubit target[(k - shift) % len(target)].
+
+    Args:
+        target: The qubits to permute.
+        shift: Defaults to 1. A little-endian value specifying how much to
+            right-rotate the target qubits.
+        control: Defaults to True. Determines if the right rotation actually occurs.
+
+    Examples:
+        >>> import kickmix as km
+
+        >>> builder = km.CircuitBuilder()
+        >>> target = builder.create_quantum_register(8, name='target')
+        >>> builder.right_rotate(target)
+        >>> print(builder.finish_circuit().text_diagram())
+        q0: -target[0]-SWAP----------------SWAP-----------
+                       |                   |
+        q1: -target[1]-|----SWAP-----------|----SWAP------
+                       |    |              |    |
+        q2: -target[2]-|----|----SWAP------|----|----SWAP-
+                       |    |    |         |    |    |
+        q3: -target[3]-|----|----|----SWAP-|----|----|----
+                       |    |    |    |    |    |    |
+        q4: -target[4]-|----|----|----SWAP-|----|----SWAP-
+                       |    |    |         |    |
+        q5: -target[5]-|----|----SWAP------|----SWAP------
+                       |    |              |
+        q6: -target[6]-|----SWAP-----------SWAP-----------
+                       |
+        q7: -target[7]-SWAP-------------------------------
+
+        >>> builder = km.CircuitBuilder()
+        >>> target = builder.create_quantum_register(8, name='target')
+        >>> builder.right_rotate(target, 3)
+        >>> print(builder.finish_circuit().text_diagram())
+        q0: -target[0]-SWAP----------------SWAP------
+                       |                   |
+        q1: -target[1]-|----SWAP-----------|----SWAP-
+                       |    |              |    |
+        q2: -target[2]-|----|----SWAP------|----|----
+                       |    |    |         |    |
+        q3: -target[3]-|----|----|----SWAP-|----SWAP-
+                       |    |    |    |    |
+        q4: -target[4]-|----|----|----SWAP-SWAP------
+                       |    |    |
+        q5: -target[5]-|----|----SWAP-----------SWAP-
+                       |    |                   |
+        q6: -target[6]-|----SWAP----------------|----
+                       |                        |
+        q7: -target[7]-SWAP---------------------SWAP-
+
+        >>> builder = km.CircuitBuilder()
+        >>> target = builder.create_quantum_register(4, name='target')
+        >>> control = builder.create_quantum_register(1, name='control')[0]
+        >>> builder.right_rotate(target, 2, control=control)
+        >>> print(builder.finish_circuit().text_diagram())
+        q0: -target[0]--@-X-@-------@-X-@-----
+                        | | |       | | |
+        q1: -target[1]--|-|-|-@-X-@-X-@-X-----
+                        | | | | | |   |
+        q2: -target[2]--|-|-|-X-@-X---|-@-X-@-
+                        | | |   |     | | | |
+        q3: -target[3]--X-@-X---|-----|-X-@-X-
+                          |     |     |   |
+        q4: -control[0]---@-----@-----@---@---
+
+        >>> builder = km.CircuitBuilder()
+        >>> target = builder.create_quantum_register(6, name='target')
+        >>> shift = builder.create_quantum_register(3, name='shift')
+        >>> builder.right_rotate(target, shift)
+        >>> print(builder.finish_circuit().text_diagram())
+        q0: -target[0]-@-X-@---@-X-@-----------@-X-@-----------@-X-@-----------
+                       | | |   | | |           | | |           | | |
+        q1: -target[1]-|-|-|---X-@-X-----------|-|-|-@-X-@-----X-@-X-----------
+                       | | |     |             | | | | | |       |
+        q2: -target[2]-X-@-X-----|-@-X-@-------|-|-|-|-|-|-@-X-@-|-@-X-@-------
+                         |       | | | |       | | | | | | | | | | | | |
+        q3: -target[3]---|-@-X-@-|-|-|-|-@-X-@-|-|-|-|-|-|-X-@-X-|-|-|-|-@-X-@-
+                         | | | | | | | | | | | | | | | | |   |   | | | | | | |
+        q4: -target[4]---|-|-|-|-|-|-|-|-X-@-X-|-|-|-X-@-X---|---|-|-|-|-X-@-X-
+                         | | | | | | | |   |   | | |   |     |   | | | |   |
+        q5: -target[5]---|-X-@-X-|-X-@-X---|---X-@-X---|-----|---|-X-@-X---|---
+                         |   |   |   |     |     |     |     |   |   |     |
+        q6: -shift[0]----@---@-@-|---|-----|-@---|-----|-----|---|---|-----|---
+                               | |   |     | |   |     |     |   |   |     |
+        q7: -shift[1]----------X-@---@-----@-X-@-|-----|-----|-@-|---|-----|---
+                                               | |     |     | | |   |     |
+        q8: -shift[2]--------------------------X-@-----@-----@-X-@---@-----@---
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.set_max_qubits"></a>
@@ -3405,6 +3592,11 @@ def __init__(
     /,
 ) -> None:
     """Initializes a bit identifier with the given value.
+
+    Examples:
+        >>> import kickmix as km
+        >>> print(km.b(5))
+        b5
     """
 ```
 
@@ -3468,6 +3660,11 @@ def id(
     self,
 ) -> int:
     """Returns the index of the bit.
+
+    Examples:
+        >>> import kickmix as km
+        >>> km.b(5).id
+        5
     """
 ```
 
@@ -3516,7 +3713,12 @@ def __init__(
     arg: int,
     /,
 ) -> None:
-    """Returns a q with the given index.
+    """Initializes a qubit identifier.
+
+    Examples:
+        >>> import kickmix as km
+        >>> print(km.q(5))
+        q5
     """
 ```
 
@@ -3589,7 +3791,12 @@ def __str__(
 def id(
     self,
 ) -> int:
-    """Returns the index of the q.
+    """Returns the index of the qubit.
+
+    Examples:
+        >>> import kickmix as km
+        >>> km.q(5).id
+        5
     """
 ```
 
@@ -3638,7 +3845,12 @@ def __init__(
     arg: int,
     /,
 ) -> None:
-    """Returns a register identifier with the given index.
+    """Initializes a register identifier with the given index.
+
+    Examples:
+        >>> import kickmix as km
+        >>> print(km.r(5))
+        r5
     """
 ```
 
@@ -3689,6 +3901,11 @@ def id(
     self,
 ) -> int:
     """Returns the index of the bit.
+
+    Examples:
+        >>> import kickmix as km
+        >>> km.r(5).id
+        5
     """
 ```
 
@@ -3727,7 +3944,7 @@ def __eq__(
 def __hash__(
     self,
 ) -> int:
-    """Returns a hash of the xb.
+    """Returns a hash of the x-basis bit id.
     """
 ```
 
@@ -3741,7 +3958,12 @@ def __init__(
     arg: int,
     /,
 ) -> None:
-    """Returns an xb with the given index.
+    """Initializes an x-basis bit identifier.
+
+    Examples:
+        >>> import kickmix as km
+        >>> print(km.xb(5))
+        xb5
     """
 ```
 
@@ -3779,7 +4001,7 @@ def __ne__(
 def __repr__(
     self,
 ) -> str:
-    """Returns a parseable text representation of the xb.
+    """Returns a parseable text representation of the x-basis bit id.
     """
 ```
 
@@ -3804,7 +4026,12 @@ def __str__(
 def id(
     self,
 ) -> int:
-    """Returns the index of the xb.
+    """Returns the index of the bit.
+
+    Examples:
+        >>> import kickmix as km
+        >>> km.xb(5).id
+        5
     """
 ```
 
@@ -3860,7 +4087,14 @@ def __init__(
     arg: bool,
     /,
 ) -> None:
-    """Returns an xbool of the given boolean.
+    """Initializes an xbool with the given boolean value.
+
+    Examples:
+        >>> import kickmix as km
+        >>> km.xbool(False)
+        km.xbool(False)
+        >>> km.xbool(True)
+        km.xbool(True)
     """
 ```
 
@@ -3899,5 +4133,17 @@ def __repr__(
     self,
 ) -> str:
     """Returns a parseable text representation of the xbool.
+    """
+```
+
+<a name="kickmix.xbool.__str__"></a>
+```python
+# kickmix.xbool.__str__
+
+# (in class kickmix.xbool)
+def __str__(
+    self,
+) -> str:
+    """Returns a text representation of the xbool.
     """
 ```

@@ -924,18 +924,204 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         "left_rotate",
         &append_left_rotate_obj,
         pybind11::arg("target"),
+        pybind11::arg("shift") = 1,
         pybind11::kw_only(),
         pybind11::arg("control") = true,
         R"DOC(
+            @signature def left_rotate(self, target: km.array | Sequence[km.q], shift: int | km.array | Sequence[km.q | km.b | bool] = 1, *, control: km.q | km.b | bool = True) -> None:
+            Left rotates the given qubits, cyclically permuting them.
+
+            A left rotation is a permutation that moves the value of the qubit target[k]
+            into the qubit target[(k + shift) % len(target)].
+
+            Args:
+                target: The qubits to permute.
+                shift: Defaults to 1. A little-endian value specifying how much to
+                    left-rotate the target qubits.
+                control: Defaults to True. Determines if the left rotation actually occurs.
+
+            Examples:
+                >>> import kickmix as km
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(8, name='target')
+                >>> builder.left_rotate(target)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]-SWAP-------------------------------
+                               |
+                q1: -target[1]-|----SWAP-----------SWAP-----------
+                               |    |              |
+                q2: -target[2]-|----|----SWAP------|----SWAP------
+                               |    |    |         |    |
+                q3: -target[3]-|----|----|----SWAP-|----|----SWAP-
+                               |    |    |    |    |    |    |
+                q4: -target[4]-|----|----|----SWAP-|----|----|----
+                               |    |    |         |    |    |
+                q5: -target[5]-|----|----SWAP------|----|----SWAP-
+                               |    |              |    |
+                q6: -target[6]-|----SWAP-----------|----SWAP------
+                               |                   |
+                q7: -target[7]-SWAP----------------SWAP-----------
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(8, name='target')
+                >>> builder.left_rotate(target, 3)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]-SWAP-----------SWAP-----------
+                               |              |
+                q1: -target[1]-|----SWAP------|--------------
+                               |    |         |
+                q2: -target[2]-|----|----SWAP-SWAP-----------
+                               |    |    |
+                q3: -target[3]-|----|----|----SWAP-SWAP------
+                               |    |    |    |    |
+                q4: -target[4]-|----|----|----SWAP-|----SWAP-
+                               |    |    |         |    |
+                q5: -target[5]-|----|----SWAP------|----|----
+                               |    |              |    |
+                q6: -target[6]-|----SWAP-----------|----SWAP-
+                               |                   |
+                q7: -target[7]-SWAP----------------SWAP------
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(4, name='target')
+                >>> control = builder.create_quantum_register(1, name='control')[0]
+                >>> builder.left_rotate(target, 2, control=control)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]--@-X-@-------@-X-@-----
+                                | | |       | | |
+                q1: -target[1]--|-|-|-@-X-@-X-@-X-----
+                                | | | | | |   |
+                q2: -target[2]--|-|-|-X-@-X---|-@-X-@-
+                                | | |   |     | | | |
+                q3: -target[3]--X-@-X---|-----|-X-@-X-
+                                  |     |     |   |
+                q4: -control[0]---@-----@-----@---@---
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(6, name='target')
+                >>> shift = builder.create_quantum_register(3, name='shift')
+                >>> builder.left_rotate(target, shift)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]-----------@-X-@-----------@-X-@---------@-X-@-----------
+                                         | | |           | | |         | | |
+                q1: -target[1]-@-X-@-----X-@-X-----------|-|-|-@-X-@---X-@-X-----------
+                               | | |       |             | | | | | |     |
+                q2: -target[2]-|-|-|-@-X-@-|-@-X-@-------|-|-|-X-@-X-----|-@-X-@-------
+                               | | | | | | | | | |       | | |   |       | | | |
+                q3: -target[3]-|-|-|-|-|-|-|-|-|-|-@-X-@-X-@-X---|-------|-|-|-|-@-X-@-
+                               | | | | | | | | | | | | |   |     |       | | | | | | |
+                q4: -target[4]-|-|-|-X-@-X-|-|-|-|-X-@-X---|-----|-@-X-@-|-|-|-|-X-@-X-
+                               | | |   |   | | | |   |     |     | | | | | | | |   |
+                q5: -target[5]-X-@-X---|---|-X-@-X---|-----|-----|-X-@-X-|-X-@-X---|---
+                                 |     |   |   |     |     |     |   |   |   |     |
+                q6: -shift[0]----@-----@-@-|---|-----|-@---|-----|---|---|---|-----|---
+                                         | |   |     | |   |     |   |   |   |     |
+                q7: -shift[1]------------X-@---@-----@-X-@-|-----|---|-@-|---|-----|---
+                                                         | |     |   | | |   |     |
+                q8: -shift[2]----------------------------X-@-----@---@-X-@---@-----@---
         )DOC");
 
     c_circuit_builder.def(
         "right_rotate",
         &append_right_rotate_obj,
         pybind11::arg("target"),
+        pybind11::arg("shift") = 1,
         pybind11::kw_only(),
         pybind11::arg("control") = true,
         R"DOC(
+            @signature def right_rotate(self, target: km.array | Sequence[km.q], shift: int | km.array | Sequence[km.q | km.b | bool] = 1, *, control: km.q | km.b | bool = True) -> None:
+            Right rotates the given qubits, cyclically permuting them.
+
+            A right rotation is a permutation that moves the value of the qubit target[k]
+            into the qubit target[(k - shift) % len(target)].
+
+            Args:
+                target: The qubits to permute.
+                shift: Defaults to 1. A little-endian value specifying how much to
+                    right-rotate the target qubits.
+                control: Defaults to True. Determines if the right rotation actually occurs.
+
+            Examples:
+                >>> import kickmix as km
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(8, name='target')
+                >>> builder.right_rotate(target)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]-SWAP----------------SWAP-----------
+                               |                   |
+                q1: -target[1]-|----SWAP-----------|----SWAP------
+                               |    |              |    |
+                q2: -target[2]-|----|----SWAP------|----|----SWAP-
+                               |    |    |         |    |    |
+                q3: -target[3]-|----|----|----SWAP-|----|----|----
+                               |    |    |    |    |    |    |
+                q4: -target[4]-|----|----|----SWAP-|----|----SWAP-
+                               |    |    |         |    |
+                q5: -target[5]-|----|----SWAP------|----SWAP------
+                               |    |              |
+                q6: -target[6]-|----SWAP-----------SWAP-----------
+                               |
+                q7: -target[7]-SWAP-------------------------------
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(8, name='target')
+                >>> builder.right_rotate(target, 3)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]-SWAP----------------SWAP------
+                               |                   |
+                q1: -target[1]-|----SWAP-----------|----SWAP-
+                               |    |              |    |
+                q2: -target[2]-|----|----SWAP------|----|----
+                               |    |    |         |    |
+                q3: -target[3]-|----|----|----SWAP-|----SWAP-
+                               |    |    |    |    |
+                q4: -target[4]-|----|----|----SWAP-SWAP------
+                               |    |    |
+                q5: -target[5]-|----|----SWAP-----------SWAP-
+                               |    |                   |
+                q6: -target[6]-|----SWAP----------------|----
+                               |                        |
+                q7: -target[7]-SWAP---------------------SWAP-
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(4, name='target')
+                >>> control = builder.create_quantum_register(1, name='control')[0]
+                >>> builder.right_rotate(target, 2, control=control)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]--@-X-@-------@-X-@-----
+                                | | |       | | |
+                q1: -target[1]--|-|-|-@-X-@-X-@-X-----
+                                | | | | | |   |
+                q2: -target[2]--|-|-|-X-@-X---|-@-X-@-
+                                | | |   |     | | | |
+                q3: -target[3]--X-@-X---|-----|-X-@-X-
+                                  |     |     |   |
+                q4: -control[0]---@-----@-----@---@---
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(6, name='target')
+                >>> shift = builder.create_quantum_register(3, name='shift')
+                >>> builder.right_rotate(target, shift)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]-@-X-@---@-X-@-----------@-X-@-----------@-X-@-----------
+                               | | |   | | |           | | |           | | |
+                q1: -target[1]-|-|-|---X-@-X-----------|-|-|-@-X-@-----X-@-X-----------
+                               | | |     |             | | | | | |       |
+                q2: -target[2]-X-@-X-----|-@-X-@-------|-|-|-|-|-|-@-X-@-|-@-X-@-------
+                                 |       | | | |       | | | | | | | | | | | | |
+                q3: -target[3]---|-@-X-@-|-|-|-|-@-X-@-|-|-|-|-|-|-X-@-X-|-|-|-|-@-X-@-
+                                 | | | | | | | | | | | | | | | | |   |   | | | | | | |
+                q4: -target[4]---|-|-|-|-|-|-|-|-X-@-X-|-|-|-X-@-X---|---|-|-|-|-X-@-X-
+                                 | | | | | | | |   |   | | |   |     |   | | | |   |
+                q5: -target[5]---|-X-@-X-|-X-@-X---|---X-@-X---|-----|---|-X-@-X---|---
+                                 |   |   |   |     |     |     |     |   |   |     |
+                q6: -shift[0]----@---@-@-|---|-----|-@---|-----|-----|---|---|-----|---
+                                       | |   |     | |   |     |     |   |   |     |
+                q7: -shift[1]----------X-@---@-----@-X-@-|-----|-----|-@-|---|-----|---
+                                                       | |     |     | | |   |     |
+                q8: -shift[2]--------------------------X-@-----@-----@-X-@---@-----@---
         )DOC");
 
     c_circuit_builder.def(

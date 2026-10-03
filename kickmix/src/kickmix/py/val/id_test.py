@@ -27,8 +27,9 @@ def test_qid():
     assert str(q) == "q5"
     assert km.q(0) != bool(False)
 
-    assert repr(q) == "q(5)"
+    assert repr(q) == "km.q(5)"
     assert q.id == 5
+    assert eval(repr(q), {'km': km}, {}) == q
 
 
 def test_bid():
@@ -44,8 +45,9 @@ def test_bid():
     assert str(b) == "b5"
     assert km.b(0) != bool(False)
 
-    assert repr(b) == "b(5)"
+    assert repr(b) == "km.b(5)"
     assert b.id == 5
+    assert eval(repr(b), {'km': km}, {}) == b
 
 
 def test_xbid():
@@ -63,8 +65,9 @@ def test_xbid():
     assert str(b) == "xb5"
     assert km.xb(0) != bool(False)
 
-    assert repr(b) == "xb(5)"
+    assert repr(b) == "km.xb(5)"
     assert b.id == 5
+    assert eval(repr(b), {'km': km}, {}) == b
 
 
 def test_xbool():
@@ -81,3 +84,5 @@ def test_xbool():
     assert str(km.xbool(True)) == 'xbool(True)'
     assert repr(km.xbool(False)) == 'xbool(False)'
     assert repr(km.xbool(True)) == 'xbool(True)'
+    assert eval(repr(km.xbool(False)), {'km': km}, {}) == km.xbool(False)
+    assert eval(repr(km.xbool(True)), {'km': km}, {}) == km.xbool(True)
