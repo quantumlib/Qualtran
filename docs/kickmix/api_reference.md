@@ -11,6 +11,7 @@
     - [`kickmix.Circuit.__repr__`](#kickmix.Circuit.__repr__)
     - [`kickmix.Circuit.__rmul__`](#kickmix.Circuit.__rmul__)
     - [`kickmix.Circuit.__str__`](#kickmix.Circuit.__str__)
+    - [`kickmix.Circuit.from_file`](#kickmix.Circuit.from_file)
     - [`kickmix.Circuit.html_diagram`](#kickmix.Circuit.html_diagram)
     - [`kickmix.Circuit.max_magic`](#kickmix.Circuit.max_magic)
     - [`kickmix.Circuit.num_bits`](#kickmix.Circuit.num_bits)
@@ -19,6 +20,7 @@
     - [`kickmix.Circuit.reaction_depth`](#kickmix.Circuit.reaction_depth)
     - [`kickmix.Circuit.register_data`](#kickmix.Circuit.register_data)
     - [`kickmix.Circuit.text_diagram`](#kickmix.Circuit.text_diagram)
+    - [`kickmix.Circuit.to_file`](#kickmix.Circuit.to_file)
 - [`kickmix.CircuitBuilder`](#kickmix.CircuitBuilder)
     - [`kickmix.CircuitBuilder.__init__`](#kickmix.CircuitBuilder.__init__)
     - [`kickmix.CircuitBuilder.alloc_bits`](#kickmix.CircuitBuilder.alloc_bits)
@@ -440,6 +442,51 @@ def __str__(
     """
 ```
 
+<a name="kickmix.Circuit.from_file"></a>
+```python
+# kickmix.Circuit.from_file
+
+# (in class kickmix.Circuit)
+@staticmethod
+def from_file(
+    path: str | pathlib.Path | io.IOBase,
+    format: Literal['auto', 'kmx', 'kmb'] = 'auto',
+) -> km.Circuit:
+    """Reads a `km.Circuit` from a file.
+
+    Args:
+        path: The path or open file object to read from.
+        format: The file format to parse. Defaults to `'auto'`.
+            `'auto'`: Automatically detect whether the file is in `'kmx'`
+                or `'kmb'` format.
+            `'kmx'`: Human-readable text kickmix format. Can be read from
+                a text or binary file. See
+                https://github.com/quantumlib/Qualtran/blob/main/docs/kickmix/kickmix_format.md
+            `'kmb'`: Binary kickmix format. Requires a binary file if
+                passing an open file object. See
+                https://github.com/quantumlib/Qualtran/blob/main/docs/kickmix/kickmix_binary_format.md
+
+    Returns:
+        The parsed `km.Circuit`.
+
+    Examples:
+        >>> import pathlib
+        >>> import tempfile
+        >>> import kickmix as km
+        >>> circuit = km.Circuit('''
+        ...     CCX q0 q1 q2
+        ...     CX q0 q1
+        ...     X q0
+        ... ''')
+        >>> with tempfile.TemporaryDirectory() as d:
+        ...     path = pathlib.Path(d) / 'circuit.kmx'
+        ...     circuit.to_file(path)
+        ...     loaded = km.Circuit.from_file(path)
+        >>> loaded == circuit
+        True
+    """
+```
+
 <a name="kickmix.Circuit.html_diagram"></a>
 ```python
 # kickmix.Circuit.html_diagram
@@ -537,6 +584,46 @@ def text_diagram(
     self,
 ) -> str:
     """Returns a text diagram of the circuit.
+    """
+```
+
+<a name="kickmix.Circuit.to_file"></a>
+```python
+# kickmix.Circuit.to_file
+
+# (in class kickmix.Circuit)
+def to_file(
+    self,
+    path: str | pathlib.Path | io.IOBase,
+    format: Literal['kmx', 'kmb'] = 'kmx',
+) -> None:
+    """Writes the circuit to a file.
+
+    Args:
+        path: The path or open file object to write to.
+        format: The file format to write. Defaults to `'kmx'`.
+            `'kmx'`: Human-readable text kickmix format. Can be written
+                to a text or binary file. See
+                https://github.com/quantumlib/Qualtran/blob/main/docs/kickmix/kickmix_format.md
+            `'kmb'`: Binary kickmix format. Requires a binary file if
+                passing an open file object. See
+                https://github.com/quantumlib/Qualtran/blob/main/docs/kickmix/kickmix_binary_format.md
+
+    Examples:
+        >>> import pathlib
+        >>> import tempfile
+        >>> import kickmix as km
+        >>> circuit = km.Circuit('''
+        ...     CCX q0 q1 q2
+        ...     CX q0 q1
+        ...     X q0
+        ... ''')
+        >>> with tempfile.TemporaryDirectory() as d:
+        ...     path = pathlib.Path(d) / 'circuit.kmb'
+        ...     circuit.to_file(path, format='kmb')
+        ...     loaded = km.Circuit.from_file(path, format='kmb')
+        >>> loaded == circuit
+        True
     """
 ```
 
