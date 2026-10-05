@@ -378,7 +378,9 @@ def _cbloq_musical_score(
     seq_x = 0
     y_to_score: Dict[int, List[_Soquet]] = {}
 
-    main_subgraph_binsts = nx.descendants(binst_graph, LeftDangle)
+    main_subgraph_binsts = (
+        nx.descendants(binst_graph, LeftDangle) if LeftDangle in binst_graph else set()
+    )
     # Retain an ordered list of all bloqs without LeftDangle in its lineagr, as well as all their
     # left registers. This will be important later when we try to delay allocations by pushing
     # their precedent registers as far as possible.
