@@ -45,7 +45,10 @@ struct GF2Poly {
     static GF2Poly monomial(size_t k);
     /// Creates a polynomial from the bits of a FixedWidthInt. Requires value.num_bits <= MAX_BITS.
     static GF2Poly from_fixed_width_int(const FixedWidthInt &value);
-    /// Parses a polynomial from a hex ("0x1B") or binary ("0b11011") string.
+    /// Parses a polynomial from an algebraic ("x^100 + x^10 + x^2 + 1"), hex ("0x1B"), or binary ("0b11011") string.
+    ///
+    /// Algebraic terms may use "^" or "**" for exponents. Each power of x may appear at most once;
+    /// repeated terms throw std::invalid_argument rather than silently cancelling.
     static GF2Poly from_str(std::string_view text);
 
     /// Returns the coefficient of x^k, or false if k >= MAX_BITS.
@@ -127,6 +130,8 @@ struct GF2Poly {
     FixedWidthInt to_fixed_width_int(size_t num_bits) const;
     /// Returns a hex representation, e.g. "0x11B".
     std::string str() const;
+    /// Returns an algebraic polynomial representation, e.g. "x^8 + x^4 + x^3 + x + 1".
+    std::string algebraic_str() const;
 };
 
 std::ostream &operator<<(std::ostream &out, const GF2Poly &value);

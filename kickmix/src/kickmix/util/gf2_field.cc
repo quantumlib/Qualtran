@@ -3,6 +3,9 @@
 #include <mutex>
 #include <stdexcept>
 #include <string>
+#include <utility>
+
+#include "kickmix/util/gf2_cyclotomic_factors.h"
 
 using namespace kickmix;
 
@@ -17,15 +20,392 @@ static inline uint64_t spread_bits_32(uint64_t v) {
     return v;
 }
 
+namespace {
+
+/// Default moduli for small degrees. These are conventional low-weight irreducible polynomials
+/// (for example 0x11D is the GF(2^8) primitive polynomial used by Reed-Solomon codes, not the AES
+/// polynomial 0x11B), pinned so that `GF2Field(m)` for small m names a familiar, stable field.
+/// Every entry is a trinomial when an irreducible trinomial of degree m exists, and a pentanomial
+/// otherwise (degree 8).
+constexpr uint64_t SMALL_DEGREE_POLYS[] = {
+    0,      // unused
+    0x3,    // x + 1
+    0x7,    // x^2 + x + 1
+    0xB,    // x^3 + x + 1
+    0x13,   // x^4 + x + 1
+    0x25,   // x^5 + x^2 + 1
+    0x43,   // x^6 + x + 1
+    0x89,   // x^7 + x^3 + 1
+    0x11D,  // x^8 + x^4 + x^3 + x^2 + 1
+    0x211,  // x^9 + x^4 + 1
+    0x409,  // x^10 + x^3 + 1
+    0x805,  // x^11 + x^2 + 1
+    0x1009  // x^12 + x^3 + 1
+};
+constexpr size_t NUM_SMALL_DEGREE_POLYS = sizeof(SMALL_DEGREE_POLYS) / sizeof(SMALL_DEGREE_POLYS[0]);
+
+std::string format_term(size_t exp) {
+    if (exp == 0) {
+        return "1";
+    }
+    if (exp == 1) {
+        return "x";
+    }
+    return "x^" + std::to_string(exp);
+}
+
+std::string format_poly(const GF2Poly &poly) {
+    size_t deg = poly.degree();
+    if (deg == SIZE_MAX) {
+        return "0x0 (0)";
+    }
+    std::vector<size_t> terms;
+    for (size_t k = deg + 1; k--;) {
+        if (poly.bit(k)) {
+            terms.push_back(k);
+        }
+    }
+    std::string expr;
+    constexpr size_t MAX_SHOWN_TERMS = 8;
+    if (terms.size() <= MAX_SHOWN_TERMS) {
+        for (size_t i = 0; i < terms.size(); i++) {
+            if (i > 0) {
+                expr += " + ";
+            }
+            expr += format_term(terms[i]);
+        }
+    } else {
+        for (size_t i = 0; i < 4; i++) {
+            if (i > 0) {
+                expr += " + ";
+            }
+            expr += format_term(terms[i]);
+        }
+        expr += " + ... + " + format_term(terms[terms.size() - 2]) + " + " + format_term(terms.back());
+    }
+    return poly.str() + " (" + expr + ")";
+}
+
+/// Runs Ben-Or's test on `field.modulus()`. Returns the zero polynomial if the modulus is
+/// irreducible. Otherwise returns g = gcd(x^(2^d) - x, modulus) for the smallest d at which g is
+/// non-trivial, and stores d into `*factor_degree`. Requires `field.degree() >= 2`.
+///
+/// Because no smaller d succeeded, every irreducible factor of g has degree exactly d, and g is
+/// squarefree (x^(2^d) - x is). Note that g can be composite, and can even be the whole modulus
+/// (e.g. x^6 + x^5 + x^4 + x^3 + x^2 + x + 1 is the product of both irreducible cubics).
+GF2Poly ben_or_gcd(const GF2Field &field, size_t *factor_degree) {
+    size_t m = field.degree();
+    const GF2Poly &poly = field.modulus();
+    GF2Poly monomial_x = GF2Poly::monomial(1);
+    GF2Poly one = GF2Poly::from_u64(1);
+    GF2Poly h = monomial_x;
+    for (size_t i = 1; i <= m / 2; i++) {
+        h = field.square(h);
+        GF2Poly g = GF2Poly::gcd(h ^ monomial_x, poly);
+        if (g != one) {
+            if (factor_degree != nullptr) {
+                *factor_degree = i;
+            }
+            return g;
+        }
+    }
+    return GF2Poly();
+}
+
+uint64_t splitmix64(uint64_t &state) {
+    uint64_t z = (state += 0x9E3779B97F4A7C15ull);
+    z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
+    z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
+    return z ^ (z >> 31);
+}
+
+/// Returns one irreducible factor of `g`, given that `g` is squarefree and all of its irreducible
+/// factors have degree `d`.
+///
+/// Uses the characteristic 2 Cantor-Zassenhaus split: for a in GF(2)[x]/(g), the trace
+/// T(a) = a + a^2 + ... + a^(2^(d-1)) is 0 or 1 modulo each factor, so g = gcd(T(a), g) *
+/// gcd(T(a) + 1, g), and a random a separates any two factors with probability 1/2. The random
+/// choices come from a fixed seed, so error messages are deterministic.
+GF2Poly split_equal_degree_factor(GF2Poly g, size_t d) {
+    uint64_t rng_state = 0x243F6A8885A308D3ull;
+    GF2Poly one = GF2Poly::from_u64(1);
+    size_t attempts = 0;
+    while (g.degree() > d) {
+        size_t n = g.degree();
+        GF2Field ring(n, g, /*check_irreducible=*/false);
+        bool split = false;
+        while (!split) {
+            if (++attempts > 10000) {
+                // Unreachable for valid inputs (each attempt fails with probability <= 1/2).
+                return g;
+            }
+            GF2Poly a;
+            for (size_t w = 0; w < (n + 63) / 64; w++) {
+                a.words[w] = splitmix64(rng_state);
+            }
+            a.truncate(n);
+            GF2Poly term = a;
+            GF2Poly trace = a;
+            for (size_t i = 1; i < d; i++) {
+                term = ring.square(term);
+                trace ^= term;
+            }
+            GF2Poly g0 = GF2Poly::gcd(trace, g);
+            size_t d0 = g0.degree();
+            if (d0 == SIZE_MAX || d0 == 0 || d0 == n) {
+                continue;
+            }
+            GF2Poly g1 = GF2Poly::gcd(trace ^ one, g);
+            // Recurse into the smaller half; it still has only degree d factors.
+            g = g0.degree() <= g1.degree() ? g0 : g1;
+            split = true;
+        }
+    }
+    return g;
+}
+
+/// Returns an irreducible proper factor of `field.modulus()`, or the zero polynomial if the modulus
+/// is irreducible. Requires `field.degree() >= 2`.
+GF2Poly find_irreducible_factor(const GF2Field &field) {
+    size_t d = 0;
+    GF2Poly g = ben_or_gcd(field, &d);
+    if (g.is_zero()) {
+        return g;
+    }
+    return split_equal_degree_factor(g, d);
+}
+
+std::string format_valid_field_example(size_t degree, const GF2Poly *alt_poly = nullptr) {
+    GF2Poly def = gf2_default_irreducible_poly(degree);
+    std::string deg_s = std::to_string(degree);
+    std::string msg = "For example, use GF2Field(" + deg_s + ") for the default modulus, or GF2Field(" + deg_s + ", " +
+                      def.str() + ") for " + format_poly(def);
+    if (alt_poly != nullptr) {
+        size_t alt_deg = alt_poly->degree();
+        if (alt_deg >= 1 && alt_deg <= GF2_MAX_DEGREE && alt_deg != degree && alt_poly->bit(0) &&
+            gf2_is_irreducible(*alt_poly)) {
+            msg += " (or use GF2Field(" + std::to_string(alt_deg) + ", " + alt_poly->str() + ") if you intended GF(2^" +
+                   std::to_string(alt_deg) + "))";
+        }
+    }
+    msg += ".";
+    return msg;
+}
+
+GF2Poly parse_field_modulus_str(std::string_view irreducible_poly_str) {
+    GF2Poly poly = GF2Poly::from_str(irreducible_poly_str);
+    size_t d = poly.degree();
+    if (d == SIZE_MAX || d < 1 || d > GF2_MAX_DEGREE) {
+        std::string deg_desc = d == SIZE_MAX ? "-infinity (zero polynomial)" : std::to_string(d);
+        throw std::invalid_argument(
+            "GF2Field: modulus \"" + std::string(irreducible_poly_str) + "\" has degree " + deg_desc +
+            ", which must be between 1 and " + std::to_string(GF2_MAX_DEGREE) +
+            ". For example, use GF2Field(\"x^4 + x + 1\") or GF2Field(8).");
+    }
+    return poly;
+}
+
+FixedWidthInt mersenne_u512(size_t d) {
+    FixedWidthInt res(512);
+    for (size_t w = 0; w < d / 64; w++) {
+        res.words[w] = ~uint64_t{0};
+    }
+    if (d % 64 != 0) {
+        res.words[d / 64] = (uint64_t{1} << (d % 64)) - 1;
+    }
+    return res;
+}
+
+// Divides `num` by `den` in place (`num = num / den`) if `num % den == 0` and returns `true`.
+// Otherwise leaves `num` unchanged and returns `false`.
+bool try_exact_div_u512(FixedWidthInt &num, const FixedWidthInt &den) {
+    size_t den_bits = den.num_bits_in_use();
+    size_t rem_bits = num.num_bits_in_use();
+    if (den_bits == 0 || rem_bits < den_bits) {
+        return false;
+    }
+    FixedWidthInt rem = num;
+    FixedWidthInt quot(512);
+    for (size_t shift = rem_bits - den_bits + 1; shift--;) {
+        bool borrow = false;
+        rem.isub_shifted(den, shift, &borrow);
+        if (borrow) {
+            rem.iadd_shifted(den, shift);
+        } else {
+            quot.set_bit(shift, true);
+        }
+    }
+    if (rem.non_zero()) {
+        return false;
+    }
+    num = std::move(quot);
+    return true;
+}
+
+}  // namespace
+
+std::vector<FixedWidthInt> kickmix::gf2_mersenne_prime_factors(size_t degree) {
+    if (degree < 1 || degree > GF2_MAX_DEGREE) {
+        throw std::invalid_argument(
+            "gf2_mersenne_prime_factors: degree must be between 1 and " + std::to_string(GF2_MAX_DEGREE) + ", got " +
+            std::to_string(degree) + ".");
+    }
+
+    std::vector<size_t> divs;
+    for (size_t d = 1; d <= degree; d++) {
+        if (degree % d == 0) {
+            divs.push_back(d);
+        }
+    }
+
+    std::vector<FixedWidthInt> phi;
+    phi.reserve(divs.size());
+    for (size_t d : divs) {
+        phi.push_back(mersenne_u512(d));
+    }
+    for (size_t i = 0; i < divs.size(); i++) {
+        for (size_t j = i + 1; j < divs.size(); j++) {
+            if (divs[j] % divs[i] == 0) {
+                try_exact_div_u512(phi[j], phi[i]);
+            }
+        }
+    }
+
+    std::vector<FixedWidthInt> prime_factors;
+    for (size_t idx = 0; idx < divs.size(); idx++) {
+        size_t d = divs[idx];
+        if (d == 1) {
+            continue;
+        }
+        FixedWidthInt rem = phi[idx];
+        // Strip any extrinsic prime factor p | d already found from a proper divisor of d.
+        for (const FixedWidthInt &p : prime_factors) {
+            if (p <= static_cast<uint64_t>(d)) {
+                while (try_exact_div_u512(rem, p)) {
+                }
+            }
+        }
+        // Strip tabulated < 2^64 non-largest primitive prime factors of 2^d - 1.
+        for (uint16_t k = CYCLOTOMIC_U64_OFFSETS[d - 1]; k < CYCLOTOMIC_U64_OFFSETS[d]; k++) {
+            FixedWidthInt p(512, CYCLOTOMIC_U64_FACTORS[k]);
+            if (try_exact_div_u512(rem, p)) {
+                prime_factors.push_back(p);
+                while (try_exact_div_u512(rem, p)) {
+                }
+            }
+        }
+        // Strip tabulated >= 2^64 non-largest primitive prime factors of 2^d - 1.
+        for (const BigCyclotomicFactor &bf : CYCLOTOMIC_BIG_FACTORS) {
+            if (bf.degree == d) {
+                FixedWidthInt p(512);
+                p.words[0] = bf.w0;
+                p.words[1] = bf.w1;
+                p.words[2] = bf.w2;
+                if (try_exact_div_u512(rem, p)) {
+                    prime_factors.push_back(p);
+                    while (try_exact_div_u512(rem, p)) {
+                    }
+                }
+            }
+        }
+        if (rem > uint64_t{1}) {
+            prime_factors.push_back(rem);
+        }
+    }
+    return prime_factors;
+}
+
+namespace {
+
+// Returns the maximal proper divisors {(2^degree - 1) / p_i} of the multiplicative group order
+// N = 2^degree - 1, where {p_i} are the distinct prime factors of N.
+// An element g in GF(2^degree)* is primitive iff g^((2^degree - 1) / p_i) != 1 for all i.
+const std::vector<FixedWidthInt> &maximal_proper_order_exponents(size_t degree) {
+    static std::mutex mu;
+    static std::vector<std::vector<FixedWidthInt>> cache(GF2_MAX_DEGREE + 1);
+    static std::vector<bool> cached(GF2_MAX_DEGREE + 1, false);
+
+    std::lock_guard<std::mutex> lock(mu);
+    if (cached[degree]) {
+        return cache[degree];
+    }
+
+    std::vector<FixedWidthInt> prime_factors = gf2_mersenne_prime_factors(degree);
+    FixedWidthInt order = mersenne_u512(degree);
+    std::vector<FixedWidthInt> exponents;
+    exponents.reserve(prime_factors.size());
+    for (const FixedWidthInt &p : prime_factors) {
+        FixedWidthInt exp = order;
+        try_exact_div_u512(exp, p);
+        exponents.push_back(std::move(exp));
+    }
+
+    cache[degree] = std::move(exponents);
+    cached[degree] = true;
+    return cache[degree];
+}
+
+GF2Poly find_default_primitive_element(const GF2Field &field) {
+    size_t m = field.degree();
+    if (m == 1) {
+        return field.one();
+    }
+
+    static std::mutex mu;
+    static std::vector<std::vector<std::pair<GF2Poly, GF2Poly>>> cache(GF2_MAX_DEGREE + 1);
+    {
+        std::lock_guard<std::mutex> lock(mu);
+        for (const auto &entry : cache[m]) {
+            if (entry.first == field.modulus()) {
+                return entry.second;
+            }
+        }
+    }
+
+    GF2Poly found;
+    for (uint64_t cand = 2;; cand++) {
+        GF2Poly g = GF2Poly::from_u64(cand);
+        if (field.is_primitive_element(g)) {
+            found = g;
+            break;
+        }
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(mu);
+        for (const auto &entry : cache[m]) {
+            if (entry.first == field.modulus()) {
+                return entry.second;
+            }
+        }
+        cache[m].emplace_back(field.modulus(), found);
+    }
+    return found;
+}
+
+}  // namespace
+
 GF2Field::GF2Field(size_t degree) : degree_(degree), modulus_(gf2_default_irreducible_poly(degree)) {
     init();
 }
 
-GF2Field::GF2Field(size_t degree, const GF2Poly &irreducible_poly) : degree_(degree), modulus_(irreducible_poly) {
+GF2Field::GF2Field(size_t degree, std::string_view irreducible_poly_str, bool check_irreducible)
+    : GF2Field(degree, GF2Poly::from_str(irreducible_poly_str), check_irreducible) {
+}
+
+GF2Field::GF2Field(std::string_view irreducible_poly_str, bool check_irreducible)
+    : GF2Field([&]() {
+          GF2Poly poly = parse_field_modulus_str(irreducible_poly_str);
+          return GF2Field(poly.degree(), poly, check_irreducible);
+      }()) {
+}
+
+GF2Field::GF2Field(size_t degree, const GF2Poly &irreducible_poly, bool check_irreducible)
+    : degree_(degree), modulus_(irreducible_poly) {
     if (degree < 1 || degree > GF2_MAX_DEGREE) {
         throw std::invalid_argument(
             "GF2Field: degree must be between 1 and " + std::to_string(GF2_MAX_DEGREE) + ", got " +
-            std::to_string(degree));
+            std::to_string(degree) + ". For example, use GF2Field(8) for GF(2^8).");
     }
     // Allow the leading term to be omitted, but reject any polynomial of the wrong degree.
     size_t d = modulus_.degree();
@@ -33,16 +413,62 @@ GF2Field::GF2Field(size_t degree, const GF2Poly &irreducible_poly) : degree_(deg
         modulus_.set_bit(degree, true);
     } else if (d != degree) {
         throw std::invalid_argument(
-            "GF2Field: irreducible_poly has degree " + std::to_string(d) + ", expected " + std::to_string(degree));
+            "GF2Field: modulus " + format_poly(irreducible_poly) + " has degree " + std::to_string(d) +
+            ", expected degree " + std::to_string(degree) + " for GF(2^" + std::to_string(degree) + "). " +
+            format_valid_field_example(degree, &irreducible_poly));
+    }
+    if (!modulus_.bit(0)) {
+        std::string msg = "GF2Field: modulus " + format_poly(modulus_);
+        if (modulus_ != irreducible_poly) {
+            msg += " (from input " + irreducible_poly.str() + " with implied x^" + std::to_string(degree) + " bit)";
+        }
+        msg += " for GF(2^" + std::to_string(degree) +
+               ") must have a non-zero constant term (bit 0 is 0, so it is divisible by x; "
+               "not irreducible over GF(2)). " +
+               format_valid_field_example(degree);
+        throw std::invalid_argument(msg);
     }
     init();
+    if (check_irreducible && degree_ >= 2) {
+        GF2Poly factor = find_irreducible_factor(*this);
+        if (!factor.is_zero()) {
+            std::string msg = "GF2Field: modulus " + format_poly(modulus_);
+            if (modulus_ != irreducible_poly) {
+                msg +=
+                    " (from input " + irreducible_poly.str() + " with implied x^" + std::to_string(degree_) + " bit)";
+            }
+            msg += " of degree " + std::to_string(degree_) + " is not irreducible over GF(2): divisible by " +
+                   format_poly(factor) + ". " + format_valid_field_example(degree_, &irreducible_poly);
+            throw std::invalid_argument(msg);
+        }
+    }
+}
+
+GF2Field::GF2Field(
+    size_t degree, const GF2Poly &irreducible_poly, const GF2Poly &primitive_element, bool check_irreducible)
+    : GF2Field(degree, irreducible_poly, check_irreducible) {
+    if (primitive_element.is_zero() || !is_element(primitive_element)) {
+        throw std::invalid_argument(
+            "GF2Field: primitive_element " + format_poly(primitive_element) + " is not a non-zero element of GF(2^" +
+            std::to_string(degree_) + "); expected 1 <= primitive_element < 2^" + std::to_string(degree_) +
+            ". For example, " + format_poly(find_default_primitive_element(*this)) + " is a primitive element.");
+    }
+    if (!is_primitive_element(primitive_element)) {
+        throw std::invalid_argument(
+            "GF2Field: primitive_element " + format_poly(primitive_element) + " is not a primitive element of GF(2^" +
+            std::to_string(degree_) + ") modulo " + format_poly(modulus_) +
+            " (its multiplicative order is a proper divisor of 2^" + std::to_string(degree_) + " - 1). For example, " +
+            format_poly(find_default_primitive_element(*this)) + " is a primitive element.");
+    }
+    primitive_element_ = primitive_element;
+    has_custom_primitive_element_ = (primitive_element != find_default_primitive_element(*this));
 }
 
 void GF2Field::init() {
     if (degree_ < 1 || degree_ > GF2_MAX_DEGREE) {
         throw std::invalid_argument(
             "GF2Field: degree must be between 1 and " + std::to_string(GF2_MAX_DEGREE) + ", got " +
-            std::to_string(degree_));
+            std::to_string(degree_) + ". For example, use GF2Field(8) for GF(2^8).");
     }
     if (!modulus_.bit(degree_)) {
         throw std::invalid_argument("GF2Field: modulus is missing its leading term");
@@ -60,6 +486,32 @@ void GF2Field::init() {
     // With few terms, clearing a high coefficient costs a handful of bit flips, which beats the
     // word-at-a-time dense reduction. With many terms the dense reduction wins.
     sparse_reduction_ = mod_terms_.size() <= 16;
+}
+
+GF2Poly GF2Field::primitive_element() const {
+    if (!primitive_element_.is_zero()) {
+        return primitive_element_;
+    }
+    return find_default_primitive_element(*this);
+}
+
+bool GF2Field::is_primitive_element(const GF2Poly &a) const {
+    if (a.is_zero() || !is_element(a)) {
+        return false;
+    }
+    if (degree_ == 1) {
+        return a == one();
+    }
+    if (a == one()) {
+        return false;
+    }
+    const std::vector<FixedWidthInt> &exponents = maximal_proper_order_exponents(degree_);
+    for (const FixedWidthInt &exp : exponents) {
+        if (pow(a, exp) == one()) {
+            return false;
+        }
+    }
+    return true;
 }
 
 GF2Poly GF2Field::zero() const {
@@ -247,41 +699,11 @@ bool kickmix::gf2_is_irreducible(const GF2Poly &poly) {
         throw std::invalid_argument("gf2_is_irreducible: degree exceeds GF2_MAX_DEGREE");
     }
 
-    // Ben-Or's test. h tracks x^(2^i) mod poly; poly has an irreducible factor of degree dividing i
-    // exactly when gcd(x^(2^i) - x, poly) is non-trivial. Over GF(2), subtraction is XOR.
-    GF2Field field(m, poly);
-    GF2Poly monomial_x = GF2Poly::monomial(1);
-    GF2Poly one = GF2Poly::from_u64(1);
-    GF2Poly h = monomial_x;
-    for (size_t i = 1; i <= m / 2; i++) {
-        h = field.square(h);
-        if (GF2Poly::gcd(h ^ monomial_x, poly) != one) {
-            return false;
-        }
-    }
-    return true;
+    GF2Field field(m, poly, /*check_irreducible=*/false);
+    return ben_or_gcd(field, nullptr).is_zero();
 }
 
 namespace {
-
-/// Irreducible polynomials matching the ones the original implementation hardcoded, so that the
-/// concrete field for a given small degree does not change.
-constexpr uint64_t SMALL_DEGREE_POLYS[] = {
-    0,      // unused
-    0x3,    // x + 1
-    0x7,    // x^2 + x + 1
-    0xB,    // x^3 + x + 1
-    0x13,   // x^4 + x + 1
-    0x25,   // x^5 + x^2 + 1
-    0x43,   // x^6 + x + 1
-    0x89,   // x^7 + x^3 + 1
-    0x11D,  // x^8 + x^4 + x^3 + x^2 + 1
-    0x211,  // x^9 + x^4 + 1
-    0x409,  // x^10 + x^3 + 1
-    0x805,  // x^11 + x^2 + 1
-    0x1053  // x^12 + x^6 + x^4 + x + 1
-};
-constexpr size_t NUM_SMALL_DEGREE_POLYS = sizeof(SMALL_DEGREE_POLYS) / sizeof(SMALL_DEGREE_POLYS[0]);
 
 GF2Poly search_irreducible_poly(size_t degree) {
     GF2Poly base = GF2Poly::monomial(degree);
@@ -321,7 +743,7 @@ GF2Poly kickmix::gf2_default_irreducible_poly(size_t degree) {
     if (degree < 1 || degree > GF2_MAX_DEGREE) {
         throw std::invalid_argument(
             "gf2_default_irreducible_poly: degree must be between 1 and " + std::to_string(GF2_MAX_DEGREE) + ", got " +
-            std::to_string(degree));
+            std::to_string(degree) + ". For example, use GF2Field(8) for GF(2^8).");
     }
     if (degree < NUM_SMALL_DEGREE_POLYS) {
         return GF2Poly::from_u64(SMALL_DEGREE_POLYS[degree]);
