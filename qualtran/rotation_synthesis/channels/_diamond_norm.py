@@ -12,10 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import importlib.util
 from typing import Optional, Sequence
 
 import cirq
 import numpy as np
+import scipy.optimize
+
+_PAULI_X = np.array([[0, 1], [1, 0]], dtype=np.complex128)
+_PAULI_Y = np.array([[0, -1j], [1j, 0]], dtype=np.complex128)
+_PAULI_Z = np.array([[1, 0], [0, -1]], dtype=np.complex128)
 
 
 def diamond_norm(choi: np.ndarray) -> float:
@@ -100,8 +106,11 @@ def diamond_norm_distance(
 ) -> float:
     """Returns the diamond norm distance between the two channels.
 
-    When both channels are single qubit unitaries the distance is computed analytically,
-    otherwise it is computed by solving a semidefinite program, which requires cvxpy.
+    The distance is computed with the cheapest method that applies:
+    - If both channels are single qubit unitaries it is computed analytically.
+    - Otherwise, if cvxpy is installed, `diamond_norm` solves a semidefinite program.
+    - Otherwise, for a single qubit map, `qubit_diamond_norm_lower_bound` maximizes over the
+      input density matrix, which is slower and only gives a lower bound on the distance.
 
     Args:
         kraus_list_a: The Kraus operators of the first channel.
@@ -109,6 +118,9 @@ def diamond_norm_distance(
 
     Returns:
         The diamond norm distance between the two channels.
+
+    Raises:
+        ImportError: If cvxpy is not installed and the channels are not single qubit channels.
     """
     kraus_list_a = [np.asarray(k, dtype=np.complex128) for k in kraus_list_a]
     kraus_list_b = [np.asarray(k, dtype=np.complex128) for k in kraus_list_b]
@@ -118,4 +130,93 @@ def diamond_norm_distance(
 
     choi_difference_matrix = cirq.kraus_to_choi(kraus_list_a) - cirq.kraus_to_choi(kraus_list_b)
 
+    if importlib.util.find_spec("cvxpy") is None and choi_difference_matrix.shape == (4, 4):
+        return qubit_diamond_norm_lower_bound(choi_difference_matrix)
+
     return diamond_norm(choi_difference_matrix)
+
+
+def _sqrt_density_matrix(bloch_vector: np.ndarray) -> np.ndarray:
+    r"""Returns $\sqrt{\sigma}$ of the qubit density matrix with the given bloch vector.
+
+    The density matrix $\sigma = (I + \vec{r} \cdot \vec{\sigma})/2$ has eigenvalues
+    $(1 \pm |\vec{r}|)/2$, so its square root is $a I + b\, \hat{r} \cdot \vec{\sigma}$ where
+    $a$ and $b$ are the half sum and the half difference of the square roots of the
+    eigenvalues. A vector outside the bloch ball is projected onto its surface.
+    """
+    radius = float(np.linalg.norm(bloch_vector))
+    if radius > 1:
+        bloch_vector = bloch_vector / radius
+        radius = 1.0
+    sqrt_plus, sqrt_minus = np.sqrt((1 + radius) / 2), np.sqrt((1 - radius) / 2)
+    # (sqrt_plus - sqrt_minus) / 2 times the unit vector, written to avoid dividing by zero.
+    scale = 0.0 if radius < 1e-15 else (sqrt_plus - sqrt_minus) / (2 * radius)
+    return (sqrt_plus + sqrt_minus) / 2 * np.eye(2) + scale * (
+        bloch_vector[0] * _PAULI_X + bloch_vector[1] * _PAULI_Y + bloch_vector[2] * _PAULI_Z
+    )
+
+
+def _scaled_trace_norm(bloch_vector: np.ndarray, choi: np.ndarray) -> float:
+    r"""Returns $\|(I \otimes \sqrt{\sigma}) J (I \otimes \sqrt{\sigma})\|_1$."""
+    root = np.kron(np.eye(2), _sqrt_density_matrix(bloch_vector))
+    scaled = root @ choi @ root
+    return float(np.abs(np.linalg.eigvalsh((scaled + scaled.conj().T) / 2)).sum())
+
+
+def qubit_diamond_norm_lower_bound(
+    choi: np.ndarray, num_random_starts: int = 16, seed: int = 0
+) -> float:
+    r"""Returns a lower bound on the diamond norm of a single qubit map.
+
+    Eliminating the matrix variable of the semidefinite program solved by `diamond_norm`
+    analytically leaves a maximization over the input density matrix alone
+
+    $$
+    \|\Delta\|_\diamond = \max_\sigma
+    \left\| (I \otimes \sqrt{\sigma}) J (I \otimes \sqrt{\sigma}) \right\|_1
+    $$
+
+    which for a single qubit is a maximization over the three coordinates of the bloch vector
+    of $\sigma$. Unlike `diamond_norm` this needs no semidefinite program solver, but the
+    maximization is not known to be concave, so a local optimizer only gives a lower bound on
+    the norm. The maximizing $\sigma$ is not always a pure state, for example a depolarizing
+    channel is maximized by the maximally mixed state, so the whole bloch ball is searched and
+    not only its surface.
+
+    Args:
+        choi: The Choi matrix of the map, using the convention of `cirq.kraus_to_choi` where
+            the output space is the first tensor factor.
+        num_random_starts: The number of random starting points used in addition to the
+            deterministic ones.
+        seed: The seed of the random starting points.
+
+    Returns:
+        A lower bound on the diamond norm of the map, which is the norm itself whenever the
+        maximization finds a global maximum.
+
+    Raises:
+        ValueError: If the Choi matrix is not the 4x4 Choi matrix of a single qubit map.
+    """
+    if choi.shape != (4, 4):
+        raise ValueError(f"expected the 4x4 choi matrix of a qubit map, got shape {choi.shape}")
+    choi = np.asarray(choi, dtype=np.complex128)
+    choi = (choi + choi.conj().T) / 2
+
+    # The maximally mixed state and the six axes of the bloch sphere, plus random points.
+    starts = [np.zeros(3)]
+    starts.extend(sign * axis for axis in np.eye(3) for sign in (1, -1))
+    rng = np.random.default_rng(seed)
+    for _ in range(num_random_starts):
+        direction = rng.normal(size=3)
+        starts.append(direction / np.linalg.norm(direction) * rng.uniform(0, 1))
+
+    best = 0.0
+    for start in starts:
+        result = scipy.optimize.minimize(
+            lambda vector: -_scaled_trace_norm(vector, choi),
+            start,
+            method="Nelder-Mead",
+            options={"xatol": 1e-12, "fatol": 1e-14, "maxiter": 5000},
+        )
+        best = max(best, -float(result.fun))
+    return best

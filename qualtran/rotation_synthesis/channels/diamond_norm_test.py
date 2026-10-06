@@ -21,7 +21,8 @@ import pytest
 import qualtran.rotation_synthesis as rs
 import qualtran.rotation_synthesis.channels as ch
 
-# The semidefinite program is only used when a channel is not a single qubit unitary.
+# diamond_norm_distance falls back to qubit_diamond_norm_lower_bound when cvxpy is missing,
+# only a test that calls diamond_norm itself needs the solver.
 requires_cvxpy = pytest.mark.skipif(
     importlib.util.find_spec("cvxpy") is None, reason="requires cvxpy"
 )
@@ -86,7 +87,6 @@ def test_diamond_norm_rejects_invalid_choi_matrix(choi):
         ch.diamond_norm(choi)
 
 
-@requires_cvxpy
 @pytest.mark.parametrize(
     ["kraus", "expected"],
     [
@@ -123,7 +123,6 @@ def test_semidefinite_program_agrees_with_unitary_formula(seed):
     )
 
 
-@requires_cvxpy
 def test_distance_between_mixtures_of_unitaries():
     # A mixture of U and V is at most as far from U as V is.
     u, v = _rz(0.3), _rz(0.5)
@@ -140,7 +139,6 @@ def test_channel_distance_matches_unitary_method():
     np.testing.assert_allclose(a.diamond_norm_distance_to_channel(b, config), expected, rtol=1e-9)
 
 
-@requires_cvxpy
 def test_mixed_diagonal_protocol_matches_analytical_distance():
     config = rs.with_dps(100)
     theta = 0.1
