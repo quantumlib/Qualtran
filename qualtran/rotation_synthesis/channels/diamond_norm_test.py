@@ -12,8 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import importlib.util
-
 import cirq
 import numpy as np
 import pytest
@@ -21,14 +19,8 @@ import pytest
 import qualtran.rotation_synthesis as rs
 import qualtran.rotation_synthesis.channels as ch
 
-# diamond_norm_distance falls back to qubit_diamond_norm_lower_bound when cvxpy is missing,
-# only a test that calls diamond_norm itself needs the solver.
-requires_cvxpy = pytest.mark.skipif(
-    importlib.util.find_spec("cvxpy") is None, reason="requires cvxpy"
-)
-
-# The solver works in double precision, its answers are accurate to a few significant digits.
-SOLVER_ATOL = 1e-5
+# The maximization runs in double precision, its answers are accurate to a few significant digits.
+OPTIMIZER_ATOL = 1e-5
 
 X = cirq.unitary(cirq.X)
 Y = cirq.unitary(cirq.Y)
@@ -81,8 +73,10 @@ def test_orthogonal_unitaries_are_maximally_distant():
     assert ch.diamond_norm_distance([X], [Z]) == pytest.approx(2, abs=1e-12)
 
 
-@pytest.mark.parametrize("choi", [np.zeros((3, 3)), np.zeros((4, 5)), np.zeros(4)])
-def test_diamond_norm_rejects_invalid_choi_matrix(choi):
+@pytest.mark.parametrize(
+    "choi", [np.zeros((3, 3)), np.zeros((4, 5)), np.zeros(4), np.zeros((16, 16))]
+)
+def test_diamond_norm_rejects_choi_matrix_that_is_not_a_qubit_map(choi):
     with pytest.raises(ValueError):
         ch.diamond_norm(choi)
 
@@ -102,12 +96,11 @@ def test_diamond_norm_rejects_invalid_choi_matrix(choi):
 )
 def test_distance_to_identity_of_known_channels(kraus, expected):
     distance = ch.diamond_norm_distance(kraus, [I])
-    np.testing.assert_allclose(distance, expected, atol=SOLVER_ATOL)
+    np.testing.assert_allclose(distance, expected, atol=OPTIMIZER_ATOL)
 
 
-@requires_cvxpy
 @pytest.mark.parametrize("seed", range(3))
-def test_semidefinite_program_agrees_with_unitary_formula(seed):
+def test_maximization_agrees_with_unitary_formula(seed):
     rng = np.random.default_rng(seed)
     unitaries = []
     for _ in range(2):
@@ -116,10 +109,10 @@ def test_semidefinite_program_agrees_with_unitary_formula(seed):
         unitaries.append(q @ np.diag(np.diag(r) / abs(np.diag(r))))
     u, v = unitaries
 
-    # diamond_norm_distance takes the analytical shortcut for unitaries, call the solver directly.
+    # diamond_norm_distance takes the analytical shortcut for unitaries, maximize directly.
     choi = cirq.kraus_to_choi([u]) - cirq.kraus_to_choi([v])
     np.testing.assert_allclose(
-        ch.diamond_norm(choi), ch.diamond_norm_distance([u], [v]), atol=SOLVER_ATOL
+        ch.diamond_norm(choi), ch.diamond_norm_distance([u], [v]), atol=OPTIMIZER_ATOL
     )
 
 

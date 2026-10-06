@@ -56,8 +56,9 @@ class Channel(abc.ABC):
     def diamond_norm_distance_to_channel(self, other: Channel, config: mc.MathConfig) -> float:
         """Returns the diamond norm distance between self and the given channel.
 
-        The distance is computed numerically by solving a semidefinite program, so unlike the
-        analytical methods the result is limited to double precision regardless of `config`.
+        The distance is computed numerically by maximizing over the input density matrix, so
+        unlike the analytical methods the result is limited to double precision regardless of
+        `config`.
 
         Args:
             other: The channel to compare against.
