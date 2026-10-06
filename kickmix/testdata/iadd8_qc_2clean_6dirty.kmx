@@ -1,0 +1,163 @@
+APPEND_TO_REGISTER q0 r0
+APPEND_TO_REGISTER q1 r0
+APPEND_TO_REGISTER q2 r0
+APPEND_TO_REGISTER q3 r0
+APPEND_TO_REGISTER q4 r0
+APPEND_TO_REGISTER q5 r0
+APPEND_TO_REGISTER q6 r0
+APPEND_TO_REGISTER q7 r0
+APPEND_TO_REGISTER b0 r1
+APPEND_TO_REGISTER b1 r1
+APPEND_TO_REGISTER b2 r1
+APPEND_TO_REGISTER b3 r1
+APPEND_TO_REGISTER b4 r1
+APPEND_TO_REGISTER b5 r1
+APPEND_TO_REGISTER b6 r1
+APPEND_TO_REGISTER b7 r1
+X q0 if b0
+X q1 if b1
+X q2 if b2
+X q3 if b3
+X q4 if b4
+X q5 if b5
+X q6 if b6
+X q7 if b7
+CX q1 q10
+CX q2 q11
+CX q3 q12
+CX q4 q13
+CX q5 q14
+CX q6 q15
+R q8
+CX q0 q8 if b0
+X q8 if b0
+R q9
+SWAP q8 q9
+X q9 if b1
+CCX q1 q9 q8
+X q9 if b1
+CX q9 q1
+HMR q9 b15
+BIT_INVERT b10 if b15
+X q8 if b1
+R q9
+SWAP q8 q9
+X q9 if b2
+CCX q2 q9 q8
+X q9 if b2
+CX q9 q2
+HMR q9 b15
+BIT_INVERT b11 if b15
+X q8 if b2
+R q9
+SWAP q8 q9
+X q9 if b3
+CCX q3 q9 q8
+X q9 if b3
+CX q9 q3
+HMR q9 b15
+BIT_INVERT b12 if b15
+X q8 if b3
+R q9
+SWAP q8 q9
+X q9 if b4
+CCX q4 q9 q8
+X q9 if b4
+CX q9 q4
+HMR q9 b15
+BIT_INVERT b13 if b15
+X q8 if b4
+R q9
+X q8 if b5
+CCX q5 q8 q9
+X q8 if b5
+CX q8 q5
+X q9 if b5
+X q9 if b6
+CCX q6 q9 q7
+X q9 if b6
+CX q9 q6
+HMR q9 b15
+PUSH_CONDITION if b15
+Z q5 if b5
+Z q8 if b5
+NEG if b5
+CZ q5 q8
+Z q8
+POP_CONDITION
+X q7 if b6
+HMR q8 b15
+BIT_INVERT b14 if b15
+CX q1 q10
+CX q2 q11
+CX q3 q12
+CX q4 q13
+CX q5 q14
+CX q6 q15
+X q0
+X q1
+X q2
+X q3
+X q4
+X q5
+X q6
+X q7
+Z q10 if b10
+Z q11 if b11
+Z q12 if b12
+Z q13 if b13
+Z q14 if b14
+X q0 if b0
+X q1 if b1
+X q2 if b2
+X q3 if b3
+X q4 if b4
+X q5 if b5
+CCX q14 q5 q15
+CCX q13 q4 q14
+CCX q12 q3 q13
+CCX q11 q2 q12
+CCX q10 q1 q11
+X q10 if b0
+X q11 if b1
+X q12 if b2
+X q13 if b3
+X q14 if b4
+X q15 if b5
+X q10 if b1
+X q11 if b2
+X q12 if b3
+X q13 if b4
+X q14 if b5
+X q15 if b6
+CX q0 q10 if b0
+CCX q10 q1 q11
+CCX q11 q2 q12
+CCX q12 q3 q13
+CCX q13 q4 q14
+CCX q14 q5 q15
+X q10 if b1
+X q11 if b2
+X q12 if b3
+X q13 if b4
+X q14 if b5
+X q15 if b6
+X q0 if b0
+X q1 if b1
+X q2 if b2
+X q3 if b3
+X q4 if b4
+X q5 if b5
+Z q10 if b10
+Z q11 if b11
+Z q12 if b12
+Z q13 if b13
+Z q14 if b14
+X q0
+X q1
+X q2
+X q3
+X q4
+X q5
+X q6
+X q7

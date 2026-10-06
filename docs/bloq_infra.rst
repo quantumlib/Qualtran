@@ -58,6 +58,6 @@ types (``Register``), and algorithms (``CompositeBloq``).
    drawing/musical_score.ipynb
    drawing/drawing_call_graph.ipynb
    simulation/xcheck_classical_quimb.ipynb
-   l1/L1-Objectstring.ipynb
+   qlt_ir/QLT-Objectstring.ipynb
    Autodoc.ipynb
    qcall.md
