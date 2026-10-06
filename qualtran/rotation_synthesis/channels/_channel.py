@@ -25,6 +25,7 @@ import qualtran.rotation_synthesis._math_config as mc
 import qualtran.rotation_synthesis._typing as rst
 import qualtran.rotation_synthesis.matrix._clifford_t_repr as ctr
 import qualtran.rotation_synthesis.rings as rings
+from qualtran.rotation_synthesis.channels._diamond_norm import diamond_norm_distance
 from qualtran.rotation_synthesis.matrix import _su2_ct
 from qualtran.rotation_synthesis.rings import _zsqrt2
 
@@ -36,6 +37,38 @@ class Channel(abc.ABC):
     @abc.abstractmethod
     def diamond_norm_distance_to_rz(self, theta: rst.Real, config: mc.MathConfig) -> rst.Real:
         r"""Returns the diamond norm distance to $e^{i\theta Z}$."""
+
+    @abc.abstractmethod
+    def kraus(self, config: mc.MathConfig) -> Sequence[np.ndarray]:
+        r"""Returns the Kraus operator representation of the channel.
+
+        The operators $K_i$ describe the action of the channel as
+        $\rho \mapsto \sum_i K_i \rho K_i^\dagger$ and satisfy
+        $\sum_i K_i^\dagger K_i = I$.
+
+        Args:
+            config: The MathConfig used to convert the matrix entries to complex numbers.
+
+        Returns:
+            A sequence of Kraus operators.
+        """
+
+    def diamond_norm_distance_to_channel(self, other: Channel, config: mc.MathConfig) -> float:
+        """Returns the diamond norm distance between self and the given channel.
+
+        The distance is computed numerically by maximizing over the input density matrix, so
+        unlike the analytical methods the result is limited to double precision regardless of
+        `config`.
+
+        Args:
+            other: The channel to compare against.
+            config: The MathConfig used to convert the Kraus operators of both channels to
+                complex numbers.
+
+        Returns:
+            The diamond norm distance between the two channels.
+        """
+        return diamond_norm_distance(self.kraus(config), other.kraus(config))
 
 
 @attrs.frozen
@@ -97,6 +130,25 @@ class UnitaryChannel(Channel):
         if self.twirl:
             return 2 * (1 - real_squared)
         return 2 * config.sqrt(1 - real_squared)
+
+    def kraus(self, config: mc.MathConfig) -> Sequence[np.ndarray]:
+        r"""Returns the Kraus operator representation of the channel.
+
+        An untwirled channel has the single Kraus operator $U$. A twirled channel applies
+        $g U g^\dagger$ for $g$ equiprobably chosen from $\{I, Z, S, S^\dagger\}$, which gives
+        the four Kraus operators $g U g^\dagger / 2$.
+
+        Args:
+            config: The MathConfig used to convert the matrix entries to complex numbers.
+
+        Returns:
+            A sequence of Kraus operators.
+        """
+        u = self.to_matrix().numpy(config)
+        if not self.twirl:
+            return [u]
+        twirl_gates = [np.diag([1 + 0j, phase]) for phase in (1, -1, 1j, -1j)]
+        return [(g @ u @ g.conj().T) / 2 for g in twirl_gates]
 
     @classmethod
     def from_sequence(cls, seq: Sequence[str], twirl: bool = False) -> UnitaryChannel:
@@ -244,6 +296,27 @@ class ProjectiveChannel(Channel):
             config
         )
 
+    def kraus(self, config: mc.MathConfig) -> Sequence[np.ndarray]:
+        r"""Returns the Kraus operator representation of the channel.
+
+        Once the ancilla is traced out the circuit is a single qubit channel with two branches.
+        A zero measurement applies the diagonal part of the rotation $V$, which gives the single
+        Kraus operator $\mathrm{diag}(V)$. A one measurement applies the antidiagonal part of $V$
+        followed by $Y$ and the correction channel $C$, which gives one Kraus operator
+        $E_k Y \mathrm{antidiag}(V)$ for every Kraus operator $E_k$ of $C$.
+
+        Args:
+            config: The MathConfig used to convert the matrix entries to complex numbers.
+
+        Returns:
+            A sequence of Kraus operators.
+        """
+        v = self.rotation.to_matrix().numpy(config)
+        success = np.diag(np.diag(v))
+        # Y @ antidiag(V), which is diagonal.
+        failure = np.diag([-1j * v[1, 0], 1j * v[0, 1]])
+        return [success] + [e @ failure for e in self.correction.kraus(config)]
+
     @staticmethod
     def diamond_distance_to_rz_on_measurement_success(
         p: rings.ZW, theta: rst.Real, config: mc.MathConfig
@@ -355,6 +428,23 @@ class ProbabilisticChannel(Channel):
         return self.probability * self.c1.expected_num_ts(config) + (
             1 - self.probability
         ) * self.c2.expected_num_ts(config)
+
+    def kraus(self, config: mc.MathConfig) -> Sequence[np.ndarray]:
+        r"""Returns the Kraus operator representation of the channel.
+
+        Applying $c_1$ with probability $p$ and $c_2$ otherwise scales the Kraus operators of
+        $c_1$ by $\sqrt{p}$ and those of $c_2$ by $\sqrt{1 - p}$.
+
+        Args:
+            config: The MathConfig used to convert the matrix entries to complex numbers.
+
+        Returns:
+            A sequence of Kraus operators.
+        """
+        p = self.probability
+        return [config.sqrt(p) * k for k in self.c1.kraus(config)] + [
+            config.sqrt(1 - p) * k for k in self.c2.kraus(config)
+        ]
 
     def diamond_norm_distance_to_rz(self, theta: rst.Real, config: mc.MathConfig) -> rst.Real:
         if isinstance(self.c1, UnitaryChannel) and isinstance(self.c2, UnitaryChannel):
