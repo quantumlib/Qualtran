@@ -32,7 +32,7 @@ from qualtran import (
     Side,
     Signature,
 )
-from qualtran.bloqs.basic_gates import CNOT, CZ, Discard, MeasureX, Toffoli
+from qualtran.bloqs.basic_gates import CNOT, CZ, Discard, MeasureX, Toffoli, TwoBitSwap
 from qualtran.bloqs.gf_arithmetic import gf_utils
 from qualtran.symbolics import is_symbolic, log2, Shaped, SymbolicInt
 
@@ -111,7 +111,7 @@ class SynthesizeLRCircuit(Bloq):
         for i in range(self.n):
             for j in range(i + 1, self.n):
                 if P[i, column[j]]:
-                    q[i], q[j] = q[j], q[i]
+                    q[i], q[j] = bb.add(TwoBitSwap(), x=q[i], y=q[j])
                     column[i], column[j] = column[j], column[i]
         return {'q': q}
 
