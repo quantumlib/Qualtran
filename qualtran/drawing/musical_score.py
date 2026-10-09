@@ -394,7 +394,7 @@ def _cbloq_musical_score(
             binst, pred_cxns, succ_cxns, soq_assign, y_to_score, seq_x=seq_x, manager=manager
         )
 
-        if not binst in main_subgraph_binsts:
+        if binst not in main_subgraph_binsts:
             reg_scorepos = [
                 (soq_assign[pred.right].y, len(y_to_score[soq_assign[pred.right].y]) - 1)
                 for pred in pred_cxns
