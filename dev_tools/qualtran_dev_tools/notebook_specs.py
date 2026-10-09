@@ -124,6 +124,7 @@ import qualtran.bloqs.rotations.hamming_weight_phasing
 import qualtran.bloqs.rotations.phase_gradient
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.programmable_rotation_gate_array
+import qualtran.bloqs.rotations.programmable_ancilla_rotation
 import qualtran.bloqs.rotations.quantum_variable_rotation
 import qualtran.bloqs.rotations.rz_via_phase_gradient
 import qualtran.bloqs.rotations.zpow_via_phase_gradient
@@ -731,6 +732,13 @@ ROT_QFT_PE = [
         ],
     ),
     # --------------------------------------------------------------------------
+    NotebookSpecV2(
+        title='ZPow Using Programmed Ancilla',
+        module=qualtran.bloqs.rotations.programmable_ancilla_rotation,
+        bloq_specs=[
+            qualtran.bloqs.rotations.programmable_ancilla_rotation._ZPOW_USING_PROGRAMMED_ANCILLA_DOC,
+        ],
+    ),
     # -----   QFT          -----------------------------------------------------
     # --------------------------------------------------------------------------
     NotebookSpecV2(
