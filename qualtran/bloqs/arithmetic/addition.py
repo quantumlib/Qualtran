@@ -251,36 +251,33 @@ class AddWithCarry(Bloq):
             ]
         )
 
-    def on_classical_vals(self, a: int, b: int, carry_out: int):
+    def on_classical_vals(self, **vals):
+        a = vals["a"]
+        b = vals["b"]
+        carry_out = vals["carry_out"]
         n = self.dtype.bitsize
         total = int(a) + int(b)
         return {
             "a": a,
-            "b": total % (1 << n),
-            "carry_out": int(carry_out) ^ (total >> n),
+            "b": total % (1 << int(n)),
+            "carry_out": int(carry_out) ^ (total >> int(n)),
         }
-
     def decompose_from_registers(
-        self,
-        *,
-        context: cirq.DecompositionContext,
-        **quregs: NDArray[cirq.Qid],
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> Iterator[cirq.OP_TREE]:
         n = self.dtype.bitsize
         extended_b = np.concatenate((quregs["carry_out"], quregs["b"]))
         adder = Add(a_dtype=self.dtype, b_dtype=QUInt(n + 1))
-        yield from adder.decompose_from_registers(
-            context=context, a=quregs["a"], b=extended_b
-        )
+        yield from adder.decompose_from_registers(context=context, a=quregs["a"], b=extended_b)
 
     def decompose_bloq(self) -> CompositeBloq:
         return decompose_from_cirq_style_method(self)
-
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         n = self.dtype.bitsize
         n_cnot = (n - 1) * 6 + 2
         return {And(): n, And().adjoint(): n, CNOT(): n_cnot}
+
 
 @bloq_example(generalizer=ignore_split_join)
 def _add_symb() -> Add:
