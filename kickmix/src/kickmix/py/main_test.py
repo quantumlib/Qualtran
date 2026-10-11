@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import fractions
 import io
 import pathlib
 
@@ -27,83 +28,6 @@ def test_circuit():
         km.Circuit("test")
     c = km.Circuit("X q0")
     assert len(c) == 1
-
-
-def test_circuit_max_t_and_max_rotations():
-    empty = km.Circuit("")
-    assert empty.max_magic() == 0
-    assert empty.max_t() == 0
-    assert empty.max_rotations() == 0
-
-    c = km.Circuit("""
-        CCX q0 q1 q2
-        CCZ q0 q1 q2 if b0
-        Z q0
-        Z_POW q0 0.0
-        Z_POW q0 0.5
-        Z_POW q0 1.0
-        Z_POW q0 1.5
-        Z_POW q0 -0.5 if b0
-        Z_POW q0 0.25
-        Z_POW q0 0.75
-        Z_POW q0 -0.25 if b0
-        Z_POW q0 0.125
-        Z_POW q0 0.1 if b1
-    """)
-    assert c.max_magic() == 2
-    assert c.max_t() == 3
-    assert c.max_rotations() == 2
-
-
-def test_circuit_max_op_counts():
-    empty = km.Circuit("")
-    assert all(v == 0 for v in empty.max_op_counts().values())
-
-    c = km.Circuit("""
-        X q0
-        X q0 if b0
-        CX q0 q1
-        CX q0 q1 if b0
-        PUSH_CONDITION if b0
-        CCX q0 q1 q2
-        CCZ q0 q1 q2 if b1
-        Z_POW q0 0.25
-        Z_POW q0 0.125 if b1
-        POP_CONDITION
-        DEBUG_PRINT
-        DEBUG_PRINT q0
-        DEBUG_PRINT b0 if b1
-    """)
-    counts = c.max_op_counts()
-    assert counts["X"] == 2
-    assert counts["CX"] == 2
-    assert counts["PUSH_CONDITION"] == 1
-    assert counts["POP_CONDITION"] == 1
-    assert counts["CCX"] == 1
-    assert counts["CCZ"] == 1
-    assert counts["Z_POW"] == 2
-    assert counts["DEBUG_PRINT"] == 3
-    assert counts["CZ"] == 0
-    assert counts["HMR"] == 0
-
-    sim = km.Simulator(batch_size=4, count_operations=True, ignore_debug_prints=True)
-    assert set(counts.keys()) == set(sim.op_counts().keys())
-
-    def classify_z_pow(angle):
-        if angle.denominator <= 2:
-            return "Z_POW_CLIFFORD"
-        if angle.denominator == 4:
-            return "T"
-        return f"Z_POW_2^-{angle.denominator.bit_length() - 1}"
-
-    grouped = c.max_op_counts(z_pow_key=classify_z_pow)
-    assert "Z_POW" not in grouped
-    assert grouped["T"] == 1
-    assert grouped["Z_POW_2^-3"] == 1
-    assert grouped["X"] == 2
-
-    with pytest.raises(TypeError, match="z_pow_key must return a str"):
-        c.max_op_counts(z_pow_key=lambda _: 123)  # type: ignore[arg-type, return-value]
 
 
 def test_circuit_file_io(tmp_path: pathlib.Path):
@@ -242,3 +166,98 @@ def test_circuit_file_io_errors(tmp_path: pathlib.Path):
         km.Circuit.from_file(123)  # type: ignore[arg-type]
     with pytest.raises(TypeError):
         circuit.to_file(123)  # type: ignore[arg-type]
+
+
+def test_circuit_operation_statistics_resources():
+    empty_stats = km.Circuit("").operation_statistics()
+    assert empty_stats.ccp == 0
+    assert empty_stats.t == 0
+    assert empty_stats.rotations == 0
+    assert empty_stats.clifford_z_pow == 0
+    assert empty_stats.total == 0
+    assert empty_stats.z_pow_counts == {}
+
+    c = km.Circuit("""
+        CCX q0 q1 q2
+        CCZ q0 q1 q2 if b0
+        Z q0
+        Z_POW q0 0.0
+        Z_POW q0 0.5
+        Z_POW q0 1.0
+        Z_POW q0 1.5
+        Z_POW q0 -0.5 if b0
+        Z_POW q0 0.25
+        Z_POW q0 0.75
+        Z_POW q0 -0.25 if b0
+        Z_POW q0 0.125
+        Z_POW q0 0.1 if b1
+    """)
+    stats = c.operation_statistics()
+    assert stats.ccp == 2
+    assert stats.t == 3
+    assert stats.rotations == 2
+    assert stats.clifford_z_pow == 5
+    assert stats.total == 13
+    assert stats.z_pow_counts[fractions.Fraction(1, 4)] == 1
+    assert stats.z_pow_counts[fractions.Fraction(3, 4)] == 1
+    assert stats.z_pow_counts[fractions.Fraction(7, 4)] == 1
+    assert stats.z_pow_counts[fractions.Fraction(3, 2)] == 2
+    assert stats == km.Circuit(str(c)).operation_statistics()
+    assert stats != empty_stats
+    assert repr(stats) == "<km.OperationStatistics total=13 ccp=2 t=3 rotations=2>"
+
+
+def test_circuit_operation_statistics_op_counts():
+    empty = km.Circuit("")
+    assert all(v == 0 for v in empty.operation_statistics().op_counts().values())
+
+    c = km.Circuit("""
+        X q0
+        X q0 if b0
+        CX q0 q1
+        CX q0 q1 if b0
+        PUSH_CONDITION if b0
+        CCX q0 q1 q2
+        CCZ q0 q1 q2 if b1
+        Z_POW q0 0.25
+        Z_POW q0 0.125 if b1
+        POP_CONDITION
+        DEBUG_PRINT
+        DEBUG_PRINT q0
+        DEBUG_PRINT b0 if b1
+    """)
+    stats = c.operation_statistics()
+    counts = stats.op_counts()
+    assert stats["X"] == 2
+    assert counts["X"] == 2
+    assert counts["CX"] == 2
+    assert counts["PUSH_CONDITION"] == 1
+    assert counts["POP_CONDITION"] == 1
+    assert counts["CCX"] == 1
+    assert counts["CCZ"] == 1
+    assert counts["Z_POW"] == 2
+    assert counts["DEBUG_PRINT"] == 3
+    assert counts["CZ"] == 0
+    assert counts["HMR"] == 0
+
+    with pytest.raises(KeyError):
+        _ = stats["NOT_AN_OP"]
+
+    sim = km.Simulator(batch_size=4, counting_operations=True, ignoring_debug_prints=True)
+    assert set(counts.keys()) == set(sim.operation_statistics().op_counts().keys())
+
+    def classify_z_pow(angle: fractions.Fraction) -> str:
+        if angle.denominator <= 2:
+            return "Z_POW_CLIFFORD"
+        if angle.denominator == 4:
+            return "T"
+        return f"Z_POW_2^-{angle.denominator.bit_length() - 1}"
+
+    grouped = stats.op_counts(z_pow_key=classify_z_pow)
+    assert "Z_POW" not in grouped
+    assert grouped["T"] == 1
+    assert grouped["Z_POW_2^-3"] == 1
+    assert grouped["X"] == 2
+
+    with pytest.raises(TypeError, match="z_pow_key must return a str"):
+        stats.op_counts(z_pow_key=lambda _: 123)  # type: ignore[arg-type, return-value]

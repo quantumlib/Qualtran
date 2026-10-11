@@ -7,6 +7,7 @@
 #include "kickmix/py/circuit/subs/gf_arithmetic.pybind.h"
 #include "kickmix/py/circuit/subs/unary_iteration.pybind.h"
 #include "kickmix/py/interactive_simulator.pybind.h"
+#include "kickmix/py/operation_statistics.pybind.h"
 #include "kickmix/py/types.pybind.h"
 #include "kickmix/py/util.pybind.h"
 #include "kickmix/py/val/array.pybind.h"
@@ -113,6 +114,8 @@ PYBIND11_MODULE(kickmix, m) {
 
     auto c_unary_iteration = register_unary_iteration_class(m);
 
+    auto c_operation_statistics = register_operation_statistics_class(m);
+
     auto c_interactive_simulator = register_interactive_simulator_class(m);
 
     PYBIND_TYPE_PTR_QUBIT_ID = pybind11::type::of<kickmix::QubitId>().ptr();
@@ -133,5 +136,6 @@ PYBIND11_MODULE(kickmix, m) {
     register_xbid_methods(c_xbid);
     register_gf2_field_methods(c_gf2_field);
     register_unary_iteration_methods(c_unary_iteration);
+    register_operation_statistics_methods(c_operation_statistics);
     register_interactive_simulator_methods(c_interactive_simulator);
 }

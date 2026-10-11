@@ -14,12 +14,10 @@
     - [`kickmix.Circuit.from_file`](#kickmix.Circuit.from_file)
     - [`kickmix.Circuit.html_diagram`](#kickmix.Circuit.html_diagram)
     - [`kickmix.Circuit.max_magic`](#kickmix.Circuit.max_magic)
-    - [`kickmix.Circuit.max_op_counts`](#kickmix.Circuit.max_op_counts)
-    - [`kickmix.Circuit.max_rotations`](#kickmix.Circuit.max_rotations)
-    - [`kickmix.Circuit.max_t`](#kickmix.Circuit.max_t)
     - [`kickmix.Circuit.num_bits`](#kickmix.Circuit.num_bits)
     - [`kickmix.Circuit.num_qubits`](#kickmix.Circuit.num_qubits)
     - [`kickmix.Circuit.num_registers`](#kickmix.Circuit.num_registers)
+    - [`kickmix.Circuit.operation_statistics`](#kickmix.Circuit.operation_statistics)
     - [`kickmix.Circuit.reaction_depth`](#kickmix.Circuit.reaction_depth)
     - [`kickmix.Circuit.register_data`](#kickmix.Circuit.register_data)
     - [`kickmix.Circuit.text_diagram`](#kickmix.Circuit.text_diagram)
@@ -103,15 +101,27 @@
     - [`kickmix.GF2Field.mul`](#kickmix.GF2Field.mul)
     - [`kickmix.GF2Field.pow`](#kickmix.GF2Field.pow)
     - [`kickmix.GF2Field.square`](#kickmix.GF2Field.square)
+- [`kickmix.OperationStatistics`](#kickmix.OperationStatistics)
+    - [`kickmix.OperationStatistics.__eq__`](#kickmix.OperationStatistics.__eq__)
+    - [`kickmix.OperationStatistics.__getitem__`](#kickmix.OperationStatistics.__getitem__)
+    - [`kickmix.OperationStatistics.__ne__`](#kickmix.OperationStatistics.__ne__)
+    - [`kickmix.OperationStatistics.__repr__`](#kickmix.OperationStatistics.__repr__)
+    - [`kickmix.OperationStatistics.ccp`](#kickmix.OperationStatistics.ccp)
+    - [`kickmix.OperationStatistics.clifford_z_pow`](#kickmix.OperationStatistics.clifford_z_pow)
+    - [`kickmix.OperationStatistics.op_counts`](#kickmix.OperationStatistics.op_counts)
+    - [`kickmix.OperationStatistics.rotations`](#kickmix.OperationStatistics.rotations)
+    - [`kickmix.OperationStatistics.t`](#kickmix.OperationStatistics.t)
+    - [`kickmix.OperationStatistics.total`](#kickmix.OperationStatistics.total)
+    - [`kickmix.OperationStatistics.z_pow_counts`](#kickmix.OperationStatistics.z_pow_counts)
 - [`kickmix.Simulator`](#kickmix.Simulator)
     - [`kickmix.Simulator.__init__`](#kickmix.Simulator.__init__)
     - [`kickmix.Simulator.batch_size`](#kickmix.Simulator.batch_size)
     - [`kickmix.Simulator.clear_for_shot`](#kickmix.Simulator.clear_for_shot)
-    - [`kickmix.Simulator.clear_op_counts`](#kickmix.Simulator.clear_op_counts)
-    - [`kickmix.Simulator.count_operations`](#kickmix.Simulator.count_operations)
+    - [`kickmix.Simulator.clear_operation_statistics`](#kickmix.Simulator.clear_operation_statistics)
+    - [`kickmix.Simulator.counting_operations`](#kickmix.Simulator.counting_operations)
     - [`kickmix.Simulator.do`](#kickmix.Simulator.do)
-    - [`kickmix.Simulator.ignore_debug_prints`](#kickmix.Simulator.ignore_debug_prints)
-    - [`kickmix.Simulator.op_counts`](#kickmix.Simulator.op_counts)
+    - [`kickmix.Simulator.ignoring_debug_prints`](#kickmix.Simulator.ignoring_debug_prints)
+    - [`kickmix.Simulator.operation_statistics`](#kickmix.Simulator.operation_statistics)
     - [`kickmix.Simulator.read_across_shots`](#kickmix.Simulator.read_across_shots)
     - [`kickmix.Simulator.read_phase_flipped_across_shots`](#kickmix.Simulator.read_phase_flipped_across_shots)
     - [`kickmix.Simulator.read_shot_phase`](#kickmix.Simulator.read_shot_phase)
@@ -518,116 +528,6 @@ def max_magic(
     """
 ```
 
-<a name="kickmix.Circuit.max_op_counts"></a>
-```python
-# kickmix.Circuit.max_op_counts
-
-# (in class kickmix.Circuit)
-def max_op_counts(
-    self,
-    z_pow_key: Callable[[fractions.Fraction], str] | None = None,
-) -> Dict[str, int]:
-    """Returns an upper bound on the execution count of each operation type.
-
-    Counts how many times each operation type appears in the circuit,
-    including conditional operations (`OP_IF` and operations inside
-    `PUSH_CONDITION` blocks). Unconditional and conditional variants of
-    an operation (e.g. `CCX` and `CCX_IF`) are summed under the base
-    operation name (`'CCX'`), matching C++ `count_operations` and
-    `Simulator.op_counts()`.
-
-    Args:
-        z_pow_key: Optional callable taking a `Z_POW` angle (in half
-            turns in `[0, 2)` as a `fractions.Fraction`) and returning
-            a dictionary key `str` under which to accumulate its count.
-            If `None` (the default), all `Z_POW` operations are summed
-            under `'Z_POW'`.
-
-    Returns:
-        A dictionary mapping each operation name (`'NEG'`,
-        `'BIT_INVERT'`, `'BIT_STORE0'`, `'BIT_STORE1'`, `'X'`, `'Z'`,
-        `'R'`, `'HMR'`, `'CX'`, `'CZ'`, `'SWAP'`, `'CCX'`, `'CCZ'`,
-        `'Z_POW'`, `'DEBUG_PRINT'`, `'POP_CONDITION'`,
-        `'PUSH_CONDITION'`, or custom `z_pow_key` names) to its count.
-
-    Examples:
-        >>> import kickmix as km
-        >>> c = km.Circuit('''
-        ...     X q0
-        ...     CX q0 q1 if b0
-        ...     Z_POW q0 0.5
-        ...     Z_POW q0 0.25
-        ...     Z_POW q0 -0.25 if b0
-        ...     Z_POW q0 0.125
-        ... ''')
-        >>> c.max_op_counts()['X']
-        1
-        >>> c.max_op_counts()['Z_POW']
-        4
-        >>> def classify_z_pow(angle):
-        ...     if angle.denominator <= 2:
-        ...         return 'Z_POW_CLIFFORD'
-        ...     if angle.denominator == 4:
-        ...         return 'T'
-        ...     return f'Z_POW_2^-{angle.denominator.bit_length() - 1}'
-        >>> grouped = c.max_op_counts(z_pow_key=classify_z_pow)
-        >>> grouped['Z_POW_CLIFFORD'], grouped['T'], grouped['Z_POW_2^-3']
-        (1, 2, 1)
-    """
-```
-
-<a name="kickmix.Circuit.max_rotations"></a>
-```python
-# kickmix.Circuit.max_rotations
-
-# (in class kickmix.Circuit)
-def max_rotations(
-    self,
-) -> int:
-    """Returns an upper bound on the number of arbitrary-angle rotations.
-
-    Rotations are `Z_POW` operations whose angle is not a multiple of
-    0.25 half turns (i.e. neither Clifford nor T).
-
-    Examples:
-        >>> import kickmix as km
-        >>> c = km.Circuit('''
-        ...     Z_POW q0 0.5
-        ...     Z_POW q0 0.25
-        ...     Z_POW q0 0.125
-        ...     Z_POW q0 0.1 if b0
-        ... ''')
-        >>> c.max_rotations()
-        2
-    """
-```
-
-<a name="kickmix.Circuit.max_t"></a>
-```python
-# kickmix.Circuit.max_t
-
-# (in class kickmix.Circuit)
-def max_t(
-    self,
-) -> int:
-    """Returns an upper bound on the number of T gates run by the circuit.
-
-    T gates are `Z_POW` operations whose angle is an odd multiple of
-    0.25 half turns (45 degrees).
-
-    Examples:
-        >>> import kickmix as km
-        >>> c = km.Circuit('''
-        ...     Z_POW q0 0.5
-        ...     Z_POW q0 0.25
-        ...     Z_POW q0 -0.25 if b0
-        ...     Z_POW q0 0.125
-        ... ''')
-        >>> c.max_t()
-        2
-    """
-```
-
 <a name="kickmix.Circuit.num_bits"></a>
 ```python
 # kickmix.Circuit.num_bits
@@ -664,6 +564,44 @@ def num_registers(
     self,
 ) -> int:
     """Returns the number of registers used by the circuit.
+    """
+```
+
+<a name="kickmix.Circuit.operation_statistics"></a>
+```python
+# kickmix.Circuit.operation_statistics
+
+# (in class kickmix.Circuit)
+def operation_statistics(
+    self,
+) -> km.OperationStatistics:
+    """Returns static upper-bound operation statistics for the circuit.
+
+    Counts every instruction appearing in the circuit, including
+    conditional operations (`OP_IF` and operations inside
+    `PUSH_CONDITION` blocks).
+
+    Returns:
+        A `km.OperationStatistics` object containing operation counts
+        and resource summaries (`ccp` for `CCX`/`CCZ` gates, `t`,
+        `rotations`, `clifford_z_pow`, `total`, `z_pow_counts`, and
+        `op_counts`).
+
+    Examples:
+        >>> import kickmix as km
+        >>> c = km.Circuit('''
+        ...     X q0
+        ...     CCX q0 q1 q2 if b0
+        ...     Z_POW q0 0.5
+        ...     Z_POW q0 0.25
+        ...     Z_POW q0 -0.25 if b0
+        ...     Z_POW q0 0.125
+        ... ''')
+        >>> stats = c.operation_statistics()
+        >>> stats.ccp, stats.t, stats.rotations
+        (1, 2, 1)
+        >>> stats['X'], stats['Z_POW']
+        (1, 4)
     """
 ```
 
@@ -3048,6 +2986,312 @@ def square(
     """
 ```
 
+<a name="kickmix.OperationStatistics"></a>
+```python
+# kickmix.OperationStatistics
+
+# (at top-level in the kickmix module)
+class OperationStatistics:
+    """Operation count statistics from a `km.Circuit` or `km.Simulator`.
+
+    Provides per-operation counts (`stats['X']`, `stats.op_counts()`)
+    and resource summaries (`ccp` for `CCX`/`CCZ` gates, `t`,
+    `rotations`, `clifford_z_pow`, `total`, and `z_pow_counts`).
+
+    Examples:
+        >>> import kickmix as km
+        >>> c = km.Circuit('''
+        ...     X q0
+        ...     CCX q0 q1 q2
+        ...     Z_POW q0 0.25
+        ... ''')
+        >>> stats = c.operation_statistics()
+        >>> stats.ccp, stats.t, stats['X']
+        (1, 1, 1)
+    """
+```
+
+<a name="kickmix.OperationStatistics.__eq__"></a>
+```python
+# kickmix.OperationStatistics.__eq__
+
+# (in class kickmix.OperationStatistics)
+def __eq__(
+    self,
+    arg0: kickmix.OperationStatistics,
+) -> bool:
+    """Determines if two OperationStatistics have identical counts.
+    """
+```
+
+<a name="kickmix.OperationStatistics.__getitem__"></a>
+```python
+# kickmix.OperationStatistics.__getitem__
+
+# (in class kickmix.OperationStatistics)
+def __getitem__(
+    self,
+    key: str,
+) -> int:
+    """Returns the count for the given base operation name.
+
+    Args:
+        key: One of the base operation names (`'NEG'`, `'BIT_INVERT'`,
+            `'BIT_STORE0'`, `'BIT_STORE1'`, `'X'`, `'Z'`, `'R'`,
+            `'HMR'`, `'CX'`, `'CZ'`, `'SWAP'`, `'CCX'`, `'CCZ'`,
+            `'Z_POW'`, `'DEBUG_PRINT'`, `'POP_CONDITION'`,
+            `'PUSH_CONDITION'`).
+
+    Raises:
+        KeyError: `key` is not a recognized base operation name.
+
+    Examples:
+        >>> import kickmix as km
+        >>> c = km.Circuit('''
+        ...     X q0
+        ...     CCX q0 q1 q2 if b0
+        ... ''')
+        >>> stats = c.operation_statistics()
+        >>> stats['X']
+        1
+        >>> stats['CCX']
+        1
+    """
+```
+
+<a name="kickmix.OperationStatistics.__ne__"></a>
+```python
+# kickmix.OperationStatistics.__ne__
+
+# (in class kickmix.OperationStatistics)
+def __ne__(
+    self,
+    arg0: kickmix.OperationStatistics,
+) -> bool:
+    """Determines if two OperationStatistics have different counts.
+    """
+```
+
+<a name="kickmix.OperationStatistics.__repr__"></a>
+```python
+# kickmix.OperationStatistics.__repr__
+
+# (in class kickmix.OperationStatistics)
+def __repr__(
+    self,
+) -> str:
+    """Returns a summary string describing the operation statistics.
+    """
+```
+
+<a name="kickmix.OperationStatistics.ccp"></a>
+```python
+# kickmix.OperationStatistics.ccp
+
+# (in class kickmix.OperationStatistics)
+@property
+def ccp(
+    self,
+) -> int:
+    """The number of doubly-controlled Pauli (`CCX` and `CCZ`) operations.
+
+    Includes both unconditional (`CCX`, `CCZ`) and classically
+    conditioned (`CCX if ...`, `CCZ if ...`) operations.
+
+    Examples:
+        >>> import kickmix as km
+        >>> c = km.Circuit('''
+        ...     CCX q0 q1 q2
+        ...     CCZ q0 q1 q2 if b0
+        ...     CX q0 q1
+        ... ''')
+        >>> c.operation_statistics().ccp
+        2
+    """
+```
+
+<a name="kickmix.OperationStatistics.clifford_z_pow"></a>
+```python
+# kickmix.OperationStatistics.clifford_z_pow
+
+# (in class kickmix.OperationStatistics)
+@property
+def clifford_z_pow(
+    self,
+) -> int:
+    """The number of Clifford `Z_POW` operations (multiples of 0.5 half turns).
+
+    Examples:
+        >>> import kickmix as km
+        >>> c = km.Circuit('''
+        ...     Z_POW q0 0.0
+        ...     Z_POW q0 0.5
+        ...     Z_POW q0 -0.5 if b0
+        ...     Z_POW q0 0.25
+        ... ''')
+        >>> c.operation_statistics().clifford_z_pow
+        3
+    """
+```
+
+<a name="kickmix.OperationStatistics.op_counts"></a>
+```python
+# kickmix.OperationStatistics.op_counts
+
+# (in class kickmix.OperationStatistics)
+def op_counts(
+    self,
+    z_pow_key: Callable[[fractions.Fraction], str] | None = None,
+) -> Dict[str, int]:
+    """Returns a dictionary mapping each operation group name to its count.
+
+    Unconditional and conditional variants of an operation (e.g. `CCX`
+    and `CCX_IF`) are summed under the base operation name (`'CCX'`).
+
+    Args:
+        z_pow_key: Optional callable taking a `Z_POW` angle (in half
+            turns in `[0, 2)` as a `fractions.Fraction`) and returning
+            a dictionary key `str` under which to accumulate its count.
+            If `None` (the default), all `Z_POW` operations are summed
+            under `'Z_POW'`.
+
+    Returns:
+        A dictionary mapping each operation name (`'NEG'`,
+        `'BIT_INVERT'`, `'BIT_STORE0'`, `'BIT_STORE1'`, `'X'`, `'Z'`,
+        `'R'`, `'HMR'`, `'CX'`, `'CZ'`, `'SWAP'`, `'CCX'`, `'CCZ'`,
+        `'Z_POW'`, `'DEBUG_PRINT'`, `'POP_CONDITION'`,
+        `'PUSH_CONDITION'`, or custom `z_pow_key` names) to its count.
+
+    Examples:
+        >>> import kickmix as km
+        >>> c = km.Circuit('''
+        ...     X q0
+        ...     CX q0 q1 if b0
+        ...     Z_POW q0 0.5
+        ...     Z_POW q0 0.25
+        ...     Z_POW q0 -0.25 if b0
+        ...     Z_POW q0 0.125
+        ... ''')
+        >>> stats = c.operation_statistics()
+        >>> stats.op_counts()['X']
+        1
+        >>> stats.op_counts()['Z_POW']
+        4
+        >>> def classify_z_pow(angle):
+        ...     if angle.denominator <= 2:
+        ...         return 'Z_POW_CLIFFORD'
+        ...     if angle.denominator == 4:
+        ...         return 'T'
+        ...     return f'Z_POW_2^-{angle.denominator.bit_length() - 1}'
+        >>> grouped = stats.op_counts(z_pow_key=classify_z_pow)
+        >>> grouped['Z_POW_CLIFFORD'], grouped['T'], grouped['Z_POW_2^-3']
+        (1, 2, 1)
+    """
+```
+
+<a name="kickmix.OperationStatistics.rotations"></a>
+```python
+# kickmix.OperationStatistics.rotations
+
+# (in class kickmix.OperationStatistics)
+@property
+def rotations(
+    self,
+) -> int:
+    """The number of arbitrary-angle `Z_POW` rotations (neither Clifford nor T).
+
+    Rotations are `Z_POW` operations whose angle is not a multiple of
+    0.25 half turns.
+
+    Examples:
+        >>> import kickmix as km
+        >>> c = km.Circuit('''
+        ...     Z_POW q0 0.5
+        ...     Z_POW q0 0.25
+        ...     Z_POW q0 0.125
+        ...     Z_POW q0 0.1 if b0
+        ... ''')
+        >>> c.operation_statistics().rotations
+        2
+    """
+```
+
+<a name="kickmix.OperationStatistics.t"></a>
+```python
+# kickmix.OperationStatistics.t
+
+# (in class kickmix.OperationStatistics)
+@property
+def t(
+    self,
+) -> int:
+    """The number of `Z_POW` operations with odd-multiple-of-45-degree angles.
+
+    T gates are `Z_POW` operations whose angle is an odd multiple of
+    0.25 half turns (45 degrees).
+
+    Examples:
+        >>> import kickmix as km
+        >>> c = km.Circuit('''
+        ...     Z_POW q0 0.5
+        ...     Z_POW q0 0.25
+        ...     Z_POW q0 -0.25 if b0
+        ...     Z_POW q0 0.125
+        ... ''')
+        >>> c.operation_statistics().t
+        2
+    """
+```
+
+<a name="kickmix.OperationStatistics.total"></a>
+```python
+# kickmix.OperationStatistics.total
+
+# (in class kickmix.OperationStatistics)
+@property
+def total(
+    self,
+) -> int:
+    """The total number of operations across all operation types.
+
+    Examples:
+        >>> import kickmix as km
+        >>> c = km.Circuit('''
+        ...     X q0
+        ...     CX q0 q1 if b0
+        ...     CCX q0 q1 q2
+        ... ''')
+        >>> c.operation_statistics().total
+        3
+    """
+```
+
+<a name="kickmix.OperationStatistics.z_pow_counts"></a>
+```python
+# kickmix.OperationStatistics.z_pow_counts
+
+# (in class kickmix.OperationStatistics)
+@property
+def z_pow_counts(
+    self,
+) -> Dict[fractions.Fraction, int]:
+    """A dictionary mapping each distinct `Z_POW` angle to its count.
+
+    Angles are represented in half turns in `[0, 2)` as a
+    `fractions.Fraction`.
+
+    Examples:
+        >>> import kickmix as km
+        >>> c = km.Circuit('''
+        ...     Z_POW q0 0.25
+        ...     Z_POW q1 0.25 if b0
+        ...     Z_POW q0 -0.25
+        ... ''')
+        >>> c.operation_statistics().z_pow_counts
+        {Fraction(1, 4): 2, Fraction(7, 4): 1}
+    """
+```
+
 <a name="kickmix.Simulator"></a>
 ```python
 # kickmix.Simulator
@@ -3067,20 +3311,20 @@ def __init__(
     self,
     batch_size: int,
     *,
-    ignore_debug_prints: bool = False,
-    count_operations: bool = False,
+    ignoring_debug_prints: bool = False,
+    counting_operations: bool = False,
 ):
     """Initializes an interactive simulator with the given batch size.
 
     Args:
         batch_size: Determines how many simultaneous shots are being
             tracked by the simulator.
-        ignore_debug_prints: If `True`, `DEBUG_PRINT` instructions are
-            ignored during simulation instead of writing to stderr.
+        ignoring_debug_prints: If `True`, `DEBUG_PRINT` instructions
+            are ignored during simulation instead of writing to stderr.
             Defaults to `False`.
-        count_operations: If `True`, tracks per-shot operation counts
-            during `do(...)` that can be queried with `op_counts()`.
-            Defaults to `False`.
+        counting_operations: If `True`, tracks per-shot operation
+            statistics during `do(...)` that can be queried with
+            `operation_statistics()`. Defaults to `False`.
     """
 ```
 
@@ -3133,38 +3377,38 @@ def clear_for_shot(
     """
 ```
 
-<a name="kickmix.Simulator.clear_op_counts"></a>
+<a name="kickmix.Simulator.clear_operation_statistics"></a>
 ```python
-# kickmix.Simulator.clear_op_counts
+# kickmix.Simulator.clear_operation_statistics
 
 # (in class kickmix.Simulator)
-def clear_op_counts(
+def clear_operation_statistics(
     self,
 ) -> None:
-    """Zeroes all accumulated operation counts on the simulator.
+    """Zeroes all accumulated operation statistics on the simulator.
 
     Examples:
         >>> import kickmix as km
-        >>> sim = km.Simulator(batch_size=4, count_operations=True)
+        >>> sim = km.Simulator(batch_size=4, counting_operations=True)
         >>> sim.do(km.Circuit('X q0'))
-        >>> sim.op_counts()['X']
+        >>> sim.operation_statistics()['X']
         4
-        >>> sim.clear_op_counts()
-        >>> sim.op_counts()['X']
+        >>> sim.clear_operation_statistics()
+        >>> sim.operation_statistics()['X']
         0
     """
 ```
 
-<a name="kickmix.Simulator.count_operations"></a>
+<a name="kickmix.Simulator.counting_operations"></a>
 ```python
-# kickmix.Simulator.count_operations
+# kickmix.Simulator.counting_operations
 
 # (in class kickmix.Simulator)
 @property
-def count_operations(
+def counting_operations(
     self,
 ) -> bool:
-    """Whether operation execution counts are recorded during `do(...)`.
+    """Whether operation execution statistics are recorded during `do(...)`.
     """
 ```
 
@@ -3184,57 +3428,48 @@ def do(
     """
 ```
 
-<a name="kickmix.Simulator.ignore_debug_prints"></a>
+<a name="kickmix.Simulator.ignoring_debug_prints"></a>
 ```python
-# kickmix.Simulator.ignore_debug_prints
+# kickmix.Simulator.ignoring_debug_prints
 
 # (in class kickmix.Simulator)
 @property
-def ignore_debug_prints(
+def ignoring_debug_prints(
     self,
 ) -> bool:
     """Whether `DEBUG_PRINT` instructions are suppressed during simulation.
     """
-@ignore_debug_prints.setter
-def ignore_debug_prints(self, value: bool):
+@ignoring_debug_prints.setter
+def ignoring_debug_prints(self, value: bool):
     pass
 ```
 
-<a name="kickmix.Simulator.op_counts"></a>
+<a name="kickmix.Simulator.operation_statistics"></a>
 ```python
-# kickmix.Simulator.op_counts
+# kickmix.Simulator.operation_statistics
 
 # (in class kickmix.Simulator)
-def op_counts(
+def operation_statistics(
     self,
     shot_index: int | None = None,
-    z_pow_key: Callable[[fractions.Fraction], str] | None = None,
-) -> Dict[str, int]:
-    """Returns the number of times each operation type was executed.
+) -> km.OperationStatistics:
+    """Returns operation statistics recorded during `do(...)`.
 
     Conditional operations (`OP_IF` and operations inside
     `PUSH_CONDITION` blocks) are only counted in shots where their
-    condition was satisfied. Unconditional and conditional variants of
-    an operation (e.g. `CCX` and `CCX_IF`) are summed under the base
-    operation name (`'CCX'`), matching C++ `count_operations_sampled`.
+    condition was satisfied.
 
     Args:
         shot_index: Optional index of a single shot in
             `range(sim.batch_size)`. If `None` (the default), returns
             the sum of operation counts across all `sim.batch_size`
             shots.
-        z_pow_key: Optional callable taking a `Z_POW` angle (in half
-            turns in `[0, 2)` as a `fractions.Fraction`) and returning
-            a dictionary key `str` under which to accumulate its count.
-            If `None` (the default), all `Z_POW` operations are summed
-            under `'Z_POW'`.
 
     Returns:
-        A dictionary mapping each operation name (`'NEG'`,
-        `'BIT_INVERT'`, `'BIT_STORE0'`, `'BIT_STORE1'`, `'X'`, `'Z'`,
-        `'R'`, `'HMR'`, `'CX'`, `'CZ'`, `'SWAP'`, `'CCX'`, `'CCZ'`,
-        `'Z_POW'`, `'DEBUG_PRINT'`, `'POP_CONDITION'`,
-        `'PUSH_CONDITION'`, or custom `z_pow_key` names) to its count.
+        A `km.OperationStatistics` object containing operation counts
+        and resource summaries (`ccp` for `CCX`/`CCZ` gates, `t`,
+        `rotations`, `clifford_z_pow`, `total`, `z_pow_counts`, and
+        `op_counts`).
 
     Raises:
         ValueError: Operation counting has not been enabled on this
@@ -3243,7 +3478,7 @@ def op_counts(
 
     Examples:
         >>> import kickmix as km
-        >>> sim = km.Simulator(batch_size=4, count_operations=True)
+        >>> sim = km.Simulator(batch_size=4, counting_operations=True)
         >>> sim.write_across_shots(km.b(0), 0b0101)
         >>> sim.do(km.Circuit('''
         ...     X q0
@@ -3251,19 +3486,13 @@ def op_counts(
         ...     Z_POW q0 0.25 if b0
         ...     Z_POW q0 0.125
         ... '''))
-        >>> sim.op_counts()['X']
-        4
-        >>> sim.op_counts()['CCX']
-        2
-        >>> sim.op_counts(shot_index=0)['CCX']
+        >>> stats = sim.operation_statistics()
+        >>> stats['X'], stats.ccp, stats.t, stats.rotations
+        (4, 2, 2, 4)
+        >>> sim.operation_statistics(shot_index=0).ccp
         1
-        >>> sim.op_counts(shot_index=1)['CCX']
+        >>> sim.operation_statistics(shot_index=1).ccp
         0
-        >>> by_group = sim.op_counts(
-        ...     z_pow_key=lambda a: 'T' if a.denominator == 4 else 'ROT'
-        ... )
-        >>> by_group['T'], by_group['ROT']
-        (2, 4)
     """
 ```
 

@@ -5,6 +5,7 @@
 #include <pybind11/stl.h>
 
 #include "kickmix/py/circuit/circuit.pybind.h"
+#include "kickmix/py/operation_statistics.pybind.h"
 #include "kickmix/py/util.pybind.h"
 #include "kickmix/py/val/id.pybind.h"
 #include "val/angle.pybind.h"
@@ -105,20 +106,20 @@ pybind11::object int_obj_from_bytes_with_max_bits(uint8_t *bytes_buffer, size_t 
 }
 
 PyInteractiveSimulator::PyInteractiveSimulator(
-    size_t init_batch_size, bool init_ignore_debug_prints, bool init_count_operations) {
+    size_t init_batch_size, bool init_ignoring_debug_prints, bool init_counting_operations) {
     batch_size = init_batch_size;
-    count_operations = init_count_operations;
+    counting_operations = init_counting_operations;
     with_sims([&](auto &sims) {
         for (size_t k = 0; k < batch_size; k += PY_SIM_WORD_BITS) {
             sims.emplace_back(externally_seeded_rng());
         }
         ensure_byte_buf_can_store_bits(sims.size() * PY_SIM_WORD_BITS);
     });
-    set_ignore_debug_prints(init_ignore_debug_prints);
+    set_ignoring_debug_prints(init_ignoring_debug_prints);
 }
 
-void PyInteractiveSimulator::set_ignore_debug_prints(bool value) {
-    ignore_debug_prints = value;
+void PyInteractiveSimulator::set_ignoring_debug_prints(bool value) {
+    ignoring_debug_prints = value;
     with_sims([&](auto &sims) {
         for (size_t k = 0; k < sims.size(); k++) {
             sims[k].ignore_debug_print_operations = value || (k > 0);
@@ -126,88 +127,13 @@ void PyInteractiveSimulator::set_ignore_debug_prints(bool value) {
     });
 }
 
-void PyInteractiveSimulator::clear_op_counts() {
+void PyInteractiveSimulator::clear_operation_statistics() {
     for (auto &sim : counting_simulators) {
         for (auto &c : sim.new_op_counters) {
             c.clear();
         }
         sim.z_pow_angle_counters.clear();
     }
-}
-
-static pybind11::dict sim_op_counts(
-    const PyInteractiveSimulator &self, std::optional<int64_t> shot_index, const pybind11::object &z_pow_key) {
-    if (!self.count_operations) {
-        throw std::invalid_argument(
-            "Operation counting is not enabled on this simulator. "
-            "Pass count_operations=True to km.Simulator(...).");
-    }
-    bool custom_z_pow = !z_pow_key.is_none();
-    pybind11::dict result;
-    if (shot_index.has_value()) {
-        if (*shot_index < 0 || static_cast<size_t>(*shot_index) >= self.batch_size) {
-            throw pybind11::index_error("Need 0 <= shot_index < sim.batch_size");
-        }
-        size_t s = static_cast<size_t>(*shot_index);
-        size_t sim_idx = s / PY_SIM_WORD_BITS;
-        size_t bit_idx = s % PY_SIM_WORD_BITS;
-        const auto &sim = self.counting_simulators[sim_idx];
-        const auto &counters = sim.new_op_counters;
-        for (const auto &[name, ops] : OP_COUNT_GROUPS) {
-            if (custom_z_pow && name == "Z_POW") {
-                continue;
-            }
-            uint64_t total = 0;
-            for (OpType op : ops) {
-                total += counters[static_cast<uint8_t>(op)].compute_total(bit_idx);
-            }
-            result[pybind11::str(name.data(), name.size())] = total;
-        }
-        if (custom_z_pow) {
-            std::map<FixedPrecisionAngle128, uint64_t> angle_counts;
-            for (const auto &[angle, counter] : sim.z_pow_angle_counters) {
-                angle_counts.emplace(angle, counter.compute_total(bit_idx));
-            }
-            populate_z_pow_counts(result, z_pow_key, angle_counts);
-        }
-        return result;
-    }
-
-    for (const auto &[name, ops] : OP_COUNT_GROUPS) {
-        if (custom_z_pow && name == "Z_POW") {
-            continue;
-        }
-        uint64_t total = 0;
-        for (size_t s_base = 0; s_base < self.batch_size; s_base += PY_SIM_WORD_BITS) {
-            size_t sim_idx = s_base / PY_SIM_WORD_BITS;
-            size_t n_bits = std::min(self.batch_size - s_base, size_t{PY_SIM_WORD_BITS});
-            const auto &counters = self.counting_simulators[sim_idx].new_op_counters;
-            for (OpType op : ops) {
-                const auto &counter = counters[static_cast<uint8_t>(op)];
-                for (size_t r = 0; r < n_bits; r++) {
-                    total += counter.compute_total(r);
-                }
-            }
-        }
-        result[pybind11::str(name.data(), name.size())] = total;
-    }
-    if (custom_z_pow && !self.counting_simulators.empty()) {
-        std::map<FixedPrecisionAngle128, uint64_t> angle_counts;
-        for (const auto &[angle, _] : self.counting_simulators[0].z_pow_angle_counters) {
-            uint64_t total = 0;
-            for (size_t s_base = 0; s_base < self.batch_size; s_base += PY_SIM_WORD_BITS) {
-                size_t sim_idx = s_base / PY_SIM_WORD_BITS;
-                size_t n_bits = std::min(self.batch_size - s_base, size_t{PY_SIM_WORD_BITS});
-                const auto &counter = self.counting_simulators[sim_idx].z_pow_angle_counters.at(angle);
-                for (size_t r = 0; r < n_bits; r++) {
-                    total += counter.compute_total(r);
-                }
-            }
-            angle_counts.emplace(angle, total);
-        }
-        populate_z_pow_counts(result, z_pow_key, angle_counts);
-    }
-    return result;
 }
 
 pybind11::class_<PyInteractiveSimulator> kickmix_py::register_interactive_simulator_class(pybind11::module &m) {
@@ -796,26 +722,26 @@ void write_within_shot(
 void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInteractiveSimulator> &c_sim) {
     c_sim.def(
         pybind11::init(
-            [](size_t batch_size, bool ignore_debug_prints, bool count_operations) -> PyInteractiveSimulator {
-                return PyInteractiveSimulator(batch_size, ignore_debug_prints, count_operations);
+            [](size_t batch_size, bool ignoring_debug_prints, bool counting_operations) -> PyInteractiveSimulator {
+                return PyInteractiveSimulator(batch_size, ignoring_debug_prints, counting_operations);
             }),
         pybind11::arg("batch_size"),
         pybind11::kw_only(),
-        pybind11::arg("ignore_debug_prints") = false,
-        pybind11::arg("count_operations") = false,
+        pybind11::arg("ignoring_debug_prints") = false,
+        pybind11::arg("counting_operations") = false,
         clean_doc_string(R"DOC(
-            @signature def __init__(self, batch_size: int, *, ignore_debug_prints: bool = False, count_operations: bool = False):
+            @signature def __init__(self, batch_size: int, *, ignoring_debug_prints: bool = False, counting_operations: bool = False):
             Initializes an interactive simulator with the given batch size.
 
             Args:
                 batch_size: Determines how many simultaneous shots are being
                     tracked by the simulator.
-                ignore_debug_prints: If `True`, `DEBUG_PRINT` instructions are
-                    ignored during simulation instead of writing to stderr.
+                ignoring_debug_prints: If `True`, `DEBUG_PRINT` instructions
+                    are ignored during simulation instead of writing to stderr.
                     Defaults to `False`.
-                count_operations: If `True`, tracks per-shot operation counts
-                    during `do(...)` that can be queried with `op_counts()`.
-                    Defaults to `False`.
+                counting_operations: If `True`, tracks per-shot operation
+                    statistics during `do(...)` that can be queried with
+                    `operation_statistics()`. Defaults to `False`.
         )DOC")
             .data());
 
@@ -854,12 +780,12 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
             .data());
 
     c_sim.def_property(
-        "ignore_debug_prints",
+        "ignoring_debug_prints",
         [](const PyInteractiveSimulator &self) -> bool {
-            return self.ignore_debug_prints;
+            return self.ignoring_debug_prints;
         },
         [](PyInteractiveSimulator &self, bool value) {
-            self.set_ignore_debug_prints(value);
+            self.set_ignoring_debug_prints(value);
         },
         clean_doc_string(R"DOC(
             Whether `DEBUG_PRINT` instructions are suppressed during simulation.
@@ -867,47 +793,38 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
             .data());
 
     c_sim.def_property_readonly(
-        "count_operations",
+        "counting_operations",
         [](const PyInteractiveSimulator &self) -> bool {
-            return self.count_operations;
+            return self.counting_operations;
         },
         clean_doc_string(R"DOC(
-            Whether operation execution counts are recorded during `do(...)`.
+            Whether operation execution statistics are recorded during `do(...)`.
         )DOC")
             .data());
 
     c_sim.def(
-        "op_counts",
-        &sim_op_counts,
+        "operation_statistics",
+        &PyOperationStatistics::from_simulator,
         pybind11::arg("shot_index") = pybind11::none(),
-        pybind11::arg("z_pow_key") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def op_counts(self, shot_index: int | None = None, z_pow_key: Callable[[fractions.Fraction], str] | None = None) -> dict[str, int]:
-            Returns the number of times each operation type was executed.
+            @signature def operation_statistics(self, shot_index: int | None = None) -> km.OperationStatistics:
+            Returns operation statistics recorded during `do(...)`.
 
             Conditional operations (`OP_IF` and operations inside
             `PUSH_CONDITION` blocks) are only counted in shots where their
-            condition was satisfied. Unconditional and conditional variants of
-            an operation (e.g. `CCX` and `CCX_IF`) are summed under the base
-            operation name (`'CCX'`), matching C++ `count_operations_sampled`.
+            condition was satisfied.
 
             Args:
                 shot_index: Optional index of a single shot in
                     `range(sim.batch_size)`. If `None` (the default), returns
                     the sum of operation counts across all `sim.batch_size`
                     shots.
-                z_pow_key: Optional callable taking a `Z_POW` angle (in half
-                    turns in `[0, 2)` as a `fractions.Fraction`) and returning
-                    a dictionary key `str` under which to accumulate its count.
-                    If `None` (the default), all `Z_POW` operations are summed
-                    under `'Z_POW'`.
 
             Returns:
-                A dictionary mapping each operation name (`'NEG'`,
-                `'BIT_INVERT'`, `'BIT_STORE0'`, `'BIT_STORE1'`, `'X'`, `'Z'`,
-                `'R'`, `'HMR'`, `'CX'`, `'CZ'`, `'SWAP'`, `'CCX'`, `'CCZ'`,
-                `'Z_POW'`, `'DEBUG_PRINT'`, `'POP_CONDITION'`,
-                `'PUSH_CONDITION'`, or custom `z_pow_key` names) to its count.
+                A `km.OperationStatistics` object containing operation counts
+                and resource summaries (`ccp` for `CCX`/`CCZ` gates, `t`,
+                `rotations`, `clifford_z_pow`, `total`, `z_pow_counts`, and
+                `op_counts`).
 
             Raises:
                 ValueError: Operation counting has not been enabled on this
@@ -916,7 +833,7 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
 
             Examples:
                 >>> import kickmix as km
-                >>> sim = km.Simulator(batch_size=4, count_operations=True)
+                >>> sim = km.Simulator(batch_size=4, counting_operations=True)
                 >>> sim.write_across_shots(km.b(0), 0b0101)
                 >>> sim.do(km.Circuit('''
                 ...     X q0
@@ -924,38 +841,32 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
                 ...     Z_POW q0 0.25 if b0
                 ...     Z_POW q0 0.125
                 ... '''))
-                >>> sim.op_counts()['X']
-                4
-                >>> sim.op_counts()['CCX']
-                2
-                >>> sim.op_counts(shot_index=0)['CCX']
+                >>> stats = sim.operation_statistics()
+                >>> stats['X'], stats.ccp, stats.t, stats.rotations
+                (4, 2, 2, 4)
+                >>> sim.operation_statistics(shot_index=0).ccp
                 1
-                >>> sim.op_counts(shot_index=1)['CCX']
+                >>> sim.operation_statistics(shot_index=1).ccp
                 0
-                >>> by_group = sim.op_counts(
-                ...     z_pow_key=lambda a: 'T' if a.denominator == 4 else 'ROT'
-                ... )
-                >>> by_group['T'], by_group['ROT']
-                (2, 4)
         )DOC")
             .data());
 
     c_sim.def(
-        "clear_op_counts",
+        "clear_operation_statistics",
         [](PyInteractiveSimulator &self) {
-            self.clear_op_counts();
+            self.clear_operation_statistics();
         },
         clean_doc_string(R"DOC(
-            Zeroes all accumulated operation counts on the simulator.
+            Zeroes all accumulated operation statistics on the simulator.
 
             Examples:
                 >>> import kickmix as km
-                >>> sim = km.Simulator(batch_size=4, count_operations=True)
+                >>> sim = km.Simulator(batch_size=4, counting_operations=True)
                 >>> sim.do(km.Circuit('X q0'))
-                >>> sim.op_counts()['X']
+                >>> sim.operation_statistics()['X']
                 4
-                >>> sim.clear_op_counts()
-                >>> sim.op_counts()['X']
+                >>> sim.clear_operation_statistics()
+                >>> sim.operation_statistics()['X']
                 0
         )DOC")
             .data());
