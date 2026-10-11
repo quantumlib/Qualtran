@@ -377,6 +377,8 @@ def test_nested_iteration_raises():
     address = builder.create_quantum_register(2, name="address")
     it = builder.unary_iteration(address)
     with it:
+        assert iter(iter(it)) is it
+        assert [a for a, _ in (x for x in it)] == [0, 1, 2, 3]
         with pytest.raises(Exception, match="already being iterated"):
             for _ in it:
                 for _ in it:

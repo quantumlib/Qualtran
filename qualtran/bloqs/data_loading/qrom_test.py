@@ -447,3 +447,35 @@ def test_qrom_call_graph_matches_decomposition(num_controls):
     cost_call = get_cost_value(qrom, QECGatesCost())
     cost_dcmp = get_cost_value(qrom.decompose_bloq(), QECGatesCost())
     assert cost_call.total_t_and_ccz_count() == cost_dcmp.total_t_and_ccz_count()
+
+
+def test_qrom_repr():
+    # Small 1D data
+    qrom_small = QROM.build_from_data([0, 1, 2, 3, 4])
+    repr_str = repr(qrom_small)
+    assert '\n' not in repr_str
+    assert 'data_or_shape=(array([0, 1, 2, 3, 4]),)' in repr_str
+
+    # Large 1D data should be truncated
+    qrom_large = QROM.build_from_data(np.arange(100))
+    repr_str = repr(qrom_large)
+    assert '\n' not in repr_str
+    assert '...' in repr_str
+
+    # 2D data should have no newlines
+    qrom_2d = QROM.build_from_data(np.arange(100).reshape(10, 10))
+    repr_str = repr(qrom_2d)
+    assert '\n' not in repr_str
+    assert '...' in repr_str
+
+    # Multi-data
+    qrom_multi = QROM.build_from_data([0, 1, 2], [3, 4, 5])
+    repr_str = repr(qrom_multi)
+    assert '\n' not in repr_str
+    assert 'data_or_shape=(array([0, 1, 2]), array([3, 4, 5]))' in repr_str
+
+    # Symbolic
+    qrom_sym = QROM.build_from_bitsize((10, 10), (8,))
+    repr_str = repr(qrom_sym)
+    assert '\n' not in repr_str
+    assert 'data_or_shape=(Shaped(shape=(10, 10)),)' in repr_str

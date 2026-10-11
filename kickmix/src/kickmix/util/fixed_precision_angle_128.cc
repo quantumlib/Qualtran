@@ -9,6 +9,16 @@
 
 using namespace kickmix;
 
+FixedPrecisionAngle128 FixedPrecisionAngle128::from_power_of_2_half_turns(int exponent) {
+    if (exponent > 0 || exponent <= -128) {
+        return {};
+    }
+    size_t d = (size_t)(exponent + 127);
+    FixedPrecisionAngle128 result{};
+    result.words[d / 64] |= uint64_t{1} << (d % 64);
+    return result;
+}
+
 FixedPrecisionAngle128::operator bool() const {
     return words[0] != 0 || words[1] != 0;
 }
@@ -158,6 +168,19 @@ inline void to_half_turns_decimal_helper(const FixedPrecisionAngle128 &angle, co
 #if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
+
+FixedPrecisionAngle128 FixedPrecisionAngle128::operator*(uint64_t factor) const {
+    unsigned __int128 cur = (static_cast<unsigned __int128>(words[1]) << 64) | words[0];
+    cur *= factor;
+    auto w0 = (uint64_t)(cur & UINT64_MAX);
+    auto w1 = (uint64_t)(cur >> 64);
+    return {w0, w1};
+}
+
+FixedPrecisionAngle128 &FixedPrecisionAngle128::operator*=(uint64_t factor) {
+    *this = *this * factor;
+    return *this;
+}
 
 std::string FixedPrecisionAngle128::to_decimal_half_turns() const {
     std::string result = "";

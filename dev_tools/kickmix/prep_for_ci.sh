@@ -9,6 +9,9 @@ echo "finished gen_api_reference"
 find kickmix/src | grep "\.\(cc\|h\)$" | xargs clang-format-21 -i
 echo "finished clang-format"
 
+# Auto-format python code.
+uv run --no-sync check/format-incremental --apply
+
 # Check C++ code builds.
 bazel build ...
 

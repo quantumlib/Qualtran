@@ -1,7 +1,5 @@
 #include "kickmix/py/circuit/circuit_builder.pybind.h"
 
-#include <kickmix/py/val/converted_array.pybind.h>
-
 #include "circuit.pybind.h"
 #include "kickmix/py/circuit/ops/bit_store.pybind.h"
 #include "kickmix/py/circuit/ops/ccx.pybind.h"
@@ -18,6 +16,7 @@
 #include "kickmix/py/circuit/subs/unary_iteration.pybind.h"
 #include "kickmix/py/util.pybind.h"
 #include "kickmix/py/val/angle.pybind.h"
+#include "kickmix/py/val/converted_array.pybind.h"
 
 using namespace kickmix;
 using namespace kickmix_py;

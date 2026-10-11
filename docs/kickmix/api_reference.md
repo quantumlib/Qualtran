@@ -2,12 +2,16 @@
 
 ## Index
 - [`kickmix.Circuit`](#kickmix.Circuit)
+    - [`kickmix.Circuit.__add__`](#kickmix.Circuit.__add__)
     - [`kickmix.Circuit.__eq__`](#kickmix.Circuit.__eq__)
     - [`kickmix.Circuit.__init__`](#kickmix.Circuit.__init__)
     - [`kickmix.Circuit.__len__`](#kickmix.Circuit.__len__)
+    - [`kickmix.Circuit.__mul__`](#kickmix.Circuit.__mul__)
     - [`kickmix.Circuit.__ne__`](#kickmix.Circuit.__ne__)
     - [`kickmix.Circuit.__repr__`](#kickmix.Circuit.__repr__)
+    - [`kickmix.Circuit.__rmul__`](#kickmix.Circuit.__rmul__)
     - [`kickmix.Circuit.__str__`](#kickmix.Circuit.__str__)
+    - [`kickmix.Circuit.from_file`](#kickmix.Circuit.from_file)
     - [`kickmix.Circuit.html_diagram`](#kickmix.Circuit.html_diagram)
     - [`kickmix.Circuit.max_magic`](#kickmix.Circuit.max_magic)
     - [`kickmix.Circuit.max_op_counts`](#kickmix.Circuit.max_op_counts)
@@ -19,6 +23,7 @@
     - [`kickmix.Circuit.reaction_depth`](#kickmix.Circuit.reaction_depth)
     - [`kickmix.Circuit.register_data`](#kickmix.Circuit.register_data)
     - [`kickmix.Circuit.text_diagram`](#kickmix.Circuit.text_diagram)
+    - [`kickmix.Circuit.to_file`](#kickmix.Circuit.to_file)
 - [`kickmix.CircuitBuilder`](#kickmix.CircuitBuilder)
     - [`kickmix.CircuitBuilder.__init__`](#kickmix.CircuitBuilder.__init__)
     - [`kickmix.CircuitBuilder.alloc_bits`](#kickmix.CircuitBuilder.alloc_bits)
@@ -194,6 +199,75 @@ class Circuit:
     """
 ```
 
+<a name="kickmix.Circuit.__add__"></a>
+```python
+# kickmix.Circuit.__add__
+
+# (in class kickmix.Circuit)
+def __add__(
+    self,
+    arg0: kickmix.Circuit,
+) -> kickmix.Circuit:
+    """Returns the concatenation of two circuits.
+
+    Note: register instructions are not part of the concatenation.
+    This method arbitrarily chooses the register data of the result to correspond
+    to the register data of the left hand side of the addition, unless the left
+    hand side has no register data, in which case the right hand side is used.
+
+    Examples:
+        >>> import kickmix as km
+        >>> km.Circuit('CX q0 q1') + km.Circuit('Z q2')
+        km.Circuit('''
+            CX q0 q1
+            Z q2
+        ''')
+
+        >>> a = km.Circuit('''
+        ...     REGISTER r0 "test"
+        ...     APPEND_TO_REGISTER q0 r0
+        ...     APPEND_TO_REGISTER q1 r0
+        ...     APPEND_TO_REGISTER q2 r0
+        ...     CCX q0 q1 q2
+        ... ''')
+        >>> b = km.Circuit('''
+        ...     CZ q0 q1
+        ... ''')
+        >>> a + b
+        km.Circuit('''
+            APPEND_TO_REGISTER q0 r0
+            APPEND_TO_REGISTER q1 r0
+            APPEND_TO_REGISTER q2 r0
+            REGISTER r0 "test"
+            CCX q0 q1 q2
+            CZ q0 q1
+        ''')
+        >>> b + a
+        km.Circuit('''
+            APPEND_TO_REGISTER q0 r0
+            APPEND_TO_REGISTER q1 r0
+            APPEND_TO_REGISTER q2 r0
+            REGISTER r0 "test"
+            CZ q0 q1
+            CCX q0 q1 q2
+        ''')
+        >>> a + a
+        km.Circuit('''
+            APPEND_TO_REGISTER q0 r0
+            APPEND_TO_REGISTER q1 r0
+            APPEND_TO_REGISTER q2 r0
+            REGISTER r0 "test"
+            CCX q0 q1 q2
+            CCX q0 q1 q2
+        ''')
+        >>> b + b
+        km.Circuit('''
+            CZ q0 q1
+            CZ q0 q1
+        ''')
+    """
+```
+
 <a name="kickmix.Circuit.__eq__"></a>
 ```python
 # kickmix.Circuit.__eq__
@@ -232,6 +306,59 @@ def __len__(
     """
 ```
 
+<a name="kickmix.Circuit.__mul__"></a>
+```python
+# kickmix.Circuit.__mul__
+
+# (in class kickmix.Circuit)
+def __mul__(
+    self,
+    arg0: int,
+) -> kickmix.Circuit:
+    """Repeats the contents of a circuit the given number of times.
+
+    Note: register data is not repeated.
+
+    Examples:
+        >>> import kickmix as km
+        >>> km.Circuit('CX q0 q1') * 3
+        km.Circuit('''
+            CX q0 q1
+            CX q0 q1
+            CX q0 q1
+        ''')
+
+        >>> km.Circuit('CX q0 q1') * 0
+        km.Circuit('''
+        ''')
+
+        >>> 5 * km.Circuit('''
+        ...     REGISTER r0 "test"
+        ...     APPEND_TO_REGISTER q0 r0
+        ...     APPEND_TO_REGISTER q1 r0
+        ...     APPEND_TO_REGISTER q2 r0
+        ...     CCX q0 q1 q2
+        ...     X q0
+        ... ''')
+        km.Circuit('''
+            APPEND_TO_REGISTER q0 r0
+            APPEND_TO_REGISTER q1 r0
+            APPEND_TO_REGISTER q2 r0
+            REGISTER r0 "test"
+            CCX q0 q1 q2
+            X q0
+            CCX q0 q1 q2
+            X q0
+            CCX q0 q1 q2
+            X q0
+            CCX q0 q1 q2
+            X q0
+            CCX q0 q1 q2
+            X q0
+        ''')
+    """
+```
+
 <a name="kickmix.Circuit.__ne__"></a>
 ```python
 # kickmix.Circuit.__ne__
@@ -257,6 +384,59 @@ def __repr__(
     """
 ```
 
+<a name="kickmix.Circuit.__rmul__"></a>
+```python
+# kickmix.Circuit.__rmul__
+
+# (in class kickmix.Circuit)
+def __rmul__(
+    self,
+    arg0: int,
+) -> kickmix.Circuit:
+    """Repeats the contents of a circuit the given number of times.
+
+    Note: register data is not repeated.
+
+    Examples:
+        >>> import kickmix as km
+        >>> km.Circuit('CX q0 q1') * 3
+        km.Circuit('''
+            CX q0 q1
+            CX q0 q1
+            CX q0 q1
+        ''')
+
+        >>> km.Circuit('CX q0 q1') * 0
+        km.Circuit('''
+        ''')
+
+        >>> 5 * km.Circuit('''
+        ...     REGISTER r0 "test"
+        ...     APPEND_TO_REGISTER q0 r0
+        ...     APPEND_TO_REGISTER q1 r0
+        ...     APPEND_TO_REGISTER q2 r0
+        ...     CCX q0 q1 q2
+        ...     X q0
+        ... ''')
+        km.Circuit('''
+            APPEND_TO_REGISTER q0 r0
+            APPEND_TO_REGISTER q1 r0
+            APPEND_TO_REGISTER q2 r0
+            REGISTER r0 "test"
+            CCX q0 q1 q2
+            X q0
+            CCX q0 q1 q2
+            X q0
+            CCX q0 q1 q2
+            X q0
+            CCX q0 q1 q2
+            X q0
+            CCX q0 q1 q2
+            X q0
+        ''')
+    """
+```
+
 <a name="kickmix.Circuit.__str__"></a>
 ```python
 # kickmix.Circuit.__str__
@@ -266,6 +446,51 @@ def __str__(
     self,
 ) -> str:
     """Returns a description of the circuit.
+    """
+```
+
+<a name="kickmix.Circuit.from_file"></a>
+```python
+# kickmix.Circuit.from_file
+
+# (in class kickmix.Circuit)
+@staticmethod
+def from_file(
+    path: str | pathlib.Path | io.IOBase,
+    format: Literal['auto', 'kmx', 'kmb'] = 'auto',
+) -> km.Circuit:
+    """Reads a `km.Circuit` from a file.
+
+    Args:
+        path: The path or open file object to read from.
+        format: The file format to parse. Defaults to `'auto'`.
+            `'auto'`: Automatically detect whether the file is in `'kmx'`
+                or `'kmb'` format.
+            `'kmx'`: Human-readable text kickmix format. Can be read from
+                a text or binary file. See
+                https://github.com/quantumlib/Qualtran/blob/main/docs/kickmix/kickmix_format.md
+            `'kmb'`: Binary kickmix format. Requires a binary file if
+                passing an open file object. See
+                https://github.com/quantumlib/Qualtran/blob/main/docs/kickmix/kickmix_binary_format.md
+
+    Returns:
+        The parsed `km.Circuit`.
+
+    Examples:
+        >>> import pathlib
+        >>> import tempfile
+        >>> import kickmix as km
+        >>> circuit = km.Circuit('''
+        ...     CCX q0 q1 q2
+        ...     CX q0 q1
+        ...     X q0
+        ... ''')
+        >>> with tempfile.TemporaryDirectory() as d:
+        ...     path = pathlib.Path(d) / 'circuit.kmx'
+        ...     circuit.to_file(path)
+        ...     loaded = km.Circuit.from_file(path)
+        >>> loaded == circuit
+        True
     """
 ```
 
@@ -476,6 +701,46 @@ def text_diagram(
     self,
 ) -> str:
     """Returns a text diagram of the circuit.
+    """
+```
+
+<a name="kickmix.Circuit.to_file"></a>
+```python
+# kickmix.Circuit.to_file
+
+# (in class kickmix.Circuit)
+def to_file(
+    self,
+    path: str | pathlib.Path | io.IOBase,
+    format: Literal['kmx', 'kmb'] = 'kmx',
+) -> None:
+    """Writes the circuit to a file.
+
+    Args:
+        path: The path or open file object to write to.
+        format: The file format to write. Defaults to `'kmx'`.
+            `'kmx'`: Human-readable text kickmix format. Can be written
+                to a text or binary file. See
+                https://github.com/quantumlib/Qualtran/blob/main/docs/kickmix/kickmix_format.md
+            `'kmb'`: Binary kickmix format. Requires a binary file if
+                passing an open file object. See
+                https://github.com/quantumlib/Qualtran/blob/main/docs/kickmix/kickmix_binary_format.md
+
+    Examples:
+        >>> import pathlib
+        >>> import tempfile
+        >>> import kickmix as km
+        >>> circuit = km.Circuit('''
+        ...     CCX q0 q1 q2
+        ...     CX q0 q1
+        ...     X q0
+        ... ''')
+        >>> with tempfile.TemporaryDirectory() as d:
+        ...     path = pathlib.Path(d) / 'circuit.kmb'
+        ...     circuit.to_file(path, format='kmb')
+        ...     loaded = km.Circuit.from_file(path, format='kmb')
+        >>> loaded == circuit
+        True
     """
 ```
 

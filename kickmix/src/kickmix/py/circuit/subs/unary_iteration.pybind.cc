@@ -135,6 +135,7 @@ pybind11::object PyUnaryIterationCursor::next() {
         is_iterating = false;
         throw pybind11::stop_iteration();
     }
+    is_iterating = true;
     pybind11::int_ address_value = next_address_value;
     next_address_value = next_address_value + pybind11::int_(1);
     move_to(address_value);
@@ -357,7 +358,6 @@ void kickmix_py::register_unary_iteration_methods(pybind11::class_<PyUnaryIterat
             if (self.is_iterating) {
                 throw std::invalid_argument("The unary iteration cursor is already being iterated.");
             }
-            self.is_iterating = true;
             self.next_address_value = self.address_values_begin;
             return self;
         },
