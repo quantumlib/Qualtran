@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, QAny, QGF, Register, Signature, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, QAny, QGF, QInt, QUInt, Register, Signature, Soquet, SoquetT
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.bookkeeping import Partition
@@ -38,9 +38,21 @@ def test_partition_check():
     with pytest.raises(ValueError):
         _ = Partition(n=0, regs=())
     with pytest.raises(ValueError):
+        _ = Partition(n=10, regs=None)
+    with pytest.raises(ValueError):
+        _ = Partition(dtype_in=QUInt(10))
+    with pytest.raises(ValueError):
         _ = Partition(n=1, regs=(Register('x', QAny(2)),))
     with pytest.raises(ValueError):
         _ = Partition(n=4, regs=(Register('x', QAny(1)), Register('x', QAny(3))))
+    with pytest.raises(ValueError):
+        _ = Partition(n=10)
+
+    regs = (Register("xx", QUInt(4)), Register("yy", QInt(6)))
+    with pytest.raises(ValueError):
+        _ = Partition(regs=regs)
+    with pytest.raises(ValueError):
+        _ = Partition(n=11, regs=regs)
 
 
 @frozen
@@ -57,7 +69,7 @@ class TestPartition(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', test_regs: 'SoquetT') -> Dict[str, 'Soquet']:
         bloq_regs = self.test_bloq.signature
-        partition = Partition(self.bitsize, bloq_regs)  # type: ignore[arg-type]
+        partition = Partition(dtype_in=QUInt(self.bitsize), regs=bloq_regs)  # type: ignore[arg-type]
         out_regs = bb.add(partition, x=test_regs)
         out_regs = bb.add(self.test_bloq, **{reg.name: sp for reg, sp in zip(bloq_regs, out_regs)})
         test_regs = bb.add(
