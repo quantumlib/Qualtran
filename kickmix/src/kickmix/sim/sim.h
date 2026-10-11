@@ -469,6 +469,11 @@ struct Sim {
         memcpy(rng_state_span().data(), &rng_state, sizeof(rng_state));
     }
 
+    void clear_operation_statistics() {
+        new_op_counters = {};
+        z_pow_angle_counters = {};
+    }
+
     void clear_for_shot() {
         for (auto &e : qubit_span()) {
             e.clear_to_zero();

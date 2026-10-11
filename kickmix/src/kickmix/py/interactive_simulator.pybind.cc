@@ -121,18 +121,15 @@ PyInteractiveSimulator::PyInteractiveSimulator(
 void PyInteractiveSimulator::set_ignoring_debug_prints(bool value) {
     ignoring_debug_prints = value;
     with_sims([&](auto &sims) {
-        for (size_t k = 0; k < sims.size(); k++) {
-            sims[k].ignore_debug_print_operations = value || (k > 0);
+        for (auto &sim : sims) {
+            sim.ignore_debug_print_operations = value;
         }
     });
 }
 
 void PyInteractiveSimulator::clear_operation_statistics() {
     for (auto &sim : counting_simulators) {
-        for (auto &c : sim.new_op_counters) {
-            c.clear();
-        }
-        sim.z_pow_angle_counters.clear();
+        sim.clear_operation_statistics();
     }
 }
 
