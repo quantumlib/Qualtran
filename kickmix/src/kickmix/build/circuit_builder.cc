@@ -1293,7 +1293,8 @@ void CircuitBuilder::write_analysis_svg_to(std::ostream &out, size_t reference_q
         }
     }
 
-    out << R"SVG(<svg viewBox="-100 -140 1200.0 340.0" style="display: block; margin: auto;" xmlns="http://www.w3.org/2000/svg">)SVG" << "\n";
+    out << R"SVG(<svg viewBox="-100 -140 1200.0 340.0" style="display: block; margin: auto;" xmlns="http://www.w3.org/2000/svg">)SVG"
+        << "\n";
     double x_scale = 1000.0 / toffoli_count;
     double y_scale = 100.0 / circuit.num_qubits;
     std::vector<size_t> layer_xs{0};
