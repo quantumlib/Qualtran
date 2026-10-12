@@ -39,7 +39,7 @@ from qualtran.symbolics import is_symbolic, log2, Shaped, SymbolicInt
 if TYPE_CHECKING:
     import galois
 
-    from qualtran import BloqBuilder, Soquet, SoquetT
+    from qualtran import AddControlledT, BloqBuilder, Soquet, SoquetT
     from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT
 
@@ -58,6 +58,10 @@ class SynthesizeLRCircuit(Bloq):
 
     Args:
         matrix: An n x n matrix describing the linear transformation.
+        is_adjoint: Whether this is the adjoint bloq.
+        with_swaps: Whether to use explicit TwoBitSwap bloqs for permutations.
+            Required when the bloq is controlled, since classical wire swapping
+            cannot be conditionally controlled.
 
     References:
         [Efficient Synthesis of Linear Reversible Circuits](https://arxiv.org/abs/quant-ph/0302002)
@@ -65,6 +69,7 @@ class SynthesizeLRCircuit(Bloq):
 
     matrix: Union[Shaped, np.ndarray] = attrs.field(eq=_data_or_shape_to_tuple)
     is_adjoint: bool = False
+    with_swaps: bool = False
 
     def __attrs_post_init__(self):
         assert len(self.matrix.shape) == 2
@@ -111,7 +116,10 @@ class SynthesizeLRCircuit(Bloq):
         for i in range(self.n):
             for j in range(i + 1, self.n):
                 if P[i, column[j]]:
-                    q[i], q[j] = bb.add(TwoBitSwap(), x=q[i], y=q[j])
+                    if self.with_swaps:
+                        q[i], q[j] = bb.add(TwoBitSwap(), x=q[i], y=q[j])
+                    else:
+                        q[i], q[j] = q[j], q[i]
                     column[i], column[j] = column[j], column[i]
         return {'q': q}
 
@@ -134,12 +142,29 @@ class SynthesizeLRCircuit(Bloq):
         n = self.matrix.shape[0]
         if isinstance(self.matrix, Shaped):
             return {CNOT(): n**2 - n}
-        L, U, _ = self.lup
+        L, U, P = self.lup
         # The number of cnots is the number of non zero off-diagnoal entries in L and U.
         cnots = np.sum(L) + np.sum(U) - 2 * self.n
+        counts: dict['Bloq', Union[int, SymbolicInt]] = {}
         if cnots:
-            return {CNOT(): cnots}
-        return {}
+            counts[CNOT()] = cnots
+        if self.with_swaps:
+            column = [*range(self.n)]
+            swaps = 0
+            for i in range(self.n):
+                for j in range(i + 1, self.n):
+                    if P[i, column[j]]:
+                        swaps += 1
+                        column[i], column[j] = column[j], column[i]
+            if swaps:
+                counts[TwoBitSwap()] = swaps
+        return counts
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+        from qualtran._infra.controlled import make_ctrl_system_with_correct_metabloq
+
+        bloq_with_swaps = attrs.evolve(self, with_swaps=True)
+        return make_ctrl_system_with_correct_metabloq(bloq_with_swaps, ctrl_spec=ctrl_spec)
 
     def adjoint(self) -> 'SynthesizeLRCircuit':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
