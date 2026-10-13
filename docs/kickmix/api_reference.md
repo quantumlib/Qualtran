@@ -1261,16 +1261,18 @@ def finish_circuit(
 def flame_chart_svg(
     self,
 ) -> str:
-    """Returns a flame chart of CCX+CCZ and qubit utilization of the
-    circuit being built.
+    """Returns an SVG flame chart of Toffoli and qubit usage across the
+    circuit.
 
-    Use `builder.mark` to annotate regions of the circuit so they
-    appear as labeled blocks in the flame chart.
+    Use `with builder.mark('name'):` to label regions of the circuit in
+    the flame chart.
 
     Returns:
         An SVG string containing the flame chart.
 
     Examples:
+        >>> import pathlib
+        >>> import tempfile
         >>> import kickmix as km
         >>> builder = km.CircuitBuilder()
         >>> address = builder.create_quantum_register(4, name='address')
@@ -1282,8 +1284,9 @@ def flame_chart_svg(
         ...     builder.iadd(buf, target=total)
         ...     builder.del_lookup(table=table, address=address, target=buf)
         ...     builder.free(buf)
-        >>> with open('/tmp/flame_chart.svg', 'w') as f:
-        ...     print(builder.flame_chart_svg(), file=f)
+        >>> with tempfile.TemporaryDirectory() as d:
+        ...     with open(pathlib.Path(d) / 'flame_chart.svg', 'w') as f:
+        ...         print(builder.flame_chart_svg(), file=f)
     """
 ```
 
@@ -2266,43 +2269,45 @@ def left_rotate(
 # (in class kickmix.CircuitBuilder)
 def mark(
     self,
-    name: str | Callable | None = None,
+    name: str,
 ) -> Any:
-    """Marks a region of the circuit for flame chart analysis.
+    """Returns a context manager that labels a region of the circuit for
+    `builder.flame_chart_svg()`.
 
-    Can be used as a `with` block context manager or as a decorator on
-    functions and methods. When used as a decorator without an explicit
-    `name`, the decorated function's `__name__` is used as the mark
-    name. When used as `@km.CircuitBuilder.mark` on a method or
-    function without a bound builder, the `km.CircuitBuilder` instance
-    is automatically located from the call arguments or `self`.
+    `m = builder.mark('name')` does not modify the circuit by itself.
+    When you enter `with m:`, the builder records start and end markers
+    around the operations inside that block. You can reuse `m` across
+    multiple `with m:` blocks. If you enter `m` N times at the same
+    nesting depth, `builder.flame_chart_svg()` groups those runs as
+    `'name (xN)'`.
 
     Args:
-        name: The name of the marked block for
-            `builder.flame_chart_svg()`, or the function to decorate
-            when used as `@builder.mark` or `@km.CircuitBuilder.mark`.
+        name: Label shown for the block in `builder.flame_chart_svg()`.
 
     Returns:
-        A context manager / decorator when given a `name` (or `None`),
-        or the wrapped callable when given a callable directly.
+        A context manager that marks blocks under `name`.
 
     Examples:
+        >>> import pathlib
+        >>> import tempfile
         >>> import kickmix as km
         >>> builder = km.CircuitBuilder()
         >>> address = builder.create_quantum_register(4, name='address')
         >>> total = builder.create_quantum_register(8, name='total')
-        >>> @builder.mark
-        ... def iadd_lookup(table: list[int], idx: km.array, dst: km.array):
-        ...     buf = builder.alloc_qubits(len(dst))
-        ...     builder.init_lookup(table=table, address=idx, target=buf)
-        ...     builder.iadd(buf, target=dst)
-        ...     builder.del_lookup(table=table, address=idx, target=buf)
-        ...     builder.free(buf)
+        >>> lookup_mark = builder.mark('iadd_lookup')
+        >>> def iadd_lookup(table: list[int], idx: km.array, dst: km.array):
+        ...     with lookup_mark:
+        ...         buf = builder.alloc_qubits(len(dst))
+        ...         builder.init_lookup(table=table, address=idx, target=buf)
+        ...         builder.iadd(buf, target=dst)
+        ...         builder.del_lookup(table=table, address=idx, target=buf)
+        ...         builder.free(buf)
         >>> with builder.mark('accumulate_tables'):
         ...     iadd_lookup([3 * k for k in range(16)], address, total)
         ...     iadd_lookup([k * k for k in range(16)], address, total)
-        >>> with open('/tmp/flame_chart.svg', 'w') as f:
-        ...     print(builder.flame_chart_svg(), file=f)
+        >>> with tempfile.TemporaryDirectory() as d:
+        ...     with open(pathlib.Path(d) / 'flame_chart.svg', 'w') as f:
+        ...         print(builder.flame_chart_svg(), file=f)
     """
 ```
 

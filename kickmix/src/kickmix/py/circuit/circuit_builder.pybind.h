@@ -2,7 +2,6 @@
 #define KICKGEN_PYBIND_CIRCUIT_BUILDER_H
 
 #include <iostream>
-#include <optional>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <string>
@@ -28,7 +27,6 @@ struct PyCircuitBuilder {
     std::vector<std::vector<uint32_t>> scope_bit_allocations;
     /// Backing storage for the `std::string_view` names referenced by `builder.marks`.
     std::unordered_set<std::string> mark_names;
-    std::vector<std::string_view> active_mark_stack;
 
     // Move-only: copies would keep `string_view`s into the original's `mark_names`.
     PyCircuitBuilder() = default;
@@ -36,25 +34,6 @@ struct PyCircuitBuilder {
     PyCircuitBuilder &operator=(const PyCircuitBuilder &) = delete;
     PyCircuitBuilder(PyCircuitBuilder &&) = default;
     PyCircuitBuilder &operator=(PyCircuitBuilder &&) = default;
-
-    void start_mark(std::string_view name) {
-        std::string_view interned = *mark_names.emplace(name).first;
-        active_mark_stack.push_back(interned);
-        builder.marks.push_back(kickmix::Mark{true, interned, builder.mut.op_types.size()});
-    }
-
-    /// Ends the innermost mark. When `unwinding` (e.g. an exception escaped the
-    /// marked region), a mismatched mark is tolerated instead of raising.
-    void end_mark(std::string_view name, bool unwinding = false) {
-        if (active_mark_stack.empty() || active_mark_stack.back() != name) {
-            if (unwinding) {
-                return;
-            }
-            throw std::invalid_argument("Ended a mark out of LIFO order.");
-        }
-        builder.marks.push_back(kickmix::Mark{false, active_mark_stack.back(), builder.mut.op_types.size()});
-        active_mark_stack.pop_back();
-    }
 
     void start_auto_free_scope() {
         scope_qubit_allocations.push_back({});
@@ -154,17 +133,10 @@ struct PyCircuitBuilder {
     }
 };
 
-/// Python context-manager / decorator returned by `CircuitBuilder.mark`.
+/// Python context manager returned by `CircuitBuilder.mark`.
 struct PyCircuitBuilderMark {
-    /// The `km.CircuitBuilder` this mark is bound to, or `None` for `km.CircuitBuilder.mark`.
-    pybind11::object builder = pybind11::none();
-    /// Explicit mark name. Decorators default to the decorated function's `__name__`.
-    std::optional<std::string> name;
-
-    /// Returns the bound builder, or raises if the mark can't be used as a `with` block.
-    PyCircuitBuilder &context_builder() const;
-    /// Wraps `func` so calls to it are enclosed in this mark.
-    pybind11::object decorate(const pybind11::object &func) const;
+    PyCircuitBuilder *py_builder = nullptr;
+    std::string_view name;
 };
 
 void register_circuit_builder_mark_class(pybind11::module &m);
