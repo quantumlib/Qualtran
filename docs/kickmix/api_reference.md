@@ -1261,8 +1261,8 @@ def finish_circuit(
 def flame_chart_svg(
     self,
 ) -> str:
-    """Returns an SVG flame chart of Toffoli and qubit usage across the
-    circuit.
+    """Returns a flame chart of CCX+CCZ and qubit utilization of the
+    circuit being built.
 
     Use `with builder.mark('name'):` to label regions of the circuit in
     the flame chart.

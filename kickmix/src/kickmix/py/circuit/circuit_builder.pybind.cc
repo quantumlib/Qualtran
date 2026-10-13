@@ -417,8 +417,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         },
         clean_doc_string(R"DOC(
             @signature def flame_chart_svg(self) -> str:
-            Returns an SVG flame chart of Toffoli and qubit usage across the
-            circuit.
+            Returns a flame chart of CCX+CCZ and qubit utilization of the
+            circuit being built.
 
             Use `with builder.mark('name'):` to label regions of the circuit in
             the flame chart.
