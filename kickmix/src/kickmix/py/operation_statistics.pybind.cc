@@ -43,54 +43,15 @@ const std::array<std::pair<std::string_view, std::vector<OpType>>, 17> OP_COUNT_
     {"PUSH_CONDITION", {OpType::PUSH_CONDITION}},
 }};
 
-pybind11::object fixed_precision_angle_to_py_fraction(const FixedPrecisionAngle128 &angle) {
-    uint64_t w0 = angle.words[0];
-    uint64_t w1 = angle.words[1];
-    return pybind11::module_::import("fractions")
-        .attr("Fraction")(
-            pybind11::cast(w0) | (pybind11::cast(w1) << pybind11::cast(64)), pybind11::cast(1) << pybind11::cast(127));
-}
-
-void populate_z_pow_counts(
-    pybind11::dict &result,
-    const pybind11::object &z_pow_key,
-    const std::map<FixedPrecisionAngle128, uint64_t> &angle_counts) {
-    for (const auto &[angle, count] : angle_counts) {
-        pybind11::object frac = fixed_precision_angle_to_py_fraction(angle);
-        pybind11::object key_obj = z_pow_key(frac);
-        if (!pybind11::isinstance<pybind11::str>(key_obj)) {
-            throw pybind11::type_error("z_pow_key must return a str");
-        }
-        uint64_t prev = 0;
-        if (result.contains(key_obj)) {
-            prev = pybind11::cast<uint64_t>(result[key_obj]);
-        }
-        result[key_obj] = prev + count;
+uint64_t group_count(const PyOperationStatistics &stats, const std::vector<OpType> &ops) {
+    uint64_t sum = 0;
+    for (OpType op : ops) {
+        sum += stats.raw_op_counts[static_cast<uint8_t>(op)];
     }
+    return sum;
 }
 
 }  // namespace
-
-bool PyOperationStatistics::operator==(const PyOperationStatistics &other) const {
-    if (raw_op_counts != other.raw_op_counts) {
-        return false;
-    }
-    for (const auto &[angle, count] : z_pow_angle_counts) {
-        auto it = other.z_pow_angle_counts.find(angle);
-        uint64_t other_count = it != other.z_pow_angle_counts.end() ? it->second : 0;
-        if (count != other_count) {
-            return false;
-        }
-    }
-    for (const auto &[angle, other_count] : other.z_pow_angle_counts) {
-        auto it = z_pow_angle_counts.find(angle);
-        uint64_t count = it != z_pow_angle_counts.end() ? it->second : 0;
-        if (count != other_count) {
-            return false;
-        }
-    }
-    return true;
-}
 
 PyOperationStatistics PyOperationStatistics::from_circuit(const Circuit &circuit) {
     PyOperationStatistics stats;
@@ -98,7 +59,7 @@ PyOperationStatistics PyOperationStatistics::from_circuit(const Circuit &circuit
         stats.raw_op_counts[static_cast<uint8_t>(circuit.op_types[k])]++;
     }
     for (size_t k = 0; k < circuit.num_angle_ops; k++) {
-        stats.z_pow_angle_counts[circuit.angles[k]]++;
+        stats.z_pow_level_counts[circuit.angles[k].clifford_hierarchy_level()]++;
     }
     return stats;
 }
@@ -122,8 +83,8 @@ PyOperationStatistics PyOperationStatistics::from_simulator(
         for (size_t op = 0; op < 256; op++) {
             stats.raw_op_counts[op] = csim.new_op_counters[op].compute_total(bit_idx);
         }
-        for (const auto &[angle, counter] : csim.z_pow_angle_counters) {
-            stats.z_pow_angle_counts.emplace(angle, counter.compute_total(bit_idx));
+        for (size_t lvl = 0; lvl < 129; lvl++) {
+            stats.z_pow_level_counts[lvl] = csim.z_pow_level_counters[lvl].compute_total(bit_idx);
         }
         return stats;
     }
@@ -138,53 +99,26 @@ PyOperationStatistics PyOperationStatistics::from_simulator(
                 stats.raw_op_counts[op] += counter.compute_total(r);
             }
         }
-        for (const auto &[angle, counter] : csim.z_pow_angle_counters) {
-            uint64_t total = 0;
+        for (size_t lvl = 0; lvl < 129; lvl++) {
+            const auto &counter = csim.z_pow_level_counters[lvl];
             for (size_t r = 0; r < n_bits; r++) {
-                total += counter.compute_total(r);
+                stats.z_pow_level_counts[lvl] += counter.compute_total(r);
             }
-            stats.z_pow_angle_counts[angle] += total;
         }
     }
     return stats;
 }
 
-uint64_t PyOperationStatistics::ccp() const {
+uint64_t PyOperationStatistics::num_toffoli_like() const {
     return raw_op_counts[static_cast<uint8_t>(OpType::CCX)] + raw_op_counts[static_cast<uint8_t>(OpType::CCX_IF)] +
            raw_op_counts[static_cast<uint8_t>(OpType::CCZ)] + raw_op_counts[static_cast<uint8_t>(OpType::CCZ_IF)];
 }
 
-uint64_t PyOperationStatistics::t() const {
-    uint64_t total = 0;
-    for (const auto &[angle, count] : z_pow_angle_counts) {
-        if (angle.is_multiple_of_45_degrees() && !angle.is_multiple_of_90_degrees()) {
-            total += count;
-        }
-    }
-    return total;
+uint64_t PyOperationStatistics::num_t_like() const {
+    return z_pow_level_counts[3];
 }
 
-uint64_t PyOperationStatistics::rotations() const {
-    uint64_t total = 0;
-    for (const auto &[angle, count] : z_pow_angle_counts) {
-        if (!angle.is_multiple_of_45_degrees()) {
-            total += count;
-        }
-    }
-    return total;
-}
-
-uint64_t PyOperationStatistics::clifford_z_pow() const {
-    uint64_t total = 0;
-    for (const auto &[angle, count] : z_pow_angle_counts) {
-        if (angle.is_multiple_of_90_degrees()) {
-            total += count;
-        }
-    }
-    return total;
-}
-
-uint64_t PyOperationStatistics::total() const {
+uint64_t PyOperationStatistics::num_instructions() const {
     uint64_t sum = 0;
     for (uint64_t c : raw_op_counts) {
         sum += c;
@@ -192,50 +126,105 @@ uint64_t PyOperationStatistics::total() const {
     return sum;
 }
 
+uint64_t PyOperationStatistics::num_z_pow(int64_t min_level, std::optional<int64_t> max_level) const {
+    int64_t lo = std::max<int64_t>(0, min_level);
+    int64_t hi = std::min<int64_t>(128, max_level.value_or(128));
+    uint64_t sum = 0;
+    for (int64_t k = lo; k <= hi; k++) {
+        sum += z_pow_level_counts[static_cast<size_t>(k)];
+    }
+    return sum;
+}
+
+pybind11::dict PyOperationStatistics::z_pow_clifford_hierarchy_counts() const {
+    pybind11::dict result;
+    for (size_t k = 0; k < z_pow_level_counts.size(); k++) {
+        if (z_pow_level_counts[k] > 0) {
+            result[pybind11::int_(k)] = z_pow_level_counts[k];
+        }
+    }
+    return result;
+}
+
 uint64_t PyOperationStatistics::get_item(std::string_view key) const {
     for (const auto &[name, ops] : OP_COUNT_GROUPS) {
         if (name == key) {
-            uint64_t sum = 0;
-            for (OpType op : ops) {
-                sum += raw_op_counts[static_cast<uint8_t>(op)];
-            }
-            return sum;
+            return group_count(*this, ops);
         }
     }
     throw pybind11::key_error(std::string(key));
 }
 
-pybind11::dict PyOperationStatistics::z_pow_counts() const {
-    pybind11::dict result;
-    for (const auto &[angle, count] : z_pow_angle_counts) {
-        result[fixed_precision_angle_to_py_fraction(angle)] = count;
+pybind11::object PyOperationStatistics::get_with_default(
+    std::string_view key, const pybind11::object &default_val) const {
+    for (const auto &[name, ops] : OP_COUNT_GROUPS) {
+        if (name == key) {
+            uint64_t sum = group_count(*this, ops);
+            return sum > 0 ? pybind11::cast(sum) : default_val;
+        }
+    }
+    return default_val;
+}
+
+bool PyOperationStatistics::contains(const pybind11::object &key) const {
+    if (!pybind11::isinstance<pybind11::str>(key)) {
+        return false;
+    }
+    auto s = pybind11::cast<std::string_view>(key);
+    for (const auto &[name, ops] : OP_COUNT_GROUPS) {
+        if (name == s) {
+            return group_count(*this, ops) > 0;
+        }
+    }
+    return false;
+}
+
+size_t PyOperationStatistics::len() const {
+    size_t count = 0;
+    for (const auto &[_, ops] : OP_COUNT_GROUPS) {
+        if (group_count(*this, ops) > 0) {
+            count++;
+        }
+    }
+    return count;
+}
+
+pybind11::list PyOperationStatistics::keys() const {
+    pybind11::list result;
+    for (const auto &[name, ops] : OP_COUNT_GROUPS) {
+        if (group_count(*this, ops) > 0) {
+            result.append(pybind11::str(name.data(), name.size()));
+        }
     }
     return result;
 }
 
-pybind11::dict PyOperationStatistics::op_counts(const pybind11::object &z_pow_key) const {
-    bool custom_z_pow = !z_pow_key.is_none();
-    pybind11::dict result;
-    for (const auto &[name, ops] : OP_COUNT_GROUPS) {
-        if (custom_z_pow && name == "Z_POW") {
-            continue;
+pybind11::list PyOperationStatistics::values() const {
+    pybind11::list result;
+    for (const auto &[_, ops] : OP_COUNT_GROUPS) {
+        uint64_t sum = group_count(*this, ops);
+        if (sum > 0) {
+            result.append(sum);
         }
-        uint64_t sum = 0;
-        for (OpType op : ops) {
-            sum += raw_op_counts[static_cast<uint8_t>(op)];
-        }
-        result[pybind11::str(name.data(), name.size())] = sum;
     }
-    if (custom_z_pow) {
-        populate_z_pow_counts(result, z_pow_key, z_pow_angle_counts);
+    return result;
+}
+
+pybind11::list PyOperationStatistics::items() const {
+    pybind11::list result;
+    for (const auto &[name, ops] : OP_COUNT_GROUPS) {
+        uint64_t sum = group_count(*this, ops);
+        if (sum > 0) {
+            result.append(pybind11::make_tuple(pybind11::str(name.data(), name.size()), sum));
+        }
     }
     return result;
 }
 
 std::string PyOperationStatistics::repr() const {
     std::stringstream ss;
-    ss << "<km.OperationStatistics total=" << total() << " ccp=" << ccp() << " t=" << t()
-       << " rotations=" << rotations() << ">";
+    ss << "<km.OperationStatistics num_instructions=" << num_instructions()
+       << " num_toffoli_like=" << num_toffoli_like() << " num_t_like=" << num_t_like() << ">";
     return ss.str();
 }
 
@@ -246,9 +235,12 @@ pybind11::class_<PyOperationStatistics> kickmix_py::register_operation_statistic
         clean_doc_string(R"DOC(
             Operation count statistics from a `km.Circuit` or `km.Simulator`.
 
-            Provides per-operation counts (`stats['X']`, `stats.op_counts()`)
-            and resource summaries (`ccp` for `CCX`/`CCZ` gates, `t`,
-            `rotations`, `clifford_z_pow`, `total`, and `z_pow_counts`).
+            Acts as a read-only mapping from base operation name (`'X'`,
+            `'CX'`, `'CCX'`, `'Z_POW'`, etc.) to count, so `stats['X']`,
+            `stats.get('X')`, `'X' in stats`, `dict(stats)`, `stats.keys()`,
+            `stats.values()`, and `stats.items()` all work directly. Also
+            provides resource helpers (`num_instructions`, `num_toffoli_like`,
+            `num_t_like`, `num_z_pow`, and `z_pow_clifford_hierarchy_counts`).
 
             Examples:
                 >>> import kickmix as km
@@ -258,21 +250,23 @@ pybind11::class_<PyOperationStatistics> kickmix_py::register_operation_statistic
                 ...     Z_POW q0 0.25
                 ... ''')
                 >>> stats = c.operation_statistics()
-                >>> stats.ccp, stats.t, stats['X']
+                >>> stats.num_toffoli_like, stats.num_t_like, stats['X']
                 (1, 1, 1)
+                >>> dict(stats)['CCX']
+                1
         )DOC")
             .data());
 }
 
 void kickmix_py::register_operation_statistics_methods(pybind11::class_<PyOperationStatistics> &c_stats) {
     c_stats.def_property_readonly(
-        "ccp",
-        &PyOperationStatistics::ccp,
+        "num_toffoli_like",
+        &PyOperationStatistics::num_toffoli_like,
         clean_doc_string(R"DOC(
             The number of doubly-controlled Pauli (`CCX` and `CCZ`) operations.
 
-            Includes both unconditional (`CCX`, `CCZ`) and classically
-            conditioned (`CCX if ...`, `CCZ if ...`) operations.
+            Includes both unconditional (`CCX q0 q1 q2`, `CCZ q0 q1 q2`) and
+            classically conditioned (`CCX q0 q1 q2 if b3`, etc.) operations.
 
             Examples:
                 >>> import kickmix as km
@@ -281,19 +275,21 @@ void kickmix_py::register_operation_statistics_methods(pybind11::class_<PyOperat
                 ...     CCZ q0 q1 q2 if b0
                 ...     CX q0 q1
                 ... ''')
-                >>> c.operation_statistics().ccp
+                >>> c.operation_statistics().num_toffoli_like
                 2
         )DOC")
             .data());
 
     c_stats.def_property_readonly(
-        "t",
-        &PyOperationStatistics::t,
+        "num_t_like",
+        &PyOperationStatistics::num_t_like,
         clean_doc_string(R"DOC(
-            The number of `Z_POW` operations with odd-multiple-of-45-degree angles.
+            The number of T-like `Z_POW` operations (Clifford hierarchy level 3).
 
-            T gates are `Z_POW` operations whose angle is an odd multiple of
-            0.25 half turns (45 degrees).
+            T-like gates are `Z_POW` operations whose angle is an odd multiple
+            of `0.25` half turns (45 degrees). Equivalent to
+            `stats.num_z_pow(min_clifford_hierarchy_level=3,
+            max_clifford_hierarchy_level=3)`.
 
             Examples:
                 >>> import kickmix as km
@@ -303,55 +299,14 @@ void kickmix_py::register_operation_statistics_methods(pybind11::class_<PyOperat
                 ...     Z_POW q0 -0.25 if b0
                 ...     Z_POW q0 0.125
                 ... ''')
-                >>> c.operation_statistics().t
+                >>> c.operation_statistics().num_t_like
                 2
         )DOC")
             .data());
 
     c_stats.def_property_readonly(
-        "rotations",
-        &PyOperationStatistics::rotations,
-        clean_doc_string(R"DOC(
-            The number of arbitrary-angle `Z_POW` rotations (neither Clifford nor T).
-
-            Rotations are `Z_POW` operations whose angle is not a multiple of
-            0.25 half turns.
-
-            Examples:
-                >>> import kickmix as km
-                >>> c = km.Circuit('''
-                ...     Z_POW q0 0.5
-                ...     Z_POW q0 0.25
-                ...     Z_POW q0 0.125
-                ...     Z_POW q0 0.1 if b0
-                ... ''')
-                >>> c.operation_statistics().rotations
-                2
-        )DOC")
-            .data());
-
-    c_stats.def_property_readonly(
-        "clifford_z_pow",
-        &PyOperationStatistics::clifford_z_pow,
-        clean_doc_string(R"DOC(
-            The number of Clifford `Z_POW` operations (multiples of 0.5 half turns).
-
-            Examples:
-                >>> import kickmix as km
-                >>> c = km.Circuit('''
-                ...     Z_POW q0 0.0
-                ...     Z_POW q0 0.5
-                ...     Z_POW q0 -0.5 if b0
-                ...     Z_POW q0 0.25
-                ... ''')
-                >>> c.operation_statistics().clifford_z_pow
-                3
-        )DOC")
-            .data());
-
-    c_stats.def_property_readonly(
-        "total",
-        &PyOperationStatistics::total,
+        "num_instructions",
+        &PyOperationStatistics::num_instructions,
         clean_doc_string(R"DOC(
             The total number of operations across all operation types.
 
@@ -362,82 +317,79 @@ void kickmix_py::register_operation_statistics_methods(pybind11::class_<PyOperat
                 ...     CX q0 q1 if b0
                 ...     CCX q0 q1 q2
                 ... ''')
-                >>> c.operation_statistics().total
+                >>> c.operation_statistics().num_instructions
                 3
         )DOC")
             .data());
 
-    c_stats.def_property_readonly(
-        "z_pow_counts",
-        &PyOperationStatistics::z_pow_counts,
-        clean_doc_string(R"DOC(
-            @signature def z_pow_counts(self) -> dict[fractions.Fraction, int]:
-            A dictionary mapping each distinct `Z_POW` angle to its count.
-
-            Angles are represented in half turns in `[0, 2)` as a
-            `fractions.Fraction`.
-
-            Examples:
-                >>> import kickmix as km
-                >>> c = km.Circuit('''
-                ...     Z_POW q0 0.25
-                ...     Z_POW q1 0.25 if b0
-                ...     Z_POW q0 -0.25
-                ... ''')
-                >>> c.operation_statistics().z_pow_counts
-                {Fraction(1, 4): 2, Fraction(7, 4): 1}
-        )DOC")
-            .data());
-
     c_stats.def(
-        "op_counts",
-        &PyOperationStatistics::op_counts,
-        pybind11::arg("z_pow_key") = pybind11::none(),
+        "num_z_pow",
+        &PyOperationStatistics::num_z_pow,
+        pybind11::arg("min_clifford_hierarchy_level") = 0,
+        pybind11::arg("max_clifford_hierarchy_level") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def op_counts(self, z_pow_key: Callable[[fractions.Fraction], str] | None = None) -> dict[str, int]:
-            Returns a dictionary mapping each operation group name to its count.
+            @signature def num_z_pow(self, min_clifford_hierarchy_level: int = 0, max_clifford_hierarchy_level: int | None = None) -> int:
+            Counts `Z_POW` operations within a Clifford hierarchy level range.
 
-            Unconditional and conditional variants of an operation (e.g. `CCX`
-            and `CCX_IF`) are summed under the base operation name (`'CCX'`).
+            The Clifford hierarchy level `k` (`0 <= k <= 128`) of a `Z_POW`
+            angle is:
+            - `k = 0`: `0.0` half turns (identity)
+            - `k = 1`: `1.0` half turns (Pauli `Z`)
+            - `k = 2`: `0.5` or `1.5` half turns (Clifford `S` / `S^-1`)
+            - `k = 3`: odd multiples of `0.25` half turns (`T` / `T^-1`)
+            - `k >= 4`: odd multiples of `2**(1 - k)` half turns
 
             Args:
-                z_pow_key: Optional callable taking a `Z_POW` angle (in half
-                    turns in `[0, 2)` as a `fractions.Fraction`) and returning
-                    a dictionary key `str` under which to accumulate its count.
-                    If `None` (the default), all `Z_POW` operations are summed
-                    under `'Z_POW'`.
+                min_clifford_hierarchy_level: Minimum Clifford hierarchy level
+                    to include (inclusive). Defaults to `0`.
+                max_clifford_hierarchy_level: Maximum Clifford hierarchy level
+                    to include (inclusive), or `None` for no upper bound.
+                    Defaults to `None`.
 
             Returns:
-                A dictionary mapping each operation name (`'NEG'`,
-                `'BIT_INVERT'`, `'BIT_STORE0'`, `'BIT_STORE1'`, `'X'`, `'Z'`,
-                `'R'`, `'HMR'`, `'CX'`, `'CZ'`, `'SWAP'`, `'CCX'`, `'CCZ'`,
-                `'Z_POW'`, `'DEBUG_PRINT'`, `'POP_CONDITION'`,
-                `'PUSH_CONDITION'`, or custom `z_pow_key` names) to its count.
+                Total number of `Z_POW` operations whose Clifford hierarchy
+                level satisfies `min <= level <= max`.
 
             Examples:
                 >>> import kickmix as km
                 >>> c = km.Circuit('''
-                ...     X q0
-                ...     CX q0 q1 if b0
+                ...     Z_POW q0 0.0
                 ...     Z_POW q0 0.5
                 ...     Z_POW q0 0.25
                 ...     Z_POW q0 -0.25 if b0
                 ...     Z_POW q0 0.125
+                ...     Z_POW q0 0.1 if b1
                 ... ''')
                 >>> stats = c.operation_statistics()
-                >>> stats.op_counts()['X']
-                1
-                >>> stats.op_counts()['Z_POW']
-                4
-                >>> def classify_z_pow(angle):
-                ...     if angle.denominator <= 2:
-                ...         return 'Z_POW_CLIFFORD'
-                ...     if angle.denominator == 4:
-                ...         return 'T'
-                ...     return f'Z_POW_2^-{angle.denominator.bit_length() - 1}'
-                >>> grouped = stats.op_counts(z_pow_key=classify_z_pow)
-                >>> grouped['Z_POW_CLIFFORD'], grouped['T'], grouped['Z_POW_2^-3']
-                (1, 2, 1)
+                >>> stats.num_z_pow()
+                6
+                >>> stats.num_z_pow(max_clifford_hierarchy_level=2)
+                2
+                >>> stats.num_z_pow(min_clifford_hierarchy_level=4)
+                2
+        )DOC")
+            .data());
+
+    c_stats.def_property_readonly(
+        "z_pow_clifford_hierarchy_counts",
+        &PyOperationStatistics::z_pow_clifford_hierarchy_counts,
+        clean_doc_string(R"DOC(
+            @signature def z_pow_clifford_hierarchy_counts(self) -> dict[int, int]:
+            Maps each present `Z_POW` Clifford hierarchy level to its count.
+
+            Only levels `k` (`0 <= k <= 128`) with a non-zero count are
+            included as keys in the returned dictionary.
+
+            Examples:
+                >>> import kickmix as km
+                >>> c = km.Circuit('''
+                ...     Z_POW q0 0.5
+                ...     Z_POW q0 0.25
+                ...     Z_POW q1 -0.25 if b0
+                ...     Z_POW q0 0.125
+                ... ''')
+                >>> c.operation_statistics().z_pow_clifford_hierarchy_counts
+                {2: 1, 3: 2, 4: 1}
         )DOC")
             .data());
 
@@ -446,8 +398,12 @@ void kickmix_py::register_operation_statistics_methods(pybind11::class_<PyOperat
         &PyOperationStatistics::get_item,
         pybind11::arg("key"),
         clean_doc_string(R"DOC(
-            @signature def __getitem__(self, key: str) -> int:
+            @signature def __getitem__(self, key: str | Literal['NEG', 'BIT_INVERT', 'BIT_STORE0', 'BIT_STORE1', 'X', 'Z', 'R', 'HMR', 'CX', 'CZ', 'SWAP', 'CCX', 'CCZ', 'Z_POW', 'DEBUG_PRINT', 'POP_CONDITION', 'PUSH_CONDITION']) -> int:
             Returns the count for the given base operation name.
+
+            Unconditional and conditional variants of an operation (e.g.
+            `CCX q0 q1 q2` and `CCX q0 q1 q2 if b3`) are summed together under
+            the base operation name (`'CCX'`).
 
             Args:
                 key: One of the base operation names (`'NEG'`, `'BIT_INVERT'`,
@@ -466,10 +422,120 @@ void kickmix_py::register_operation_statistics_methods(pybind11::class_<PyOperat
                 ...     CCX q0 q1 q2 if b0
                 ... ''')
                 >>> stats = c.operation_statistics()
-                >>> stats['X']
-                1
-                >>> stats['CCX']
-                1
+                >>> stats['X'], stats['CCX']
+                (1, 1)
+        )DOC")
+            .data());
+
+    c_stats.def(
+        "get",
+        &PyOperationStatistics::get_with_default,
+        pybind11::arg("key"),
+        pybind11::arg("default") = pybind11::none(),
+        clean_doc_string(R"DOC(
+            @signature def get(self, key: str | Literal['NEG', 'BIT_INVERT', 'BIT_STORE0', 'BIT_STORE1', 'X', 'Z', 'R', 'HMR', 'CX', 'CZ', 'SWAP', 'CCX', 'CCZ', 'Z_POW', 'DEBUG_PRINT', 'POP_CONDITION', 'PUSH_CONDITION'], default: Any = None) -> Any:
+            Returns the count for `key` if non-zero, else `default`.
+
+            Args:
+                key: Base operation name to look up.
+                default: Value to return if `key` is not present with a
+                    non-zero count. Defaults to `None`.
+
+            Examples:
+                >>> import kickmix as km
+                >>> stats = km.Circuit('X q0').operation_statistics()
+                >>> stats.get('X'), stats.get('CCX'), stats.get('CCX', 0)
+                (1, None, 0)
+        )DOC")
+            .data());
+
+    c_stats.def(
+        "__contains__",
+        &PyOperationStatistics::contains,
+        pybind11::arg("key"),
+        clean_doc_string(R"DOC(
+            @signature def __contains__(self, key: object) -> bool:
+            Returns whether `key` is a base operation with a non-zero count.
+
+            Examples:
+                >>> import kickmix as km
+                >>> stats = km.Circuit('CCX q0 q1 q2').operation_statistics()
+                >>> 'CCX' in stats, 'X' in stats, 'UNKNOWN' in stats
+                (True, False, False)
+        )DOC")
+            .data());
+
+    c_stats.def(
+        "__len__",
+        &PyOperationStatistics::len,
+        clean_doc_string(R"DOC(
+            @signature def __len__(self) -> int:
+            Returns the number of distinct base operation types with non-zero counts.
+
+            Examples:
+                >>> import kickmix as km
+                >>> len(km.Circuit('').operation_statistics())
+                0
+                >>> len(km.Circuit('X q0\nCCX q0 q1 q2').operation_statistics())
+                2
+        )DOC")
+            .data());
+
+    c_stats.def(
+        "__iter__",
+        [](const PyOperationStatistics &self) {
+            return pybind11::iter(self.keys());
+        },
+        clean_doc_string(R"DOC(
+            @signature def __iter__(self) -> Iterator[str]:
+            Iterates over base operation names that have non-zero counts.
+
+            Examples:
+                >>> import kickmix as km
+                >>> list(km.Circuit('X q0\nCCX q0 q1 q2').operation_statistics())
+                ['X', 'CCX']
+        )DOC")
+            .data());
+
+    c_stats.def(
+        "keys",
+        &PyOperationStatistics::keys,
+        clean_doc_string(R"DOC(
+            @signature def keys(self) -> list[str]:
+            Returns base operation names that have non-zero counts.
+
+            Examples:
+                >>> import kickmix as km
+                >>> km.Circuit('X q0\nCCX q0 q1 q2').operation_statistics().keys()
+                ['X', 'CCX']
+        )DOC")
+            .data());
+
+    c_stats.def(
+        "values",
+        &PyOperationStatistics::values,
+        clean_doc_string(R"DOC(
+            @signature def values(self) -> list[int]:
+            Returns non-zero counts corresponding to `stats.keys()`.
+
+            Examples:
+                >>> import kickmix as km
+                >>> km.Circuit('X q0\nX q1\nCCX q0 q1 q2').operation_statistics().values()
+                [2, 1]
+        )DOC")
+            .data());
+
+    c_stats.def(
+        "items",
+        &PyOperationStatistics::items,
+        clean_doc_string(R"DOC(
+            @signature def items(self) -> list[tuple[str, int]]:
+            Returns `(op_name, count)` pairs for all non-zero operation counts.
+
+            Examples:
+                >>> import kickmix as km
+                >>> km.Circuit('X q0\nCCX q0 q1 q2').operation_statistics().items()
+                [('X', 1), ('CCX', 1)]
         )DOC")
             .data());
 

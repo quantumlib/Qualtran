@@ -3,14 +3,12 @@
 
 #include <array>
 #include <cstdint>
-#include <map>
 #include <optional>
 #include <pybind11/pybind11.h>
 #include <string>
 #include <string_view>
 
 #include "kickmix/circuit/circuit.h"
-#include "kickmix/util/fixed_precision_angle_128.h"
 
 namespace kickmix_py {
 
@@ -18,24 +16,26 @@ struct PyInteractiveSimulator;
 
 struct PyOperationStatistics {
     std::array<uint64_t, 256> raw_op_counts{};
-    std::map<kickmix::FixedPrecisionAngle128, uint64_t> z_pow_angle_counts{};
+    std::array<uint64_t, 129> z_pow_level_counts{};
 
-    bool operator==(const PyOperationStatistics &other) const;
-    bool operator!=(const PyOperationStatistics &other) const {
-        return !(*this == other);
-    }
+    bool operator==(const PyOperationStatistics &other) const = default;
+    bool operator!=(const PyOperationStatistics &other) const = default;
 
     static PyOperationStatistics from_circuit(const kickmix::Circuit &circuit);
     static PyOperationStatistics from_simulator(const PyInteractiveSimulator &sim, std::optional<int64_t> shot_index);
 
-    uint64_t ccp() const;
-    uint64_t t() const;
-    uint64_t rotations() const;
-    uint64_t clifford_z_pow() const;
-    uint64_t total() const;
+    uint64_t num_toffoli_like() const;
+    uint64_t num_t_like() const;
+    uint64_t num_instructions() const;
+    uint64_t num_z_pow(int64_t min_level, std::optional<int64_t> max_level) const;
+    pybind11::dict z_pow_clifford_hierarchy_counts() const;
     uint64_t get_item(std::string_view key) const;
-    pybind11::dict z_pow_counts() const;
-    pybind11::dict op_counts(const pybind11::object &z_pow_key) const;
+    pybind11::object get_with_default(std::string_view key, const pybind11::object &default_val) const;
+    bool contains(const pybind11::object &key) const;
+    size_t len() const;
+    pybind11::list keys() const;
+    pybind11::list values() const;
+    pybind11::list items() const;
     std::string repr() const;
 };
 

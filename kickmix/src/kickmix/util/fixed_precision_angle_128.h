@@ -14,10 +14,10 @@ struct FixedPrecisionAngle128 {
     uint64_t words[2];
 
     bool operator==(const FixedPrecisionAngle128 &rhs) const = default;
-    bool operator<(const FixedPrecisionAngle128 &rhs) const {
-        return words[1] != rhs.words[1] ? words[1] < rhs.words[1] : words[0] < rhs.words[0];
-    }
     explicit operator bool() const;
+
+    /// Returns the Clifford hierarchy level k in [0, 128] of Z^(this angle).
+    uint8_t clifford_hierarchy_level() const;
 
     static FixedPrecisionAngle128 from_power_of_2_half_turns(int exponent);
 

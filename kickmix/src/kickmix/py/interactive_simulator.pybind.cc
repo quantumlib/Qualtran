@@ -106,7 +106,7 @@ pybind11::object int_obj_from_bytes_with_max_bits(uint8_t *bytes_buffer, size_t 
 }
 
 PyInteractiveSimulator::PyInteractiveSimulator(
-    size_t init_batch_size, bool init_ignoring_debug_prints, bool init_counting_operations) {
+    size_t init_batch_size, pybind11::object init_debug_print, bool init_counting_operations) {
     batch_size = init_batch_size;
     counting_operations = init_counting_operations;
     with_sims([&](auto &sims) {
@@ -115,14 +115,31 @@ PyInteractiveSimulator::PyInteractiveSimulator(
         }
         ensure_byte_buf_can_store_bits(sims.size() * PY_SIM_WORD_BITS);
     });
-    set_ignoring_debug_prints(init_ignoring_debug_prints);
+    set_debug_print(std::move(init_debug_print));
 }
 
-void PyInteractiveSimulator::set_ignoring_debug_prints(bool value) {
-    ignoring_debug_prints = value;
+void PyInteractiveSimulator::set_debug_print(pybind11::object value) {
+    bool ignore = false;
+    std::function<void(std::string_view)> handler = nullptr;
+    if (pybind11::isinstance<pybind11::bool_>(value)) {
+        ignore = !pybind11::cast<bool>(value);
+    } else if (PyCallable_Check(value.ptr())) {
+        handler = [value](std::string_view s) {
+            value(pybind11::str(s.data(), s.size()));
+        };
+    } else if (pybind11::hasattr(value, "write")) {
+        handler = [value](std::string_view s) {
+            value.attr("write")(pybind11::str(s.data(), s.size()));
+        };
+    } else {
+        throw pybind11::type_error(
+            "Expected debug_print to be a bool, a callable taking a str, or an object with a write(str) method.");
+    }
+    debug_print_target = std::move(value);
     with_sims([&](auto &sims) {
         for (auto &sim : sims) {
-            sim.ignore_debug_print_operations = value;
+            sim.ignore_debug_print_operations = ignore;
+            sim.debug_print_handler = handler;
         }
     });
 }
@@ -719,26 +736,33 @@ void write_within_shot(
 void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInteractiveSimulator> &c_sim) {
     c_sim.def(
         pybind11::init(
-            [](size_t batch_size, bool ignoring_debug_prints, bool counting_operations) -> PyInteractiveSimulator {
-                return PyInteractiveSimulator(batch_size, ignoring_debug_prints, counting_operations);
+            [](size_t batch_size, pybind11::object debug_print, bool counting_operations) -> PyInteractiveSimulator {
+                return PyInteractiveSimulator(batch_size, std::move(debug_print), counting_operations);
             }),
         pybind11::arg("batch_size"),
         pybind11::kw_only(),
-        pybind11::arg("ignoring_debug_prints") = false,
+        pybind11::arg("debug_print") = pybind11::bool_(true),
         pybind11::arg("counting_operations") = false,
         clean_doc_string(R"DOC(
-            @signature def __init__(self, batch_size: int, *, ignoring_debug_prints: bool = False, counting_operations: bool = False):
+            @signature def __init__(self, batch_size: int, *, debug_print: bool | Callable[[str], Any] | io.TextIOBase = True, counting_operations: bool = False):
             Initializes an interactive simulator with the given batch size.
 
             Args:
                 batch_size: Determines how many simultaneous shots are being
                     tracked by the simulator.
-                ignoring_debug_prints: If `True`, `DEBUG_PRINT` instructions
-                    are ignored during simulation instead of writing to stderr.
-                    Defaults to `False`.
+                debug_print: Controls how `DEBUG_PRINT` instructions behave.
+                    - `True` (default): writes `DEBUG_PRINT` output to stderr.
+                    - `False`: suppresses `DEBUG_PRINT` instructions.
+                    - `Callable[[str], Any]`: calls `debug_print(text)` for each
+                      emitted `DEBUG_PRINT` text fragment.
+                    - `io.TextIOBase` (or any object with `.write(str)`): writes
+                      each emitted `DEBUG_PRINT` text fragment to the stream.
                 counting_operations: If `True`, tracks per-shot operation
                     statistics during `do(...)` that can be queried with
-                    `operation_statistics()`. Defaults to `False`.
+                    `operation_statistics()`. Enabling this option updates
+                    per-shot population counters on every executed instruction,
+                    slowing down fast gate simulation by ~2-4x and allocating
+                    extra counter memory, so it defaults to `False`.
         )DOC")
             .data());
 
@@ -777,15 +801,33 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
             .data());
 
     c_sim.def_property(
-        "ignoring_debug_prints",
-        [](const PyInteractiveSimulator &self) -> bool {
-            return self.ignoring_debug_prints;
+        "debug_print",
+        [](const PyInteractiveSimulator &self) -> pybind11::object {
+            return self.debug_print_target;
         },
-        [](PyInteractiveSimulator &self, bool value) {
-            self.set_ignoring_debug_prints(value);
+        [](PyInteractiveSimulator &self, pybind11::object value) {
+            self.set_debug_print(std::move(value));
         },
         clean_doc_string(R"DOC(
-            Whether `DEBUG_PRINT` instructions are suppressed during simulation.
+            @signature def debug_print(self) -> bool | Callable[[str], Any] | io.TextIOBase:
+            Controls how `DEBUG_PRINT` instructions are handled during `do(...)`.
+
+            May be set to `True` (stderr), `False` (ignore), a callable taking
+            `str`, or an object with a `.write(str)` method (such as
+            `io.StringIO()`).
+
+            Examples:
+                >>> import io
+                >>> import kickmix as km
+                >>> buf = io.StringIO()
+                >>> sim = km.Simulator(batch_size=4, debug_print=buf)
+                >>> sim.do(km.Circuit('''
+                ...     X q0
+                ...     DEBUG_PRINT q0
+                ...     DEBUG_PRINT
+                ... '''))
+                >>> buf.getvalue().strip()
+                '1 (phase=0.0π)'
         )DOC")
             .data());
 
@@ -796,6 +838,10 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
         },
         clean_doc_string(R"DOC(
             Whether operation execution statistics are recorded during `do(...)`.
+
+            Note that recording operation counts incurs per-instruction counter
+            overhead (~2-4x on fast gates), so this must be set when
+            constructing the `km.Simulator`.
         )DOC")
             .data());
 
@@ -807,9 +853,9 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
             @signature def operation_statistics(self, shot_index: int | None = None) -> km.OperationStatistics:
             Returns operation statistics recorded during `do(...)`.
 
-            Conditional operations (`OP_IF` and operations inside
-            `PUSH_CONDITION` blocks) are only counted in shots where their
-            condition was satisfied.
+            Conditional operations (such as `CCX q0 q1 q2 if b3` or operations
+            inside `PUSH_CONDITION` / `POP_CONDITION` blocks) are only counted
+            in shots where their condition was satisfied.
 
             Args:
                 shot_index: Optional index of a single shot in
@@ -819,9 +865,9 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
 
             Returns:
                 A `km.OperationStatistics` object containing operation counts
-                and resource summaries (`ccp` for `CCX`/`CCZ` gates, `t`,
-                `rotations`, `clifford_z_pow`, `total`, `z_pow_counts`, and
-                `op_counts`).
+                and resource summaries (`num_instructions`, `num_toffoli_like`,
+                `num_t_like`, `num_z_pow`, and
+                `z_pow_clifford_hierarchy_counts`).
 
             Raises:
                 ValueError: Operation counting has not been enabled on this
@@ -839,11 +885,13 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
                 ...     Z_POW q0 0.125
                 ... '''))
                 >>> stats = sim.operation_statistics()
-                >>> stats['X'], stats.ccp, stats.t, stats.rotations
-                (4, 2, 2, 4)
-                >>> sim.operation_statistics(shot_index=0).ccp
+                >>> stats['X'], stats.num_toffoli_like, stats.num_t_like
+                (4, 2, 2)
+                >>> stats.num_z_pow(min_clifford_hierarchy_level=4)
+                4
+                >>> sim.operation_statistics(shot_index=0).num_toffoli_like
                 1
-                >>> sim.operation_statistics(shot_index=1).ccp
+                >>> sim.operation_statistics(shot_index=1).num_toffoli_like
                 0
         )DOC")
             .data());

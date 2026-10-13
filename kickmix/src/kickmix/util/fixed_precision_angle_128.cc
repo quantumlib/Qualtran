@@ -1,5 +1,6 @@
 #include "kickmix/util/fixed_precision_angle_128.h"
 
+#include <bit>
 #include <cmath>
 #include <cstdint>
 #include <sstream>
@@ -8,6 +9,16 @@
 #include <string_view>
 
 using namespace kickmix;
+
+uint8_t FixedPrecisionAngle128::clifford_hierarchy_level() const {
+    if (words[0] != 0) {
+        return static_cast<uint8_t>(128 - std::countr_zero(words[0]));
+    }
+    if (words[1] != 0) {
+        return static_cast<uint8_t>(64 - std::countr_zero(words[1]));
+    }
+    return 0;
+}
 
 FixedPrecisionAngle128 FixedPrecisionAngle128::from_power_of_2_half_turns(int exponent) {
     if (exponent > 0 || exponent <= -128) {

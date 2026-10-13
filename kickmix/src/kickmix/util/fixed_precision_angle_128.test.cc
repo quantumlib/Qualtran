@@ -41,6 +41,21 @@ TEST(FixedPrecisionAngle128, equality) {
     ASSERT_NE((FixedPrecisionAngle128{2, 3}), (FixedPrecisionAngle128{5, 11}));
 }
 
+TEST(FixedPrecisionAngle128, clifford_hierarchy_level) {
+    ASSERT_EQ((FixedPrecisionAngle128{0, 0}).clifford_hierarchy_level(), 0);
+    ASSERT_EQ(FixedPrecisionAngle128::from_half_turns_exact_double(1.0).clifford_hierarchy_level(), 1);
+    ASSERT_EQ(FixedPrecisionAngle128::from_half_turns_exact_double(0.5).clifford_hierarchy_level(), 2);
+    ASSERT_EQ(FixedPrecisionAngle128::from_half_turns_exact_double(-0.5).clifford_hierarchy_level(), 2);
+    ASSERT_EQ(FixedPrecisionAngle128::from_half_turns_exact_double(0.25).clifford_hierarchy_level(), 3);
+    ASSERT_EQ(FixedPrecisionAngle128::from_half_turns_exact_double(0.75).clifford_hierarchy_level(), 3);
+    ASSERT_EQ(FixedPrecisionAngle128::from_half_turns_exact_double(-0.25).clifford_hierarchy_level(), 3);
+    ASSERT_EQ(FixedPrecisionAngle128::from_half_turns_exact_double(0.125).clifford_hierarchy_level(), 4);
+    for (int exp = 0; exp >= -127; exp--) {
+        ASSERT_EQ(FixedPrecisionAngle128::from_power_of_2_half_turns(exp).clifford_hierarchy_level(), 1 - exp);
+    }
+    ASSERT_EQ((FixedPrecisionAngle128{1, 0}).clifford_hierarchy_level(), 128);
+}
+
 TEST(FixedPrecisionAngle128, zero) {
     FixedPrecisionAngle128 zero{};
     ASSERT_EQ(zero.words[0], 0);

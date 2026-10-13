@@ -21,6 +21,7 @@ from typing import Any, cast, Iterator, List, Optional, Tuple
 
 keep = {
     "__add__",
+    "__contains__",
     "__ipow__",
     "__radd__",
     "__eq__",
@@ -193,7 +194,9 @@ def _handle_pybind_method(
         was_args = 'Args:' in line
 
     if is_property:
-        if hasattr(obj, 'fget'):
+        if sig_handled:
+            sig_name = sig.rstrip(':')
+        elif hasattr(obj, 'fget'):
             sig_name = term_name + obj.fget.__doc__.replace('arg0', 'self').strip()
         else:
             sig_name = f'{term_name}(self)'

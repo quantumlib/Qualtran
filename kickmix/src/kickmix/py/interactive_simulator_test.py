@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import fractions
+import io
 import random
 from typing import Any
 
@@ -439,7 +440,7 @@ def test_read_phase_flipped_across_shots():
     )
 
 
-def test_ignoring_debug_prints(capfd: pytest.CaptureFixture[str]):
+def test_debug_print(capfd: pytest.CaptureFixture[str]):
     c = km.Circuit("""
         X q0
         BIT_STORE1 b0
@@ -449,28 +450,39 @@ def test_ignoring_debug_prints(capfd: pytest.CaptureFixture[str]):
     """)
 
     sim = km.Simulator(batch_size=4)
-    assert not sim.ignoring_debug_prints
+    assert sim.debug_print is True
     sim.do(c)
     captured = capfd.readouterr()
     assert "11 (phase=" in captured.err
 
-    sim.ignoring_debug_prints = True
-    assert sim.ignoring_debug_prints
+    sim.debug_print = False
+    assert sim.debug_print is False
     sim.do(c)
     captured = capfd.readouterr()
     assert captured.err == ""
 
-    sim.ignoring_debug_prints = False
-    assert not sim.ignoring_debug_prints
+    chunks: list[str] = []
+    sim.debug_print = chunks.append
+    assert sim.debug_print == chunks.append
     sim.do(c)
-    captured = capfd.readouterr()
-    assert "11 (phase=" in captured.err
+    assert "".join(chunks).startswith("11 (phase=")
+    assert capfd.readouterr().err == ""
 
-    sim_quiet = km.Simulator(batch_size=300, ignoring_debug_prints=True)
-    assert sim_quiet.ignoring_debug_prints
+    buf = io.StringIO()
+    sim_stream = km.Simulator(batch_size=300, debug_print=buf)
+    assert sim_stream.debug_print is buf
+    sim_stream.do(c)
+    # Two internal 256-shot SIMD engines emit shot-0 debug prints across 300 shots.
+    assert buf.getvalue().count("11 (phase=") == 2
+    assert capfd.readouterr().err == ""
+
+    sim_quiet = km.Simulator(batch_size=300, debug_print=False)
+    assert sim_quiet.debug_print is False
     sim_quiet.do(c)
-    captured = capfd.readouterr()
-    assert captured.err == ""
+    assert capfd.readouterr().err == ""
+
+    with pytest.raises(TypeError, match="debug_print"):
+        sim.debug_print = 123  # type: ignore[assignment]
 
 
 def test_counting_operations():
@@ -481,12 +493,12 @@ def test_counting_operations():
     with pytest.raises(ValueError, match="Operation counting is not enabled"):
         sim.operation_statistics()
 
-    sim = km.Simulator(batch_size=4, counting_operations=True, ignoring_debug_prints=True)
+    sim = km.Simulator(batch_size=4, counting_operations=True, debug_print=False)
     assert sim.counting_operations
     with pytest.raises(AttributeError):
         sim.counting_operations = False  # type: ignore[misc]
-    assert sim.operation_statistics().total == 0
-    assert all(v == 0 for v in sim.operation_statistics().op_counts().values())
+    assert sim.operation_statistics().num_instructions == 0
+    assert all(v == 0 for v in sim.operation_statistics().values())
 
     # Set b0 in shots 0 and 2 (0b0101), b1 in shots 0 and 1 (0b0011)
     sim.write_across_shots(km.b(0), 0b0101)
@@ -508,21 +520,24 @@ def test_counting_operations():
     sim.do(c)
 
     stats = sim.operation_statistics()
-    totals = stats.op_counts()
+    totals = dict(stats)
     assert stats["X"] == 4
-    assert totals["X"] == 4
-    assert totals["CX"] == 2
-    assert totals["PUSH_CONDITION"] == 4
-    assert totals["POP_CONDITION"] == 4
-    assert totals["CCX"] == 2
-    assert totals["CCZ"] == 1
-    assert totals["Z_POW"] == 4
-    assert totals["DEBUG_PRINT"] == 4 + 4 + 2
-    assert totals["CZ"] == 0
-    assert stats.ccp == 3
-    assert stats.t == 2
-    assert stats.rotations == 2
-    assert stats.z_pow_counts == {fractions.Fraction(1, 4): 2, fractions.Fraction(1, 8): 2}
+    assert stats["CZ"] == 0
+    assert "CZ" not in stats
+    assert totals == {
+        "X": 4,
+        "CX": 2,
+        "CCX": 2,
+        "CCZ": 1,
+        "Z_POW": 4,
+        "DEBUG_PRINT": 4 + 4 + 2,
+        "POP_CONDITION": 4,
+        "PUSH_CONDITION": 4,
+    }
+    assert stats.num_toffoli_like == 3
+    assert stats.num_t_like == 2
+    assert stats.num_z_pow(min_clifford_hierarchy_level=4) == 2
+    assert stats.z_pow_clifford_hierarchy_counts == {3: 2, 4: 2}
 
     shots = [sim.operation_statistics(k) for k in range(4)]
     assert [s["X"] for s in shots] == [1, 1, 1, 1]
@@ -531,9 +546,9 @@ def test_counting_operations():
     assert [s["CCZ"] for s in shots] == [1, 0, 0, 0]
     assert [s["Z_POW"] for s in shots] == [2, 1, 1, 0]
     assert [s["DEBUG_PRINT"] for s in shots] == [3, 3, 2, 2]
-    assert [s.ccp for s in shots] == [2, 0, 1, 0]
-    assert [s.t for s in shots] == [1, 0, 1, 0]
-    assert [s.rotations for s in shots] == [1, 1, 0, 0]
+    assert [s.num_toffoli_like for s in shots] == [2, 0, 1, 0]
+    assert [s.num_t_like for s in shots] == [1, 0, 1, 0]
+    assert [s.num_z_pow(min_clifford_hierarchy_level=4) for s in shots] == [1, 1, 0, 0]
 
     with pytest.raises(IndexError, match="batch_size"):
         sim.operation_statistics(-1)
@@ -545,11 +560,11 @@ def test_counting_operations():
     sim.do(km.Circuit("X q0"))
     assert sim.operation_statistics()["X"] == 8
 
-    # clear_operation_statistics() resets all counters (including Z_POW angles) to 0.
+    # clear_operation_statistics() resets all counters (including Z_POW levels) to 0.
     sim.clear_operation_statistics()
-    assert sim.operation_statistics().total == 0
-    assert sim.operation_statistics().z_pow_counts == {}
-    assert all(v == 0 for v in sim.operation_statistics().op_counts().values())
+    assert sim.operation_statistics().num_instructions == 0
+    assert sim.operation_statistics().z_pow_clifford_hierarchy_counts == {}
+    assert all(v == 0 for v in sim.operation_statistics().values())
 
 
 @pytest.mark.parametrize("batch_size", [0, 1, 5, 255, 256, 257, 513])
@@ -563,13 +578,13 @@ def test_counting_operations_batch_sizes(batch_size: int):
     """))
     stats = sim.operation_statistics()
     assert stats["X"] == batch_size
-    assert stats.t == (1 if batch_size > 0 else 0)
-    assert stats.total == batch_size + (1 if batch_size > 0 else 0)
+    assert stats.num_t_like == (1 if batch_size > 0 else 0)
+    assert stats.num_instructions == batch_size + (1 if batch_size > 0 else 0)
     if batch_size > 0:
         last_shot = sim.operation_statistics(batch_size - 1)
         assert last_shot["X"] == 1
-        assert last_shot.t == 1
+        assert last_shot.num_t_like == 1
         if batch_size > 1:
-            assert sim.operation_statistics(0).t == 0
+            assert sim.operation_statistics(0).num_t_like == 0
     with pytest.raises(IndexError, match="batch_size"):
         sim.operation_statistics(batch_size)

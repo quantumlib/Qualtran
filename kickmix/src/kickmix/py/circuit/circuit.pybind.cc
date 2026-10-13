@@ -100,17 +100,22 @@ void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
         &PyOperationStatistics::from_circuit,
         clean_doc_string(R"DOC(
             @signature def operation_statistics(self) -> km.OperationStatistics:
-            Returns static upper-bound operation statistics for the circuit.
+            Counts how many times operations are mentioned by the circuit.
 
-            Counts every instruction appearing in the circuit, including
-            conditional operations (`OP_IF` and operations inside
-            `PUSH_CONDITION` blocks).
+            Beware that this method ignores the fact that operations mentioned
+            by the circuit may only occur in a fraction of runs. For example,
+            suppose a classical bit determines whether an addition is performed
+            (via `PUSH_CONDITION` and `POP_CONDITION`) and then the inverse of
+            that bit determines whether a subtraction is performed. Even
+            though, in a given run, only the addition or else only the
+            subtraction can occur, this method will return operation counts as
+            if both occurred.
 
             Returns:
                 A `km.OperationStatistics` object containing operation counts
-                and resource summaries (`ccp` for `CCX`/`CCZ` gates, `t`,
-                `rotations`, `clifford_z_pow`, `total`, `z_pow_counts`, and
-                `op_counts`).
+                and resource summaries (`num_instructions`, `num_toffoli_like`,
+                `num_t_like`, `num_z_pow`, and
+                `z_pow_clifford_hierarchy_counts`).
 
             Examples:
                 >>> import kickmix as km
@@ -123,8 +128,10 @@ void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
                 ...     Z_POW q0 0.125
                 ... ''')
                 >>> stats = c.operation_statistics()
-                >>> stats.ccp, stats.t, stats.rotations
-                (1, 2, 1)
+                >>> stats.num_toffoli_like, stats.num_t_like
+                (1, 2)
+                >>> stats.num_z_pow(min_clifford_hierarchy_level=4)
+                1
                 >>> stats['X'], stats['Z_POW']
                 (1, 4)
         )DOC")
