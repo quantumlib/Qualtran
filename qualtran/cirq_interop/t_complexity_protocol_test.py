@@ -14,11 +14,13 @@
 
 import cirq
 import pytest
+import sympy
 from attrs import frozen
 
 from qualtran import Bloq, DecomposeNotImplementedError, GateWithRegisters, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import CHadamard, GlobalPhase
+from qualtran.bloqs.mcmt import MultiControlX
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.cirq_interop.t_complexity_protocol import (
     _from_directly_countable_cirq,
@@ -27,6 +29,7 @@ from qualtran.cirq_interop.t_complexity_protocol import (
     TComplexity,
 )
 from qualtran.cirq_interop.testing import GateHelper
+from qualtran.symbolics import HasLength
 from qualtran.testing import execute_notebook
 
 
@@ -199,6 +202,17 @@ def test_tagged_operations():
     assert t_complexity_compat(cirq.T(q).with_tags('tage1')) == TComplexity(t=1)
     assert t_complexity_compat(cirq.Ry(rads=0.1)(q).with_tags('tag1', 'tag2')) == TComplexity(
         rotations=1
+    )
+
+
+def test_t_complexity_str():
+    assert str(TComplexity(t=4, clifford=9)) == 'T-count:   4\nRotations: 0\nCliffords: 9\n'
+
+    k = sympy.Symbol('k', integer=True, positive=True)
+    ccpauli_symb = MultiControlX(cvs=HasLength(k))
+    assert (
+        str(t_complexity(ccpauli_symb))
+        == 'T-count:   4*k - 4\nRotations: 0\nCliffords: 13*k - 12\n'
     )
 
 
