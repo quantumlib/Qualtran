@@ -24,8 +24,9 @@ for version 1 of this document).
 Version 2 (the version described in this document) was released later, to support
 a Kaggle competition.
 Key additions were the ability to name registers (the `REGISTER` instruction
-can take an additional optional token specifying the name) and the ability
-to perform fine-grained rotations (the `Z_POW` instruction was added).
+can take an additional optional token specifying the name), the ability
+to perform fine-grained rotations (the `Z_POW` instruction was added), and
+the ability to add debug information to circuits (the `INFO_TAG` instruction was added).
 (This release also specified the complementary [binary kickmix format](kickmix_binary_format.md),
 which uses less space and is an order of magnitude faster to parse.)
 
