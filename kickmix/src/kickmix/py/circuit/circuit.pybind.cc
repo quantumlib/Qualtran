@@ -418,16 +418,42 @@ void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
             self.write_analysis_svg_to(ss, 100);
             return ss.str();
         },
-        R"DOC(
-            Attempts to create a flame chart of qubit and operation usage in the circuit.
+        clean_doc_string(R"DOC(
+            @signature def flame_chart_svg(self) -> str:
+            Returns a flame chart of qubits and operations in the circuit.
 
             In order for this method to work, the circuit must be annotated with
-            "@enter:subroutine" and "@exit:subroutine" INFO_TAG instructions.
+            "@enter:subroutine" and "@exit:subroutine" INFO_TAG instructions. If
+            the circuit isn't annotated, the chart will be very boring.
+
+            Returns:
+                An SVG string containing the flame chart.
 
             Examples:
+                >>> import tempfile
                 >>> import kickmix as km
-                >>> km.Circuit("""
-                ...     INFO_TAG "@enter:adder"
-        )DOC");
 
+                >>> builder = km.CircuitBuilder()
+                >>> a = builder.create_quantum_register(3, "a")
+                >>> b = builder.create_quantum_register(3, "b")
+                >>> c = builder.create_quantum_register(3, "c")
+
+                >>> builder.info_tag("@enter:big_cswap")
+                >>> builder.cx(b, a)
+                >>> builder.ccx(c, a, b)
+                >>> builder.cx(b, a)
+                >>> builder.info_tag("@exit:big_cswap")
+                >>> builder.iadd(offset=a, target=b)
+
+                >>> circuit = builder.finish_circuit()
+                >>> svg = circuit.flame_chart_svg()
+                >>> 'big_cswap' in svg
+                True
+                >>> 'iadd' in svg
+                True
+                >>> with tempfile.NamedTemporaryFile() as fp:
+                ...     with open(fp.name, 'w') as f:
+                ...         print(circuit.flame_chart_svg(), file=f)
+        )DOC")
+            .data());
 }

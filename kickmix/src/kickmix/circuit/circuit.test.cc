@@ -1863,3 +1863,18 @@ TEST(circuit, reaction_depth_of_zpow_1_if) {
         << "`Z_POW q1 1.0 if b0` and `Z q1 if b0` are physically identical, "
            "but have different reaction_depth()!";
 }
+
+TEST(circuit, flame_chart_every_op) {
+    CircuitBuilder builder;
+    {
+        auto mark = builder.raii_mark_block_entry("every <gate & op>");
+        builder.mut.append(circuit_with_every_operation());
+    }
+    std::stringstream ss;
+    builder.finish_circuit().write_analysis_svg_to(ss, 10);
+    std::string svg = ss.str();
+    ASSERT_TRUE(!svg.empty());
+    ASSERT_EQ(svg.find("entire circuit"), std::string::npos);
+    ASSERT_EQ(svg.find("<gate & op>"), std::string::npos);
+    ASSERT_NE(svg.find(">every &lt;gate &amp; op&gt;</text>"), std::string::npos);
+}

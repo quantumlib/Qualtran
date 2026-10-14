@@ -31,7 +31,8 @@ void kickmix::gen_iadd(
         // Offset can be truncated.
         // DIDNTDO: Cancel this CX against a CX in the recursion.
         builder.ccx(control, offset[n - 1], target[n - 1]);
-        gen_iadd(builder, ctx.with_more_dirty_qubits(offset.subspan(n - 1)), target, offset.subspan(0, n - 1), control, "");
+        gen_iadd(
+            builder, ctx.with_more_dirty_qubits(offset.subspan(n - 1)), target, offset.subspan(0, n - 1), control, "");
         return;
     }
     if (n > m + 1) {

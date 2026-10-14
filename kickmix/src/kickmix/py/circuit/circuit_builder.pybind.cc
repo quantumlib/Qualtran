@@ -21,6 +21,32 @@
 using namespace kickmix;
 using namespace kickmix_py;
 
+void kickmix_py::register_circuit_builder_mark_class(pybind11::module &m) {
+    pybind11::class_<PyCircuitBuilderMark>(m, "_CircuitBuilderMark")
+        .def(
+            "__enter__",
+            [](PyCircuitBuilderMark &self) -> PyCircuitBuilderMark & {
+                std::stringstream ss;
+                ss << "@enter:";
+                ss << self.name;
+                self.py_builder->builder.info_tag(ss.str());
+                return self;
+            })
+        .def(
+            "__exit__",
+            [](PyCircuitBuilderMark &self, const pybind11::object &, const pybind11::object &, const pybind11::object &)
+                -> bool {
+                std::stringstream ss;
+                ss << "@exit:";
+                ss << self.name;
+                self.py_builder->builder.info_tag(ss.str());
+                return false;
+            })
+        .def("__repr__", [](const PyCircuitBuilderMark &self) -> std::string {
+            return "<km._CircuitBuilderMark name=" + pybind11::repr(pybind11::str(self.name)).cast<std::string>() + ">";
+        });
+}
+
 void broadcast_cz_struct(PyCircuitBuilder &self, const stride_span_z &c1, const stride_span_z &c2) {
     if (c1.count != c2.count) {
         throw std::invalid_argument("Incompatible lengths.");
@@ -389,6 +415,52 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         R"DOC(
             Returns the circuit built by the circuit builder.
         )DOC");
+
+    c_circuit_builder.def(
+        "mark",
+        [](PyCircuitBuilder &self, std::string_view name) -> PyCircuitBuilderMark {
+            return PyCircuitBuilderMark{&self, *self.mark_names.emplace(name).first};
+        },
+        pybind11::arg("name"),
+        pybind11::keep_alive<0, 1>(),
+        clean_doc_string(R"DOC(
+            @signature def mark(self, name: str) -> Any:
+            Returns a context manager that emits @enter/@exit INFO_TAG instructions.
+
+            These INFO_TAG instructions are intended as debug information about entering
+            and exiting subroutines. For example, they are used by
+            `km.Circuit.flame_chart_svg()`.
+
+            Args:
+                name: Label shown for the block in `builder.flame_chart_svg()`.
+
+            Returns:
+                A context manager that marks blocks under `name`.
+
+            Examples:
+                >>> import pathlib
+                >>> import tempfile
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> address = builder.create_quantum_register(4, name='address')
+                >>> total = builder.create_quantum_register(8, name='total')
+                >>> lookup_mark = builder.mark('iadd_lookup')
+                >>> def iadd_lookup(table: list[int], idx: km.array, dst: km.array):
+                ...     with lookup_mark:
+                ...         buf = builder.alloc_qubits(len(dst))
+                ...         builder.init_lookup(table=table, address=idx, target=buf)
+                ...         builder.iadd(buf, target=dst)
+                ...         builder.del_lookup(table=table, address=idx, target=buf)
+                ...         builder.free(buf)
+                >>> with builder.mark('accumulate_tables'):
+                ...     iadd_lookup([3 * k for k in range(16)], address, total)
+                ...     iadd_lookup([k * k for k in range(16)], address, total)
+                >>> circuit = builder.finish_circuit()
+                >>> with tempfile.TemporaryDirectory() as d:
+                ...     with open(pathlib.Path(d) / 'flame_chart.svg', 'w') as f:
+                ...         print(circuit.flame_chart_svg(), file=f)
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "x",
@@ -1940,7 +2012,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         &info_tag,
         pybind11::arg("text"),
         clean_doc_string(R"DOC(
-            @signature def mark(self, text: str) -> None:
+            @signature def info_tag(self, text: str) -> None:
             Appends an INFO_TAG instruction into the circuit.
 
             INFO_TAG instructions have no effect on simulations, but can be used to make
