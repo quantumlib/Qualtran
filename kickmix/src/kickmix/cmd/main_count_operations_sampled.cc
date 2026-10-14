@@ -139,6 +139,7 @@ int kickmix::main_count_operations_sampled(int argc, const char **argv) {
         {OpType::CCX, OpType::CCX_IF},
         {OpType::CCZ, OpType::CCZ_IF},
         {OpType::Z_POW, OpType::Z_POW_IF},
+        {OpType::INFO_TAG},
         {OpType::DEBUG_PRINT_EMPTY,
          OpType::DEBUG_PRINT_Q,
          OpType::DEBUG_PRINT_C,
@@ -153,7 +154,7 @@ int kickmix::main_count_operations_sampled(int argc, const char **argv) {
         uint64_t max = 0;
         for (const auto &f : e) {
             uint64_t op_count = accumulated_counts[(uint8_t)f];
-            if (f == OpType::POP_CONDITION || f == OpType::PUSH_CONDITION) {
+            if (f == OpType::POP_CONDITION || f == OpType::PUSH_CONDITION || f == OpType::INFO_TAG) {
                 op_count = max_counts[(uint8_t)f];
             }
             tot += op_count;

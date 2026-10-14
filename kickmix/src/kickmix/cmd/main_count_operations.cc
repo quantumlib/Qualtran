@@ -79,6 +79,7 @@ int kickmix::main_count_operations(int argc, const char **argv) {
 
     metadata_op_total += counts[(uint8_t)OpType::NEG];
     metadata_op_total += counts[(uint8_t)OpType::NEG_IF];
+    metadata_op_total += counts[(uint8_t)OpType::INFO_TAG];
 
     condition_op_total += counts[(uint8_t)OpType::PUSH_CONDITION];
     condition_op_total += counts[(uint8_t)OpType::POP_CONDITION];
@@ -104,6 +105,7 @@ int kickmix::main_count_operations(int argc, const char **argv) {
         {OpType::CCX, OpType::CCX_IF},
         {OpType::CCZ, OpType::CCZ_IF},
         {OpType::Z_POW, OpType::Z_POW_IF},
+        {OpType::INFO_TAG},
         {OpType::DEBUG_PRINT_EMPTY,
          OpType::DEBUG_PRINT_Q,
          OpType::DEBUG_PRINT_C,

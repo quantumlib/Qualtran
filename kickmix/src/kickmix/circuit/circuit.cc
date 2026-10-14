@@ -1,5 +1,6 @@
 #include "kickmix/circuit/circuit.h"
 
+#include <bit>
 #include <cstring>
 #include <iostream>
 #include <sstream>
@@ -23,6 +24,8 @@ void Circuit::clear() {
     num_c_ops = 0;
     num_b_ops = 0;
     num_angle_ops = 0;
+    num_info_tags = 0;
+    num_info_tag_chars = 0;
     if (op_types != nullptr) {
         free(op_types);
         op_types = nullptr;
@@ -63,6 +66,14 @@ void Circuit::clear() {
         free(angles);
         angles = nullptr;
     }
+    if (info_tag_end_offsets != nullptr) {
+        free(info_tag_end_offsets);
+        info_tag_end_offsets = nullptr;
+    }
+    if (info_tag_chars != nullptr) {
+        free(info_tag_chars);
+        info_tag_chars = nullptr;
+    }
 }
 
 Circuit::~Circuit() {
@@ -82,6 +93,8 @@ Circuit::Circuit(std::string_view kmx_text) {
     bc = nullptr;
     b0 = nullptr;
     angles = nullptr;
+    info_tag_end_offsets = nullptr;
+    info_tag_chars = nullptr;
     num_ops = 0;
     num_qqq_ops = 0;
     num_qq_ops = 0;
@@ -91,6 +104,8 @@ Circuit::Circuit(std::string_view kmx_text) {
     num_bits = 0;
     num_qubits = 0;
     num_angle_ops = 0;
+    num_info_tags = 0;
+    num_info_tag_chars = 0;
     *this = result.to_validated_circuit();
 }
 
@@ -162,6 +177,12 @@ bool Circuit::operator==(const Circuit &rhs) const {
     if (num_angle_ops != rhs.num_angle_ops) {
         return false;
     }
+    if (num_info_tags != rhs.num_info_tags) {
+        return false;
+    }
+    if (num_info_tag_chars != rhs.num_info_tag_chars) {
+        return false;
+    }
     if (num_ops > 0 && memcmp(op_types, rhs.op_types, sizeof(OpType) * num_ops)) {
         return false;
     }
@@ -192,6 +213,12 @@ bool Circuit::operator==(const Circuit &rhs) const {
     if (num_angle_ops > 0 && memcmp(angles, rhs.angles, sizeof(FixedPrecisionAngle128) * num_angle_ops)) {
         return false;
     }
+    if (num_info_tags > 0 && memcmp(info_tag_end_offsets, rhs.info_tag_end_offsets, sizeof(uint64_t) * num_info_tags)) {
+        return false;
+    }
+    if (num_info_tag_chars > 0 && memcmp(info_tag_chars, rhs.info_tag_chars, num_info_tag_chars)) {
+        return false;
+    }
     return true;
 }
 
@@ -217,6 +244,10 @@ Circuit::Circuit(Circuit &&other) noexcept {
     other.b0 = nullptr;
     angles = other.angles;
     other.angles = nullptr;
+    info_tag_end_offsets = other.info_tag_end_offsets;
+    other.info_tag_end_offsets = nullptr;
+    info_tag_chars = other.info_tag_chars;
+    other.info_tag_chars = nullptr;
     num_ops = other.num_ops;
     other.num_ops = 0;
     num_qqq_ops = other.num_qqq_ops;
@@ -235,6 +266,10 @@ Circuit::Circuit(Circuit &&other) noexcept {
     other.num_qubits = 0;
     num_angle_ops = other.num_angle_ops;
     other.num_angle_ops = 0;
+    num_info_tags = other.num_info_tags;
+    other.num_info_tags = 0;
+    num_info_tag_chars = other.num_info_tag_chars;
+    other.num_info_tag_chars = 0;
 }
 
 template <typename T>
@@ -259,6 +294,8 @@ Circuit::Circuit(const Circuit &other) {
     num_bits = other.num_bits;
     num_qubits = other.num_qubits;
     num_angle_ops = other.num_angle_ops;
+    num_info_tags = other.num_info_tags;
+    num_info_tag_chars = other.num_info_tag_chars;
 
     op_types = aligned_alloc_32<OpType>(num_ops);
     qqq0 = aligned_alloc_32<uint32_t>(num_qqq_ops);
@@ -270,6 +307,8 @@ Circuit::Circuit(const Circuit &other) {
     bc = aligned_alloc_32<uint32_t>(num_c_ops);
     b0 = aligned_alloc_32<uint32_t>(num_b_ops);
     angles = aligned_alloc_32<FixedPrecisionAngle128>(num_angle_ops);
+    info_tag_end_offsets = aligned_alloc_32<uint64_t>(num_info_tags);
+    info_tag_chars = aligned_alloc_32<char>(num_info_tag_chars);
 
     memcpy(op_types, other.op_types, num_ops);
     memcpy(qqq0, other.qqq0, num_qqq_ops * sizeof(uint32_t));
@@ -281,6 +320,8 @@ Circuit::Circuit(const Circuit &other) {
     memcpy(bc, other.bc, num_c_ops * sizeof(uint32_t));
     memcpy(b0, other.b0, num_b_ops * sizeof(uint32_t));
     memcpy(angles, other.angles, num_angle_ops * sizeof(FixedPrecisionAngle128));
+    memcpy(info_tag_end_offsets, other.info_tag_end_offsets, num_info_tags * sizeof(uint64_t));
+    memcpy(info_tag_chars, other.info_tag_chars, num_info_tag_chars);
 }
 
 Circuit &Circuit::operator=(const Circuit &other) {
@@ -299,6 +340,8 @@ Circuit &Circuit::operator=(const Circuit &other) {
     num_bits = other.num_bits;
     num_qubits = other.num_qubits;
     num_angle_ops = other.num_angle_ops;
+    num_info_tags = other.num_info_tags;
+    num_info_tag_chars = other.num_info_tag_chars;
 
     op_types = aligned_alloc_32<OpType>(num_ops);
     qqq0 = aligned_alloc_32<uint32_t>(num_qqq_ops);
@@ -310,6 +353,8 @@ Circuit &Circuit::operator=(const Circuit &other) {
     bc = aligned_alloc_32<uint32_t>(num_c_ops);
     b0 = aligned_alloc_32<uint32_t>(num_b_ops);
     angles = aligned_alloc_32<FixedPrecisionAngle128>(num_angle_ops);
+    info_tag_end_offsets = aligned_alloc_32<uint64_t>(num_info_tags);
+    info_tag_chars = aligned_alloc_32<char>(num_info_tag_chars);
 
     memcpy(op_types, other.op_types, num_ops);
     memcpy(qqq0, other.qqq0, num_qqq_ops * sizeof(uint32_t));
@@ -321,6 +366,8 @@ Circuit &Circuit::operator=(const Circuit &other) {
     memcpy(bc, other.bc, num_c_ops * sizeof(uint32_t));
     memcpy(b0, other.b0, num_b_ops * sizeof(uint32_t));
     memcpy(angles, other.angles, num_angle_ops * sizeof(FixedPrecisionAngle128));
+    memcpy(info_tag_end_offsets, other.info_tag_end_offsets, num_info_tags * sizeof(uint64_t));
+    memcpy(info_tag_chars, other.info_tag_chars, num_info_tag_chars);
 
     return *this;
 }
@@ -351,6 +398,10 @@ Circuit &Circuit::operator=(Circuit &&other) noexcept {
     other.b0 = nullptr;
     angles = other.angles;
     other.angles = nullptr;
+    info_tag_end_offsets = other.info_tag_end_offsets;
+    other.info_tag_end_offsets = nullptr;
+    info_tag_chars = other.info_tag_chars;
+    other.info_tag_chars = nullptr;
     num_ops = other.num_ops;
     other.num_ops = 0;
     num_qqq_ops = other.num_qqq_ops;
@@ -369,6 +420,10 @@ Circuit &Circuit::operator=(Circuit &&other) noexcept {
     other.num_qubits = 0;
     num_angle_ops = other.num_angle_ops;
     other.num_angle_ops = 0;
+    num_info_tags = other.num_info_tags;
+    other.num_info_tags = 0;
+    num_info_tag_chars = other.num_info_tag_chars;
+    other.num_info_tag_chars = 0;
     return *this;
 }
 
@@ -509,8 +564,28 @@ void Circuit::write_kmx_to(FILE *file) const {
     uint32_t *cur_bit_cond = bc;
     uint32_t *cur_bit_targ = b0;
     FixedPrecisionAngle128 *cur_angle = angles;
+    uint64_t cur_info_tag_start = 0;
+    uint64_t *cur_info_tag_end_offset = info_tag_end_offsets;
     for (size_t k = 0; k < num_ops; k++) {
         switch (op_types[k]) {
+            case OpType::INFO_TAG: {
+                uint64_t end = *cur_info_tag_end_offset++;
+                fprintf(file, "INFO_TAG \"");
+                for (uint64_t i = cur_info_tag_start; i < end; i++) {
+                    char c = info_tag_chars[i];
+                    char e = escape_char_for(c);
+                    if (e) {
+                        putc('\\', file);
+                        putc(e, file);
+                    } else {
+                        putc(c, file);
+                    }
+                }
+                putc('"', file);
+                putc('\n', file);
+                cur_info_tag_start = end;
+                break;
+            }
             case OpType::NEG:
                 fprintf(file, "NEG\n");
                 break;
@@ -734,12 +809,31 @@ void Circuit::write_kmx_to(std::ostream &out) const {
     uint32_t *cur_bit_cond = bc;
     uint32_t *cur_bit_targ = b0;
     FixedPrecisionAngle128 *cur_angle = angles;
+    uint64_t cur_info_tag_start = 0;
+    uint64_t *cur_info_tag_end_offset = info_tag_end_offsets;
     for (size_t k = 0; k < num_ops; k++) {
         if (has_output) {
             out << '\n';
         }
         has_output = true;
         switch (op_types[k]) {
+            case OpType::INFO_TAG: {
+                uint64_t end = *cur_info_tag_end_offset++;
+                out << "INFO_TAG \"";
+                for (uint64_t i = cur_info_tag_start; i < end; i++) {
+                    char c = info_tag_chars[i];
+                    char e = escape_char_for(c);
+                    if (e) {
+                        out << '\\';
+                        out << e;
+                    } else {
+                        out << c;
+                    }
+                }
+                out << '"';
+                cur_info_tag_start = end;
+                break;
+            }
             case OpType::NEG:
                 out << "NEG";
                 break;
@@ -946,6 +1040,14 @@ size_t Circuit::compute_num_angles() const {
     return total;
 }
 
+size_t Circuit::compute_num_info_tags() const {
+    size_t total = 0;
+    for (size_t k = 0; k < num_ops; k++) {
+        total += op_types[k] == OpType::INFO_TAG;
+    }
+    return total;
+}
+
 void Circuit::validate_and_compute_stats() {
     if ((intptr_t)qqq0 & 31) {
         throw std::invalid_argument("qqq0 isn't aligned to a 32 byte boundary.");
@@ -976,6 +1078,12 @@ void Circuit::validate_and_compute_stats() {
     }
     if ((intptr_t)angles & 31) {
         throw std::invalid_argument("angles isn't aligned to a 32 byte boundary.");
+    }
+    if ((intptr_t)info_tag_end_offsets & 31) {
+        throw std::invalid_argument("info_tag_end_offsets isn't aligned to a 32 byte boundary.");
+    }
+    if ((intptr_t)info_tag_chars & 31) {
+        throw std::invalid_argument("info_tag_chars isn't aligned to a 32 byte boundary.");
     }
     if (compute_has_qubit_control_collision()) {
         throw std::invalid_argument(describe_qubit_control_collision());
@@ -1023,6 +1131,24 @@ void Circuit::validate_and_compute_stats() {
         ss << "num_angle_ops=" << num_angle_ops << " != compute_num_angles()=" << compute_num_angles();
         throw std::invalid_argument(ss.str());
     }
+    if (num_info_tags != compute_num_info_tags()) {
+        std::stringstream ss;
+        ss << "num_info_tags=" << num_info_tags << " != compute_num_info_tags()=" << compute_num_info_tags();
+        throw std::invalid_argument(ss.str());
+    }
+    bool out_of_order = false;
+    for (size_t k = 1; k < num_info_tags; k++) {
+        out_of_order |= info_tag_end_offsets[k] < info_tag_end_offsets[k - 1];
+    }
+    if (out_of_order) {
+        throw std::invalid_argument("info_tag_end_offsets is not in monotonic ascending order.");
+    }
+    uint64_t expected_chars = num_info_tags == 0 ? 0 : info_tag_end_offsets[num_info_tags - 1];
+    if (num_info_tag_chars != expected_chars) {
+        std::stringstream ss;
+        ss << "num_info_tag_chars=" << num_info_tag_chars << " != final info_tag_end_offset=" << expected_chars;
+        throw std::invalid_argument(ss.str());
+    }
 }
 
 enum class KmbPacketType : uint64_t {
@@ -1037,6 +1163,7 @@ enum class KmbPacketType : uint64_t {
     BIT0_DATA_FOR_1_TARGET_BIT_GATES = 8,
     BIT0_DATA_FOR_1_CONDITION_BIT_GATES = 9,
     ANGLE_DATA_FOR_ROTATION_GATES = 10,
+    INFO_TAG_DATA = 11,
 };
 
 template <typename T>
@@ -1062,6 +1189,8 @@ void Circuit::write_kmb_to(FILE *file) const {
     write_u64_be(file, num_b_ops);
     write_u64_be(file, num_c_ops);
     write_u64_be(file, num_angle_ops);
+    write_u64_be(file, num_info_tags);
+    write_u64_be(file, num_info_tag_chars);
 
     // Register data.
     for (const auto &reg : register_data) {
@@ -1081,9 +1210,7 @@ void Circuit::write_kmb_to(FILE *file) const {
     // Operation type data.
     write_u64_be(file, (uint32_t)KmbPacketType::OPERATION_TYPES);
     write_u64_be(file, num_ops);
-    if (num_ops) {
-        fwrite_else_throw(op_types, num_ops, file);
-    }
+    fwrite_else_throw(op_types, num_ops, file);
 
     // Operation target data.
     write_T_blob_packet<uint32_t>(file, KmbPacketType::QUBIT0_DATA_FOR_3_TARGET_QUBIT_GATES, qqq0, num_qqq_ops);
@@ -1096,6 +1223,11 @@ void Circuit::write_kmb_to(FILE *file) const {
     write_T_blob_packet<uint32_t>(file, KmbPacketType::BIT0_DATA_FOR_1_CONDITION_BIT_GATES, bc, num_c_ops);
     write_T_blob_packet<FixedPrecisionAngle128>(
         file, KmbPacketType::ANGLE_DATA_FOR_ROTATION_GATES, angles, num_angle_ops);
+    write_u64_be(file, (uint64_t)KmbPacketType::INFO_TAG_DATA);
+    write_u64_be(file, (num_info_tags + 1) * sizeof(uint64_t) + num_info_tag_chars);
+    write_u64_be(file, num_info_tags);
+    fwrite_else_throw(info_tag_end_offsets, num_info_tags * sizeof(uint64_t), file);
+    fwrite_else_throw(info_tag_chars, num_info_tag_chars, file);
 }
 
 static uint32_t read_u32_be(FILE *file) {
@@ -1127,10 +1259,8 @@ template <typename T>
 static void alloc_and_read_T_blob_packet(FILE *file, KmbPacketType type, T **data_out, size_t count) {
     read_u64_be_expect(file, (uint64_t)type, "Payload packets in wrong order.");
     read_u64_be_expect(file, count * sizeof(T), "Size mismatch: actual payload size vs size specified in header.");
-    if (count > 0) {
-        *data_out = aligned_alloc_32<T>(count);
-        fread_else_throw(*data_out, count * sizeof(T), file);
-    }
+    *data_out = aligned_alloc_32<T>(count);
+    fread_else_throw(*data_out, count * sizeof(T), file);
 }
 
 Circuit Circuit::from_kmb_file(FILE *file, bool skip_magic) {
@@ -1158,6 +1288,8 @@ Circuit Circuit::from_kmb_file(FILE *file, bool skip_magic) {
     result.num_b_ops = read_u64_be(file);
     result.num_c_ops = read_u64_be(file);
     result.num_angle_ops = read_u64_be(file);
+    result.num_info_tags = read_u64_be(file);
+    result.num_info_tag_chars = read_u64_be(file);
 
     // Register data.
     for (size_t k = 0; k < num_registers; k++) {
@@ -1173,9 +1305,7 @@ Circuit Circuit::from_kmb_file(FILE *file, bool skip_magic) {
         auto &reg = result.register_data.back();
 
         reg.name.resize(name_len);
-        if (name_len) {
-            fread_else_throw(reg.name.data(), name_len, file);
-        }
+        fread_else_throw(reg.name.data(), name_len, file);
 
         for (size_t k2 = 0; k2 < reg_len; k2++) {
             uint32_t id = read_u32_be(file);
@@ -1191,10 +1321,8 @@ Circuit Circuit::from_kmb_file(FILE *file, bool skip_magic) {
     read_u64_be_expect(file, (uint64_t)KmbPacketType::OPERATION_TYPES, "Expected operation type data.");
     read_u64_be_expect(
         file, result.num_ops, "Operation type payload size was inconsistent with amount specified in header.");
-    if (result.num_ops) {
-        result.op_types = aligned_alloc_32<OpType>(result.num_ops);
-        fread_else_throw((void *)result.op_types, result.num_ops, file);
-    }
+    result.op_types = aligned_alloc_32<OpType>(result.num_ops);
+    fread_else_throw((void *)result.op_types, result.num_ops, file);
 
     // Operation target data.
     alloc_and_read_T_blob_packet<uint32_t>(
@@ -1215,6 +1343,16 @@ Circuit Circuit::from_kmb_file(FILE *file, bool skip_magic) {
         file, KmbPacketType::BIT0_DATA_FOR_1_CONDITION_BIT_GATES, &result.bc, result.num_c_ops);
     alloc_and_read_T_blob_packet<FixedPrecisionAngle128>(
         file, KmbPacketType::ANGLE_DATA_FOR_ROTATION_GATES, &result.angles, result.num_angle_ops);
+    read_u64_be_expect(file, (uint64_t)KmbPacketType::INFO_TAG_DATA, "Payload packets in wrong order.");
+    read_u64_be_expect(
+        file,
+        (result.num_info_tags + 1) * sizeof(uint64_t) + result.num_info_tag_chars,
+        "Size mismatch: actual payload size vs size specified in header.");
+    read_u64_be_expect(file, result.num_info_tags, "Size mismatch: actual payload size vs size specified in header.");
+    result.info_tag_end_offsets = aligned_alloc_32<uint64_t>(result.num_info_tags);
+    fread_else_throw(result.info_tag_end_offsets, result.num_info_tags * sizeof(uint64_t), file);
+    result.info_tag_chars = aligned_alloc_32<char>(result.num_info_tag_chars);
+    fread_else_throw(result.info_tag_chars, result.num_info_tag_chars, file);
 
     if (fgetc(file) != EOF) {
         throw std::invalid_argument("Failed to read kmb data from file: data leftover.");
@@ -1262,6 +1400,18 @@ std::string Op::kmx_str() const {
     if (kind == OpType::Z_POW || kind == OpType::Z_POW_IF) {
         ss << " " << angle.to_decimal_half_turns();
     }
+    if (kind == OpType::INFO_TAG) {
+        ss << " \"";
+        for (char c : info_tag) {
+            char e = escape_char_for(c);
+            if (e) {
+                ss << '\\' << e;
+            } else {
+                ss << c;
+            }
+        }
+        ss << '"';
+    }
     if (c_condition.is_bit()) {
         ss << " if " << c_condition.bit();
     }
@@ -1289,6 +1439,9 @@ std::ostream &kickmix::operator<<(std::ostream &out, const Op &op) {
     if (op.c_condition.is_bit()) {
         out << "    .c_condition=" << op.c_condition << ",\n";
     }
+    if (op.kind == OpType::INFO_TAG) {
+        out << "    .info_tag=\"" << op.info_tag << "\",\n";
+    }
     out << "}";
     return out;
 }
@@ -1308,4 +1461,262 @@ Circuit Circuit::operator+(const Circuit &other) const {
     m.append(other);
     m.register_data = register_data.empty() ? other.register_data : register_data;
     return m.to_validated_circuit();
+}
+
+void Circuit::write_analysis_svg_to(std::ostream &out, size_t reference_qubit_count) const {
+    // Perform circuit analysis.
+    std::vector<uint64_t> active_qubits((num_qubits + 63) / 64);
+    std::vector<std::string_view> name_stack;
+    std::vector<size_t> toffoli_stack;
+    std::vector<std::vector<uint64_t>> qubit_touched_stack;
+    size_t toffoli_count = 0;
+    std::vector<std::string> group_names;
+    std::vector<size_t> group_heights;
+    std::vector<size_t> group_toffoli_counts;
+    std::vector<size_t> group_max_active_qubits;
+    std::vector<size_t> group_hits;
+    std::string cur_name;
+
+    auto enter_block = [&](std::string_view name) {
+        cur_name.append(":");
+        cur_name.append(name);
+        name_stack.push_back(name);
+        toffoli_stack.push_back(toffoli_count);
+        qubit_touched_stack.push_back(active_qubits);
+    };
+
+    auto exit_top_block = [&]() {
+        std::string_view name = name_stack.back();
+
+        // Find this stack's group.
+        size_t k_group = 0;
+        while (k_group < group_names.size()) {
+            if (group_names[k_group] == cur_name) {
+                break;
+            }
+            k_group++;
+        }
+        if (k_group == group_names.size()) {
+            group_names.push_back(cur_name);
+            group_toffoli_counts.push_back(0);
+            group_heights.push_back(name_stack.size());
+            group_max_active_qubits.push_back(0);
+            group_hits.push_back(0);
+        }
+
+        // Update group stats.
+        group_toffoli_counts[k_group] += toffoli_count - toffoli_stack.back();
+        auto popped_touched = std::move(qubit_touched_stack.back());
+        size_t max_active_qubits = 0;
+        for (size_t k = 0; k < popped_touched.size(); k++) {
+            max_active_qubits += std::popcount(popped_touched[k]);
+        }
+        group_max_active_qubits[k_group] = std::max(group_max_active_qubits[k_group], max_active_qubits);
+        group_hits[k_group] += 1;
+
+        // Pop stack frame.
+        cur_name.resize(cur_name.size() - (name.size() + 1));
+        toffoli_stack.pop_back();
+        name_stack.pop_back();
+        qubit_touched_stack.pop_back();
+    };
+
+    enter_block("<entire circuit>");
+    iter_ops([&](const Op &op) {
+        if (op.kind == OpType::INFO_TAG) {
+            if (op.info_tag.starts_with("@enter:")) {
+                enter_block(op.info_tag.substr(7));
+            } else if (op.info_tag.starts_with("@exit:")) {
+                std::string_view exit_name = op.info_tag.substr(6);
+                size_t match_idx = name_stack.size();
+                for (size_t k = name_stack.size(); k-- > 1;) {
+                    if (name_stack[k] == exit_name) {
+                        match_idx = k;
+                        break;
+                    }
+                }
+                if (match_idx < name_stack.size()) {
+                    while (name_stack.size() > match_idx) {
+                        exit_top_block();
+                    }
+                }
+            }
+            return;
+        }
+
+        // Track which qubits were touched.
+        for (auto q : std::array<QubitOrFalse, 3>{op.q_target, op.q_control1, op.q_control2}) {
+            if (q.is_qubit()) {
+                qubit_touched_stack.back()[q.untagged_id() / 64] |= uint64_t{1} << (q.untagged_id() % 64);
+            }
+        }
+
+        // Track which qubits are active (have been touched since last HMR).
+        switch (op.kind) {
+            case OpType::HMR:
+            case OpType::HMR_IF:
+                active_qubits[op.q_target.untagged_id() / 64] &= ~(uint64_t{1} << (op.q_target.untagged_id() % 64));
+                break;
+            default:
+                for (auto q : std::array<QubitOrFalse, 3>{op.q_target, op.q_control1, op.q_control2}) {
+                    if (q.is_qubit()) {
+                        active_qubits[q.untagged_id() / 64] |= uint64_t{1} << (q.untagged_id() % 64);
+                    }
+                }
+        }
+
+        // Count certain operation types.
+        switch (op.kind) {
+            case OpType::CCX:
+            case OpType::CCZ:
+            case OpType::CCX_IF:
+            case OpType::CCZ_IF:
+                toffoli_count += 1;
+                break;
+            case OpType::Z_POW:
+            case OpType::Z_POW_IF:
+                if (!op.angle.is_multiple_of_90_degrees()) {
+                    toffoli_count += 1;  // TODO: better handle the conversion from Z_POW to Toffoli
+                }
+                break;
+            case OpType::INFO_TAG:
+            case OpType::NEG_IF:
+            case OpType::BIT_INVERT_IF:
+            case OpType::BIT_STORE0_IF:
+            case OpType::BIT_STORE1_IF:
+            case OpType::NEG:
+            case OpType::BIT_INVERT:
+            case OpType::BIT_STORE0:
+            case OpType::BIT_STORE1:
+            case OpType::PUSH_CONDITION:
+            case OpType::POP_CONDITION:
+            case OpType::DEBUG_PRINT_EMPTY_IF:
+            case OpType::DEBUG_PRINT_C:
+            case OpType::DEBUG_PRINT_EMPTY:
+            case OpType::DEBUG_PRINT_C_IF:
+            case OpType::DEBUG_PRINT_Q:
+            case OpType::DEBUG_PRINT_Q_IF:
+            case OpType::HMR:
+            case OpType::HMR_IF:
+            case OpType::R_IF:
+            case OpType::X_IF:
+            case OpType::Z_IF:
+            case OpType::CX_IF:
+            case OpType::CZ_IF:
+            case OpType::SWAP_IF:
+            case OpType::R:
+            case OpType::X:
+            case OpType::Z:
+            case OpType::CX:
+            case OpType::CZ:
+            case OpType::SWAP:
+                break;
+            default:
+                throw std::invalid_argument("Unhandled operation kind: " + op.str());
+        }
+    });
+    while (!name_stack.empty()) {
+        exit_top_block();
+    }
+
+    out << R"SVG(<svg viewBox="-100 -140 1200.0 340.0" style="display: block; margin: auto;" xmlns="http://www.w3.org/2000/svg">)SVG"
+        << "\n";
+    double x_scale = 1000.0 / toffoli_count;
+    double y_scale = 100.0 / num_qubits;
+    std::vector<size_t> layer_xs{0};
+    for (size_t k = 0; k < group_names.size(); k++) {
+        auto h = group_heights[k];
+        while (layer_xs.size() <= h) {
+            layer_xs.push_back(0);
+        }
+        size_t layer_x = layer_xs[h];
+        for (size_t k2 = 0; k2 < h; k2++) {
+            layer_x = std::max(layer_xs[k2], layer_x);
+        }
+        layer_xs[h] = layer_x + group_toffoli_counts[k];
+        std::string_view group_name = group_names[k];
+        group_name = group_name.substr(group_name.rfind(':') + 1);
+        out << "<rect";
+        out << " x=\"" << layer_x * x_scale << "\"";
+        out << " y=\"" << -y_scale * group_max_active_qubits[k] << "\"";
+        out << " width=\"" << group_toffoli_counts[k] * x_scale << "\"";
+        out << " height=\"" << y_scale * group_max_active_qubits[k] << "\"";
+        out << " stroke=\"black\"";
+        out << " fill=\"blue\"";
+        out << " />\n";
+        if (h > 1) {
+            out << "<rect";
+            out << " x=\"" << layer_x * x_scale << "\"";
+            out << " y=\"" << h * 10 - 20 << "\"";
+            out << " width=\"" << group_toffoli_counts[k] * x_scale << "\"";
+            out << " height=\"" << 10 << "\"";
+            out << " stroke=\"black\"";
+            out << " fill=\"red\"";
+            out << " opacity=\"0.8\"";
+            out << " />\n";
+            out << "<text";
+            out << " x=\"" << (layer_x + group_toffoli_counts[k] * 0.5) * x_scale << "\"";
+            out << " y=\"" << h * 10 - 13 << "\"";
+            std::string title;
+            title.append(group_name);
+            if (group_hits[k] > 1) {
+                title.append(" (x");
+                title.append(std::to_string(group_hits[k]));
+                title.append(")");
+            }
+            float box_width = group_toffoli_counts[k] * x_scale;
+            float font_size = title.empty() ? 0.5f : box_width / title.size() * 2;
+            font_size = std::min(5.0f, font_size);
+            font_size = std::max(0.5f, font_size);
+            out << " font-size=\"" << font_size << "\"";
+            out << " dominant-baseline=\"bottom\"";
+            out << " text-anchor=\"middle\"";
+            out << " fill=\"black\"";
+            out << " >";
+            for (char ch : title) {
+                switch (ch) {
+                    case '&':
+                        out << "&amp;";
+                        break;
+                    case '\'':
+                        out << "&apos;";
+                        break;
+                    case '"':
+                        out << "&quot;";
+                        break;
+                    case '<':
+                        out << "&lt;";
+                        break;
+                    case '>':
+                        out << "&gt;";
+                        break;
+                    default:
+                        out << ch;
+                        break;
+                }
+            }
+            out << "</text>\n";
+        }
+    }
+    out << "<text";
+    out << " x=\"500\"";
+    out << " y=\"-100\"";
+    out << " font-size=\"10\"";
+    out << " dominant-baseline=\"bottom\"";
+    out << " text-anchor=\"middle\"";
+    out << " fill=\"black\"";
+    out << " >" << num_qubits << " qubits, " << max_magic() << " toffolis</text>\n";
+    if (reference_qubit_count > 0) {
+        out << "<path";
+        out << " d=\"";
+        for (size_t k = reference_qubit_count; k < num_qubits; k += reference_qubit_count) {
+            out << " M500," << -y_scale * k << " l50,0";
+        }
+        out << "\"";
+        out << " fill=\"none\"";
+        out << " stroke=\"green\"";
+        out << " />\n";
+    }
+
+    out << "</svg>";
 }

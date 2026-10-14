@@ -24,8 +24,9 @@ for version 1 of this document).
 Version 2 (the version described in this document) was released later, to support
 a Kaggle competition.
 Key additions were the ability to name registers (the `REGISTER` instruction
-can take an additional optional token specifying the name) and the ability
-to perform fine-grained rotations (the `Z_POW` instruction was added).
+can take an additional optional token specifying the name), the ability
+to perform fine-grained rotations (the `Z_POW` instruction was added), and
+the ability to add debug information to circuits (the `INFO_TAG` instruction was added).
 (This release also specified the complementary [binary kickmix format](kickmix_binary_format.md),
 which uses less space and is an order of magnitude faster to parse.)
 
@@ -91,7 +92,8 @@ The format specifies no maximum id, but in typical usage simulators are expected
 memory proportional to the largest id.
 Using ostentatious ids can result in simulations not fitting into memory.
 
-The `REGISTER` instruction can optionally included quoted text specifying a register name.
+The `REGISTER` instruction can optionally include quoted text specifying a register name,
+and the `INFO_TAG` instruction takes quoted text specifying a debug tag.
 Quoted text starts and ends with a double-quote character (`"`, ASCII code 34).
 A few characters cannot appear directly in quoted text, and must instead be escaped:
 
@@ -138,9 +140,9 @@ All classical operations can be controlled by a classical condition that determi
 These include `PUSH_CONDITION`, which adds a thing that must be true in order for non-context operations to not be skipped,
 and `POP_CONDITION` which removes the most recent pushed condition.
 
-*Metadata operations*, like `APPEND_TO_REGISTER`, are used to define *registers*.
+*Metadata operations*, like `APPEND_TO_REGISTER` and `INFO_TAG`, are used to define *registers* or attach debug information to the circuit.
 These have no effect on simulations but provide a useful abstraction for reading and
-writing multiple qubits/bits as if they were one single value when performing simulations.
+writing multiple qubits/bits as if they were one single value when performing simulations, or for analyzing circuit structure (such as subroutine boundaries).
 
 ### State Space
 

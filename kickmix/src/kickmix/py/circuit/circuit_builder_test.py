@@ -85,7 +85,7 @@ def test_builder_mark():
         with builder.mark(name="inner <0 & 1>"):
             builder.ccx(q[1], q[2], q[3])
 
-    svg = builder.flame_chart_svg()
+    svg = builder.finish_circuit().flame_chart_svg()
     ET.fromstring(svg)
     assert "entire circuit" not in svg
     for expected in [
@@ -105,15 +105,16 @@ def test_builder_mark_errors():
         with builder.mark("failed_block"):
             builder.ccx(q[0], q[1], q[2])
             raise RuntimeError("simulated error")
-    assert ">failed_block</text>" in builder.flame_chart_svg()
+    assert ">failed_block</text>" in builder.finish_circuit().flame_chart_svg()
 
     first, second = builder.mark("first"), builder.mark("second")
     first.__enter__()
     second.__enter__()
     first.__exit__(None, None, None)
     second.__exit__(None, None, None)
-    with pytest.raises(ValueError, match="stack error"):
-        builder.flame_chart_svg()
+
+    # Method does its best when given a bad input.
+    assert 'first' in builder.finish_circuit().flame_chart_svg()
 
     for bad_call in [
         lambda: builder.mark(),

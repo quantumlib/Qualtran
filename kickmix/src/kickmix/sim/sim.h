@@ -420,7 +420,7 @@ struct Sim {
                 case OpType::DEBUG_PRINT_Q_IF:
                     cond &= bits[*data_bit_cond++];
                 case OpType::DEBUG_PRINT_Q: {
-                    auto q = *data_bit_targ++;
+                    auto q = *data_q0++;
                     if (cond.bit(0) && !ignore_debug_print_operations) {
                         std::cerr << (qubits[q].bit(0) ? '1' : '0');
                     }
@@ -442,6 +442,9 @@ struct Sim {
                 case OpType::POP_CONDITION:
                     condition_stack.pop_back();
                     current_base_condition = condition_stack.empty() ? ~TWord{} : condition_stack.back();
+                    break;
+
+                case OpType::INFO_TAG:
                     break;
 
                 default: {

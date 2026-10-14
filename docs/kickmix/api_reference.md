@@ -11,6 +11,7 @@
     - [`kickmix.Circuit.__repr__`](#kickmix.Circuit.__repr__)
     - [`kickmix.Circuit.__rmul__`](#kickmix.Circuit.__rmul__)
     - [`kickmix.Circuit.__str__`](#kickmix.Circuit.__str__)
+    - [`kickmix.Circuit.flame_chart_svg`](#kickmix.Circuit.flame_chart_svg)
     - [`kickmix.Circuit.from_file`](#kickmix.Circuit.from_file)
     - [`kickmix.Circuit.html_diagram`](#kickmix.Circuit.html_diagram)
     - [`kickmix.Circuit.max_magic`](#kickmix.Circuit.max_magic)
@@ -42,7 +43,6 @@
     - [`kickmix.CircuitBuilder.del_lookup`](#kickmix.CircuitBuilder.del_lookup)
     - [`kickmix.CircuitBuilder.end_auto_free_scope`](#kickmix.CircuitBuilder.end_auto_free_scope)
     - [`kickmix.CircuitBuilder.finish_circuit`](#kickmix.CircuitBuilder.finish_circuit)
-    - [`kickmix.CircuitBuilder.flame_chart_svg`](#kickmix.CircuitBuilder.flame_chart_svg)
     - [`kickmix.CircuitBuilder.flip_if_equal`](#kickmix.CircuitBuilder.flip_if_equal)
     - [`kickmix.CircuitBuilder.flip_if_greater_than`](#kickmix.CircuitBuilder.flip_if_greater_than)
     - [`kickmix.CircuitBuilder.flip_if_less_than`](#kickmix.CircuitBuilder.flip_if_less_than)
@@ -53,6 +53,7 @@
     - [`kickmix.CircuitBuilder.gf2_phase_by_product`](#kickmix.CircuitBuilder.gf2_phase_by_product)
     - [`kickmix.CircuitBuilder.hmr`](#kickmix.CircuitBuilder.hmr)
     - [`kickmix.CircuitBuilder.iadd`](#kickmix.CircuitBuilder.iadd)
+    - [`kickmix.CircuitBuilder.info_tag`](#kickmix.CircuitBuilder.info_tag)
     - [`kickmix.CircuitBuilder.init_and`](#kickmix.CircuitBuilder.init_and)
     - [`kickmix.CircuitBuilder.init_gf2_div`](#kickmix.CircuitBuilder.init_gf2_div)
     - [`kickmix.CircuitBuilder.init_gf2_div_with_scaffold`](#kickmix.CircuitBuilder.init_gf2_div_with_scaffold)
@@ -441,6 +442,51 @@ def __str__(
     self,
 ) -> str:
     """Returns a description of the circuit.
+    """
+```
+
+<a name="kickmix.Circuit.flame_chart_svg"></a>
+```python
+# kickmix.Circuit.flame_chart_svg
+
+# (in class kickmix.Circuit)
+def flame_chart_svg(
+    self,
+) -> str:
+    """Returns a flame chart of qubits and operations in the circuit.
+
+    In order for this method to work, the circuit must be annotated with
+    "@enter:subroutine" and "@exit:subroutine" INFO_TAG instructions. If
+    the circuit isn't annotated, the chart will be very boring.
+
+    Returns:
+        An SVG string containing the flame chart.
+
+    Examples:
+        >>> import tempfile
+        >>> import kickmix as km
+
+        >>> builder = km.CircuitBuilder()
+        >>> a = builder.create_quantum_register(3, "a")
+        >>> b = builder.create_quantum_register(3, "b")
+        >>> c = builder.create_quantum_register(3, "c")
+
+        >>> builder.info_tag("@enter:big_cswap")
+        >>> builder.cx(b, a)
+        >>> builder.ccx(c, a, b)
+        >>> builder.cx(b, a)
+        >>> builder.info_tag("@exit:big_cswap")
+        >>> builder.iadd(offset=a, target=b)
+
+        >>> circuit = builder.finish_circuit()
+        >>> svg = circuit.flame_chart_svg()
+        >>> 'big_cswap' in svg
+        True
+        >>> 'iadd' in svg
+        True
+        >>> with tempfile.NamedTemporaryFile() as fp:
+        ...     with open(fp.name, 'w') as f:
+        ...         print(circuit.flame_chart_svg(), file=f)
     """
 ```
 
@@ -1254,43 +1300,6 @@ def finish_circuit(
     """
 ```
 
-<a name="kickmix.CircuitBuilder.flame_chart_svg"></a>
-```python
-# kickmix.CircuitBuilder.flame_chart_svg
-
-# (in class kickmix.CircuitBuilder)
-def flame_chart_svg(
-    self,
-) -> str:
-    """Returns a flame chart of CCX+CCZ and qubit utilization of the
-    circuit being built.
-
-    Use `with builder.mark('name'):` to label regions of the circuit in
-    the flame chart.
-
-    Returns:
-        An SVG string containing the flame chart.
-
-    Examples:
-        >>> import pathlib
-        >>> import tempfile
-        >>> import kickmix as km
-        >>> builder = km.CircuitBuilder()
-        >>> address = builder.create_quantum_register(4, name='address')
-        >>> total = builder.create_quantum_register(8, name='total')
-        >>> table = [k * k for k in range(16)]
-        >>> with builder.mark('iadd_lookup'):
-        ...     buf = builder.alloc_qubits(len(total))
-        ...     builder.init_lookup(table=table, address=address, target=buf)
-        ...     builder.iadd(buf, target=total)
-        ...     builder.del_lookup(table=table, address=address, target=buf)
-        ...     builder.free(buf)
-        >>> with tempfile.TemporaryDirectory() as d:
-        ...     with open(pathlib.Path(d) / 'flame_chart.svg', 'w') as f:
-        ...         print(builder.flame_chart_svg(), file=f)
-    """
-```
-
 <a name="kickmix.CircuitBuilder.flip_if_equal"></a>
 ```python
 # kickmix.CircuitBuilder.flip_if_equal
@@ -1544,11 +1553,13 @@ def flip_if_less_than(
             REGISTER r1 "lhs"
             APPEND_TO_REGISTER q2 r2
             REGISTER r2 "rhs"
+            INFO_TAG "@enter:flip_if_lt"
             CX q2 q1
             CCX q1 q2 q0
             X q1
             X q1
             CX q2 q1
+            INFO_TAG "@exit:flip_if_lt"
         ''')
     """
 ```
@@ -1607,9 +1618,13 @@ def gf2_iadd(
             APPEND_TO_REGISTER q2 r1
             APPEND_TO_REGISTER q3 r1
             REGISTER r1 "offset"
+            INFO_TAG "@enter:gf_iadd"
             CX q2 q0
             CX q3 q1
+            INFO_TAG "@exit:gf_iadd"
+            INFO_TAG "@enter:gf_iadd"
             X q0
+            INFO_TAG "@exit:gf_iadd"
         ''')
     """
 ```
@@ -1801,6 +1816,36 @@ def iadd(
         q2: -b[0]-@-@-|-
                       |
         q3: -b[1]-----@-
+    """
+```
+
+<a name="kickmix.CircuitBuilder.info_tag"></a>
+```python
+# kickmix.CircuitBuilder.info_tag
+
+# (in class kickmix.CircuitBuilder)
+def info_tag(
+    self,
+    text: str,
+) -> None:
+    """Appends an INFO_TAG instruction into the circuit.
+
+    INFO_TAG instructions have no effect on simulations, but can be used to make
+    debug information available. For example, the start of a  subroutine can be
+    hinted with `INFO_TAG "@enter:subroutine_name"` and its end can be indicated
+    with `INFO_TAG "@exit:subroutine_name"`.
+
+    Args:
+        text: The content of the INFO_TAG instruction.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.info_tag("test")
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            INFO_TAG "test"
+        ''')
     """
 ```
 
@@ -2365,15 +2410,11 @@ def mark(
     self,
     name: str,
 ) -> Any:
-    """Returns a context manager that labels a region of the circuit for
-    `builder.flame_chart_svg()`.
+    """Returns a context manager that emits @enter/@exit INFO_TAG instructions.
 
-    `m = builder.mark('name')` does not modify the circuit by itself.
-    When you enter `with m:`, the builder records start and end markers
-    around the operations inside that block. You can reuse `m` across
-    multiple `with m:` blocks. If you enter `m` N times at the same
-    nesting depth, `builder.flame_chart_svg()` groups those runs as
-    `'name (xN)'`.
+    These INFO_TAG instructions are intended as debug information about entering
+    and exiting subroutines. For example, they are used by
+    `km.Circuit.flame_chart_svg()`.
 
     Args:
         name: Label shown for the block in `builder.flame_chart_svg()`.
@@ -2399,9 +2440,10 @@ def mark(
         >>> with builder.mark('accumulate_tables'):
         ...     iadd_lookup([3 * k for k in range(16)], address, total)
         ...     iadd_lookup([k * k for k in range(16)], address, total)
+        >>> circuit = builder.finish_circuit()
         >>> with tempfile.TemporaryDirectory() as d:
         ...     with open(pathlib.Path(d) / 'flame_chart.svg', 'w') as f:
-        ...         print(builder.flame_chart_svg(), file=f)
+        ...         print(circuit.flame_chart_svg(), file=f)
     """
 ```
 

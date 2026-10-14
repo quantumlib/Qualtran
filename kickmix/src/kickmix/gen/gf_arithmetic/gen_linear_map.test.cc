@@ -91,7 +91,7 @@ TEST(gen_linear_map, identity_emits_nothing) {
     auto target = builder.append_register(8, "target");
     gen_linear_map(builder, CircuitGenCtx{}, target, GF2Matrix::identity(8));
     Circuit circuit = builder.finish_circuit();
-    ASSERT_EQ(circuit.num_ops, 0);
+    ASSERT_EQ(circuit.num_ops, 2);
 }
 
 TEST(gen_linear_map, permutation_is_swaps) {
@@ -118,7 +118,7 @@ TEST(gen_linear_map, single_qubit) {
     auto target = builder.append_register(1, "target");
     // The only invertible 1x1 matrix is the identity.
     gen_linear_map(builder, CircuitGenCtx{}, target, GF2Matrix::identity(1));
-    ASSERT_EQ(builder.finish_circuit().num_ops, 0);
+    ASSERT_EQ(builder.finish_circuit().num_ops, 2);
 }
 
 TEST(gen_linear_map, empty_register) {
@@ -152,7 +152,7 @@ TEST(gen_linear_map, large_matrix_gate_count) {
     gen_linear_map(builder, CircuitGenCtx{}, target, matrix);
     Circuit circuit = builder.finish_circuit();
 
-    // Each triangular factor contributes at most n*(n-1)/2 CNOTs, plus at most n/2 swaps.
-    ASSERT_LE(circuit.num_ops, n * (n - 1) + n / 2);
-    ASSERT_GT(circuit.num_ops, 0);
+    // Each triangular factor contributes at most n*(n-1)/2 CNOTs, plus at most n/2 swaps, plus 2 info tags.
+    ASSERT_LE(circuit.num_ops, n * (n - 1) + n / 2 + 2);
+    ASSERT_GT(circuit.num_ops, 2);
 }
