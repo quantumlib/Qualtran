@@ -36,6 +36,10 @@ void append_z_obj(PyCircuitBuilder &self, pybind11::object target_obj) {
     self.builder.z(t);
 }
 
+static void info_tag(PyCircuitBuilder &self, std::string_view text) {
+    self.builder.info_tag(text);
+}
+
 static void z_pow_obj(PyCircuitBuilder &self, const pybind11::object &target_obj, const pybind11::object &angle_obj) {
     auto angle = fixed_precision_angle_from_half_turns_obj(angle_obj);
     auto target_conv = ConvertedArrayXZ::from_obj(target_obj, "target");
@@ -384,17 +388,6 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         },
         R"DOC(
             Returns the circuit built by the circuit builder.
-        )DOC");
-
-    c_circuit_builder.def(
-        "flame_chart_svg",
-        [](PyCircuitBuilder &self) -> std::string {
-            std::stringstream ss;
-            self.builder.write_analysis_svg_to(ss, 100);
-            return ss.str();
-        },
-        R"DOC(
-            Returns a flame chart of CCX+CCZ and qubit utilization of the circuit being built.
         )DOC");
 
     c_circuit_builder.def(
@@ -1002,11 +995,13 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                     REGISTER r1 "lhs"
                     APPEND_TO_REGISTER q2 r2
                     REGISTER r2 "rhs"
+                    INFO_TAG "@enter:flip_if_lt"
                     CX q2 q1
                     CCX q1 q2 q0
                     X q1
                     X q1
                     CX q2 q1
+                    INFO_TAG "@exit:flip_if_lt"
                 ''')
         )DOC");
 
@@ -1233,9 +1228,13 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                     APPEND_TO_REGISTER q2 r1
                     APPEND_TO_REGISTER q3 r1
                     REGISTER r1 "offset"
+                    INFO_TAG "@enter:gf_iadd"
                     CX q2 q0
                     CX q3 q1
+                    INFO_TAG "@exit:gf_iadd"
+                    INFO_TAG "@enter:gf_iadd"
                     X q0
+                    INFO_TAG "@exit:gf_iadd"
                 ''')
         )DOC")
             .data());
@@ -1933,6 +1932,33 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 5: 1
                 6: 0
                 7: 1
+        )DOC")
+            .data());
+
+    c_circuit_builder.def(
+        "info_tag",
+        &info_tag,
+        pybind11::arg("text"),
+        clean_doc_string(R"DOC(
+            @signature def mark(self, text: str) -> None:
+            Appends an INFO_TAG instruction into the circuit.
+
+            INFO_TAG instructions have no effect on simulations, but can be used to make
+            debug information available. For example, the start of a  subroutine can be
+            hinted with `INFO_TAG "@enter:subroutine_name"` and its end can be indicated
+            with `INFO_TAG "@exit:subroutine_name"`.
+
+            Args:
+                text: The content of the INFO_TAG instruction.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.info_tag("test")
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    INFO_TAG "test"
+                ''')
         )DOC")
             .data());
 }

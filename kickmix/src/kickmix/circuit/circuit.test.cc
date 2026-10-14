@@ -463,6 +463,8 @@ TEST(circuit, kmb_empty) {
          0  .  .  .  .  .  .  .  # num_b_ops
          0  .  .  .  .  .  .  .  # num_c_ops
          0  .  .  .  .  .  .  .  # num_angle_ops
+         0  .  .  .  .  .  .  .  # num_info_tags
+         0  .  .  .  .  .  .  .  # num_info_tag_chars
          1  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # op types
          2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
          3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
@@ -473,6 +475,8 @@ TEST(circuit, kmb_empty) {
          8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
          9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
          A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  .  8  .  .  .  .  .  .  .  # info tags
+         0  .  .  .  .  .  .  .
     )HEX");
 }
 
@@ -494,6 +498,8 @@ TEST(circuit, kmb_x) {
          0  .  .  .  .  .  .  .  # num_b_ops
          0  .  .  .  .  .  .  .  # num_c_ops
          0  .  .  .  .  .  .  .  # num_angles
+         0  .  .  .  .  .  .  .  # num_info_tags
+         0  .  .  .  .  .  .  .  # num_info_tag_chars
          1  .  .  .  .  .  .  .  1  .  .  .  .  .  .  .  # op types
         11
          2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
@@ -506,6 +512,8 @@ TEST(circuit, kmb_x) {
          8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
          9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
          A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  .  8  .  .  .  .  .  .  .  # info tags
+         0  .  .  .  .  .  .  .
     )HEX");
 }
 
@@ -527,6 +535,8 @@ TEST(circuit, kmb_cx) {
          0  .  .  .  .  .  .  .  # num_b_ops
          0  .  .  .  .  .  .  .  # num_c_ops
          0  .  .  .  .  .  .  .  # num_angles
+         0  .  .  .  .  .  .  .  # num_info_tags
+         0  .  .  .  .  .  .  .  # num_info_tag_chars
          1  .  .  .  .  .  .  .  1  .  .  .  .  .  .  .  # op types
         21
          2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
@@ -540,6 +550,8 @@ TEST(circuit, kmb_cx) {
          8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
          9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
          A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  .  8  .  .  .  .  .  .  .  # info tags
+         0  .  .  .  .  .  .  .
     )HEX");
 }
 
@@ -561,6 +573,8 @@ TEST(circuit, kmb_ccz_if) {
          0  .  .  .  .  .  .  .  # num_b_ops
          1  .  .  .  .  .  .  .  # num_c_ops
          0  .  .  .  .  .  .  .  # num_angles
+         0  .  .  .  .  .  .  .  # num_info_tags
+         0  .  .  .  .  .  .  .  # num_info_tag_chars
          1  .  .  .  .  .  .  .  1  .  .  .  .  .  .  .  # op types
         b0
          2  .  .  .  .  .  .  .  4  .  .  .  .  .  .  .  # qqq0s
@@ -576,6 +590,8 @@ TEST(circuit, kmb_ccz_if) {
          9  .  .  .  .  .  .  .  4  .  .  .  .  .  .  .  # bcs
          5  .  .  .
          A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  .  8  .  .  .  .  .  .  .  # info tags
+         0  .  .  .  .  .  .  .
     )HEX");
 }
 
@@ -602,6 +618,8 @@ TEST(circuit, kmb_registers) {
          2  .  .  .  .  .  .  .  # num_b_ops
          0  .  .  .  .  .  .  .  # num_c_ops
          0  .  .  .  .  .  .  .  # num_angles
+         0  .  .  .  .  .  .  .  # num_info_tags
+         0  .  .  .  .  .  .  .  # num_info_tag_chars
          0  .  .  .  .  .  .  . 14  .  .  .  .  .  .  .  # register0 data
          4  .  .  .
          2  .  .  .
@@ -626,6 +644,50 @@ TEST(circuit, kmb_registers) {
          4  .  .  .
          9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
          A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  .  8  .  .  .  .  .  .  .  # info tags
+         0  .  .  .  .  .  .  .
+    )HEX");
+}
+
+TEST(circuit, kmb_info_tag) {
+    expect_circuit_serializes_to_kmb(
+        R"CIRCUIT(
+        INFO_TAG "abc"
+        INFO_TAG ""
+        INFO_TAG "de"
+    )CIRCUIT",
+        R"HEX(
+        d7 50 c7 d5 c3 29 d3 26 e3 cc 9f 68 34 f2 b8 bf
+         2  .  .  .  # version
+         0  .  .  .  # num_qubits
+         0  .  .  .  # num_bits
+         0  .  .  .  # num_reg
+         3  .  .  .  .  .  .  .  # num_ops
+         0  .  .  .  .  .  .  .  # num_qqq_ops
+         0  .  .  .  .  .  .  .  # num_qq_ops
+         0  .  .  .  .  .  .  .  # num_q_ops
+         0  .  .  .  .  .  .  .  # num_b_ops
+         0  .  .  .  .  .  .  .  # num_c_ops
+         0  .  .  .  .  .  .  .  # num_angles
+         3  .  .  .  .  .  .  .  # num_info_tags
+         5  .  .  .  .  .  .  .  # num_info_tag_chars
+         1  .  .  .  .  .  .  .  3  .  .  .  .  .  .  .  # op types
+        06 06 06
+         2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
+         3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
+         4  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq2s
+         5  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qq0s
+         6  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qq1s
+         7  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # q0s
+         8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
+         9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
+         A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  . 25  .  .  .  .  .  .  .  # info tags
+         3  .  .  .  .  .  .  .  # num_info_tags
+         3  .  .  .  .  .  .  .  # end offset 0
+         3  .  .  .  .  .  .  .  # end offset 1
+         5  .  .  .  .  .  .  .  # end offset 2
+        61 62 63 64 65  # abcde
     )HEX");
 }
 
@@ -691,6 +753,8 @@ TEST(circuit, kmb_circuit_with_every_operation) {
          a  .  .  .  .  .  .  .  # num_b_ops
         10  .  .  .  .  .  .  .  # num_c_ops
          2  .  .  .  .  .  .  .  # num_angles
+         0  .  .  .  .  .  .  .  # num_info_tags
+         0  .  .  .  .  .  .  .  # num_info_tag_chars
          0  .  .  .  .  .  .  . 10  .  .  .  .  .  .  .  # register0 data
          0  .  .  .
          2  .  .  .
@@ -775,6 +839,8 @@ TEST(circuit, kmb_circuit_with_every_operation) {
          A  .  .  .  .  .  .  . 20  .  .  .  .  .  .  .  # angles
                64 5b ce c7  c a9 f8 19 18 95 39 ef 86 4e 49 72
                 2  c b7 75 47 25 49 ab a8 ec 65 41 34 67 c8  4
+         B  .  .  .  .  .  .  .  8  .  .  .  .  .  .  .  # info tags
+                0  .  .  .  .  .  .  .
     )HEX");
 }
 
@@ -813,6 +879,8 @@ TEST(circuit, kmb_validate_unknown_version) {
          0  .  .  .  .  .  .  .  # num_b_ops
          0  .  .  .  .  .  .  .  # num_c_ops
          0  .  .  .  .  .  .  .  # num_angles
+         0  .  .  .  .  .  .  .  # num_info_tags
+         0  .  .  .  .  .  .  .  # num_info_tag_chars
          1  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # op types
          2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
          3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
@@ -823,6 +891,8 @@ TEST(circuit, kmb_validate_unknown_version) {
          8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
          9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
          A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  .  8  .  .  .  .  .  .  .  # info tags
+         0  .  .  .  .  .  .  .
     )HEX");
 }
 
@@ -840,6 +910,8 @@ TEST(circuit, kmb_validate_num_qubits) {
          0  .  .  .  .  .  .  .  # num_b_ops
          0  .  .  .  .  .  .  .  # num_c_ops
          0  .  .  .  .  .  .  .  # num_angles
+         0  .  .  .  .  .  .  .  # num_info_tags
+         0  .  .  .  .  .  .  .  # num_info_tag_chars
          1  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # op types
          2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
          3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
@@ -850,6 +922,8 @@ TEST(circuit, kmb_validate_num_qubits) {
          8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
          9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
          A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  .  8  .  .  .  .  .  .  .  # info tags
+         0  .  .  .  .  .  .  .
     )HEX");
 }
 
@@ -867,6 +941,8 @@ TEST(circuit, kmb_validate_num_bits) {
          0  .  .  .  .  .  .  .  # num_b_ops
          0  .  .  .  .  .  .  .  # num_c_ops
          0  .  .  .  .  .  .  .  # num_angles
+         0  .  .  .  .  .  .  .  # num_info_tags
+         0  .  .  .  .  .  .  .  # num_info_tag_chars
          1  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # op types
          2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
          3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
@@ -877,6 +953,8 @@ TEST(circuit, kmb_validate_num_bits) {
          8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
          9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
          A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  .  8  .  .  .  .  .  .  .  # info tags
+         0  .  .  .  .  .  .  .
     )HEX");
 }
 
@@ -894,6 +972,8 @@ TEST(circuit, kmb_validate_num_registers) {
          0  .  .  .  .  .  .  .  # num_b_ops
          0  .  .  .  .  .  .  .  # num_c_ops
          0  .  .  .  .  .  .  .  # num_angles
+         0  .  .  .  .  .  .  .  # num_info_tags
+         0  .  .  .  .  .  .  .  # num_info_tag_chars
          1  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # op types
          2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
          3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
@@ -904,6 +984,8 @@ TEST(circuit, kmb_validate_num_registers) {
          8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
          9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
          A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  .  8  .  .  .  .  .  .  .  # info tags
+         0  .  .  .  .  .  .  .
     )HEX");
 }
 
@@ -921,6 +1003,8 @@ TEST(circuit, kmb_validate_num_registers2) {
          0  .  .  .  .  .  .  .  # num_b_ops
          0  .  .  .  .  .  .  .  # num_c_ops
          0  .  .  .  .  .  .  .  # num_angles
+         0  .  .  .  .  .  .  .  # num_info_tags
+         0  .  .  .  .  .  .  .  # num_info_tag_chars
          0  .  .  .  .  .  .  .  8  .  .  .  .  .  .  .  # register data 0
          0  .  .  .
          0  .  .  .
@@ -937,6 +1021,8 @@ TEST(circuit, kmb_validate_num_registers2) {
          8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
          9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
          A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  .  8  .  .  .  .  .  .  .  # info tags
+         0  .  .  .  .  .  .  .
     )HEX");
 }
 
@@ -954,6 +1040,8 @@ TEST(circuit, kmb_validate_num_ops) {
          0  .  .  .  .  .  .  .  # num_b_ops
          0  .  .  .  .  .  .  .  # num_c_ops
          0  .  .  .  .  .  .  .  # num_angles
+         0  .  .  .  .  .  .  .  # num_info_tags
+         0  .  .  .  .  .  .  .  # num_info_tag_chars
          1  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # op types
          2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
          3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
@@ -964,6 +1052,8 @@ TEST(circuit, kmb_validate_num_ops) {
          8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
          9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
          A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  .  8  .  .  .  .  .  .  .  # info tags
+         0  .  .  .  .  .  .  .
     )HEX");
 }
 
@@ -981,6 +1071,8 @@ TEST(circuit, kmb_validate_num_qqq_ops) {
          0  .  .  .  .  .  .  .  # num_b_ops
          0  .  .  .  .  .  .  .  # num_c_ops
          0  .  .  .  .  .  .  .  # num_angles
+         0  .  .  .  .  .  .  .  # num_info_tags
+         0  .  .  .  .  .  .  .  # num_info_tag_chars
          1  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # op types
          2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
          3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
@@ -991,6 +1083,8 @@ TEST(circuit, kmb_validate_num_qqq_ops) {
          8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
          9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
          A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  .  8  .  .  .  .  .  .  .  # info tags
+         0  .  .  .  .  .  .  .
     )HEX");
 }
 
@@ -1008,6 +1102,8 @@ TEST(circuit, kmb_validate_num_qq_ops) {
          0  .  .  .  .  .  .  .  # num_b_ops
          0  .  .  .  .  .  .  .  # num_c_ops
          0  .  .  .  .  .  .  .  # num_angles
+         0  .  .  .  .  .  .  .  # num_info_tags
+         0  .  .  .  .  .  .  .  # num_info_tag_chars
          1  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # op types
          2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
          3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
@@ -1018,6 +1114,8 @@ TEST(circuit, kmb_validate_num_qq_ops) {
          8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
          9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
          A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  .  8  .  .  .  .  .  .  .  # info tags
+         0  .  .  .  .  .  .  .
     )HEX");
 }
 
@@ -1035,6 +1133,8 @@ TEST(circuit, kmb_validate_num_q_ops) {
          0  .  .  .  .  .  .  .  # num_b_ops
          0  .  .  .  .  .  .  .  # num_c_ops
          0  .  .  .  .  .  .  .  # num_angles
+         0  .  .  .  .  .  .  .  # num_info_tags
+         0  .  .  .  .  .  .  .  # num_info_tag_chars
          1  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # op types
          2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
          3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
@@ -1045,6 +1145,8 @@ TEST(circuit, kmb_validate_num_q_ops) {
          8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
          9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
          A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  .  8  .  .  .  .  .  .  .  # info tags
+         0  .  .  .  .  .  .  .
     )HEX");
 }
 
@@ -1062,6 +1164,8 @@ TEST(circuit, kmb_validate_num_b_ops) {
          1  .  .  .  .  .  .  .  # num_b_ops
          0  .  .  .  .  .  .  .  # num_c_ops
          0  .  .  .  .  .  .  .  # num_angles
+         0  .  .  .  .  .  .  .  # num_info_tags
+         0  .  .  .  .  .  .  .  # num_info_tag_chars
          1  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # op types
          2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
          3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
@@ -1072,6 +1176,8 @@ TEST(circuit, kmb_validate_num_b_ops) {
          8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
          9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
          A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  .  8  .  .  .  .  .  .  .  # info tags
+         0  .  .  .  .  .  .  .
     )HEX");
 }
 
@@ -1089,6 +1195,8 @@ TEST(circuit, kmb_validate_num_c_ops) {
          0  .  .  .  .  .  .  .  # num_b_ops
          1  .  .  .  .  .  .  .  # num_c_ops
          0  .  .  .  .  .  .  .  # num_angles
+         0  .  .  .  .  .  .  .  # num_info_tags
+         0  .  .  .  .  .  .  .  # num_info_tag_chars
          1  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # op types
          2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
          3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
@@ -1099,6 +1207,8 @@ TEST(circuit, kmb_validate_num_c_ops) {
          8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
          9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
          A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  .  8  .  .  .  .  .  .  .  # info tags
+         0  .  .  .  .  .  .  .
     )HEX");
 }
 
@@ -1116,6 +1226,8 @@ TEST(circuit, kmb_validate_magic_bytes) {
          0  .  .  .  .  .  .  .  # num_b_ops
          0  .  .  .  .  .  .  .  # num_c_ops
          0  .  .  .  .  .  .  .  # num_angles
+         0  .  .  .  .  .  .  .  # num_info_tags
+         0  .  .  .  .  .  .  .  # num_info_tag_chars
          1  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # op types
          2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
          3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
@@ -1126,6 +1238,8 @@ TEST(circuit, kmb_validate_magic_bytes) {
          8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
          9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
          A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  .  8  .  .  .  .  .  .  .  # info tags
+         0  .  .  .  .  .  .  .
     )HEX");
 }
 
@@ -1143,6 +1257,8 @@ TEST(circuit, kmb_validate_non_zero_num_qqq) {
          0  .  .  .  .  .  .  .  # num_b_ops
          0  .  .  .  .  .  .  .  # num_c_ops
          0  .  .  .  .  .  .  .  # num_angles
+         0  .  .  .  .  .  .  .  # num_info_tags
+         0  .  .  .  .  .  .  .  # num_info_tag_chars
          1  .  .  .  .  .  .  .  1  .  .  .  .  .  .  .  # op types
                  00
          2  .  .  .  .  .  .  .  4  .  .  .  .  .  .  .  # qqq0s
@@ -1157,6 +1273,138 @@ TEST(circuit, kmb_validate_non_zero_num_qqq) {
          8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
          9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
          A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  .  8  .  .  .  .  .  .  .  # info tags
+                  0  .  .  .  .  .  .  .
+    )HEX");
+}
+
+TEST(circuit, kmb_validate_info_tags) {
+    expect_fails_to_parse("info_tag_end_offsets is not in monotonic ascending order", R"HEX(
+        d7 50 c7 d5 c3 29 d3 26 e3 cc 9f 68 34 f2 b8 bf
+         2  .  .  .  # version
+         0  .  .  .  # num_qubits
+         0  .  .  .  # num_bits
+         0  .  .  .  # num_reg
+         2  .  .  .  .  .  .  .  # num_ops
+         0  .  .  .  .  .  .  .  # num_qqq_ops
+         0  .  .  .  .  .  .  .  # num_qq_ops
+         0  .  .  .  .  .  .  .  # num_q_ops
+         0  .  .  .  .  .  .  .  # num_b_ops
+         0  .  .  .  .  .  .  .  # num_c_ops
+         0  .  .  .  .  .  .  .  # num_angles
+         2  .  .  .  .  .  .  .  # num_info_tags
+         2  .  .  .  .  .  .  .  # num_info_tag_chars
+         1  .  .  .  .  .  .  .  2  .  .  .  .  .  .  .  # op types
+        06 06
+         2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
+         3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
+         4  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq2s
+         5  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qq0s
+         6  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qq1s
+         7  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # q0s
+         8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
+         9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
+         A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  . 1A  .  .  .  .  .  .  .  # info tags
+         2  .  .  .  .  .  .  .  # num_info_tags
+         2  .  .  .  .  .  .  .  # end offset 0
+         1  .  .  .  .  .  .  .  # end offset 1 (out of order!)
+        61 62
+    )HEX");
+
+    expect_fails_to_parse("num_info_tag_chars=2 != final info_tag_end_offset=3", R"HEX(
+        d7 50 c7 d5 c3 29 d3 26 e3 cc 9f 68 34 f2 b8 bf
+         2  .  .  .  # version
+         0  .  .  .  # num_qubits
+         0  .  .  .  # num_bits
+         0  .  .  .  # num_reg
+         1  .  .  .  .  .  .  .  # num_ops
+         0  .  .  .  .  .  .  .  # num_qqq_ops
+         0  .  .  .  .  .  .  .  # num_qq_ops
+         0  .  .  .  .  .  .  .  # num_q_ops
+         0  .  .  .  .  .  .  .  # num_b_ops
+         0  .  .  .  .  .  .  .  # num_c_ops
+         0  .  .  .  .  .  .  .  # num_angles
+         1  .  .  .  .  .  .  .  # num_info_tags
+         2  .  .  .  .  .  .  .  # num_info_tag_chars
+         1  .  .  .  .  .  .  .  1  .  .  .  .  .  .  .  # op types
+        06
+         2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
+         3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
+         4  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq2s
+         5  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qq0s
+         6  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qq1s
+         7  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # q0s
+         8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
+         9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
+         A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  . 12  .  .  .  .  .  .  .  # info tags
+         1  .  .  .  .  .  .  .  # num_info_tags
+         3  .  .  .  .  .  .  .  # end offset 0
+        61 62
+    )HEX");
+
+    expect_fails_to_parse("Size mismatch: actual payload size vs size specified in header.", R"HEX(
+        d7 50 c7 d5 c3 29 d3 26 e3 cc 9f 68 34 f2 b8 bf
+         2  .  .  .  # version
+         0  .  .  .  # num_qubits
+         0  .  .  .  # num_bits
+         0  .  .  .  # num_reg
+         1  .  .  .  .  .  .  .  # num_ops
+         0  .  .  .  .  .  .  .  # num_qqq_ops
+         0  .  .  .  .  .  .  .  # num_qq_ops
+         0  .  .  .  .  .  .  .  # num_q_ops
+         0  .  .  .  .  .  .  .  # num_b_ops
+         0  .  .  .  .  .  .  .  # num_c_ops
+         0  .  .  .  .  .  .  .  # num_angles
+         1  .  .  .  .  .  .  .  # num_info_tags
+         2  .  .  .  .  .  .  .  # num_info_tag_chars
+         1  .  .  .  .  .  .  .  1  .  .  .  .  .  .  .  # op types
+        06
+         2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
+         3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
+         4  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq2s
+         5  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qq0s
+         6  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qq1s
+         7  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # q0s
+         8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
+         9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
+         A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  . 12  .  .  .  .  .  .  .  # info tags
+         2  .  .  .  .  .  .  .  # packet num_info_tags != header num_info_tags
+         2  .  .  .  .  .  .  .  # end offset 0
+        61 62
+    )HEX");
+
+    expect_fails_to_parse("num_info_tags=1 != compute_num_info_tags()=0", R"HEX(
+        d7 50 c7 d5 c3 29 d3 26 e3 cc 9f 68 34 f2 b8 bf
+         2  .  .  .  # version
+         0  .  .  .  # num_qubits
+         0  .  .  .  # num_bits
+         0  .  .  .  # num_reg
+         1  .  .  .  .  .  .  .  # num_ops
+         0  .  .  .  .  .  .  .  # num_qqq_ops
+         0  .  .  .  .  .  .  .  # num_qq_ops
+         0  .  .  .  .  .  .  .  # num_q_ops
+         0  .  .  .  .  .  .  .  # num_b_ops
+         0  .  .  .  .  .  .  .  # num_c_ops
+         0  .  .  .  .  .  .  .  # num_angles
+         1  .  .  .  .  .  .  .  # num_info_tags
+         0  .  .  .  .  .  .  .  # num_info_tag_chars
+         1  .  .  .  .  .  .  .  1  .  .  .  .  .  .  .  # op types
+        00
+         2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
+         3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
+         4  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq2s
+         5  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qq0s
+         6  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qq1s
+         7  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # q0s
+         8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
+         9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
+         A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+         B  .  .  .  .  .  .  . 10  .  .  .  .  .  .  .  # info tags
+         1  .  .  .  .  .  .  .  # num_info_tags
+         0  .  .  .  .  .  .  .  # end offset 0
     )HEX");
 }
 
@@ -1295,6 +1543,98 @@ TEST(circuit, named_registers) {
         )CIRCUIT");
         },
         std::invalid_argument);
+}
+
+TEST(circuit, info_tags) {
+    Circuit c(R"CIRCUIT(
+        INFO_TAG "first"
+        INFO_TAG ""
+        INFO_TAG "\r\n\P\Q\B"
+    )CIRCUIT");
+    ASSERT_EQ(c.num_ops, 3);
+    ASSERT_EQ(c.num_info_tags, 3);
+    ASSERT_EQ(c.num_info_tag_chars, 10);
+    ASSERT_EQ(c.info_tag_end_offsets[0], 5);
+    ASSERT_EQ(c.info_tag_end_offsets[1], 5);
+    ASSERT_EQ(c.info_tag_end_offsets[2], 10);
+    std::vector<Op> ops;
+    c.iter_ops([&](const Op &op) {
+        ops.push_back(op);
+    });
+    ASSERT_EQ(ops.size(), 3);
+    ASSERT_EQ(ops[0].kind, OpType::INFO_TAG);
+    ASSERT_EQ(ops[0].info_tag, "first");
+    ASSERT_EQ(ops[1].kind, OpType::INFO_TAG);
+    ASSERT_EQ(ops[1].info_tag, "");
+    ASSERT_EQ(ops[2].kind, OpType::INFO_TAG);
+    ASSERT_EQ(ops[2].info_tag, "\r\n#\"\\");
+    ASSERT_EQ(
+        c.str(),
+        "INFO_TAG \"first\"\n"
+        "INFO_TAG \"\"\n"
+        "INFO_TAG \"\\r\\n\\P\\Q\\B\"");
+
+    EXPECT_THROW({ Circuit("INFO_TAG"); }, std::invalid_argument);
+    EXPECT_THROW({ Circuit("INFO_TAG # comment"); }, std::invalid_argument);
+    EXPECT_THROW({ Circuit("INFO_TAG \"unclosed"); }, std::invalid_argument);
+    EXPECT_THROW({ Circuit("INFO_TAG unquoted"); }, std::invalid_argument);
+    EXPECT_THROW({ Circuit("INFO_TAG \"tag#\" #test"); }, std::invalid_argument);
+    EXPECT_THROW({ Circuit("INFO_TAG \"tag\\m\""); }, std::invalid_argument);
+    EXPECT_THROW({ Circuit("INFO_TAG \"tag\\\\\""); }, std::invalid_argument);
+    EXPECT_THROW({ Circuit("INFO_TAG ''"); }, std::invalid_argument);
+    EXPECT_THROW({ Circuit("INFO_TAG \"tag\" if b0"); }, std::invalid_argument);
+    EXPECT_THROW({ Circuit("INFO_TAG q0 \"tag\""); }, std::invalid_argument);
+    EXPECT_THROW({ Circuit("INFO_TAG \"tag\" q0"); }, std::invalid_argument);
+}
+
+TEST(circuit, write_analysis_svg_to_every_gate) {
+    Circuit c = circuit_with_every_operation();
+    std::stringstream ss;
+    c.write_analysis_svg_to(ss, 10);
+    ASSERT_TRUE(!ss.str().empty());
+}
+
+TEST(circuit, write_analysis_svg_to_info_tags) {
+    {
+        Circuit c(R"CIRCUIT(
+            INFO_TAG "@enter:outer_sub"
+            CCX q0 q1 q2
+            INFO_TAG "@enter:inner_sub"
+            CCX q0 q1 q2
+            INFO_TAG "@exit:inner_sub"
+            CCX q0 q1 q2
+            INFO_TAG "@exit:outer_sub"
+        )CIRCUIT");
+        std::stringstream ss;
+        c.write_analysis_svg_to(ss, 10);
+        std::string svg = ss.str();
+        ASSERT_NE(svg.find("outer_sub"), std::string::npos);
+        ASSERT_NE(svg.find("inner_sub"), std::string::npos);
+    }
+
+    // Defensive handling of malformed/unmatched @enter: and @exit: tags.
+    {
+        Circuit c(R"CIRCUIT(
+            INFO_TAG "unrelated_tag"
+            INFO_TAG "@exit:unmatched_at_start"
+            INFO_TAG "@enter:outer_closed_early"
+            CCX q0 q1 q2
+            INFO_TAG "@enter:inner_unclosed"
+            CCX q0 q1 q2
+            INFO_TAG "@exit:non_existent"
+            INFO_TAG "@exit:outer_closed_early"
+            INFO_TAG "@enter:dangling_at_end"
+            CCX q0 q1 q2
+        )CIRCUIT");
+        std::stringstream ss;
+        c.write_analysis_svg_to(ss, 10);
+        std::string svg = ss.str();
+        ASSERT_NE(svg.find("outer_closed_early"), std::string::npos);
+        ASSERT_NE(svg.find("inner_unclosed"), std::string::npos);
+        ASSERT_NE(svg.find("dangling_at_end"), std::string::npos);
+        ASSERT_EQ(svg.find("unmatched_at_start"), std::string::npos);
+        ASSERT_EQ(svg.find("non_existent"), std::string::npos);
+    }
 }
 
 TEST(circuit, compute_max_condition_depth) {

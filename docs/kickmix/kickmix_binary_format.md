@@ -16,6 +16,7 @@ but in a binary format optimized for performance rather than for human readabili
         - [`KMB_BIT0_DATA_FOR_1_TARGET_BIT_GATES` packet](#KMB_BIT0_DATA_FOR_1_TARGET_BIT_GATES-packet)
         - [`KMB_BIT0_DATA_FOR_1_CONDITION_BIT_GATES` packet](#KMB_BIT0_DATA_FOR_1_CONDITION_BIT_GATES-packet)
         - [`KMB_ANGLE_DATA_FOR_ROTATION_GATES` packet](#KMB_ANGLE_DATA_FOR_ROTATION_GATES-packet)
+        - [`KMB_INFO_TAG_DATA` packet](#KMB_INFO_TAG_DATA-packet)
   - [Operation Types](#Operation_Types)
   - [SOA Layout of Operation Target Data](#SOA-Layout-of-Operation-Target-Data)
 - [Validation](#Validation)
@@ -51,6 +52,8 @@ struct Header {
     uint64_t num_ops_with_1_target_bit;
     uint64_t num_ops_with_1_condition_bit;
     uint64_t num_ops_with_angle;
+    uint64_t num_info_tags;
+    uint64_t num_info_tag_chars;
 }
 ```
 
@@ -84,6 +87,7 @@ enum payload_type_u64 : uint64_t {
    KMB_BIT0_DATA_FOR_1_TARGET_BIT_GATES     = 8,
    KMB_BIT0_DATA_FOR_1_CONDITION_BIT_GATES  = 9,
    KMB_ANGLE_DATA_FOR_ROTATION_GATES        = 10,
+   KMB_INFO_TAG_DATA                        = 11,
 }
 ```
 
@@ -187,6 +191,23 @@ struct packet_KMB_ANGLE_DATA_FOR_ROTATION_GATES {
 }
 ```
 
+#### KMB_INFO_TAG_DATA packet
+
+This packet stores the string payloads for all `INFO_TAG` operations in the circuit.
+It begins with `num_info_tags`, followed by an array of end offsets (`info_tag_end_offsets`) in monotonic non-strict ascending order, followed by the concatenated raw characters of all info tags (`info_tag_chars`) with no null terminators.
+The string for the `INFO_TAG` with index `n` consists of the characters in `info_tag_chars` from index `n == 0 ? 0 : info_tag_end_offsets[n - 1]` to `info_tag_end_offsets[n]`.
+
+```
+// Note: all values are little endian
+struct packet_KMB_INFO_TAG_DATA {
+   payload_type_u64 payload_type = KMB_INFO_TAG_DATA;
+   uint64_t payload_length;
+   uint64_t num_info_tags;
+   uint64_t info_tag_end_offsets[num_info_tags];
+   char info_tag_chars[payload_length - 8 * (num_info_tags + 1)];
+}
+```
+
 
 ### Operation Types
 
@@ -235,6 +256,8 @@ enum OperationType : uint8_t {
     BIT_STORE1_IF        = 0x1 | OP_HAS_1B | OP_HAS_COND,
     BIT_INVERT           = 0x2 | OP_HAS_1B,
     BIT_INVERT_IF        = 0x2 | OP_HAS_1B | OP_HAS_COND,
+
+    INFO_TAG             = 0x6,
 
     DEBUG_PRINT_EMPTY    = 0x7,
     DEBUG_PRINT_EMPTY_IF = 0x7 | OP_HAS_COND,
@@ -316,6 +339,7 @@ void print_kmb_as_kmx(const KmbStructOfArrays *circuit) {
    - Exactly one `KMB_BIT0_DATA_FOR_1_TARGET_BIT_GATES` packet.
    - Exactly one `KMB_BIT0_DATA_FOR_1_CONDITION_BIT_GATES` packet.
    - Exactly one `KMB_ANGLE_DATA_FOR_ROTATION_GATES` packet.
+   - Exactly one `KMB_INFO_TAG_DATA` packet.
    
    A parser MUST verify that the packets come in this exact order, and fail with an error if they didn't.
     
@@ -360,12 +384,16 @@ void print_kmb_as_kmx(const KmbStructOfArrays *circuit) {
    The value of `num_angles` in the header MUST be equal to the number of operations
    in the circuit that have a rotation angle (Z_POW and Z_POW_IF).
 
-11. **Validate disjoint 2 qubit gate targets**.
+11. **Validate header.num_info_tags and KMB_INFO_TAG_DATA**.
+   The value of `num_info_tags` in the header MUST be equal to the number of `INFO_TAG` operations in the circuit, and MUST match the `num_info_tags` field at the start of the `KMB_INFO_TAG_DATA` packet.
+   The `info_tag_end_offsets` array in `KMB_INFO_TAG_DATA` MUST be in non-strict monotonic ascending order (`info_tag_end_offsets[k - 1] <= info_tag_end_offsets[k]`), and the final end offset (`num_info_tags == 0 ? 0 : info_tag_end_offsets[num_info_tags - 1]`) MUST equal `header.num_info_tag_chars`.
+
+12. **Validate disjoint 2 qubit gate targets**.
    Two qubit operations get their first and second qubit from `KMB_QUBIT0_DATA_FOR_2_TARGET_QUBIT_GATES` and `KMB_QUBIT1_DATA_FOR_2_TARGET_QUBIT_GATES` respectively.
    These two qubits must never be identical to each other.
    A parser MUST verify that the qubit targets are never identical, and fail with an error if any were.
 
-12. **Validate disjoint 3 qubit gate targets**.
+13. **Validate disjoint 3 qubit gate targets**.
    Three qubit operations get their first, second, and third qubit from `KMB_QUBIT0_DATA_FOR_3_TARGET_QUBIT_GATES`, `KMB_QUBIT1_DATA_FOR_3_TARGET_QUBIT_GATES`, and `KMB_QUBIT2_DATA_FOR_3_TARGET_QUBIT_GATES` respectively.
    These three qubits must all be different from each other.
    A parser MUST verify that the three qubit targets are disjoint, and fail with an error if they weren't.

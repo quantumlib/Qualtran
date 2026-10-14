@@ -43,11 +43,12 @@ static consteval std::array<std::string_view, 256> make_op_type_name_table() {
     table[(uint8_t)OpType::DEBUG_PRINT_C_IF] = "DEBUG_PRINT_C_IF";
     table[(uint8_t)OpType::Z_POW] = "Z_POW";
     table[(uint8_t)OpType::Z_POW_IF] = "Z_POW_IF";
+    table[(uint8_t)OpType::INFO_TAG] = "INFO_TAG";
     return table;
 }
 std::array<std::string_view, 256> kickmix::OP_TYPE_NAME_TABLE = make_op_type_name_table();
 
-std::array<OpType, 36> kickmix::OP_TYPE_TABLE{
+std::array<OpType, 37> kickmix::OP_TYPE_TABLE{
     OpType::NEG,
     OpType::BIT_INVERT,
     OpType::BIT_STORE0,
@@ -62,6 +63,7 @@ std::array<OpType, 36> kickmix::OP_TYPE_TABLE{
     OpType::CCX,
     OpType::CCZ,
     OpType::Z_POW,
+    OpType::INFO_TAG,
     OpType::DEBUG_PRINT_EMPTY,
     OpType::DEBUG_PRINT_Q,
     OpType::DEBUG_PRINT_C,

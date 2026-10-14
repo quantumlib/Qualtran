@@ -92,19 +92,14 @@ template <class T>
 concept ClassicalControlLike =
     std::is_same<T, bool>::value || std::is_same<T, BitId>::value || std::is_same<T, BitOrBool>::value;
 
-struct Mark {
-    bool enter_else_exit;
-    std::string_view name;
-    size_t offset;
-};
 struct RaiiDeferredMark {
     CircuitBuilder *builder;
-    Mark deferred;
+    std::string_view name;
     RaiiDeferredMark() = delete;
-    RaiiDeferredMark(CircuitBuilder *builder, Mark deferred) : builder(builder), deferred(deferred) {
+    RaiiDeferredMark(CircuitBuilder *builder, std::string_view name) : builder(builder), name(name) {
     }
     RaiiDeferredMark(const RaiiDeferredMark &) = delete;
-    RaiiDeferredMark(RaiiDeferredMark &&other) noexcept : builder(other.builder), deferred(other.deferred) {
+    RaiiDeferredMark(RaiiDeferredMark &&other) noexcept : builder(other.builder), name(other.name) {
         other.builder = nullptr;
     }
     RaiiDeferredMark &operator=(const RaiiDeferredMark &) = delete;
@@ -129,15 +124,14 @@ struct CircuitBuilder {
     std::vector<QubitId> c_resolve_qubit_controls;
     std::vector<BitId> c_resolve_bit_controls;
     bool c_resolve_has_false_control = false;
-    std::vector<Mark> marks;
     // Determines if validation is skipped, to reduce runtime cost.
     bool skip_validation = false;
     CircuitPattern pattern;
     MutableCircuit mut;
 
+    void info_tag(std::string_view text);
     RaiiDeferredMark raii_mark_block_entry(std::string_view name);
     Circuit finish_circuit() const;
-    void write_analysis_svg_to(std::ostream &out, size_t reference_qubit_count);
 
     void for_each(size_t start, size_t end, const std::function<void(LoopBuilder &out, iota k)> &func);
     void for_each_reversed(size_t start, size_t end, const std::function<void(LoopBuilder &out, iota k)> &func);

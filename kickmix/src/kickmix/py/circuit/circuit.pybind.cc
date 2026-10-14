@@ -410,4 +410,24 @@ void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
             return self * (uint64_t)repetitions;
         },
         mul_doc.data());
+
+    c_circuit.def(
+        "flame_chart_svg",
+        [](const Circuit &self) -> std::string {
+            std::stringstream ss;
+            self.write_analysis_svg_to(ss, 100);
+            return ss.str();
+        },
+        R"DOC(
+            Attempts to create a flame chart of qubit and operation usage in the circuit.
+
+            In order for this method to work, the circuit must be annotated with
+            "@enter:subroutine" and "@exit:subroutine" INFO_TAG instructions.
+
+            Examples:
+                >>> import kickmix as km
+                >>> km.Circuit("""
+                ...     INFO_TAG "@enter:adder"
+        )DOC");
+
 }

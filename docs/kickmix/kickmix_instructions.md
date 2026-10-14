@@ -30,6 +30,7 @@ so it's not possible to create loops.
     - [REGISTER instruction](#register-instruction)
     - [APPEND_TO_REGISTER instruction](#append_to_register-instruction)
     - [DEBUG_PRINT instruction](#debug_print-instruction)
+    - [INFO_TAG instruction](#info_tag-instruction)
 
 # Quantum Instructions
 
@@ -687,4 +688,32 @@ DEBUG_PRINT r0
 # Please print something about nothing.
 # ...maybe print a newline character...?
 DEBUG_PRINT
+```
+
+
+## INFO_TAG instruction
+
+The `INFO_TAG` instruction attaches an arbitrary quoted text string to a point in the circuit.
+Info tags have no effect on circuit simulations, but can be used as debug or structural metadata when analyzing circuits.
+For example, `@enter:subroutine_name` and `@exit:subroutine_name` tags are used to mark where subroutines start and end for flame graph analysis and circuit diagrams.
+
+**This operation ignores conditions from `PUSH_CONDITION`**.
+
+Examples:
+
+```
+# Mark the start and end of a subroutine.
+INFO_TAG "@enter:my_subroutine"
+CCX q0 q1 q2
+CX q0 q1
+INFO_TAG "@exit:my_subroutine"
+
+# Attach an arbitrary debug note.
+INFO_TAG "checkpoint 1"
+```
+
+Arguments:
+
+```
+1 quoted text string
 ```

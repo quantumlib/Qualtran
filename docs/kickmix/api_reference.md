@@ -1517,11 +1517,13 @@ def flip_if_less_than(
             REGISTER r1 "lhs"
             APPEND_TO_REGISTER q2 r2
             REGISTER r2 "rhs"
+            INFO_TAG "@enter:flip_if_lt"
             CX q2 q1
             CCX q1 q2 q0
             X q1
             X q1
             CX q2 q1
+            INFO_TAG "@exit:flip_if_lt"
         ''')
     """
 ```
@@ -1580,9 +1582,13 @@ def gf2_iadd(
             APPEND_TO_REGISTER q2 r1
             APPEND_TO_REGISTER q3 r1
             REGISTER r1 "offset"
+            INFO_TAG "@enter:gf_iadd"
             CX q2 q0
             CX q3 q1
+            INFO_TAG "@exit:gf_iadd"
+            INFO_TAG "@enter:gf_iadd"
             X q0
+            INFO_TAG "@exit:gf_iadd"
         ''')
     """
 ```

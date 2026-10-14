@@ -734,10 +734,27 @@ TEST(CircuitBuilder, parity_cccz) {
     }
 }
 
-TEST(CircuitBuilder, write_analysis_svg_to_every_gate) {
+TEST(CircuitBuilder, raii_mark_block_entry) {
     CircuitBuilder builder;
-    builder.mut.append(circuit_with_every_operation());
-    std::stringstream ss;
-    builder.write_analysis_svg_to(ss, 10);
-    ASSERT_TRUE(!ss.str().empty());
+    {
+        auto m1 = builder.raii_mark_block_entry("outer");
+        builder.x(QubitId{0});
+        {
+            auto m2 = builder.raii_mark_block_entry("inner_empty");
+        }
+        {
+            auto m3 = builder.raii_mark_block_entry("inner");
+            builder.cx(QubitId{0}, QubitId{1});
+        }
+    }
+    ASSERT_EQ(builder.finish_circuit(), Circuit(R"CIRCUIT(
+            INFO_TAG "@enter:outer"
+            X q0
+            INFO_TAG "@enter:inner_empty"
+            INFO_TAG "@exit:inner_empty"
+            INFO_TAG "@enter:inner"
+            CX q0 q1
+            INFO_TAG "@exit:inner"
+            INFO_TAG "@exit:outer"
+        )CIRCUIT"));
 }
