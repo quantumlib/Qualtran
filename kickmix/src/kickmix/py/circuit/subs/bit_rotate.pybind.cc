@@ -9,9 +9,7 @@ using namespace kickmix_py;
 static void controlled_reverse(CircuitBuilder &builder, stride_span<const QubitId> target, QubitOrTrue control = true) {
     size_t n = target.size();
     size_t h = n >> 1;
-    for (size_t k = 0; k < h; k++) {
-        builder.cswap(control, target[k], target[n - k - 1]);
-    }
+    builder.broadcast_cswap(control, target.subspan(0, h), target.reversed().subspan(0, h));
 }
 
 static void controlled_shifted_reverse(
@@ -77,7 +75,8 @@ struct RaiiStoreXor {
 };
 
 template <typename TCallback>
-static void if_and_do(PyCircuitBuilder &self, QubitOrBitOrBool v1, QubitOrBitOrBool v2, TCallback callback) {
+static void if_and_do(
+    PyCircuitBuilder &self, QubitOrBitOrBool v1, QubitOrBitOrBool v2, std::string_view context, TCallback callback) {
     if (v2 == false || v1 == false) {
         return;
     }
@@ -89,6 +88,13 @@ static void if_and_do(PyCircuitBuilder &self, QubitOrBitOrBool v1, QubitOrBitOrB
     }
     QubitOrTrue control = true;
     if (v1.is_qubit() && v2.is_qubit()) {
+        if (self.num_free_qubits() == 0) {
+            std::stringstream ss;
+            ss << "Need 1 clean qubit to temporarily store ";
+            ss << v1 << " & " << v2;
+            ss << " during " << context << ", but no clean qubits are available.";
+            throw std::invalid_argument(ss.str());
+        }
         control = self.alloc_qubit();
         self.builder.reset((QubitId)control);
         self.builder.ccx((QubitId)v1, (QubitId)v2, (QubitId)control);
@@ -138,8 +144,8 @@ static void decomposed_left_rotate(
         QubitOrBitOrBool c0 = k > 0 ? shift[k - 1] : false;
         QubitOrBitOrBool c1 = k < shift.size() ? shift[k] : false;
         RaiiStoreXor parity(self.builder, c0, c1);
-        if_and_do(self, parity.result, control, [&](QubitOrTrue merged_control) {
-            controlled_shifted_reverse(self.builder, target, int64_t{inverted ? -1 : +1} << k, merged_control);
+        if_and_do(self, parity.result, control, "{left,right}_rotate", [&](QubitOrTrue merged_control) {
+            controlled_shifted_reverse(self.builder, target, (int64_t{inverted ? -1 : +1} << k) + 1, merged_control);
         });
     }
 }
@@ -152,11 +158,12 @@ void kickmix_py::append_left_rotate_obj(
     auto target_conv = ConvertedArrayXZ::from_obj_expecting_list(target_obj, "target");
     auto target = target_conv.span.checked_cast_to_qubit_ids("target");
     RaiiControlObjHelper control(self, control_obj, "control");
+
+    auto mark = self.builder.raii_mark_block_entry("left_rotate");
     if (control.skip) {
         return;
     }
 
-    auto mark = self.builder.raii_mark_block_entry("left_rotate");
     if (pybind11::isinstance<pybind11::int_>(shift_obj)) {
         int64_t shift = pybind11::cast<int64_t>(shift_obj);
         controlled_fixed_left_rotate(self.builder, target, shift, control);
@@ -175,11 +182,12 @@ void kickmix_py::append_right_rotate_obj(
     auto target_conv = ConvertedArrayXZ::from_obj_expecting_list(target_obj, "target");
     auto target = target_conv.span.checked_cast_to_qubit_ids("target");
     RaiiControlObjHelper control(self, control_obj, "control");
+
+    auto mark = self.builder.raii_mark_block_entry("right_rotate");
     if (control.skip) {
         return;
     }
 
-    auto mark = self.builder.raii_mark_block_entry("right_rotate");
     if (pybind11::isinstance<pybind11::int_>(shift_obj)) {
         int64_t shift = pybind11::cast<int64_t>(shift_obj);
         controlled_fixed_left_rotate(self.builder, target, -shift, control);

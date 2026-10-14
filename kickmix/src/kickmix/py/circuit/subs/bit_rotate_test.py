@@ -52,7 +52,7 @@ def test_indexed_left_rotate_cost():
     shift = builder.create_quantum_register(5, "shift")
     builder.left_rotate(target, shift=shift)
     circuit = builder.finish_circuit()
-    expected = (len(target) // 2) * (len(shift) + 1) - 1
+    expected = (len(target) // 2) * (len(shift) + 1) - len(shift)
     assert circuit.max_magic() == expected
 
 
@@ -63,7 +63,7 @@ def test_controlled_indexed_left_rotate_cost():
     control = builder.create_quantum_register(1, "control")[0]
     builder.left_rotate(target, shift=shift, control=control)
     circuit = builder.finish_circuit()
-    expected = (len(target) // 2 + 1) * (len(shift) + 1) - 1
+    expected = (len(target) // 2 + 1) * (len(shift) + 1) - len(shift)
     assert circuit.max_magic() == expected
 
 
@@ -151,5 +151,27 @@ def test_fuzz_right_rotate_simple(n: int):
                 target = ((target << (n-1)) | (target >> 1)) & mask
         """,
         context={'n': n},
+        shots=64,
+    )
+
+
+def test_need_missing_qubit():
+    builder = km.CircuitBuilder()
+    target = builder.create_quantum_register(8, name="target")
+    shift = builder.create_quantum_register(3, name="shift")
+    control = builder.create_quantum_register(1, name="control")[0]
+
+    builder.set_max_qubits(builder.num_allocated_qubits)
+    with pytest.raises(ValueError, match="temporarily store"):
+        builder.right_rotate(target, shift, control=control)
+
+    builder.set_max_qubits(builder.num_allocated_qubits + 1)
+    builder.right_rotate(target, shift, control=control)
+    assert_fuzz_testing_acts_like(
+        builder.finish_circuit(),
+        f"""
+            if control:
+                target = ((target << (-shift % 8)) | (target >> shift)) & 0xFF
+        """,
         shots=64,
     )
