@@ -34,8 +34,8 @@ enum class OpType : uint8_t {
     POP_CONDITION = 0x1,      // Unconditionally removes a condition from the condition stack. Operations other than
                               // PUSH_CONDITION/POP_CONDITION only occur when the condition stack is satisfied.
     INFO_TAG = 0x6,           // Specifies arbitrary text information. No effect on circuit behavior, but can be used
-                              // by tools analyzing the circuit as hints (e.g. `INFO_TAG "@ENTER:adder"` and
-                              // `INFO_TAG "@EXIT:adder"` indicating the location of an adder operation).
+                              // by tools analyzing the circuit as hints (e.g. `INFO_TAG "@enter:adder"` and
+                              // `INFO_TAG "@exit:adder"` indicating the location of an adder operation).
     DEBUG_PRINT_EMPTY = 0x7,  // Asks simulator to print unspecified debugging information.
 
     BIT_STORE0 = 0x0 | OP_HAS_1B,     // Stores 0 into a bit.

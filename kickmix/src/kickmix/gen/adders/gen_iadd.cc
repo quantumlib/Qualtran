@@ -49,7 +49,7 @@ void kickmix::gen_iadd(
         for (size_t k = 0; k < padding_qubits; k++) {
             extended_offset.push_back(ctx.clean_workspace[k]);
         }
-        gen_iadd(builder, ctx.with_clean_subspan(padding_qubits), target, extended_offset, control);
+        gen_iadd(builder, ctx.with_clean_subspan(padding_qubits), target, extended_offset, control, "");
         return;
     }
     QubitId carry;
