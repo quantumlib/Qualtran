@@ -162,7 +162,7 @@ def test_need_missing_qubit():
     control = builder.create_quantum_register(1, name="control")[0]
 
     builder.set_max_qubits(builder.num_allocated_qubits)
-    with pytest.raises(ValueError, match="temporarily store"):
+    with pytest.raises(ValueError, match="1 clean qubit"):
         builder.right_rotate(target, shift, control=control)
 
     builder.set_max_qubits(builder.num_allocated_qubits + 1)
