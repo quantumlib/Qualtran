@@ -228,25 +228,6 @@ void CircuitBuilder::broadcast_reset(stride_span<const QubitId> targets) {
     mut.q0.push_back_many(targets.cast_data<const uint32_t>());
 }
 
-void CircuitBuilder::cleft_rotate(QubitOrTrue control, stride_span<const QubitId> reg) {
-    auto mark = raii_mark_block_entry(control.is_qubit() ? "c_left_rotate" : "left_rotate");
-    if (reg.empty()) {
-        return;
-    }
-
-    if (control.is_qubit()) {
-        for_each_reversed(0, reg.size() - 1, [&](LoopBuilder &loop, iota k) {
-            loop.cx(reg[k], reg[k + 1]);
-            loop.ccx((QubitId)control, reg[k + 1], reg[k]);
-            loop.cx(reg[k], reg[k + 1]);
-        });
-    } else {
-        for_each_reversed(0, reg.size() - 1, [&](LoopBuilder &loop, iota k) {
-            loop.swap(reg[k], reg[k + 1]);
-        });
-    }
-}
-
 RaiiCircuitBuilderPopPushedCondition::RaiiCircuitBuilderPopPushedCondition(CircuitBuilder *builder) : builder(builder) {
 }
 RaiiCircuitBuilderPopPushedCondition::~RaiiCircuitBuilderPopPushedCondition() {
@@ -371,37 +352,9 @@ void CircuitBuilder::broadcast_ccx(
     }
 }
 
-void CircuitBuilder::cright_rotate(QubitOrTrue control, stride_span<const QubitId> reg) {
-    auto mark = raii_mark_block_entry(control.is_qubit() ? "c_right_rotate" : "right_rotate");
-    if (reg.empty()) {
-        return;
-    }
-
-    if (control.is_qubit()) {
-        for_each(0, reg.size() - 1, [&](LoopBuilder &loop, iota k) {
-            loop.cx(reg[k], reg[k + 1]);
-            loop.ccx((QubitId)control, reg[k + 1], reg[k]);
-            loop.cx(reg[k], reg[k + 1]);
-        });
-    } else {
-        for_each(0, reg.size() - 1, [&](LoopBuilder &loop, iota k) {
-            loop.swap(reg[k], reg[k + 1]);
-        });
-    }
-}
 RaiiCircuitBuilderPopPushedCondition CircuitBuilder::raii_push_condition(BitId control) {
     push_condition(control);
     return RaiiCircuitBuilderPopPushedCondition(this);
-}
-void CircuitBuilder::left_rotate(stride_span<const QubitId> reg) {
-    for_each_reversed(0, reg.size() - 1, [&](LoopBuilder &loop, iota k) {
-        loop.swap(reg[k], reg[k + 1]);
-    });
-}
-void CircuitBuilder::right_rotate(stride_span<const QubitId> reg) {
-    for_each(0, reg.size() - 1, [&](LoopBuilder &loop, iota k) {
-        loop.swap(reg[k], reg[k + 1]);
-    });
 }
 
 void CircuitBuilder::cswap(BitId control, QubitId q1, QubitId q2) {
@@ -1397,18 +1350,22 @@ void CircuitBuilder::write_analysis_svg_to(std::ostream &out, size_t reference_q
 
 RaiiDeferredMark::~RaiiDeferredMark() {
     if (builder != nullptr) {
-        builder->marks.push_back(deferred);
-        builder->marks.back().offset = builder->mut.op_types.size();
+        if (!deferred.name.empty()) {
+            builder->marks.push_back(deferred);
+            builder->marks.back().offset = builder->mut.op_types.size();
+        }
         builder = nullptr;
     }
 }
 
 RaiiDeferredMark CircuitBuilder::raii_mark_block_entry(std::string_view name) {
-    marks.push_back({
-        true,
-        name,
-        mut.op_types.size(),
-    });
+    if (!name.empty()) {
+        marks.push_back({
+            true,
+            name,
+            mut.op_types.size(),
+        });
+    }
     return RaiiDeferredMark(this, Mark{false, name, 0});
 }
 
