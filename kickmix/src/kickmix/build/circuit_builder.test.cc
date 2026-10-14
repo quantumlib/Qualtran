@@ -736,8 +736,15 @@ TEST(CircuitBuilder, parity_cccz) {
 
 TEST(CircuitBuilder, write_analysis_svg_to_every_gate) {
     CircuitBuilder builder;
-    builder.mut.append(circuit_with_every_operation());
+    {
+        auto mark = builder.raii_mark_block_entry("every <gate & op>");
+        builder.mut.append(circuit_with_every_operation());
+    }
     std::stringstream ss;
     builder.write_analysis_svg_to(ss, 10);
-    ASSERT_TRUE(!ss.str().empty());
+    std::string svg = ss.str();
+    ASSERT_TRUE(!svg.empty());
+    ASSERT_EQ(svg.find("entire circuit"), std::string::npos);
+    ASSERT_EQ(svg.find("<gate & op>"), std::string::npos);
+    ASSERT_NE(svg.find(">every &lt;gate &amp; op&gt;</text>"), std::string::npos);
 }

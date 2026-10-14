@@ -21,6 +21,28 @@
 using namespace kickmix;
 using namespace kickmix_py;
 
+void kickmix_py::register_circuit_builder_mark_class(pybind11::module &m) {
+    pybind11::class_<PyCircuitBuilderMark>(m, "_CircuitBuilderMark")
+        .def(
+            "__enter__",
+            [](PyCircuitBuilderMark &self) -> PyCircuitBuilderMark & {
+                self.py_builder->builder.marks.push_back(
+                    kickmix::Mark{true, self.name, self.py_builder->builder.mut.op_types.size()});
+                return self;
+            })
+        .def(
+            "__exit__",
+            [](PyCircuitBuilderMark &self, const pybind11::object &, const pybind11::object &, const pybind11::object &)
+                -> bool {
+                self.py_builder->builder.marks.push_back(
+                    kickmix::Mark{false, self.name, self.py_builder->builder.mut.op_types.size()});
+                return false;
+            })
+        .def("__repr__", [](const PyCircuitBuilderMark &self) -> std::string {
+            return "<km._CircuitBuilderMark name=" + pybind11::repr(pybind11::str(self.name)).cast<std::string>() + ">";
+        });
+}
+
 void broadcast_cz_struct(PyCircuitBuilder &self, const stride_span_z &c1, const stride_span_z &c2) {
     if (c1.count != c2.count) {
         throw std::invalid_argument("Incompatible lengths.");
@@ -393,9 +415,85 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
             self.builder.write_analysis_svg_to(ss, 100);
             return ss.str();
         },
-        R"DOC(
-            Returns a flame chart of CCX+CCZ and qubit utilization of the circuit being built.
-        )DOC");
+        clean_doc_string(R"DOC(
+            @signature def flame_chart_svg(self) -> str:
+            Returns a flame chart of CCX+CCZ and qubit utilization of the
+            circuit being built.
+
+            Use `with builder.mark('name'):` to label regions of the circuit in
+            the flame chart.
+
+            Returns:
+                An SVG string containing the flame chart.
+
+            Examples:
+                >>> import pathlib
+                >>> import tempfile
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> address = builder.create_quantum_register(4, name='address')
+                >>> total = builder.create_quantum_register(8, name='total')
+                >>> table = [k * k for k in range(16)]
+                >>> with builder.mark('iadd_lookup'):
+                ...     buf = builder.alloc_qubits(len(total))
+                ...     builder.init_lookup(table=table, address=address, target=buf)
+                ...     builder.iadd(buf, target=total)
+                ...     builder.del_lookup(table=table, address=address, target=buf)
+                ...     builder.free(buf)
+                >>> with tempfile.TemporaryDirectory() as d:
+                ...     with open(pathlib.Path(d) / 'flame_chart.svg', 'w') as f:
+                ...         print(builder.flame_chart_svg(), file=f)
+        )DOC")
+            .data());
+
+    c_circuit_builder.def(
+        "mark",
+        [](PyCircuitBuilder &self, std::string_view name) -> PyCircuitBuilderMark {
+            return PyCircuitBuilderMark{&self, *self.mark_names.emplace(name).first};
+        },
+        pybind11::arg("name"),
+        pybind11::keep_alive<0, 1>(),
+        clean_doc_string(R"DOC(
+            @signature def mark(self, name: str) -> Any:
+            Returns a context manager that labels a region of the circuit for
+            `builder.flame_chart_svg()`.
+
+            `m = builder.mark('name')` does not modify the circuit by itself.
+            When you enter `with m:`, the builder records start and end markers
+            around the operations inside that block. You can reuse `m` across
+            multiple `with m:` blocks. If you enter `m` N times at the same
+            nesting depth, `builder.flame_chart_svg()` groups those runs as
+            `'name (xN)'`.
+
+            Args:
+                name: Label shown for the block in `builder.flame_chart_svg()`.
+
+            Returns:
+                A context manager that marks blocks under `name`.
+
+            Examples:
+                >>> import pathlib
+                >>> import tempfile
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> address = builder.create_quantum_register(4, name='address')
+                >>> total = builder.create_quantum_register(8, name='total')
+                >>> lookup_mark = builder.mark('iadd_lookup')
+                >>> def iadd_lookup(table: list[int], idx: km.array, dst: km.array):
+                ...     with lookup_mark:
+                ...         buf = builder.alloc_qubits(len(dst))
+                ...         builder.init_lookup(table=table, address=idx, target=buf)
+                ...         builder.iadd(buf, target=dst)
+                ...         builder.del_lookup(table=table, address=idx, target=buf)
+                ...         builder.free(buf)
+                >>> with builder.mark('accumulate_tables'):
+                ...     iadd_lookup([3 * k for k in range(16)], address, total)
+                ...     iadd_lookup([k * k for k in range(16)], address, total)
+                >>> with tempfile.TemporaryDirectory() as d:
+                ...     with open(pathlib.Path(d) / 'flame_chart.svg', 'w') as f:
+                ...         print(builder.flame_chart_svg(), file=f)
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "x",
