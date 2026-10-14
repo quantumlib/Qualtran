@@ -4,6 +4,9 @@
 #include <iostream>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <string>
+#include <string_view>
+#include <unordered_set>
 
 #include "kickmix/build/circuit_builder.h"
 #include "kickmix/py/val/array.pybind.h"
@@ -22,6 +25,15 @@ struct PyCircuitBuilder {
     size_t allocated_bits = 0;
     std::vector<std::vector<uint32_t>> scope_qubit_allocations;
     std::vector<std::vector<uint32_t>> scope_bit_allocations;
+    /// Backing storage for the `std::string_view` names referenced by `builder.marks`.
+    std::unordered_set<std::string> mark_names;
+
+    // Move-only: copies would keep `string_view`s into the original's `mark_names`.
+    PyCircuitBuilder() = default;
+    PyCircuitBuilder(const PyCircuitBuilder &) = delete;
+    PyCircuitBuilder &operator=(const PyCircuitBuilder &) = delete;
+    PyCircuitBuilder(PyCircuitBuilder &&) = default;
+    PyCircuitBuilder &operator=(PyCircuitBuilder &&) = default;
 
     void start_auto_free_scope() {
         scope_qubit_allocations.push_back({});
@@ -121,6 +133,13 @@ struct PyCircuitBuilder {
     }
 };
 
+/// Python context manager returned by `CircuitBuilder.mark`.
+struct PyCircuitBuilderMark {
+    PyCircuitBuilder *py_builder = nullptr;
+    std::string_view name;
+};
+
+void register_circuit_builder_mark_class(pybind11::module &m);
 void register_circuit_builder_methods(pybind11::class_<PyCircuitBuilder> &c_circuit_builder);
 
 kickmix::array_z read_python_int_list_into_table_data(const pybind11::object &table, size_t word_length);

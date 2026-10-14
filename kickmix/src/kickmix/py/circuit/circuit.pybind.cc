@@ -1,5 +1,7 @@
 #include "kickmix/py/circuit/circuit.pybind.h"
 
+#include <cstdio>
+#include <memory>
 #include <pybind11/iostream.h>
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
@@ -10,9 +12,21 @@
 #include "kickmix/id/register_id.h"
 #include "kickmix/py/util.pybind.h"
 #include "kickmix/py/val/array.pybind.h"
+#include "kickmix/util/binary_file_tools.h"
 
 using namespace kickmix;
 using namespace kickmix_py;
+
+static std::string resolve_file_path(const pybind11::handle &path) {
+    pybind11::object fspath = pybind11::reinterpret_steal<pybind11::object>(PyOS_FSPath(path.ptr()));
+    if (!fspath) {
+        throw pybind11::error_already_set();
+    }
+    if (pybind11::isinstance<pybind11::str>(fspath) || pybind11::isinstance<pybind11::bytes>(fspath)) {
+        return pybind11::cast<std::string>(fspath);
+    }
+    throw pybind11::type_error("Expected path to be a str, pathlib.Path, or open file object.");
+}
 
 void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
     c_circuit.def(
@@ -121,6 +135,149 @@ void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
             return self.num_ops;
         },
         "Returns the number of instructions in the circuit.");
+
+    c_circuit.def_static(
+        "from_file",
+        [](const pybind11::object &path, std::string_view format) -> Circuit {
+            if (format != "auto" && format != "kmx" && format != "kmb") {
+                throw std::invalid_argument(
+                    "Unrecognized format '" + std::string(format) + "'. Expected 'auto', 'kmx', or 'kmb'.");
+            }
+            std::unique_ptr<FILE, int (*)(FILE *)> file(nullptr, &fclose);
+            if (pybind11::hasattr(path, "read")) {
+                pybind11::object content = path.attr("read")();
+                if (pybind11::isinstance<pybind11::str>(content)) {
+                    if (format == "kmb") {
+                        throw std::invalid_argument("format='kmb' requires a binary file.");
+                    }
+                    return Circuit(pybind11::cast<std::string_view>(content));
+                }
+                auto data = pybind11::cast<std::string_view>(pybind11::bytes(content));
+                file.reset(tmpfile());
+                fwrite_else_throw(data.data(), data.size(), file.get());
+                rewind(file.get());
+            } else {
+                std::string path_str = resolve_file_path(path);
+                file.reset(fopen(path_str.c_str(), "rb"));
+                if (file == nullptr) {
+                    throw std::invalid_argument("Failed to open file for reading: '" + path_str + "'.");
+                }
+            }
+            if (format == "auto") {
+                return Circuit::from_kmx_or_kmb_file(file.get());
+            }
+            if (format == "kmx") {
+                return Circuit::from_kmx_file(file.get());
+            }
+            return Circuit::from_kmb_file(file.get());
+        },
+        pybind11::arg("path"),
+        pybind11::arg("format") = "auto",
+        clean_doc_string(R"DOC(
+            @signature def from_file(path: str | pathlib.Path | io.IOBase, format: Literal['auto', 'kmx', 'kmb'] = 'auto') -> km.Circuit:
+            Reads a `km.Circuit` from a file.
+
+            Args:
+                path: The path or open file object to read from.
+                format: The file format to parse. Defaults to `'auto'`.
+                    `'auto'`: Automatically detect whether the file is in `'kmx'`
+                        or `'kmb'` format.
+                    `'kmx'`: Human-readable text kickmix format. Can be read from
+                        a text or binary file. See
+                        https://github.com/quantumlib/Qualtran/blob/main/docs/kickmix/kickmix_format.md
+                    `'kmb'`: Binary kickmix format. Requires a binary file if
+                        passing an open file object. See
+                        https://github.com/quantumlib/Qualtran/blob/main/docs/kickmix/kickmix_binary_format.md
+
+            Returns:
+                The parsed `km.Circuit`.
+
+            Examples:
+                >>> import pathlib
+                >>> import tempfile
+                >>> import kickmix as km
+                >>> circuit = km.Circuit('''
+                ...     CCX q0 q1 q2
+                ...     CX q0 q1
+                ...     X q0
+                ... ''')
+                >>> with tempfile.TemporaryDirectory() as d:
+                ...     path = pathlib.Path(d) / 'circuit.kmx'
+                ...     circuit.to_file(path)
+                ...     loaded = km.Circuit.from_file(path)
+                >>> loaded == circuit
+                True
+        )DOC")
+            .data());
+
+    c_circuit.def(
+        "to_file",
+        [](const Circuit &self, const pybind11::object &path, std::string_view format) {
+            if (format != "kmx" && format != "kmb") {
+                throw std::invalid_argument(
+                    "Unrecognized format '" + std::string(format) + "'. Expected 'kmx' or 'kmb'.");
+            }
+            if (pybind11::hasattr(path, "write")) {
+                std::unique_ptr<FILE, int (*)(FILE *)> tmp(tmpfile(), &fclose);
+                if (format == "kmx") {
+                    self.write_kmx_to(tmp.get());
+                } else {
+                    self.write_kmb_to(tmp.get());
+                }
+                std::string data(ftell(tmp.get()), '\0');
+                rewind(tmp.get());
+                fread_else_throw(data.data(), data.size(), tmp.get());
+                if (format == "kmx" && pybind11::isinstance(path, pybind11::module_::import("io").attr("TextIOBase"))) {
+                    path.attr("write")(pybind11::str(data));
+                } else {
+                    path.attr("write")(pybind11::bytes(data));
+                }
+                return;
+            }
+            std::string path_str = resolve_file_path(path);
+            std::unique_ptr<FILE, int (*)(FILE *)> file(fopen(path_str.c_str(), "wb"), &fclose);
+            if (file == nullptr) {
+                throw std::invalid_argument("Failed to open file for writing: '" + path_str + "'.");
+            }
+            if (format == "kmx") {
+                self.write_kmx_to(file.get());
+            } else {
+                self.write_kmb_to(file.get());
+            }
+        },
+        pybind11::arg("path"),
+        pybind11::arg("format") = "kmx",
+        clean_doc_string(R"DOC(
+            @signature def to_file(self, path: str | pathlib.Path | io.IOBase, format: Literal['kmx', 'kmb'] = 'kmx') -> None:
+            Writes the circuit to a file.
+
+            Args:
+                path: The path or open file object to write to.
+                format: The file format to write. Defaults to `'kmx'`.
+                    `'kmx'`: Human-readable text kickmix format. Can be written
+                        to a text or binary file. See
+                        https://github.com/quantumlib/Qualtran/blob/main/docs/kickmix/kickmix_format.md
+                    `'kmb'`: Binary kickmix format. Requires a binary file if
+                        passing an open file object. See
+                        https://github.com/quantumlib/Qualtran/blob/main/docs/kickmix/kickmix_binary_format.md
+
+            Examples:
+                >>> import pathlib
+                >>> import tempfile
+                >>> import kickmix as km
+                >>> circuit = km.Circuit('''
+                ...     CCX q0 q1 q2
+                ...     CX q0 q1
+                ...     X q0
+                ... ''')
+                >>> with tempfile.TemporaryDirectory() as d:
+                ...     path = pathlib.Path(d) / 'circuit.kmb'
+                ...     circuit.to_file(path, format='kmb')
+                ...     loaded = km.Circuit.from_file(path, format='kmb')
+                >>> loaded == circuit
+                True
+        )DOC")
+            .data());
 
     c_circuit.def(pybind11::self == pybind11::self, "Determines if two circuits have identical instructions.");
     c_circuit.def(pybind11::self != pybind11::self, "Determines if two circuits have different instructions.");

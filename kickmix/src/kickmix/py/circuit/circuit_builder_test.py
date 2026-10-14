@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+import xml.etree.ElementTree as ET
+
 import pytest
 
 import kickmix as km
@@ -67,3 +69,58 @@ def test_z_pow():
         Z_POW q3 0.125
         Z_POW q4 1.875
     """)
+
+
+def test_builder_mark():
+    builder = km.CircuitBuilder()
+    q = builder.create_quantum_register(4, name="q")
+
+    reused = builder.mark("reused")
+    assert repr(reused) == "<km._CircuitBuilderMark name='reused'>"
+    for _ in range(2):
+        with reused:
+            builder.ccx(q[0], q[1], q[2])
+
+    with builder.mark("outer"):
+        with builder.mark(name="inner <0 & 1>"):
+            builder.ccx(q[1], q[2], q[3])
+
+    svg = builder.flame_chart_svg()
+    ET.fromstring(svg)
+    assert "entire circuit" not in svg
+    for expected in [
+        ">reused (x2)</text>",
+        ">outer</text>",
+        ">inner &lt;0 &amp; 1&gt;</text>",
+        ">4 qubits, 3 toffolis</text>",
+    ]:
+        assert expected in svg
+
+
+def test_builder_mark_errors():
+    builder = km.CircuitBuilder()
+    q = builder.create_quantum_register(3, name="q")
+
+    with pytest.raises(RuntimeError, match="simulated error"):
+        with builder.mark("failed_block"):
+            builder.ccx(q[0], q[1], q[2])
+            raise RuntimeError("simulated error")
+    assert ">failed_block</text>" in builder.flame_chart_svg()
+
+    first, second = builder.mark("first"), builder.mark("second")
+    first.__enter__()
+    second.__enter__()
+    first.__exit__(None, None, None)
+    second.__exit__(None, None, None)
+    with pytest.raises(ValueError, match="stack error"):
+        builder.flame_chart_svg()
+
+    for bad_call in [
+        lambda: builder.mark(),
+        lambda: builder.mark(123),
+        lambda: builder.mark("a", "b"),
+        lambda: builder.mark("a", name="b"),
+        lambda: builder.mark(invalid_kw="a"),
+    ]:
+        with pytest.raises(TypeError):
+            bad_call()
