@@ -330,11 +330,6 @@ struct CircuitBuilder {
 
     RaiiCircuitBuilderPopPushedCondition raii_push_condition(BitId control);
 
-    void left_rotate(stride_span<const QubitId> reg);
-    void right_rotate(stride_span<const QubitId> reg);
-    void cleft_rotate(QubitOrTrue control, stride_span<const QubitId> reg);
-    void cright_rotate(QubitOrTrue control, stride_span<const QubitId> reg);
-
     void reset_and(QubitOrBitOrBool control1, QubitOrBitOrBool control2, QubitId target);
     void del_zero(QubitId target);
     void broadcast_del_zero(stride_span<const QubitId> target);
