@@ -8,13 +8,7 @@ static void controlled_reverse(
     size_t h = n >> 1;
     auto v1 = target.subspan(0, h);
     auto v2 = target.reversed().subspan(0, h);
-    if (control.is_true()) {
-        builder.broadcast_swap(v1, v2);
-    } else {
-        builder.broadcast_cx(v1, v2);
-        builder.broadcast_ccx(control, v2, v1);
-        builder.broadcast_cx(v1, v2);
-    }
+    builder.broadcast_cswap(control, v2, v1);
 }
 
 static void controlled_shifted_reverse(

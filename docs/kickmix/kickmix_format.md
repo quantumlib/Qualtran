@@ -14,7 +14,7 @@ These circuits are designed to be efficient to simulate and easy to analyze.
 - [Examples](#Examples)
 
 
-## Version Differences
+## Version History
 
 Version 1 of the kickmix format was defined in order to have a well defined format
 to target for the zero knowledge proof in the paper https://arxiv.org/abs/2603.28846
@@ -25,10 +25,11 @@ Version 2 (the version described in this document) was released later, to suppor
 a Kaggle competition.
 Key additions were the ability to name registers (the `REGISTER` instruction
 can take an additional optional token specifying the name), the ability
-to perform fine-grained rotations (the `Z_POW` instruction was added), and
-the ability to add debug information to circuits (the `INFO_TAG` instruction was added).
-(This release also specified the complementary [binary kickmix format](kickmix_binary_format.md),
-which uses less space and is an order of magnitude faster to parse.)
+to perform fine-grained rotations (the `Z_POW` instruction was added),
+the ability to add debug information to circuits (the `INFO_TAG` instruction was added),
+and native controlled swap gates (the `CSWAP` instruction was added).
+Version 2 also specified the complementary [binary kickmix format](kickmix_binary_format.md),
+which uses less space and is an order of magnitude faster to parse.
 
 ## Encoding
 

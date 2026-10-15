@@ -907,24 +907,24 @@ def create_quantum_register(
 # (in class kickmix.CircuitBuilder)
 def cswap(
     self,
-    control: q | b | bool,
-    target1: km.array,
-    target2: km.array,
+    control: bool | b | q | km.array,
+    target1: q | km.array,
+    target2: q | km.array,
 ) -> None:
-    """Appends operations to conditionally swap two equal-length registers.
+    """Appends controlled-SWAP (Fredkin) gates to the circuit.
 
-    Performs `if control: target1, target2 = target2, target1`, pairing the
-    registers index by index.
+    Performs `if control: target1, target2 = target2, target1`.
+    This method broadcasts over km.array arguments.
 
-    The cost depends on the control. A qubit control expands to a
-    cx/ccx/cx triple per index. A classical bit control pushes a
-    classical condition around plain swaps, costing no Toffolis. A
-    control of True reduces to a plain swap, and False emits nothing.
+    The cost depends on the control. A qubit control emits a CSWAP
+    instruction (costing one Toffoli) per index. A classical bit control
+    emits a classically-conditioned SWAP instruction, costing no Toffolis.
+    A control of True reduces to a plain SWAP, and False emits nothing.
 
     Args:
         control: Determines if the swap happens.
-        target1: The first register.
-        target2: The second register, which must be the same length as the first.
+        target1: The first qubit or register to swap.
+        target2: The second qubit or register to swap.
 
     Examples:
         >>> import kickmix as km
@@ -934,15 +934,15 @@ def cswap(
         >>> y = builder.create_quantum_register(2, name='y')
         >>> builder.cswap(c, x, y)
         >>> print(builder.finish_circuit().text_diagram())
-        q0: -c[0]---@-----@---
-                    |     |
-        q1: -x[0]-@-X-@---|---
-                  | | |   |
-        q2: -x[1]-|-|-|-@-X-@-
-                  | | | | | |
-        q3: -y[0]-X-@-X-|-|-|-
-                        | | |
-        q4: -y[1]-------X-@-X-
+        q0: -c[0]-@----@----
+                  |    |
+        q1: -x[0]-SWAP-|----
+                  |    |
+        q2: -x[1]-|----SWAP-
+                  |    |
+        q3: -y[0]-SWAP-|----
+                       |
+        q4: -y[1]------SWAP-
     """
 ```
 
@@ -2366,38 +2366,38 @@ def left_rotate(
         >>> control = builder.create_quantum_register(1, name='control')[0]
         >>> builder.left_rotate(target, 2, control=control)
         >>> print(builder.finish_circuit().text_diagram())
-        q0: -target[0]--@---X---@---@-X-@-----
-                        |   |   |   | | |
-        q1: -target[1]--|-@-|-X-|-@-X-@-X-----
-                        | | | | | |   |
-        q2: -target[2]--|-X-|-@-|-X---|-@-X-@-
-                        |   | | |     | | | |
-        q3: -target[3]--X---@-|-X-----|-X-@-X-
-                            | |       |   |
-        q4: -control[0]-----@-@-------@---@---
+        q0: -target[0]--SWAP------SWAP------
+                        |         |
+        q1: -target[1]--|----SWAP-SWAP------
+                        |    |    |
+        q2: -target[2]--|----SWAP-|----SWAP-
+                        |    |    |    |
+        q3: -target[3]--SWAP-|----|----SWAP-
+                        |    |    |    |
+        q4: -control[0]-@----@----@----@----
 
         >>> builder = km.CircuitBuilder()
         >>> target = builder.create_quantum_register(6, name='target')
         >>> shift = builder.create_quantum_register(3, name='shift')
         >>> builder.left_rotate(target, shift)
         >>> print(builder.finish_circuit().text_diagram())
-        q0: -target[0]-@-X-@---------@-X-@-----@---X---@---@-X-@-----
-                       | | |         | | |     |   |   |   | | |
-        q1: -target[1]-X-@-X---------|-|-|-----|-@-|-X-|-@-|-|-|-----
-                         |           | | |     | | | | | | | | |
-        q2: -target[2]---|-@---X---@-X-@-X-----|-|-|-|-|-|-X-@-X-----
-                         | |   |   |   |       | | | | | |   |
-        q3: -target[3]---|-|-@-|-X-|-@-|-@-X-@-|-X-|-@-|-X---|-@-X-@-
-                         | | | | | | | | | | | |   | | |     | | | |
-        q4: -target[4]---|-|-X-|-@-|-X-|-|-|-|-X---@-|-X-----|-|-|-|-
-                         | |   | | |   | | | |     | |       | | | |
-        q5: -target[5]---|-X---@-|-X---|-X-@-X-----|-|-------|-X-@-X-
-                         |     | |     |   |       | |       |   |
-        q6: -shift[0]----@-----@-@---@-|---|-@-----|-|-------|---|---
-                                     | |   | |     | |       |   |
-        q7: -shift[1]----------------X-@---@-X-@---|-|---@---|---|---
-                                               |   | |   |   |   |
-        q8: -shift[2]--------------------------X---@-@---X---@---@---
+        q0: -target[0]-SWAP-------------SWAP----------SWAP--------SWAP------
+                       |                |             |           |
+        q1: -target[1]-SWAP-------------|-------------|----SWAP---|---------
+                       |                |             |    |      |
+        q2: -target[2]-|----SWAP--------SWAP----------|----|------SWAP------
+                       |    |           |             |    |      |
+        q3: -target[3]-|----|----SWAP---|----SWAP-----|----SWAP---|----SWAP-
+                       |    |    |      |    |        |    |      |    |
+        q4: -target[4]-|----|----SWAP---|----|--------SWAP-|------|----|----
+                       |    |    |      |    |        |    |      |    |
+        q5: -target[5]-|----SWAP-|------|----SWAP-----|----|------|----SWAP-
+                       |    |    |      |    |        |    |      |    |
+        q6: -shift[0]--@----@----@----@-|----|----@---|----|------|----|----
+                                      | |    |    |   |    |      |    |
+        q7: -shift[1]-----------------X-@----@----X-@-|----|----@-|----|----
+                                                    | |    |    | |    |
+        q8: -shift[2]-------------------------------X-@----@----X-@----@----
     """
 ```
 
@@ -2622,38 +2622,38 @@ def right_rotate(
         >>> control = builder.create_quantum_register(1, name='control')[0]
         >>> builder.right_rotate(target, 2, control=control)
         >>> print(builder.finish_circuit().text_diagram())
-        q0: -target[0]--@---X---@---@-X-@-----
-                        |   |   |   | | |
-        q1: -target[1]--|-@-|-X-|-@-X-@-X-----
-                        | | | | | |   |
-        q2: -target[2]--|-X-|-@-|-X---|-@-X-@-
-                        |   | | |     | | | |
-        q3: -target[3]--X---@-|-X-----|-X-@-X-
-                            | |       |   |
-        q4: -control[0]-----@-@-------@---@---
+        q0: -target[0]--SWAP------SWAP------
+                        |         |
+        q1: -target[1]--|----SWAP-SWAP------
+                        |    |    |
+        q2: -target[2]--|----SWAP-|----SWAP-
+                        |    |    |    |
+        q3: -target[3]--SWAP-|----|----SWAP-
+                        |    |    |    |
+        q4: -control[0]-@----@----@----@----
 
         >>> builder = km.CircuitBuilder()
         >>> target = builder.create_quantum_register(6, name='target')
         >>> shift = builder.create_quantum_register(3, name='shift')
         >>> builder.right_rotate(target, shift)
         >>> print(builder.finish_circuit().text_diagram())
-        q0: -target[0]-@-----X-----@-----@---X---@---@-X-@-----@---X---@---
-                       |     |     |     |   |   |   | | |     |   |   |
-        q1: -target[1]-|-@---|-X---|-@---|-@-|-X-|-@-|-|-|-----|-@-|-X-|-@-
-                       | |   | |   | |   | | | | | | | | |     | | | | | |
-        q2: -target[2]-|-|-@-|-|-X-|-|-@-|-|-|-|-|-|-X-@-X-----|-|-|-|-|-|-
-                       | | | | | | | | | | | | | | |   |       | | | | | |
-        q3: -target[3]-|-|-X-|-|-@-|-|-X-|-X-|-@-|-X---|-@-X-@-|-X-|-@-|-X-
-                       | |   | | | | |   |   | | |     | | | | |   | | |
-        q4: -target[4]-|-X---|-@-|-|-X---X---@-|-X-----|-|-|-|-X---@-|-X---
-                       |     | | | |         | |       | | | |     | |
-        q5: -target[5]-X-----@-|-|-X---------|-|-------|-X-@-X-----|-|-----
-                             | | |           | |       |   |       | |
-        q6: -shift[0]--------@-@-@-----@-----|-|---@---|---|-------|-|-----
-                                       |     | |   |   |   |       | |
-        q7: -shift[1]------------------X-----@-@---X-@-|---|-@-----|-|-----
-                                                     | |   | |     | |
-        q8: -shift[2]--------------------------------X-@---@-X-----@-@-----
+        q0: -target[0]-SWAP-------------SWAP----------SWAP--------SWAP------
+                       |                |             |           |
+        q1: -target[1]-|----SWAP--------|----SWAP-----|-----------|----SWAP-
+                       |    |           |    |        |           |    |
+        q2: -target[2]-|----|----SWAP---|----|--------SWAP--------|----|----
+                       |    |    |      |    |        |           |    |
+        q3: -target[3]-|----|----SWAP---|----SWAP-----|----SWAP---|----SWAP-
+                       |    |    |      |    |        |    |      |    |
+        q4: -target[4]-|----SWAP-|------SWAP-|--------|----|------SWAP-|----
+                       |    |    |      |    |        |    |      |    |
+        q5: -target[5]-SWAP-|----|------|----|--------|----SWAP---|----|----
+                       |    |    |      |    |        |    |      |    |
+        q6: -shift[0]--@----@----@----@-|----|----@---|----|------|----|----
+                                      | |    |    |   |    |      |    |
+        q7: -shift[1]-----------------X-@----@----X-@-|----|----@-|----|----
+                                                    | |    |    | |    |
+        q8: -shift[2]-------------------------------X-@----@----X-@----@----
     """
 ```
 

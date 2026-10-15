@@ -249,6 +249,8 @@ enum OperationType : uint8_t {
     CCZ_IF               = 0x0 | OP_HAS_3Q | OP_HAS_COND,
     CCX                  = 0x1 | OP_HAS_3Q,
     CCX_IF               = 0x1 | OP_HAS_3Q | OP_HAS_COND,
+    CSWAP                = 0x2 | OP_HAS_3Q,
+    CSWAP_IF             = 0x2 | OP_HAS_3Q | OP_HAS_COND,
 
     BIT_STORE0           = 0x0 | OP_HAS_1B,
     BIT_STORE0_IF        = 0x0 | OP_HAS_1B | OP_HAS_COND,
@@ -362,7 +364,7 @@ void print_kmb_as_kmx(const KmbStructOfArrays *circuit) {
 
 5. **Validate header.num_ops_with_3_target_qubits**.
    The value of `num_ops_with_3_target_qubits` in the header MUST be equal to the number of operations
-   in the circuit that target 3 qubits (CCX, CCZ, CCX_IF, and CCZ_IF).
+   in the circuit that target 3 qubits (CCX, CCZ, CSWAP, CCX_IF, CCZ_IF, and CSWAP_IF).
 
 6. **Validate header.num_ops_with_2_target_qubits**.
    The value of `num_ops_with_2_target_qubits` in the header MUST be equal to the number of operations

@@ -1,6 +1,7 @@
 #ifndef KICKMIX_SIMD_64_H
 #define KICKMIX_SIMD_64_H
 
+#include <array>
 #include <ostream>
 #include <random>
 
@@ -13,6 +14,9 @@ struct alignas(sizeof(uint64_t) * 1) b64_polyfill {
     constexpr static const char *NAME = "b64_polyfill";
     inline bool non_zero() const {
         return v[0];
+    }
+    inline static b64_polyfill from_u64s(std::array<uint64_t, 1> vs) {
+        return {vs[0]};
     }
     inline static b64_polyfill from_u32_broadcast(uint32_t v) {
         uint64_t v2 = static_cast<uint64_t>(v);
