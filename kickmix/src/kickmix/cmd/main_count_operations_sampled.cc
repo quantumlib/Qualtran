@@ -43,7 +43,6 @@ int kickmix::main_count_operations_sampled(int argc, const char **argv) {
 
     Sim<SIM_WORD, true> sim(externally_seeded_rng());
     sim.configure_for(circuit);
-    sim.ignore_debug_print_operations = true;
     auto registers = circuit.register_data;
 
     std::vector<SimInitInstruction> init_instructions;

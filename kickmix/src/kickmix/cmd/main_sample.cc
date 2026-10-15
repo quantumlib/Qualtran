@@ -44,6 +44,7 @@ int kickmix::main_sample(int argc, const char **argv) {
 
     Circuit circuit = Circuit::from_kmx_file(stdin);
     Sim<SIM_WORD, false> sim(externally_seeded_rng());
+    sim.set_debug_print_to_stderr();
     sim.configure_for(circuit);
     auto registers = circuit.register_data;
 

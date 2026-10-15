@@ -45,7 +45,7 @@ def main():
     print('''
 ```python
 # Types used by the method definitions.
-from typing import overload, TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import overload, TYPE_CHECKING, Any, Callable, Dict, Iterable, Iterator, List, Literal, Optional, Tuple, Union
 import io
 import pathlib
 import numpy as np

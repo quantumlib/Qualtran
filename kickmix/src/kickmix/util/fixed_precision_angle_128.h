@@ -16,6 +16,9 @@ struct FixedPrecisionAngle128 {
     bool operator==(const FixedPrecisionAngle128 &rhs) const = default;
     explicit operator bool() const;
 
+    /// Returns the Clifford hierarchy level k in [0, 128] of Z^(this angle).
+    uint8_t clifford_hierarchy_level() const;
+
     static FixedPrecisionAngle128 from_power_of_2_half_turns(int exponent);
 
     /// Returns the given double (mod 2) as a FixedPrecisionAngle128, or else throws.
