@@ -128,6 +128,7 @@
     - [`kickmix.array.__add__`](#kickmix.array.__add__)
     - [`kickmix.array.__eq__`](#kickmix.array.__eq__)
     - [`kickmix.array.__getitem__`](#kickmix.array.__getitem__)
+    - [`kickmix.array.__init__`](#kickmix.array.__init__)
     - [`kickmix.array.__len__`](#kickmix.array.__len__)
     - [`kickmix.array.__ne__`](#kickmix.array.__ne__)
     - [`kickmix.array.__repr__`](#kickmix.array.__repr__)
@@ -868,6 +869,25 @@ def alloc_bits(
     self,
     count: int,
 ) -> kickmix.array:
+    """Allocates classical bits to use as workspace in a circuit.
+
+    Allocated bits can be deallocated with the `km.CircuitBuilder.free` method.
+
+    Args:
+        count: The number of classical bits to allocate.
+
+    Returns:
+        An array containing the ids of the allocated bits. Until these ids
+        are freed, they won't be returned by any other allocation calls.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> b = builder.alloc_bits(3)
+        >>> b
+        km.array([km.b(0), km.b(1), km.b(2)])
+        >>> builder.free(b)
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.alloc_qubits"></a>
@@ -1162,9 +1182,45 @@ def cswap(
 # (in class kickmix.CircuitBuilder)
 def cx(
     self,
-    control: object,
-    target: object,
+    control: bool | km.b | km.q | km.array,
+    target: km.q | km.b | km.xb | km.xbool | km.array,
 ) -> None:
+    """Appends controlled-NOT gates (or classical/phase equivalents) to the circuit.
+
+    This method broadcasts over `km.array` and sequence arguments. When
+    multiple array arguments are given, they are combined by zipping.
+
+    The exact instruction(s) emitted depend on the types of `control`
+    and `target`. For example, a qubit control and qubit target emit
+    `CX`; a classical bit control and qubit target emit `X_IF`; a
+    classical bit control and classical bit target emit `BIT_INVERT_IF`;
+    and an X-basis target (`km.xb` or `km.xbool`) converts the operation
+    into a phase flip (such as `Z_IF` or `Z`).
+
+    Args:
+        control: The control (qubit, bit, bool, or array) determining
+            if the target is flipped.
+        target: The target (qubit, bit, X-basis bit/bool, or array) to
+            flip when `control` is active.
+
+    Raises:
+        ValueError: Broadcast array lengths do not match, or `control`
+            and `target` have incompatible types (such as a qubit
+            control with a classical bit target).
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.cx(km.q(0), km.q(1))
+        >>> builder.cx(km.b(0), km.q(1))
+        >>> builder.cx(True, km.q(1))
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            CX q0 q1
+            X q1 if b0
+            X q1
+        ''')
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.cz"></a>
@@ -1212,8 +1268,32 @@ def cz(
 # (in class kickmix.CircuitBuilder)
 def debug_print(
     self,
-    arg: object,
+    arg: km.q | km.b | bool | km.xb | km.xbool | km.array | Sequence[km.q | km.b | bool | km.xb | km.xbool],
 ) -> None:
+    """Appends DEBUG_PRINT instructions to print the given values during simulation.
+
+    Emits a `DEBUG_PRINT` instruction for each item in `arg`, followed
+    by an empty `DEBUG_PRINT` instruction (which ends the debug output
+    line).
+
+    Args:
+        arg: The qubit, bit, boolean, or array/sequence of values to
+            print.
+
+    Raises:
+        TypeError: `arg` cannot be converted to printable kickmix items.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.debug_print([km.q(0), km.b(1)])
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            DEBUG_PRINT q0
+            DEBUG_PRINT b1
+            DEBUG_PRINT
+        ''')
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.del_and"></a>
@@ -2000,9 +2080,38 @@ def gf2_phase_by_product(
 # (in class kickmix.CircuitBuilder)
 def hmr(
     self,
-    target: object,
-    output: object,
+    target: km.q | km.array | Sequence[km.q],
+    output: km.b | km.array | Sequence[km.b],
 ) -> None:
+    """Appends HMR (X-basis measurement and Z-basis reset) instructions.
+
+    Measures each target qubit in the X basis (storing the measurement
+    outcome into the corresponding `output` bit) and resets the qubit to
+    the |0> state. This method broadcasts over `km.array` and sequence
+    arguments of equal length.
+
+    Args:
+        target: The qubit or array/sequence of qubits to measure in the
+            X basis and reset to |0>.
+        output: The classical bit or array/sequence of classical bits to
+            store the measurement results into.
+
+    Raises:
+        ValueError: `target` and `output` have different lengths, or
+            contain non-qubit / non-bit items.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> q = builder.alloc_qubits(2)
+        >>> b = builder.alloc_bits(2)
+        >>> builder.hmr(q, b)
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            HMR q0 b0
+            HMR q1 b1
+        ''')
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.iadd"></a>
@@ -2730,9 +2839,43 @@ def max_qubits(
 # (in class kickmix.CircuitBuilder)
 def multi_controlled_x(
     self,
-    controls: object,
-    target: object,
+    controls: km.array | Sequence[km.q | km.b | bool],
+    target: km.q | km.array | Sequence[km.q],
 ) -> None:
+    """Appends a multi-controlled NOT operation to the circuit.
+
+    Flips every qubit in `target` when all `controls` are satisfied.
+    When there are 3 or more quantum controls, temporary workspace
+    qubits are allocated from the builder to compute the AND ladder and
+    uncomputed using measurement-based uncomputation (`del_and`).
+
+    Args:
+        controls: A sequence or `km.array` of quantum controls (`km.q`),
+            classical bit controls (`km.b`), or boolean constants
+            (`bool`) that must all be satisfied for the target qubits to
+            flip.
+        target: The qubit or array/sequence of qubits to flip when all
+            controls are satisfied.
+
+    Raises:
+        TypeError: `controls` is not a sequence or `km.array`.
+        ValueError: `controls` or `target` contains invalid item types.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> c = builder.alloc_qubits(3)
+        >>> t = builder.alloc_qubits(1)[0]
+        >>> builder.multi_controlled_x(c, t)
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            R q4
+            CCX q0 q1 q4
+            CCX q2 q4 q3
+            HMR q4 b0
+            CZ q1 q0 if b0
+        ''')
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.neg"></a>
@@ -2743,6 +2886,21 @@ def multi_controlled_x(
 def neg(
     self,
 ) -> None:
+    """Appends a NEG instruction that flips the global phase by -1.
+
+    Inside a classical condition block (see `push_condition`), or when
+    tracking shot phases in `km.Simulator`, `NEG` negates the amplitude
+    of the current branch.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.neg()
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            NEG
+        ''')
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.neg_if"></a>
@@ -2752,8 +2910,29 @@ def neg(
 # (in class kickmix.CircuitBuilder)
 def neg_if(
     self,
-    condition: object,
+    condition: km.b,
 ) -> None:
+    """Appends a classically-conditioned NEG instruction to the circuit.
+
+    Flips the global phase by -1 in shots where the given classical bit
+    is True.
+
+    Args:
+        condition: The classical bit (`km.b`) that controls whether the
+            phase flip occurs.
+
+    Raises:
+        TypeError: `condition` is not a `km.b`.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.neg_if(km.b(0))
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            NEG if b0
+        ''')
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.num_allocated_qubits"></a>
@@ -2790,6 +2969,24 @@ def num_free_qubits(
 def pop_condition(
     self,
 ) -> None:
+    """Appends a POP_CONDITION instruction to pop from the condition stack.
+
+    Should be paired with a preceding call to `push_condition`. A POP_CONDITION
+    without a prior PUSH_CONDITION has no effect on simulation state.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.push_condition(km.b(0))
+        >>> builder.x(km.q(0))
+        >>> builder.pop_condition()
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            PUSH_CONDITION if b0
+            X q0
+            POP_CONDITION
+        ''')
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.push_condition"></a>
@@ -2799,8 +2996,34 @@ def pop_condition(
 # (in class kickmix.CircuitBuilder)
 def push_condition(
     self,
-    condition: object,
+    condition: km.b,
 ) -> None:
+    """Appends a PUSH_CONDITION instruction to push a bit onto the condition stack.
+
+    All subsequent instructions in the circuit will only execute in
+    shots where all bits currently on the condition stack are True,
+    until a matching `pop_condition` is called.
+
+    Args:
+        condition: The classical bit (`km.b`) to push onto the condition
+            stack.
+
+    Raises:
+        TypeError: `condition` is not a `km.b`.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.push_condition(km.b(0))
+        >>> builder.x(km.q(0))
+        >>> builder.pop_condition()
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            PUSH_CONDITION if b0
+            X q0
+            POP_CONDITION
+        ''')
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.reset"></a>
@@ -2810,8 +3033,30 @@ def push_condition(
 # (in class kickmix.CircuitBuilder)
 def reset(
     self,
-    target: object,
+    target: km.q | km.array | Sequence[km.q],
 ) -> None:
+    """Appends Z-basis reset (R) instructions to the circuit.
+
+    Resets each target qubit to the |0> state. This method broadcasts
+    over `km.array` and sequence arguments.
+
+    Args:
+        target: The qubit or array/sequence of qubits to reset.
+
+    Raises:
+        ValueError: `target` contains non-qubit items.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> q = builder.alloc_qubits(2)
+        >>> builder.reset(q)
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            R q0
+            R q1
+        ''')
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.right_rotate"></a>
@@ -2958,9 +3203,40 @@ def set_max_qubits(
 # (in class kickmix.CircuitBuilder)
 def swap(
     self,
-    target1: object,
-    target2: object,
+    target1: km.q | km.b | km.xb | km.array,
+    target2: km.q | km.b | km.xb | km.array,
 ) -> None:
+    """Appends SWAP gates to the circuit.
+
+    Swaps the values of `target1` and `target2`. This method broadcasts
+    over `km.array` and sequence arguments.
+
+    Swapping qubits emits `SWAP` instructions. Swapping classical bits
+    (`km.b` or `km.xb`) emits three `BIT_INVERT ... if ...` instructions.
+
+    Args:
+        target1: The first qubit, bit, or register to swap.
+        target2: The second qubit, bit, or register to swap.
+
+    Raises:
+        ValueError: Broadcast array lengths do not match, or `target1`
+            and `target2` do not have matching swappable types.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> x = builder.create_quantum_register(2, name='x')
+        >>> y = builder.create_quantum_register(2, name='y')
+        >>> builder.swap(x, y)
+        >>> print(builder.finish_circuit().text_diagram())
+        q0: -x[0]-SWAP------
+                  |
+        q1: -x[1]-|----SWAP-
+                  |    |
+        q2: -y[0]-SWAP-|----
+                       |
+        q3: -y[1]------SWAP-
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.unary_iteration"></a>
@@ -3066,8 +3342,37 @@ def unary_iteration(
 # (in class kickmix.CircuitBuilder)
 def x(
     self,
-    target: object,
+    target: km.q | km.b | km.xb | km.xbool | Literal['|+>', '|->'] | km.array | Sequence[km.q | km.b | km.xb | km.xbool],
 ) -> None:
+    """Appends NOT gates (or their classical/phase equivalents) to the circuit.
+
+    This method broadcasts over `km.array` and sequence arguments.
+    Depending on the type of `target`, it emits `X` for qubits (`km.q`),
+    `BIT_INVERT` for classical bits (`km.b`), `NEG_IF` for X-basis bits
+    (`km.xb`), and `NEG` for `km.xbool(True)` or `'|->'`.
+
+    Args:
+        target: The qubit, bit, X-basis bit, X-basis bool, or
+            array/sequence of them to flip.
+
+    Raises:
+        ValueError: Attempted to invert a compile-time `bool`.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.x(km.q(0))
+        >>> builder.x(km.b(1))
+        >>> builder.x(km.xb(2))
+        >>> builder.x('|->')
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            X q0
+            BIT_INVERT b1
+            NEG if b2
+            NEG
+        ''')
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.z"></a>
@@ -3077,8 +3382,35 @@ def x(
 # (in class kickmix.CircuitBuilder)
 def z(
     self,
-    target: object,
+    target: km.q | km.b | bool,
 ) -> None:
+    """Appends a Z gate (or its classical/constant equivalent) to the circuit.
+
+    Depending on the type of `target`, this emits `Z` for a qubit
+    (`km.q`), `NEG_IF` for a classical bit (`km.b`), `NEG` for `True`,
+    and nothing for `False`.
+
+    Args:
+        target: The qubit, classical bit, or boolean determining if
+            phasing occurs.
+
+    Raises:
+        TypeError: `target` is not a `km.q`, `km.b`, or `bool`.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.z(km.q(0))
+        >>> builder.z(km.b(1))
+        >>> builder.z(True)
+        >>> builder.z(False)
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            Z q0
+            NEG if b1
+            NEG
+        ''')
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.z_pow"></a>
@@ -3621,10 +3953,49 @@ def do(
 # (in class kickmix.Simulator)
 def read_across_shots(
     self,
-    indices: object,
+    indices: km.q | km.b | bool | str | km.r | km.array | Sequence[km.q | km.b | bool],
     *,
-    out: object = None,
-) -> object:
+    out: Any = None,
+) -> np.ndarray | int | List[int]:
+    """Reads the tracked values of the given qubits or bits across all shots.
+
+    Args:
+        indices: The qubit id, bit id, or boolean constant to read, or
+            an array/register of them (such as a register name `str`,
+            `km.r`, `km.array`, or sequence).
+        out: Where to store the output. Defaults to None (allocate a new
+            numpy array). Can be set to a numpy array (with
+            `dtype=np.bool_`) to write the results into, or to `int` to
+            return the results bit-packed across shots in little-endian
+            order.
+
+    Returns:
+        If `indices` is a single qubit, bit, or bool: a 1D numpy bool
+        array of shape `(sim.batch_size,)`, or a single bit-packed `int`
+        if `out=int`.
+        If `indices` is a register or sequence of length n: a 2D numpy
+        bool array of shape `(n, sim.batch_size)`, or a `list` of n
+        bit-packed `int`s if `out=int`.
+
+    Raises:
+        IndexError: A register name or id is not found in the simulator.
+        TypeError: `indices` cannot be converted to qubit ids, bit ids,
+            or booleans.
+        ValueError: `out` is not None, `int`, or a numpy bool array of
+            the expected shape.
+
+    Examples:
+        >>> import kickmix as km
+        >>> sim = km.Simulator(batch_size=4)
+        >>> sim.write_across_shots(km.q(0), 0b1010)
+        >>> sim.write_across_shots(km.q(1), 0b1100)
+        >>> sim.read_across_shots(km.q(0))
+        array([False,  True, False,  True])
+        >>> sim.read_across_shots(km.q(0), out=int)
+        10
+        >>> sim.read_across_shots([km.q(0), km.q(1)], out=int)
+        [10, 12]
+    """
 ```
 
 <a name="kickmix.Simulator.read_phase_flipped_across_shots"></a>
@@ -3711,11 +4082,53 @@ def read_shot_phase(
 # (in class kickmix.Simulator)
 def read_within_shot(
     self,
-    indices: object,
-    shot_index: object,
+    indices: km.q | km.b | bool | str | km.r | km.array | Sequence[km.q | km.b | bool],
+    shot_index: int,
     *,
-    out: object = None,
-) -> object:
+    out: Any = None,
+) -> np.ndarray | int | bool:
+    """Reads the tracked values of the given qubits or bits within a single shot.
+
+    Args:
+        indices: The qubit id, bit id, or boolean constant to read, or
+            an array/register of them (such as a register name `str`,
+            `km.r`, `km.array`, or sequence).
+        shot_index: The index of the shot to read from, in
+            `range(sim.batch_size)`.
+        out: Where to store the output. Defaults to None (allocate a new
+            numpy array). Can be set to a numpy array (with
+            `dtype=np.bool_`) to write the results into, or to `int` to
+            return the result as a `bool` (for a single item) or a
+            little-endian bit-packed `int` (for a register or sequence).
+
+    Returns:
+        If `indices` is a single qubit, bit, or bool: a 0D numpy bool
+        array, or a `bool` if `out=int`.
+        If `indices` is a register or sequence of length n: a 1D numpy
+        bool array of shape `(n,)`, or a little-endian `int` in
+        `range(2**n)` if `out=int`.
+
+    Raises:
+        IndexError: `shot_index` is out of range, or a register name or
+            id is not found in the simulator.
+        TypeError: `indices` cannot be converted to qubit ids, bit ids,
+            or booleans.
+        ValueError: `out` is not None, `int`, or a numpy bool array of
+            the expected shape.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> reg = builder.create_quantum_register(4, name='reg')
+        >>> circuit = builder.finish_circuit()
+        >>> sim = km.Simulator(batch_size=2)
+        >>> sim.use_same_registers_as(circuit)
+        >>> sim.write_within_shot('reg', 1, 0b1101)
+        >>> sim.read_within_shot('reg', 1)
+        array([ True, False,  True,  True])
+        >>> sim.read_within_shot('reg', 1, out=int)
+        13
+    """
 ```
 
 <a name="kickmix.Simulator.use_same_registers_as"></a>
@@ -3725,8 +4138,31 @@ def read_within_shot(
 # (in class kickmix.Simulator)
 def use_same_registers_as(
     self,
-    arg0: kickmix.Circuit,
+    circuit: km.Circuit,
 ) -> None:
+    """Copies register definitions from a circuit into the simulator.
+
+    After calling this method, registers defined in the circuit can be
+    referenced by name (`str`) or register id (`km.r`) when calling
+    `read_within_shot`, `write_within_shot`, `read_across_shots`, and
+    `write_across_shots`.
+
+    Args:
+        circuit: The circuit whose register definitions should be copied.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> reg = builder.create_quantum_register(3, name='data')
+        >>> builder.x(reg[0])
+        >>> builder.x(reg[2])
+        >>> circuit = builder.finish_circuit()
+        >>> sim = km.Simulator(batch_size=2)
+        >>> sim.use_same_registers_as(circuit)
+        >>> sim.do(circuit)
+        >>> sim.read_within_shot('data', 0, out=int)
+        5
+    """
 ```
 
 <a name="kickmix.Simulator.write_across_shots"></a>
@@ -3814,10 +4250,39 @@ def write_shot_phase(
 # (in class kickmix.Simulator)
 def write_within_shot(
     self,
-    index: object,
-    shot_index: object,
-    new_value: object,
+    index: km.q | km.b | str | km.r | km.array | Sequence[km.q | km.b],
+    shot_index: int,
+    new_value: int | bool | np.ndarray,
 ) -> None:
+    """Sets the tracked values of the given qubits or bits within a single shot.
+
+    Args:
+        index: The qubit id or bit id to write to, or an array of them
+            (e.g. a register name).
+        shot_index: The index of the shot to write to, in
+            `range(sim.batch_size)`.
+        new_value: The value to write. Can be an `int` (or `bool`) in
+            `range(2**n)` bit-packed in little-endian order, or a 1D
+            `np.ndarray` with `dtype=np.bool_` and shape `(n,)`, where
+            n is the number of targeted qubits or bits.
+
+    Raises:
+        IndexError: `shot_index` is out of range, or the given `index`
+            is not a valid qubit, bit, or register.
+        ValueError: `new_value` is not a valid `int` or 1D numpy bool
+            array of the expected range or shape.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> reg = builder.create_quantum_register(4, name='reg')
+        >>> circuit = builder.finish_circuit()
+        >>> sim = km.Simulator(batch_size=2)
+        >>> sim.use_same_registers_as(circuit)
+        >>> sim.write_within_shot('reg', 0, 0b1011)
+        >>> sim.read_within_shot('reg', 0, out=int)
+        11
+    """
 ```
 
 <a name="kickmix.UnaryIterationCursor"></a>
@@ -4203,6 +4668,35 @@ def __getitem__(
         km.q(1)
         >>> arr[1:]
         km.array([km.q(1), km.q(2)])
+    """
+```
+
+<a name="kickmix.array.__init__"></a>
+```python
+# kickmix.array.__init__
+
+# (in class kickmix.array)
+def __init__(
+    self,
+    arg: Iterable[km.q | km.b | bool | km.xbool | km.xb] = (),
+    /,
+) -> None:
+    """Initializes a km.array from an iterable of kickmix values.
+
+    Args:
+        arg: Defaults to (). The sequence or iterable of values (such as
+            km.q, km.b, bool, km.xbool, or km.xb) to store in the array.
+
+    Raises:
+        TypeError: An item in `arg` is not a `km.q`, `km.b`, `bool`,
+            `km.xbool`, or `km.xb`.
+
+    Examples:
+        >>> import kickmix as km
+        >>> km.array()
+        km.array([])
+        >>> km.array([km.q(0), km.b(1), True, km.xb(2), km.xbool(False)])
+        km.array([km.q(0), km.b(1), True, km.xb(2), km.xbool(False)])
     """
 ```
 
