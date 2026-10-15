@@ -318,8 +318,27 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
             return wrapped;
         },
         pybind11::arg("count"),
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            Allocates classical bits to use as workspace in a circuit.
+
+            Allocated bits can be deallocated with the `km.CircuitBuilder.free` method.
+
+            Args:
+                count: The number of classical bits to allocate.
+
+            Returns:
+                An array containing the ids of the allocated bits. Until these ids
+                are freed, they won't be returned by any other allocation calls.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> b = builder.alloc_bits(3)
+                >>> b
+                km.array([km.b(0), km.b(1), km.b(2)])
+                >>> builder.free(b)
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "free",
@@ -530,49 +549,226 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         "x",
         &broadcast_x_obj,
         pybind11::arg("target"),
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            @signature def x(self, target: km.q | km.b | km.xb | km.xbool | Literal['|+>', '|->'] | km.array | Sequence[km.q | km.b | km.xb | km.xbool]) -> None:
+            Appends NOT gates (or their classical/phase equivalents) to the circuit.
+
+            This method broadcasts over `km.array` and sequence arguments.
+            Depending on the type of `target`, it emits `X` for qubits (`km.q`),
+            `BIT_INVERT` for classical bits (`km.b`), `NEG_IF` for X-basis bits
+            (`km.xb`), and `NEG` for `km.xbool(True)` or `'|->'`.
+
+            Args:
+                target: The qubit, bit, X-basis bit, X-basis bool, or
+                    array/sequence of them to flip.
+
+            Raises:
+                ValueError: Attempted to invert a compile-time `bool`.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.x(km.q(0))
+                >>> builder.x(km.b(1))
+                >>> builder.x(km.xb(2))
+                >>> builder.x('|->')
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    X q0
+                    BIT_INVERT b1
+                    NEG if b2
+                    NEG
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "z",
         &append_z_obj,
         pybind11::arg("target"),
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            @signature def z(self, target: km.q | km.b | bool) -> None:
+            Appends a Z gate (or its classical/constant equivalent) to the circuit.
+
+            Depending on the type of `target`, this emits `Z` for a qubit
+            (`km.q`), `NEG_IF` for a classical bit (`km.b`), `NEG` for `True`,
+            and nothing for `False`.
+
+            Args:
+                target: The qubit, classical bit, or boolean determining if
+                    phasing occurs.
+
+            Raises:
+                TypeError: `target` is not a `km.q`, `km.b`, or `bool`.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.z(km.q(0))
+                >>> builder.z(km.b(1))
+                >>> builder.z(True)
+                >>> builder.z(False)
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    Z q0
+                    NEG if b1
+                    NEG
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "neg",
         &append_neg_obj,
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            Appends a NEG instruction that flips the global phase by -1.
+
+            Inside a classical condition block (see `push_condition`), or when
+            tracking shot phases in `km.Simulator`, `NEG` negates the amplitude
+            of the current branch.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.neg()
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    NEG
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "neg_if",
         &append_neg_if_obj,
         pybind11::arg("condition"),
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            @signature def neg_if(self, condition: km.b) -> None:
+            Appends a classically-conditioned NEG instruction to the circuit.
+
+            Flips the global phase by -1 in shots where the given classical bit
+            is True.
+
+            Args:
+                condition: The classical bit (`km.b`) that controls whether the
+                    phase flip occurs.
+
+            Raises:
+                TypeError: `condition` is not a `km.b`.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.neg_if(km.b(0))
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    NEG if b0
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "push_condition",
         &append_push_condition_obj,
         pybind11::arg("condition"),
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            @signature def push_condition(self, condition: km.b) -> None:
+            Appends a PUSH_CONDITION instruction to push a bit onto the condition stack.
+
+            All subsequent instructions in the circuit will only execute in
+            shots where all bits currently on the condition stack are True,
+            until a matching `pop_condition` is called.
+
+            Args:
+                condition: The classical bit (`km.b`) to push onto the condition
+                    stack.
+
+            Raises:
+                TypeError: `condition` is not a `km.b`.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.push_condition(km.b(0))
+                >>> builder.x(km.q(0))
+                >>> builder.pop_condition()
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    PUSH_CONDITION if b0
+                    X q0
+                    POP_CONDITION
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "pop_condition",
         &append_pop_condition_obj,
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            Appends a POP_CONDITION instruction to pop from the condition stack.
+
+            Should be paired with a preceding call to `push_condition`. A POP_CONDITION
+            without a prior PUSH_CONDITION has no effect on simulation state.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.push_condition(km.b(0))
+                >>> builder.x(km.q(0))
+                >>> builder.pop_condition()
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    PUSH_CONDITION if b0
+                    X q0
+                    POP_CONDITION
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "cx",
         &broadcast_cx_obj,
         pybind11::arg("control"),
         pybind11::arg("target"),
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            @signature def cx(self, control: bool | km.b | km.q | km.array, target: km.q | km.b | km.xb | km.xbool | km.array) -> None:
+            Appends controlled-NOT gates (or classical/phase equivalents) to the circuit.
+
+            This method broadcasts over `km.array` and sequence arguments. When
+            multiple array arguments are given, they are combined by zipping.
+
+            The exact instruction(s) emitted depend on the types of `control`
+            and `target`. For example, a qubit control and qubit target emit
+            `CX`; a classical bit control and qubit target emit `X_IF`; a
+            classical bit control and classical bit target emit `BIT_INVERT_IF`;
+            and an X-basis target (`km.xb` or `km.xbool`) converts the operation
+            into a phase flip (such as `Z_IF` or `Z`).
+
+            Args:
+                control: The control (qubit, bit, bool, or array) determining
+                    if the target is flipped.
+                target: The target (qubit, bit, X-basis bit/bool, or array) to
+                    flip when `control` is active.
+
+            Raises:
+                ValueError: Broadcast array lengths do not match, or `control`
+                    and `target` have incompatible types (such as a qubit
+                    control with a classical bit target).
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.cx(km.q(0), km.q(1))
+                >>> builder.cx(km.b(0), km.q(1))
+                >>> builder.cx(True, km.q(1))
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    CX q0 q1
+                    X q1 if b0
+                    X q1
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "ccx",
@@ -791,8 +987,40 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         &broadcast_swap_obj,
         pybind11::arg("target1"),
         pybind11::arg("target2"),
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            @signature def swap(self, target1: km.q | km.b | km.xb | km.array, target2: km.q | km.b | km.xb | km.array) -> None:
+            Appends SWAP gates to the circuit.
+
+            Swaps the values of `target1` and `target2`. This method broadcasts
+            over `km.array` and sequence arguments.
+
+            Swapping qubits emits `SWAP` instructions. Swapping classical bits
+            (`km.b` or `km.xb`) emits three `BIT_INVERT ... if ...` instructions.
+
+            Args:
+                target1: The first qubit, bit, or register to swap.
+                target2: The second qubit, bit, or register to swap.
+
+            Raises:
+                ValueError: Broadcast array lengths do not match, or `target1`
+                    and `target2` do not have matching swappable types.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> x = builder.create_quantum_register(2, name='x')
+                >>> y = builder.create_quantum_register(2, name='y')
+                >>> builder.swap(x, y)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -x[0]-SWAP------
+                          |
+                q1: -x[1]-|----SWAP-
+                          |    |
+                q2: -y[0]-SWAP-|----
+                               |
+                q3: -y[1]------SWAP-
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "cswap",
@@ -885,23 +1113,101 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         "debug_print",
         &append_debug_print_obj,
         pybind11::arg("arg"),
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            @signature def debug_print(self, arg: km.q | km.b | bool | km.xb | km.xbool | km.array | Sequence[km.q | km.b | bool | km.xb | km.xbool]) -> None:
+            Appends DEBUG_PRINT instructions to print the given values during simulation.
+
+            Emits a `DEBUG_PRINT` instruction for each item in `arg`, followed
+            by an empty `DEBUG_PRINT` instruction (which ends the debug output
+            line).
+
+            Args:
+                arg: The qubit, bit, boolean, or array/sequence of values to
+                    print.
+
+            Raises:
+                TypeError: `arg` cannot be converted to printable kickmix items.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.debug_print([km.q(0), km.b(1)])
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    DEBUG_PRINT q0
+                    DEBUG_PRINT b1
+                    DEBUG_PRINT
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "reset",
         &broadcast_reset_obj,
         pybind11::arg("target"),
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            @signature def reset(self, target: km.q | km.array | Sequence[km.q]) -> None:
+            Appends Z-basis reset (R) instructions to the circuit.
+
+            Resets each target qubit to the |0> state. This method broadcasts
+            over `km.array` and sequence arguments.
+
+            Args:
+                target: The qubit or array/sequence of qubits to reset.
+
+            Raises:
+                ValueError: `target` contains non-qubit items.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> q = builder.alloc_qubits(2)
+                >>> builder.reset(q)
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    R q0
+                    R q1
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "hmr",
         &broadcast_hmr_obj,
         pybind11::arg("target"),
         pybind11::arg("output"),
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            @signature def hmr(self, target: km.q | km.array | Sequence[km.q], output: km.b | km.array | Sequence[km.b]) -> None:
+            Appends HMR (X-basis measurement and Z-basis reset) instructions.
+
+            Measures each target qubit in the X basis (storing the measurement
+            outcome into the corresponding `output` bit) and resets the qubit to
+            the |0> state. This method broadcasts over `km.array` and sequence
+            arguments of equal length.
+
+            Args:
+                target: The qubit or array/sequence of qubits to measure in the
+                    X basis and reset to |0>.
+                output: The classical bit or array/sequence of classical bits to
+                    store the measurement results into.
+
+            Raises:
+                ValueError: `target` and `output` have different lengths, or
+                    contain non-qubit / non-bit items.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> q = builder.alloc_qubits(2)
+                >>> b = builder.alloc_bits(2)
+                >>> builder.hmr(q, b)
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    HMR q0 b0
+                    HMR q1 b1
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "init_lookup",
@@ -1309,8 +1615,43 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         &multi_control_x_obj,
         pybind11::arg("controls"),
         pybind11::arg("target"),
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            @signature def multi_controlled_x(self, controls: km.array | Sequence[km.q | km.b | bool], target: km.q | km.array | Sequence[km.q]) -> None:
+            Appends a multi-controlled NOT operation to the circuit.
+
+            Flips every qubit in `target` when all `controls` are satisfied.
+            When there are 3 or more quantum controls, temporary workspace
+            qubits are allocated from the builder to compute the AND ladder and
+            uncomputed using measurement-based uncomputation (`del_and`).
+
+            Args:
+                controls: A sequence or `km.array` of quantum controls (`km.q`),
+                    classical bit controls (`km.b`), or boolean constants
+                    (`bool`) that must all be satisfied for the target qubits to
+                    flip.
+                target: The qubit or array/sequence of qubits to flip when all
+                    controls are satisfied.
+
+            Raises:
+                TypeError: `controls` is not a sequence or `km.array`.
+                ValueError: `controls` or `target` contains invalid item types.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> c = builder.alloc_qubits(3)
+                >>> t = builder.alloc_qubits(1)[0]
+                >>> builder.multi_controlled_x(c, t)
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    R q4
+                    CCX q0 q1 q4
+                    CCX q2 q4 q3
+                    HMR q4 b0
+                    CZ q1 q0 if b0
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "flip_if_less_than",

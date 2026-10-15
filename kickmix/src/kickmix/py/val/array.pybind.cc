@@ -163,6 +163,23 @@ void kickmix_py::register_qcarray_methods(pybind11::class_<PyArrayXZ> &c_qcarray
         pybind11::arg("arg") = pybind11::make_tuple(),
         pybind11::pos_only(),
         clean_doc_string(R"DOC(
+            @signature def __init__(self, arg: Iterable[km.q | km.b | bool | km.xbool | km.xb] = (), /) -> None:
+            Initializes a km.array from an iterable of kickmix values.
+
+            Args:
+                arg: Defaults to (). The sequence or iterable of values (such as
+                    km.q, km.b, bool, km.xbool, or km.xb) to store in the array.
+
+            Raises:
+                TypeError: An item in `arg` is not a `km.q`, `km.b`, `bool`,
+                    `km.xbool`, or `km.xb`.
+
+            Examples:
+                >>> import kickmix as km
+                >>> km.array()
+                km.array([])
+                >>> km.array([km.q(0), km.b(1), True, km.xb(2), km.xbool(False)])
+                km.array([km.q(0), km.b(1), True, km.xb(2), km.xbool(False)])
         )DOC")
             .data());
 
