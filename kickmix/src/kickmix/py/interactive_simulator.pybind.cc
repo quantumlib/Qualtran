@@ -21,6 +21,14 @@ static std::mt19937_64 externally_seeded_rng() {
     return result;
 }
 
+static std::mt19937_64 make_rng(std::optional<uint64_t> seed) {
+    if (seed.has_value()) {
+        std::seed_seq seq{static_cast<uint32_t>(*seed), static_cast<uint32_t>(*seed >> 32)};
+        return std::mt19937_64(seq);
+    }
+    return externally_seeded_rng();
+}
+
 static void sim_clear_for_shot(PyInteractiveSimulator &self) {
     self.with_sims([](auto &sims) {
         for (auto &sim : sims) {
@@ -106,12 +114,17 @@ pybind11::object int_obj_from_bytes_with_max_bits(uint8_t *bytes_buffer, size_t 
 }
 
 PyInteractiveSimulator::PyInteractiveSimulator(
-    size_t init_batch_size, pybind11::object init_debug_print, bool init_counting_operations) {
+    size_t init_batch_size,
+    pybind11::object init_debug_print,
+    bool init_counting_operations,
+    std::optional<uint64_t> seed) {
     batch_size = init_batch_size;
     counting_operations = init_counting_operations;
+    std::mt19937_64 master_rng = make_rng(seed);
     with_sims([&](auto &sims) {
         for (size_t k = 0; k < batch_size; k += PY_SIM_WORD_BITS) {
-            sims.emplace_back(externally_seeded_rng());
+            std::seed_seq seq{master_rng(), master_rng(), master_rng(), master_rng()};
+            sims.emplace_back(std::mt19937_64(seq));
         }
         ensure_byte_buf_can_store_bits(sims.size() * PY_SIM_WORD_BITS);
     });
@@ -765,15 +778,17 @@ void write_within_shot(
 void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInteractiveSimulator> &c_sim) {
     c_sim.def(
         pybind11::init(
-            [](size_t batch_size, pybind11::object debug_print, bool counting_operations) -> PyInteractiveSimulator {
-                return PyInteractiveSimulator(batch_size, std::move(debug_print), counting_operations);
+            [](size_t batch_size, pybind11::object debug_print, bool counting_operations, std::optional<uint64_t> seed)
+                -> PyInteractiveSimulator {
+                return PyInteractiveSimulator(batch_size, std::move(debug_print), counting_operations, seed);
             }),
         pybind11::arg("batch_size"),
         pybind11::kw_only(),
         pybind11::arg("debug_print") = pybind11::bool_(true),
         pybind11::arg("counting_operations") = false,
+        pybind11::arg("seed") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def __init__(self, batch_size: int, *, debug_print: bool | Callable[[km.q | km.b | None, np.ndarray, km.b | None, np.ndarray], None] = True, counting_operations: bool = False):
+            @signature def __init__(self, batch_size: int, *, debug_print: bool | Callable[[km.q | km.b | None, np.ndarray, km.b | None, np.ndarray], None] = True, counting_operations: bool = False, seed: int | None = None):
             Initializes an interactive simulator with the given batch size.
 
             Args:
@@ -793,6 +808,8 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
                     per-shot population counters on every executed instruction,
                     slowing down fast gate simulation by ~2-4x and allocating
                     extra counter memory, so it defaults to `False`.
+                seed: Optional PRNG seed for deterministic `HMR` and `R`
+                    operations. If `None` (the default), seeds from OS entropy.
 
             Examples:
                 >>> import kickmix as km

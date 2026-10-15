@@ -617,3 +617,34 @@ def test_counting_operations_batch_sizes(batch_size: int):
             assert sim.operation_statistics(0).num_t_like == 0
     with pytest.raises(IndexError, match="batch_size"):
         sim.operation_statistics(batch_size)
+
+
+def test_simulator_seed():
+    circuit = km.Circuit("""
+        X q0
+        X q1
+        HMR q0 b0
+        R q1
+    """)
+    sim1 = km.Simulator(batch_size=512, seed=12345)
+    sim2 = km.Simulator(batch_size=512, seed=12345, counting_operations=True)
+    sim3 = km.Simulator(batch_size=512, seed=99999)
+    sim1.do(circuit)
+    sim2.do(circuit)
+    sim3.do(circuit)
+
+    b0_1 = sim1.read_across_shots(km.b(0), out=int)
+    b0_2 = sim2.read_across_shots(km.b(0), out=int)
+    b0_3 = sim3.read_across_shots(km.b(0), out=int)
+    phase_1 = sim1.read_phase_flipped_across_shots(out=int)
+    phase_2 = sim2.read_phase_flipped_across_shots(out=int)
+    phase_3 = sim3.read_phase_flipped_across_shots(out=int)
+
+    # Identical seeds produce identical HMR and R outcomes across all chunks.
+    assert b0_1 == b0_2
+    assert phase_1 == phase_2
+    # Different seeds produce different outcomes.
+    assert b0_1 != b0_3
+    assert phase_1 != phase_3
+    # Independent 256-shot chunks within the same simulator do not repeat the same 256 bits.
+    assert (b0_1 & ((1 << 256) - 1)) != (b0_1 >> 256)

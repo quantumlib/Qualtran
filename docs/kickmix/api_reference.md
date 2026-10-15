@@ -4306,6 +4306,7 @@ def __init__(
     *,
     debug_print: bool | Callable[[km.q | km.b | None, np.ndarray, km.b | None, np.ndarray], None] = True,
     counting_operations: bool = False,
+    seed: int | None = None,
 ):
     """Initializes an interactive simulator with the given batch size.
 
@@ -4326,6 +4327,8 @@ def __init__(
             per-shot population counters on every executed instruction,
             slowing down fast gate simulation by ~2-4x and allocating
             extra counter memory, so it defaults to `False`.
+        seed: Optional PRNG seed for deterministic `HMR` and `R`
+            operations. If `None` (the default), seeds from OS entropy.
 
     Examples:
         >>> import kickmix as km
