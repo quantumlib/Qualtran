@@ -163,6 +163,23 @@ void kickmix_py::register_qcarray_methods(pybind11::class_<PyArrayXZ> &c_qcarray
         pybind11::arg("arg") = pybind11::make_tuple(),
         pybind11::pos_only(),
         clean_doc_string(R"DOC(
+            @signature def __init__(self, arg: Iterable[km.q | km.b | bool | km.xbool | km.xb] = (), /) -> None:
+            Initializes a km.array from an iterable of kickmix values.
+
+            Args:
+                arg: Defaults to (). The sequence or iterable of values (such as
+                    km.q, km.b, bool, km.xbool, or km.xb) to store in the array.
+
+            Raises:
+                TypeError: An item in `arg` is not a `km.q`, `km.b`, `bool`,
+                    `km.xbool`, or `km.xb`.
+
+            Examples:
+                >>> import kickmix as km
+                >>> km.array()
+                km.array([])
+                >>> km.array([km.q(0), km.b(1), True, km.xb(2), km.xbool(False)])
+                km.array([km.q(0), km.b(1), True, km.xb(2), km.xbool(False)])
         )DOC")
             .data());
 
@@ -179,6 +196,14 @@ void kickmix_py::register_qcarray_methods(pybind11::class_<PyArrayXZ> &c_qcarray
             Returns:
                  If the index is an int: the item at that index.
                  If the index is a slice: a view of the array.
+
+            Examples:
+                >>> import kickmix as km
+                >>> arr = km.array([km.q(0), km.q(1), km.q(2)])
+                >>> arr[1]
+                km.q(1)
+                >>> arr[1:]
+                km.array([km.q(1), km.q(2)])
         )DOC")
             .data());
 
@@ -189,6 +214,11 @@ void kickmix_py::register_qcarray_methods(pybind11::class_<PyArrayXZ> &c_qcarray
         },
         clean_doc_string(R"DOC(
             Returns the length of the array.
+
+            Examples:
+                >>> import kickmix as km
+                >>> len(km.array([km.q(0), km.q(1), km.q(2)]))
+                3
         )DOC")
             .data());
 
@@ -202,6 +232,11 @@ void kickmix_py::register_qcarray_methods(pybind11::class_<PyArrayXZ> &c_qcarray
         },
         clean_doc_string(R"DOC(
             Returns the concatenation of two arrays.
+
+            Examples:
+                >>> import kickmix as km
+                >>> km.array([km.q(0)]) + km.array([km.b(1), True])
+                km.array([km.q(0), km.b(1), True])
         )DOC")
             .data());
 

@@ -76,3 +76,25 @@ TEST(circuit, html_diagram_works_on_all_gates) {
     auto s = c.html_diagram();
     ASSERT_TRUE(!s.empty());
 }
+
+TEST(circuit, html_diagram_info_tags) {
+    Circuit c(R"CIRCUIT(
+        INFO_TAG "ignored_tag"
+        INFO_TAG "@exit:unmatched"
+        INFO_TAG "@enter:outer_sub"
+        X q0
+        INFO_TAG "@enter:inner_sub"
+        CX q0 q1
+        INFO_TAG "@exit:inner_sub"
+        CCX q0 q1 q2
+        INFO_TAG "@exit:outer_sub"
+        INFO_TAG "@enter:unclosed_sub"
+        Z q0
+    )CIRCUIT");
+    auto s = c.html_diagram();
+    ASSERT_NE(s.find("outer_sub"), std::string::npos);
+    ASSERT_NE(s.find("inner_sub"), std::string::npos);
+    ASSERT_NE(s.find("unclosed_sub"), std::string::npos);
+    ASSERT_EQ(s.find("ignored_tag"), std::string::npos);
+    ASSERT_EQ(s.find("unmatched"), std::string::npos);
+}

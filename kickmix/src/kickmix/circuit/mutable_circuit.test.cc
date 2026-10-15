@@ -212,6 +212,28 @@ TEST(mutable_circuit, parse_each_operation) {
         }}));
 
     EXPECT_EQ(
+        parse_into_vec("CSWAP q3 q11 q13"),
+        (std::vector<Op>{Op{
+            .kind = OpType::CSWAP,
+            .q_control2 = QubitId{3},
+            .q_control1 = QubitId{11},
+            .q_target = QubitId{13},
+            .c_target = {},
+            .c_condition = {},
+        }}));
+
+    EXPECT_EQ(
+        parse_into_vec("CSWAP q3 q11 q13 if b5"),
+        (std::vector<Op>{Op{
+            .kind = OpType::CSWAP_IF,
+            .q_control2 = QubitId{3},
+            .q_control1 = QubitId{11},
+            .q_target = QubitId{13},
+            .c_target = {},
+            .c_condition = BitId{5},
+        }}));
+
+    EXPECT_EQ(
         parse_into_vec("R q2"),
         (std::vector<Op>{Op{
             .kind = OpType::R,
@@ -422,6 +444,22 @@ TEST(mutable_circuit, parse_each_operation) {
                 .c_condition = BitId{7},
             },
         }));
+
+    {
+        MutableCircuit c;
+        c.append_from_kmx_text("INFO_TAG \"hello\"\nINFO_TAG \"\"");
+        Circuit vc = c.to_validated_circuit();
+        std::vector<Op> result;
+        vc.iter_ops([&](Op op) {
+            result.push_back(op);
+        });
+        EXPECT_EQ(
+            result,
+            (std::vector<Op>{
+                Op{.kind = OpType::INFO_TAG, .info_tag = "hello"},
+                Op{.kind = OpType::INFO_TAG, .info_tag = ""},
+            }));
+    }
 }
 
 TEST(mutable_circuit, fail_parsing) {
@@ -466,6 +504,10 @@ TEST(mutable_circuit, fail_parsing) {
     EXPECT_THROW({ c.append_from_kmx_text("NOP q0"); }, std::invalid_argument);
     EXPECT_THROW({ c.append_from_kmx_text("CCX q0 q1"); }, std::invalid_argument);
     EXPECT_THROW({ c.append_from_kmx_text("CCX q0 q1 b2"); }, std::invalid_argument);
+    EXPECT_THROW({ c.append_from_kmx_text("INFO_TAG"); }, std::invalid_argument);
+    EXPECT_THROW({ c.append_from_kmx_text("INFO_TAG q0"); }, std::invalid_argument);
+    EXPECT_THROW({ c.append_from_kmx_text("INFO_TAG \"a\" if b0"); }, std::invalid_argument);
+    EXPECT_THROW({ c.append_from_kmx_text("INFO_TAG \"a\" \"b\""); }, std::invalid_argument);
 }
 
 TEST(mutable_circuit, boundary_values) {
@@ -494,6 +536,9 @@ TEST(mutable_circuit, parse_later_fail_validation) {
     expect_fail_validation("CCZ q0 q0 q1");
     expect_fail_validation("CCZ q1 q0 q0");
     expect_fail_validation("CCZ q0 q1 q0");
+    expect_fail_validation("CSWAP q0 q0 q1");
+    expect_fail_validation("CSWAP q1 q0 q0");
+    expect_fail_validation("CSWAP q0 q1 q0");
 }
 
 TEST(mutable_circuit, fail_validation_size_mismatch) {
@@ -530,6 +575,21 @@ TEST(mutable_circuit, fail_validation_size_mismatch) {
     c.b0.push_back(1);
     EXPECT_THROW({ c.to_validated_circuit(); }, std::invalid_argument);
     c.bc.push_back(1);
+    EXPECT_NO_THROW({ c.to_validated_circuit(); });
+
+    c.op_types.push_back(OpType::INFO_TAG);
+    EXPECT_THROW({ c.to_validated_circuit(); }, std::invalid_argument);
+    c.info_tag_end_offsets.push_back(2);
+    EXPECT_THROW({ c.to_validated_circuit(); }, std::invalid_argument);
+    c.info_tag_chars.push_back('a');
+    c.info_tag_chars.push_back('b');
+    EXPECT_NO_THROW({ c.to_validated_circuit(); });
+
+    c.op_types.push_back(OpType::INFO_TAG);
+    uint64_t *end_ptr = c.info_tag_end_offsets.grab_writeable(1);
+    *end_ptr = 1;
+    EXPECT_THROW({ c.to_validated_circuit(); }, std::invalid_argument);
+    *end_ptr = 2;
     EXPECT_NO_THROW({ c.to_validated_circuit(); });
 }
 
@@ -584,6 +644,8 @@ TEST(mutable_circuit, bulk_parse) {
 
         SWAP q13 q14
         SWAP q15 q16 if b20
+        CSWAP q13 q14 q15
+        CSWAP q15 q16 q17 if b20
 
         PUSH_CONDITION if b21
         BIT_STORE1 b23
@@ -597,7 +659,7 @@ TEST(mutable_circuit, bulk_parse) {
 
     std::vector<OpType> ops;
     auto f = c.to_validated_circuit();
-    ASSERT_EQ(f.num_ops, 35);
+    ASSERT_EQ(f.num_ops, 37);
     ASSERT_EQ(f.register_data.size(), 2);
     ASSERT_EQ(f.register_data[0].contents, (std::vector<QubitOrBit>{QubitId{0}, BitId{0}}));
     ASSERT_EQ(f.register_data[1].contents, (std::vector<QubitOrBit>{}));
@@ -629,6 +691,8 @@ TEST(mutable_circuit, bulk_parse) {
     ASSERT_EQ(*e++, OpType::BIT_STORE1_IF);
     ASSERT_EQ(*e++, OpType::SWAP);
     ASSERT_EQ(*e++, OpType::SWAP_IF);
+    ASSERT_EQ(*e++, OpType::CSWAP);
+    ASSERT_EQ(*e++, OpType::CSWAP_IF);
     ASSERT_EQ(*e++, OpType::PUSH_CONDITION);
     ASSERT_EQ(*e++, OpType::BIT_STORE1);
     ASSERT_EQ(*e++, OpType::X);
@@ -637,7 +701,7 @@ TEST(mutable_circuit, bulk_parse) {
     ASSERT_EQ(*e++, OpType::X);
     ASSERT_EQ(*e++, OpType::POP_CONDITION);
     ASSERT_EQ(*e++, OpType::POP_CONDITION);
-    ASSERT_EQ(e - f.op_types, 35);
+    ASSERT_EQ(e - f.op_types, 37);
 }
 
 TEST(mutable_circuit, append) {
@@ -661,4 +725,22 @@ TEST(mutable_circuit, append) {
     m4.append_reversed(m3);
     m4.register_data = m3.register_data;
     ASSERT_EQ(m4.to_validated_circuit(), every);
+
+    MutableCircuit multi_tags;
+    multi_tags.append_from_kmx_text(R"CIRCUIT(
+        INFO_TAG "first"
+        X q0
+        INFO_TAG ""
+        CX q0 q1
+        INFO_TAG "third_tag"
+    )CIRCUIT");
+    MutableCircuit mr;
+    mr.append_reversed(multi_tags);
+    ASSERT_EQ(mr.to_validated_circuit(), Circuit(R"CIRCUIT(
+            INFO_TAG "third_tag"
+            CX q0 q1
+            INFO_TAG ""
+            X q0
+            INFO_TAG "first"
+        )CIRCUIT"));
 }

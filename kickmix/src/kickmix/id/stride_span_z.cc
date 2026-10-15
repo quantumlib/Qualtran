@@ -32,7 +32,7 @@ std::ostream &kickmix::operator<<(std::ostream &out, const stride_span_z &v) {
 }
 
 stride_span<const QubitId> stride_span_z::checked_cast_to_qubit_ids(const char *value_name_for_error) const {
-    if (!is_all_qubits()) {
+    if (!is_all_qubit_ids()) {
         std::stringstream ss;
         ss << value_name_for_error;
         ss << " contained values that weren't qubit ids: ";
@@ -43,7 +43,7 @@ stride_span<const QubitId> stride_span_z::checked_cast_to_qubit_ids(const char *
 }
 
 stride_span<const BitId> stride_span_z::checked_cast_to_bit_ids(const char *value_name_for_error) const {
-    if (!is_all_bits()) {
+    if (!is_all_bit_ids()) {
         std::stringstream ss;
         ss << value_name_for_error;
         ss << " contained values that weren't bit ids: ";
@@ -53,34 +53,35 @@ stride_span<const BitId> stride_span_z::checked_cast_to_bit_ids(const char *valu
     return cast_data<BitId>();
 }
 
-bool stride_span_z::is_all_qubits() const {
-    if (common_type == QXZTypeTag8::QUBIT_ID) {
-        return true;
-    }
-    if (common_type != QXZTypeTag8::MAY_BE_MIXED_BUT_IS_ALL_ZLIKE && count > 0) {
-        return false;
-    }
+bool stride_span_z::has_any_qubits() const {
     for (auto e : *this) {
-        if (!e.is_qubit()) {
+        if (e.is_qubit()) {
+            return true;
+        }
+    }
+    return true;
+}
+
+static bool is_all(const stride_span_z &qc, QCTypeTag32 tag) {
+    if (qc.count > 0 && is_not_mixed(qc.common_type)) {
+        return (uint32_t)qc.common_type == ((uint32_t)tag >> 29);
+    }
+    for (size_t k = 0; k < qc.count; k++) {
+        if ((qc.ptr[k * qc.stride].tagged_id & TAG_MASK) != (uint32_t)tag) {
             return false;
         }
     }
     return true;
 }
 
-bool stride_span_z::is_all_bits() const {
-    if (common_type == QXZTypeTag8::BIT_ID) {
-        return true;
-    }
-    if (common_type != QXZTypeTag8::MAY_BE_MIXED_BUT_IS_ALL_ZLIKE && count > 0) {
-        return false;
-    }
-    for (auto e : *this) {
-        if (!e.is_bit()) {
-            return false;
-        }
-    }
-    return true;
+bool stride_span_z::is_all_qubit_ids() const {
+    return is_all(*this, QCTypeTag32::QUBIT_ID);
+}
+bool stride_span_z::is_all_bit_ids() const {
+    return is_all(*this, QCTypeTag32::BIT_ID);
+}
+bool stride_span_z::is_all_bools() const {
+    return is_all(*this, QCTypeTag32::BOOL_VAL);
 }
 
 bool stride_span_z::is_all_classical() const {

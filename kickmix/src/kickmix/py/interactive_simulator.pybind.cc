@@ -402,6 +402,7 @@ void write_across_shots_1d_array(PyInteractiveSimulator &self, QubitOrBit index,
     }
     auto stride = array.strides(0);
     auto in_ptr = array.data(0);
+    self.ensure_big_enough_state_for(index);
     for (size_t k = 0; k < self.batch_size; k++) {
         set_single_bit(self, index, k, *in_ptr);
         in_ptr += stride;
@@ -420,6 +421,9 @@ void write_across_shots_2d_int(
         throw std::invalid_argument(ss.str());
     }
 
+    for (auto q : indices) {
+        self.ensure_big_enough_state_for(q);
+    }
     size_t k = 0;
     for (const auto &item : value_obj) {
         write_across_shots_1d_int(self, indices[k++], pybind11::cast<pybind11::object>(item));
@@ -681,12 +685,49 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
             Args:
                 batch_size: Determines how many simultaneous shots are being tracked by the
                     simulator.
+
+            Examples:
+                >>> import kickmix as km
+                >>> sim = km.Simulator(batch_size=4)
+                >>> sim.batch_size
+                4
+                >>> sim.read_across_shots(km.q(0))
+                array([False, False, False, False])
         )DOC")
             .data());
 
-    c_sim.def("use_same_registers_as", [](PyInteractiveSimulator &self, const Circuit &circuit) {
-        self.register_data = circuit.register_data;
-    });
+    c_sim.def(
+        "use_same_registers_as",
+        [](PyInteractiveSimulator &self, const Circuit &circuit) {
+            self.register_data = circuit.register_data;
+        },
+        pybind11::arg("circuit"),
+        clean_doc_string(R"DOC(
+            @signature def use_same_registers_as(self, circuit: km.Circuit) -> None:
+            Copies register definitions from a circuit into the simulator.
+
+            After calling this method, registers defined in the circuit can be
+            referenced by name (`str`) or register id (`km.r`) when calling
+            `read_within_shot`, `write_within_shot`, `read_across_shots`, and
+            `write_across_shots`.
+
+            Args:
+                circuit: The circuit whose register definitions should be copied.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> reg = builder.create_quantum_register(3, name='data')
+                >>> builder.x(reg[0])
+                >>> builder.x(reg[2])
+                >>> circuit = builder.finish_circuit()
+                >>> sim = km.Simulator(batch_size=2)
+                >>> sim.use_same_registers_as(circuit)
+                >>> sim.do(circuit)
+                >>> sim.read_within_shot('data', 0, out=int)
+                5
+        )DOC")
+            .data());
 
     c_sim.def(
         "do",
@@ -703,6 +744,28 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
 
             Args:
                 circuit: The circuit with instructions to apply.
+
+            Examples:
+                >>> import kickmix as km
+                >>> import numpy as np
+                >>> sim = km.Simulator(batch_size=4)
+                >>> sim.write_across_shots(km.q(0), np.array([False, True, False, True]))
+                >>> sim.write_across_shots(km.q(1), np.array([False, False, True, True]))
+
+                >>> sim.read_across_shots(km.q(0))
+                array([False,  True, False,  True])
+                >>> sim.read_across_shots(km.q(1))
+                array([False, False,  True,  True])
+
+                >>> sim.do(km.Circuit('''
+                ...     CX q0 q1
+                ...     X q0
+                ... '''))
+
+                >>> sim.read_across_shots(km.q(0))
+                array([ True, False,  True, False])
+                >>> sim.read_across_shots(km.q(1))
+                array([False,  True,  True, False])
         )DOC")
             .data());
 
@@ -840,6 +903,16 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
 
             Returns:
                 The phase flip information.
+
+            Examples:
+                >>> import kickmix as km
+                >>> sim = km.Simulator(batch_size=4)
+                >>> sim.write_across_shots(km.q(0), 0b1010)
+                >>> sim.do(km.Circuit('Z q0'))
+                >>> sim.read_phase_flipped_across_shots()
+                array([False,  True, False,  True])
+                >>> sim.read_phase_flipped_across_shots(out=int)
+                10
          )DOC")
             .data());
 
@@ -869,6 +942,45 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
         pybind11::kw_only(),
         pybind11::arg("out") = pybind11::none(),
         clean_doc_string(R"DOC(
+            @signature def read_across_shots(self, indices: km.q | km.b | bool | str | km.r | km.array | Sequence[km.q | km.b | bool], *, out: Any = None) -> np.ndarray | int | list[int]:
+            Reads the tracked values of the given qubits or bits across all shots.
+
+            Args:
+                indices: The qubit id, bit id, or boolean constant to read, or
+                    an array/register of them (such as a register name `str`,
+                    `km.r`, `km.array`, or sequence).
+                out: Where to store the output. Defaults to None (allocate a new
+                    numpy array). Can be set to a numpy array (with
+                    `dtype=np.bool_`) to write the results into, or to `int` to
+                    return the results bit-packed across shots in little-endian
+                    order.
+
+            Returns:
+                If `indices` is a single qubit, bit, or bool: a 1D numpy bool
+                array of shape `(sim.batch_size,)`, or a single bit-packed `int`
+                if `out=int`.
+                If `indices` is a register or sequence of length n: a 2D numpy
+                bool array of shape `(n, sim.batch_size)`, or a `list` of n
+                bit-packed `int`s if `out=int`.
+
+            Raises:
+                IndexError: A register name or id is not found in the simulator.
+                TypeError: `indices` cannot be converted to qubit ids, bit ids,
+                    or booleans.
+                ValueError: `out` is not None, `int`, or a numpy bool array of
+                    the expected shape.
+
+            Examples:
+                >>> import kickmix as km
+                >>> sim = km.Simulator(batch_size=4)
+                >>> sim.write_across_shots(km.q(0), 0b1010)
+                >>> sim.write_across_shots(km.q(1), 0b1100)
+                >>> sim.read_across_shots(km.q(0))
+                array([False,  True, False,  True])
+                >>> sim.read_across_shots(km.q(0), out=int)
+                10
+                >>> sim.read_across_shots([km.q(0), km.q(1)], out=int)
+                [10, 12]
          )DOC")
             .data());
 
@@ -880,6 +992,48 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
         pybind11::kw_only(),
         pybind11::arg("out") = pybind11::none(),
         clean_doc_string(R"DOC(
+            @signature def read_within_shot(self, indices: km.q | km.b | bool | str | km.r | km.array | Sequence[km.q | km.b | bool], shot_index: int, *, out: Any = None) -> np.ndarray | int | bool:
+            Reads the tracked values of the given qubits or bits within a single shot.
+
+            Args:
+                indices: The qubit id, bit id, or boolean constant to read, or
+                    an array/register of them (such as a register name `str`,
+                    `km.r`, `km.array`, or sequence).
+                shot_index: The index of the shot to read from, in
+                    `range(sim.batch_size)`.
+                out: Where to store the output. Defaults to None (allocate a new
+                    numpy array). Can be set to a numpy array (with
+                    `dtype=np.bool_`) to write the results into, or to `int` to
+                    return the result as a `bool` (for a single item) or a
+                    little-endian bit-packed `int` (for a register or sequence).
+
+            Returns:
+                If `indices` is a single qubit, bit, or bool: a 0D numpy bool
+                array, or a `bool` if `out=int`.
+                If `indices` is a register or sequence of length n: a 1D numpy
+                bool array of shape `(n,)`, or a little-endian `int` in
+                `range(2**n)` if `out=int`.
+
+            Raises:
+                IndexError: `shot_index` is out of range, or a register name or
+                    id is not found in the simulator.
+                TypeError: `indices` cannot be converted to qubit ids, bit ids,
+                    or booleans.
+                ValueError: `out` is not None, `int`, or a numpy bool array of
+                    the expected shape.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> reg = builder.create_quantum_register(4, name='reg')
+                >>> circuit = builder.finish_circuit()
+                >>> sim = km.Simulator(batch_size=2)
+                >>> sim.use_same_registers_as(circuit)
+                >>> sim.write_within_shot('reg', 1, 0b1101)
+                >>> sim.read_within_shot('reg', 1)
+                array([ True, False,  True,  True])
+                >>> sim.read_within_shot('reg', 1, out=int)
+                13
          )DOC")
             .data());
 
@@ -910,6 +1064,15 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
             Raises:
                 IndexError: The given index isn't a qubit id or bit id.
                 ValueError: The given new_value isn't valid.
+
+            Examples:
+                >>> import kickmix as km
+                >>> sim = km.Simulator(batch_size=4)
+                >>> sim.write_across_shots(km.q(0), 0b1010)
+                >>> sim.read_across_shots(km.q(0))
+                array([False,  True, False,  True])
+                >>> sim.read_across_shots(km.q(0), out=int)
+                10
         )DOC")
             .data());
 
@@ -920,6 +1083,35 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
         pybind11::arg("shot_index"),
         pybind11::arg("new_value"),
         clean_doc_string(R"DOC(
+            @signature def write_within_shot(self, index: km.q | km.b | str | km.r | km.array | Sequence[km.q | km.b], shot_index: int, new_value: int | bool | np.ndarray) -> None:
+            Sets the tracked values of the given qubits or bits within a single shot.
+
+            Args:
+                index: The qubit id or bit id to write to, or an array of them
+                    (e.g. a register name).
+                shot_index: The index of the shot to write to, in
+                    `range(sim.batch_size)`.
+                new_value: The value to write. Can be an `int` (or `bool`) in
+                    `range(2**n)` bit-packed in little-endian order, or a 1D
+                    `np.ndarray` with `dtype=np.bool_` and shape `(n,)`, where
+                    n is the number of targeted qubits or bits.
+
+            Raises:
+                IndexError: `shot_index` is out of range, or the given `index`
+                    is not a valid qubit, bit, or register.
+                ValueError: `new_value` is not a valid `int` or 1D numpy bool
+                    array of the expected range or shape.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> reg = builder.create_quantum_register(4, name='reg')
+                >>> circuit = builder.finish_circuit()
+                >>> sim = km.Simulator(batch_size=2)
+                >>> sim.use_same_registers_as(circuit)
+                >>> sim.write_within_shot('reg', 0, 0b1011)
+                >>> sim.read_within_shot('reg', 0, out=int)
+                11
         )DOC")
             .data());
 }

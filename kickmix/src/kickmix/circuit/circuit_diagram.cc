@@ -293,6 +293,9 @@ static std::vector<std::string> generate_text_diagram_lines(const Circuit &circu
         ops.push_back(op);
     });
     for (const auto &op : ops) {
+        if (op.kind == OpType::INFO_TAG) {
+            continue;
+        }
         // Avoid editing and reading a bit in the same column.
         if ((op.c_condition.is_bit() && written_bits_in_col.contains(op.c_condition.bit())) ||
             (op.c_target.is_bit() && read_bits_in_col.contains(op.c_target.bit()))) {
@@ -401,6 +404,16 @@ static std::vector<std::string> generate_text_diagram_lines(const Circuit &circu
             case OpType::SWAP_IF:
                 filler_chars[q2y(op.q_target)] = '-';
                 filler_chars[q2y(op.q_control1)] = '-';
+                result_lines[q2y(op.q_control1)].pop_back();
+                result_lines[q2y(op.q_control1)].append("SWAP");
+                line.pop_back();
+                line.append("SWAP");
+                break;
+            case OpType::CSWAP:
+            case OpType::CSWAP_IF:
+                filler_chars[q2y(op.q_target)] = '-';
+                filler_chars[q2y(op.q_control1)] = '-';
+                result_lines[q2y(op.q_control2)].back() = '@';
                 result_lines[q2y(op.q_control1)].pop_back();
                 result_lines[q2y(op.q_control1)].append("SWAP");
                 line.pop_back();

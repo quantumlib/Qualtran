@@ -250,3 +250,39 @@ TEST(sim, z_pow_if) {
     ASSERT_EQ(sim.angles[2], FixedPrecisionAngle128::from_half_turns_exact_double(0.0));
     ASSERT_EQ(sim.angles[3], FixedPrecisionAngle128::from_half_turns_exact_double(0.0));
 }
+
+TEST(sim, cswap) {
+    Sim<b64, false> sim(INDEPENDENT_TEST_RNG());
+    Circuit circuit(R"CIRCUIT(
+        CSWAP q0 q1 q2
+    )CIRCUIT");
+    sim.configure_for(circuit);
+    sim.clear_for_shot();
+    sim.qubit_span()[0] = b64::from_u32_broadcast(0b11110000);
+    sim.qubit_span()[1] = b64::from_u32_broadcast(0b11001100);
+    sim.qubit_span()[2] = b64::from_u32_broadcast(0b10101010);
+    sim.apply(circuit);
+    ASSERT_EQ(sim.qubit_span()[0], b64::from_u32_broadcast(0b11110000));
+    ASSERT_EQ(sim.qubit_span()[1], b64::from_u32_broadcast(0b10101100));
+    ASSERT_EQ(sim.qubit_span()[2], b64::from_u32_broadcast(0b11001010));
+    ASSERT_EQ(sim.global_phase_ref(), b64{});
+}
+
+TEST(sim, cswap_if) {
+    Sim<b64, false> sim(INDEPENDENT_TEST_RNG());
+    Circuit circuit(R"CIRCUIT(
+        CSWAP q0 q1 q2 if b0
+    )CIRCUIT");
+    sim.configure_for(circuit);
+    sim.clear_for_shot();
+    sim.bit_span()[0] = b64::from_u32_broadcast(0b1111111100000000);
+    sim.qubit_span()[0] = b64::from_u32_broadcast(0b1111000011110000);
+    sim.qubit_span()[1] = b64::from_u32_broadcast(0b1100110011001100);
+    sim.qubit_span()[2] = b64::from_u32_broadcast(0b1010101010101010);
+    sim.apply(circuit);
+    ASSERT_EQ(sim.bit_span()[0], b64::from_u32_broadcast(0b1111111100000000));
+    ASSERT_EQ(sim.qubit_span()[0], b64::from_u32_broadcast(0b1111000011110000));
+    ASSERT_EQ(sim.qubit_span()[1], b64::from_u32_broadcast(0b1010110011001100));
+    ASSERT_EQ(sim.qubit_span()[2], b64::from_u32_broadcast(0b1100101010101010));
+    ASSERT_EQ(sim.global_phase_ref(), b64{});
+}

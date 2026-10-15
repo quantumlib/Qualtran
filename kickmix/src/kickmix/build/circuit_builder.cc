@@ -228,25 +228,6 @@ void CircuitBuilder::broadcast_reset(stride_span<const QubitId> targets) {
     mut.q0.push_back_many(targets.cast_data<const uint32_t>());
 }
 
-void CircuitBuilder::cleft_rotate(QubitOrTrue control, stride_span<const QubitId> reg) {
-    auto mark = raii_mark_block_entry(control.is_qubit() ? "c_left_rotate" : "left_rotate");
-    if (reg.empty()) {
-        return;
-    }
-
-    if (control.is_qubit()) {
-        for_each_reversed(0, reg.size() - 1, [&](LoopBuilder &loop, iota k) {
-            loop.cx(reg[k], reg[k + 1]);
-            loop.ccx((QubitId)control, reg[k + 1], reg[k]);
-            loop.cx(reg[k], reg[k + 1]);
-        });
-    } else {
-        for_each_reversed(0, reg.size() - 1, [&](LoopBuilder &loop, iota k) {
-            loop.swap(reg[k], reg[k + 1]);
-        });
-    }
-}
-
 RaiiCircuitBuilderPopPushedCondition::RaiiCircuitBuilderPopPushedCondition(CircuitBuilder *builder) : builder(builder) {
 }
 RaiiCircuitBuilderPopPushedCondition::~RaiiCircuitBuilderPopPushedCondition() {
@@ -371,51 +352,40 @@ void CircuitBuilder::broadcast_ccx(
     }
 }
 
-void CircuitBuilder::cright_rotate(QubitOrTrue control, stride_span<const QubitId> reg) {
-    auto mark = raii_mark_block_entry(control.is_qubit() ? "c_right_rotate" : "right_rotate");
-    if (reg.empty()) {
-        return;
-    }
-
-    if (control.is_qubit()) {
-        for_each(0, reg.size() - 1, [&](LoopBuilder &loop, iota k) {
-            loop.cx(reg[k], reg[k + 1]);
-            loop.ccx((QubitId)control, reg[k + 1], reg[k]);
-            loop.cx(reg[k], reg[k + 1]);
-        });
-    } else {
-        for_each(0, reg.size() - 1, [&](LoopBuilder &loop, iota k) {
-            loop.swap(reg[k], reg[k + 1]);
-        });
-    }
-}
 RaiiCircuitBuilderPopPushedCondition CircuitBuilder::raii_push_condition(BitId control) {
     push_condition(control);
     return RaiiCircuitBuilderPopPushedCondition(this);
 }
-void CircuitBuilder::left_rotate(stride_span<const QubitId> reg) {
-    for_each_reversed(0, reg.size() - 1, [&](LoopBuilder &loop, iota k) {
-        loop.swap(reg[k], reg[k + 1]);
-    });
-}
-void CircuitBuilder::right_rotate(stride_span<const QubitId> reg) {
-    for_each(0, reg.size() - 1, [&](LoopBuilder &loop, iota k) {
-        loop.swap(reg[k], reg[k + 1]);
-    });
+
+void CircuitBuilder::cswap(QubitId control, QubitId q1, QubitId q2) {
+    mut.op_types.push_back(OpType::CSWAP);
+    mut.qqq0.push_back(control.tagged_id);
+    mut.qqq1.push_back(q1.tagged_id);
+    mut.qqq2.push_back(q2.tagged_id);
 }
 
-void CircuitBuilder::cswap(BitId control, QubitId q1, QubitId q2) {
+void CircuitBuilder::cswap_if(QubitId control, QubitId q1, QubitId q2, BitId cond) {
+    mut.op_types.push_back(OpType::CSWAP_IF);
+    mut.bc.push_back(cond.tagged_id);
+    mut.qqq0.push_back(control.tagged_id);
+    mut.qqq1.push_back(q1.tagged_id);
+    mut.qqq2.push_back(q2.tagged_id);
+}
+
+void CircuitBuilder::swap_if(QubitId q1, QubitId q2, BitId cond) {
     mut.op_types.push_back(OpType::SWAP_IF);
-    mut.bc.push_back(control.tagged_id);
+    mut.bc.push_back(cond.tagged_id);
     mut.qq0.push_back(q1.tagged_id);
     mut.qq1.push_back(q2.tagged_id);
 }
 
+void CircuitBuilder::cswap(BitId control, QubitId q1, QubitId q2) {
+    swap_if(q1, q2, control);
+}
+
 void CircuitBuilder::cswap(QubitOrBitOrBool control, QubitId q1, QubitId q2) {
     if (control.is_qubit()) {
-        cx(q1, q2);
-        ccx((QubitId)control, q2, q1);
-        cx(q1, q2);
+        cswap((QubitId)control, q1, q2);
     } else if (control.is_bit()) {
         cswap((BitId)control, q1, q2);
     } else if ((bool)control) {
@@ -439,15 +409,14 @@ void CircuitBuilder::broadcast_cswap(
     }
 
     if (control.is_qubit()) {
-        for_each(0, q1.size(), [&](LoopBuilder &loop, iota k) {
-            loop.cx(q1[k], q2[k]);
-            loop.ccx((QubitId)control, q2[k], q1[k]);
-            loop.cx(q1[k], q2[k]);
-        });
+        mut.op_types.push_back_repeat(OpType::CSWAP, q1.size());
+        mut.qqq0.push_back_repeat(control.tagged_id, q1.size());
+        mut.qqq1.push_back_many(q1.cast_data<const uint32_t>());
+        mut.qqq2.push_back_many(q2.cast_data<const uint32_t>());
     } else {
-        for_each(0, q1.size(), [&](LoopBuilder &loop, iota k) {
-            loop.swap(q1[k], q2[k]);
-        });
+        mut.op_types.push_back_repeat(OpType::SWAP, q1.size());
+        mut.qq0.push_back_many(q1.cast_data<const uint32_t>());
+        mut.qq1.push_back_many(q2.cast_data<const uint32_t>());
     }
 }
 
@@ -1146,245 +1115,28 @@ Circuit CircuitBuilder::finish_circuit() const {
     return mut.to_validated_circuit();
 }
 
-void CircuitBuilder::write_analysis_svg_to(std::ostream &out, size_t reference_qubit_count) {
-    Circuit circuit = finish_circuit();
-
-    // Perform circuit analysis.
-    std::vector<uint64_t> active_qubits((circuit.num_qubits + 63) / 64);
-    std::vector<std::string_view> name_stack;
-    std::vector<size_t> toffoli_stack;
-    std::vector<std::vector<uint64_t>> qubit_touched_stack;
-    qubit_touched_stack.push_back(std::vector<uint64_t>((circuit.num_qubits + 63) / 64));
-    size_t k_op = 0;
-    size_t toffoli_count = 0;
-    std::vector<std::string> group_names;
-    std::vector<size_t> group_heights;
-    std::vector<size_t> group_toffoli_counts;
-    std::vector<size_t> group_max_active_qubits;
-    std::vector<size_t> group_hits;
-    std::string cur_name;
-    std::vector<Op> ops;
-    circuit.iter_ops([&](const Op &op) {
-        ops.push_back(op);
-    });
-    auto padded_marks = marks;
-    padded_marks.insert(padded_marks.begin(), Mark{true, "<entire circuit>", 0});
-    padded_marks.push_back(Mark{false, "<entire circuit>", ops.size()});
-    for (const auto &mark : padded_marks) {
-        while (k_op < mark.offset) {
-            const auto &op = ops[k_op];
-
-            // Track which qubits were touched.
-            for (auto q : std::array<QubitOrFalse, 3>{op.q_target, op.q_control1, op.q_control2}) {
-                if (q.is_qubit()) {
-                    qubit_touched_stack.back()[q.untagged_id() / 64] |= uint64_t{1} << (q.untagged_id() % 64);
-                }
-            }
-
-            // Track which qubits are active (have been touched since last HMR).
-            switch (op.kind) {
-                case OpType::HMR:
-                case OpType::HMR_IF:
-                    active_qubits[op.q_target.untagged_id() / 64] &= ~(uint64_t{1} << (op.q_target.untagged_id() % 64));
-                    break;
-                default:
-                    for (auto q : std::array<QubitOrFalse, 3>{op.q_target, op.q_control1, op.q_control2}) {
-                        if (q.is_qubit()) {
-                            active_qubits[q.untagged_id() / 64] |= uint64_t{1} << (q.untagged_id() % 64);
-                        }
-                    }
-            }
-
-            // Count certain operation types.
-            switch (op.kind) {
-                case OpType::CCX:
-                case OpType::CCZ:
-                case OpType::CCX_IF:
-                case OpType::CCZ_IF:
-                    toffoli_count += 1;
-                    break;
-                case OpType::Z_POW:
-                case OpType::Z_POW_IF:
-                    if (!op.angle.is_multiple_of_90_degrees()) {
-                        toffoli_count += 1;  // TODO: better handle the conversion from Z_POW to Toffoli
-                    }
-                    break;
-                case OpType::NEG_IF:
-                case OpType::BIT_INVERT_IF:
-                case OpType::BIT_STORE0_IF:
-                case OpType::BIT_STORE1_IF:
-                case OpType::NEG:
-                case OpType::BIT_INVERT:
-                case OpType::BIT_STORE0:
-                case OpType::BIT_STORE1:
-                case OpType::PUSH_CONDITION:
-                case OpType::POP_CONDITION:
-                case OpType::DEBUG_PRINT_EMPTY_IF:
-                case OpType::DEBUG_PRINT_C:
-                case OpType::DEBUG_PRINT_EMPTY:
-                case OpType::DEBUG_PRINT_C_IF:
-                case OpType::DEBUG_PRINT_Q:
-                case OpType::DEBUG_PRINT_Q_IF:
-                case OpType::HMR:
-                case OpType::HMR_IF:
-                case OpType::R_IF:
-                case OpType::X_IF:
-                case OpType::Z_IF:
-                case OpType::CX_IF:
-                case OpType::CZ_IF:
-                case OpType::SWAP_IF:
-                case OpType::R:
-                case OpType::X:
-                case OpType::Z:
-                case OpType::CX:
-                case OpType::CZ:
-                case OpType::SWAP:
-                    break;
-                default:
-                    throw std::invalid_argument("Unhandled operation kind: " + op.str());
-            }
-            k_op++;
-        }
-
-        if (mark.enter_else_exit) {
-            cur_name.append(":");
-            cur_name.append(mark.name);
-            name_stack.push_back(mark.name);
-            toffoli_stack.push_back(toffoli_count);
-            qubit_touched_stack.push_back(active_qubits);
-        } else {
-            if (name_stack.empty() || name_stack.back() != mark.name) {
-                throw std::invalid_argument("stack error");
-            }
-
-            // Find this stack's group.
-            size_t k_group = 0;
-            while (k_group < group_names.size()) {
-                if (group_names[k_group] == cur_name) {
-                    break;
-                }
-                k_group++;
-            }
-            if (k_group == group_names.size()) {
-                group_names.push_back(cur_name);
-                group_toffoli_counts.push_back(0);
-                group_heights.push_back(name_stack.size());
-                group_max_active_qubits.push_back(0);
-                group_hits.push_back(0);
-            }
-
-            // Update group stats.
-            group_toffoli_counts[k_group] += toffoli_count - toffoli_stack.back();
-            auto popped_touched = std::move(qubit_touched_stack.back());
-            size_t max_active_qubits = 0;
-            for (size_t k = 0; k < popped_touched.size(); k++) {
-                max_active_qubits += std::popcount(popped_touched[k]);
-            }
-            group_max_active_qubits[k_group] = std::max(group_max_active_qubits[k_group], max_active_qubits);
-            group_hits[k_group] += 1;
-
-            // Pop stack frame.
-            for (size_t k = 0; k < mark.name.size() + 1; k++) {
-                cur_name.pop_back();
-            }
-            toffoli_stack.pop_back();
-            name_stack.pop_back();
-            qubit_touched_stack.pop_back();
-        }
-    }
-
-    out << R"SVG(<svg viewBox="0 0 1000.0 200.0" xmlns="http://www.w3.org/2000/svg">)SVG" << "\n";
-    double x_scale = 1000.0 / toffoli_count;
-    double y_scale = 100.0 / circuit.num_qubits;
-    std::vector<size_t> layer_xs{0};
-    for (size_t k = 0; k < group_names.size(); k++) {
-        auto h = group_heights[k];
-        while (layer_xs.size() <= h) {
-            layer_xs.push_back(0);
-        }
-        size_t layer_x = layer_xs[h];
-        for (size_t k2 = 0; k2 < h; k2++) {
-            layer_x = std::max(layer_xs[k2], layer_x);
-        }
-        layer_xs[h] = layer_x + group_toffoli_counts[k];
-        std::string_view group_name = group_names[k];
-        group_name = group_name.substr(group_name.rfind(':') + 1);
-        out << "<rect";
-        out << " x=\"" << layer_x * x_scale << "\"";
-        out << " y=\"" << -y_scale * group_max_active_qubits[k] << "\"";
-        out << " width=\"" << group_toffoli_counts[k] * x_scale << "\"";
-        out << " height=\"" << y_scale * group_max_active_qubits[k] << "\"";
-        out << " stroke=\"black\"";
-        out << " fill=\"blue\"";
-        out << " />\n";
-        out << "<rect";
-        out << " x=\"" << layer_x * x_scale << "\"";
-        out << " y=\"" << h * 10 - 10 << "\"";
-        out << " width=\"" << group_toffoli_counts[k] * x_scale << "\"";
-        out << " height=\"" << 10 << "\"";
-        out << " stroke=\"black\"";
-        out << " fill=\"red\"";
-        out << " opacity=\"0.8\"";
-        out << " />\n";
-        out << "<text";
-        out << " x=\"" << (layer_x + group_toffoli_counts[k] * 0.5) * x_scale << "\"";
-        out << " y=\"" << h * 10 - 3 << "\"";
-        std::string title;
-        title.append(group_name);
-        if (group_hits[k] > 1) {
-            title.append(" (x");
-            title.append(std::to_string(group_hits[k]));
-            title.append(")");
-        }
-        float box_width = group_toffoli_counts[k] * x_scale;
-        float font_size = box_width / title.size() * 2;
-        font_size = std::min(5.0f, font_size);
-        font_size = std::max(0.5f, font_size);
-        out << " font-size=\"" << font_size << "\"";
-        out << " dominant-baseline=\"bottom\"";
-        out << " text-anchor=\"middle\"";
-        out << " fill=\"black\"";
-        out << " >" << title;
-        out << "</text>\n";
-    }
-    out << "<text";
-    out << " x=\"500\"";
-    out << " y=\"-100\"";
-    out << " font-size=\"10\"";
-    out << " dominant-baseline=\"bottom\"";
-    out << " text-anchor=\"middle\"";
-    out << " fill=\"black\"";
-    out << " >" << circuit.num_qubits << " qubits, " << circuit.max_magic() << " toffolis</text>\n";
-    if (reference_qubit_count > 0) {
-        out << "<path";
-        out << " d=\"";
-        for (size_t k = reference_qubit_count; k < circuit.num_qubits; k += reference_qubit_count) {
-            out << " M500," << -y_scale * k << " l50,0";
-        }
-        out << "\"";
-        out << " fill=\"none\"";
-        out << " stroke=\"green\"";
-        out << " />\n";
-    }
-
-    out << "</svg>";
+void CircuitBuilder::info_tag(std::string_view text) {
+    mut.append_info_tag(text);
 }
 
 RaiiDeferredMark::~RaiiDeferredMark() {
     if (builder != nullptr) {
-        builder->marks.push_back(deferred);
-        builder->marks.back().offset = builder->mut.op_types.size();
+        if (!name.empty()) {
+            std::string tag = "@exit:";
+            tag.append(name);
+            builder->info_tag(tag);
+        }
         builder = nullptr;
     }
 }
 
 RaiiDeferredMark CircuitBuilder::raii_mark_block_entry(std::string_view name) {
-    marks.push_back({
-        true,
-        name,
-        mut.op_types.size(),
-    });
-    return RaiiDeferredMark(this, Mark{false, name, 0});
+    if (!name.empty()) {
+        std::string tag = "@enter:";
+        tag.append(name);
+        info_tag(tag);
+    }
+    return RaiiDeferredMark(this, name);
 }
 
 void CircuitBuilder::for_each(size_t start, size_t end, const std::function<void(LoopBuilder &loop, iota k)> &func) {

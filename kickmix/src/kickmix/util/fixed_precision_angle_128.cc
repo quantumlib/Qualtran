@@ -165,10 +165,6 @@ inline void to_half_turns_decimal_helper(const FixedPrecisionAngle128 &angle, co
     }
 }
 
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic pop
-#endif
-
 FixedPrecisionAngle128 FixedPrecisionAngle128::operator*(uint64_t factor) const {
     unsigned __int128 cur = (static_cast<unsigned __int128>(words[1]) << 64) | words[0];
     cur *= factor;
@@ -176,6 +172,10 @@ FixedPrecisionAngle128 FixedPrecisionAngle128::operator*(uint64_t factor) const 
     auto w1 = (uint64_t)(cur >> 64);
     return {w0, w1};
 }
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 FixedPrecisionAngle128 &FixedPrecisionAngle128::operator*=(uint64_t factor) {
     *this = *this * factor;
