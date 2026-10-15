@@ -85,7 +85,6 @@
     - [`kickmix.GF2Field.__eq__`](#kickmix.GF2Field.__eq__)
     - [`kickmix.GF2Field.__hash__`](#kickmix.GF2Field.__hash__)
     - [`kickmix.GF2Field.__init__`](#kickmix.GF2Field.__init__)
-    - [`kickmix.GF2Field.__ne__`](#kickmix.GF2Field.__ne__)
     - [`kickmix.GF2Field.__repr__`](#kickmix.GF2Field.__repr__)
     - [`kickmix.GF2Field.__str__`](#kickmix.GF2Field.__str__)
     - [`kickmix.GF2Field.add`](#kickmix.GF2Field.add)
@@ -95,10 +94,12 @@
     - [`kickmix.GF2Field.invert`](#kickmix.GF2Field.invert)
     - [`kickmix.GF2Field.is_element`](#kickmix.GF2Field.is_element)
     - [`kickmix.GF2Field.is_irreducible`](#kickmix.GF2Field.is_irreducible)
+    - [`kickmix.GF2Field.is_primitive_element`](#kickmix.GF2Field.is_primitive_element)
     - [`kickmix.GF2Field.mod`](#kickmix.GF2Field.mod)
     - [`kickmix.GF2Field.modulus`](#kickmix.GF2Field.modulus)
     - [`kickmix.GF2Field.mul`](#kickmix.GF2Field.mul)
     - [`kickmix.GF2Field.pow`](#kickmix.GF2Field.pow)
+    - [`kickmix.GF2Field.primitive_element`](#kickmix.GF2Field.primitive_element)
     - [`kickmix.GF2Field.square`](#kickmix.GF2Field.square)
 - [`kickmix.Simulator`](#kickmix.Simulator)
     - [`kickmix.Simulator.__init__`](#kickmix.Simulator.__init__)
@@ -1349,7 +1350,7 @@ def del_gf2_div(
     rhs: km.array,
     *,
     target: km.array,
-    field: km.GF2Field | int | None = None,
+    field: km.GF2Field | None = None,
 ) -> None:
     """Clears a GF(2^m) register known to hold `(lhs / rhs) % modulus` to 0.
 
@@ -1362,8 +1363,8 @@ def del_gf2_div(
         lhs: The dividend register. Left unchanged.
         rhs: The divisor register. Left unchanged.
         target: The register holding `lhs / rhs`, cleared to 0.
-        field: Optional `km.GF2Field` or irreducible polynomial int.
-            Defaults to `km.GF2Field(len(target))`.
+        field: Optional `km.GF2Field`. Defaults to
+            `km.GF2Field(len(target))`.
 
     Examples:
         >>> import kickmix as km
@@ -1389,7 +1390,7 @@ def del_gf2_div_with_scaffold(
     *,
     target: km.array,
     scaffold: km.array,
-    field: km.GF2Field | int | None = None,
+    field: km.GF2Field | None = None,
 ) -> None:
     """Clears `target` and its scaffold, using only Cliffords and measurement.
 
@@ -1404,8 +1405,8 @@ def del_gf2_div_with_scaffold(
         target: The register holding `lhs / rhs`, cleared to 0.
         scaffold: The workspace from `init_gf2_div_with_scaffold`, also
             cleared to 0.
-        field: Optional `km.GF2Field` or irreducible polynomial int.
-            Defaults to `km.GF2Field(len(target))`.
+        field: Optional `km.GF2Field`. Defaults to
+            `km.GF2Field(len(target))`.
 
     Examples:
         >>> import kickmix as km
@@ -1430,7 +1431,7 @@ def del_gf2_inverse(
     input: km.array,
     *,
     target: km.array,
-    field: km.GF2Field | int | None = None,
+    field: km.GF2Field | None = None,
 ) -> None:
     """Clears `target` (holding `input ** -1` in GF(2^m)) back to 0.
 
@@ -1443,8 +1444,8 @@ def del_gf2_inverse(
     Args:
         input: The inverted GF(2^m) register. Left unchanged.
         target: The register holding `input ** -1`, cleared to 0.
-        field: Optional `km.GF2Field` or irreducible polynomial int.
-            Defaults to `km.GF2Field(len(target))`.
+        field: Optional `km.GF2Field`. Defaults to
+            `km.GF2Field(len(target))`.
 
     Examples:
         >>> import kickmix as km
@@ -1468,7 +1469,7 @@ def del_gf2_inverse_with_scaffold(
     *,
     target: km.array,
     scaffold: km.array,
-    field: km.GF2Field | int | None = None,
+    field: km.GF2Field | None = None,
 ) -> None:
     """Clears `target` and its scaffold, using only Cliffords and measurement.
 
@@ -1483,8 +1484,8 @@ def del_gf2_inverse_with_scaffold(
         target: The register holding `input ** -1`, cleared to 0.
         scaffold: The addition chain from
             `init_gf2_inverse_with_scaffold`, also cleared to 0.
-        field: Optional `km.GF2Field` or irreducible polynomial int.
-            Defaults to `km.GF2Field(len(target))`.
+        field: Optional `km.GF2Field`. Defaults to
+            `km.GF2Field(len(target))`.
 
     Examples:
         >>> import kickmix as km
@@ -1509,7 +1510,7 @@ def del_gf2_mul(
     rhs: km.array,
     *,
     target: km.array,
-    field: km.GF2Field | int | None = None,
+    field: km.GF2Field | None = None,
     control: q | b | bool = True,
 ) -> None:
     """Clears a GF(2^m) register known to hold `(lhs * rhs) % modulus`.
@@ -1522,8 +1523,8 @@ def del_gf2_mul(
         lhs: The first factor register. Left unchanged.
         rhs: The second factor register. Left unchanged.
         target: The GF(2^m) register holding `lhs * rhs`, cleared to 0.
-        field: Optional `km.GF2Field` or irreducible polynomial int.
-            Defaults to `km.GF2Field(len(target))`.
+        field: Optional `km.GF2Field`. Defaults to
+            `km.GF2Field(len(target))`.
         control: Defaults to True. Determines if the operation occurs.
 
     Examples:
@@ -1910,7 +1911,7 @@ def gf2_iadd(
     offset: km.array | int,
     *,
     target: km.array,
-    field: km.GF2Field | int | None = None,
+    field: km.GF2Field | None = None,
     control: q | b | bool = True,
 ) -> None:
     """Appends operations to perform `if control: target ^= offset` in GF(2^m).
@@ -1922,8 +1923,8 @@ def gf2_iadd(
     Args:
         offset: The register or classical constant (int) to add. Left unchanged.
         target: The register to add into in place.
-        field: Optional field or modulus polynomial. If provided, its
-            degree must equal `len(target)`.
+        field: Optional `km.GF2Field`. If provided, its degree must
+            equal `len(target)`.
         control: Defaults to True. Determines if the addition occurs.
 
     Examples:
@@ -1962,7 +1963,7 @@ def gf2_idiv(
     divisor: int,
     *,
     target: km.array,
-    field: km.GF2Field | int | None = None,
+    field: km.GF2Field | None = None,
 ) -> None:
     """Appends operations to perform `target = (target / divisor) % modulus`.
 
@@ -1975,8 +1976,8 @@ def gf2_idiv(
     Args:
         divisor: The non-zero classical field element to divide by.
         target: The GF(2^m) register to divide in place.
-        field: Optional `km.GF2Field` or irreducible polynomial int.
-            Defaults to `km.GF2Field(len(target))`.
+        field: Optional `km.GF2Field`. Defaults to
+            `km.GF2Field(len(target))`.
 
     Examples:
         >>> import kickmix as km
@@ -2000,7 +2001,7 @@ def gf2_imul(
     factor: int,
     *,
     target: km.array,
-    field: km.GF2Field | int | None = None,
+    field: km.GF2Field | None = None,
 ) -> None:
     """Appends operations to perform `target = (target * factor) % modulus`.
 
@@ -2013,8 +2014,8 @@ def gf2_imul(
     Args:
         factor: The non-zero classical field element to multiply by.
         target: The GF(2^m) register to multiply in place.
-        field: Optional `km.GF2Field` or irreducible polynomial int.
-            Defaults to `km.GF2Field(len(target))`.
+        field: Optional `km.GF2Field`. Defaults to
+            `km.GF2Field(len(target))`.
 
     Examples:
         >>> import kickmix as km
@@ -2039,7 +2040,7 @@ def gf2_phase_by_product(
     rhs: km.array,
     *,
     mask: km.array,
-    field: km.GF2Field | int | None = None,
+    field: km.GF2Field | None = None,
 ) -> None:
     """Negates amplitudes where `popcount(mask & (lhs * rhs) % modulus)` is odd.
 
@@ -2051,8 +2052,8 @@ def gf2_phase_by_product(
         lhs: The first factor register. Left unchanged.
         rhs: The second factor register. Left unchanged.
         mask: Classical bits selecting which product bits contribute.
-        field: Optional `km.GF2Field` or irreducible polynomial int.
-            Defaults to `km.GF2Field(len(lhs))`.
+        field: Optional `km.GF2Field`. Defaults to
+            `km.GF2Field(len(lhs))`.
 
     Examples:
         >>> import kickmix as km
@@ -2250,7 +2251,7 @@ def init_gf2_div(
     rhs: km.array,
     *,
     target: km.array | str = "alloc",
-    field: km.GF2Field | int | None = None,
+    field: km.GF2Field | None = None,
 ) -> km.array:
     """Initializes a GF(2^m) register to `(lhs / rhs) % modulus`, resetting it first.
 
@@ -2265,8 +2266,8 @@ def init_gf2_div(
         rhs: The divisor register. Left unchanged.
         target: The GF(2^m) register to initialize. Defaults to "alloc",
             which allocates a register of the field's degree.
-        field: Optional `km.GF2Field` or irreducible polynomial int.
-            Defaults to `km.GF2Field(len(lhs))`.
+        field: Optional `km.GF2Field`. Defaults to
+            `km.GF2Field(len(lhs))`.
 
     Returns:
         The initialized register.
@@ -2293,7 +2294,7 @@ def init_gf2_div_with_scaffold(
     rhs: km.array,
     *,
     target: km.array | str = "alloc",
-    field: km.GF2Field | int | None = None,
+    field: km.GF2Field | None = None,
 ) -> Tuple[km.array, km.array]:
     """Initializes `target := lhs / rhs`, keeping the division workspace.
 
@@ -2309,8 +2310,8 @@ def init_gf2_div_with_scaffold(
         rhs: The divisor register. Left unchanged.
         target: The GF(2^m) register to initialize. Defaults to "alloc",
             which allocates a register of the field's degree.
-        field: Optional `km.GF2Field` or irreducible polynomial int.
-            Defaults to `km.GF2Field(len(lhs))`.
+        field: Optional `km.GF2Field`. Defaults to
+            `km.GF2Field(len(lhs))`.
 
     Returns:
         A tuple of the initialized register and the scaffold register
@@ -2339,7 +2340,7 @@ def init_gf2_inverse(
     input: km.array,
     *,
     target: km.array | str = "alloc",
-    field: km.GF2Field | int | None = None,
+    field: km.GF2Field | None = None,
 ) -> km.array:
     """Initializes `target := input ** -1` in GF(2^m) (mapping 0 to 0).
 
@@ -2354,8 +2355,8 @@ def init_gf2_inverse(
         input: The GF(2^m) register to invert. Left unchanged.
         target: The register to store the inverse into. Defaults to
             "alloc", which allocates a register of the field's degree.
-        field: Optional `km.GF2Field` or irreducible polynomial int.
-            Defaults to `km.GF2Field(len(input))`.
+        field: Optional `km.GF2Field`. Defaults to
+            `km.GF2Field(len(input))`.
 
     Returns:
         The initialized register.
@@ -2386,7 +2387,7 @@ def init_gf2_inverse_with_scaffold(
     input: km.array,
     *,
     target: km.array | str = "alloc",
-    field: km.GF2Field | int | None = None,
+    field: km.GF2Field | None = None,
 ) -> Tuple[km.array, km.array]:
     """Initializes `target := input ** -1`, keeping the addition chain.
 
@@ -2401,8 +2402,8 @@ def init_gf2_inverse_with_scaffold(
         input: The GF(2^m) register to invert. Left unchanged.
         target: The register to store the inverse into. Defaults to
             "alloc", which allocates a register of the field's degree.
-        field: Optional `km.GF2Field` or irreducible polynomial int.
-            Defaults to `km.GF2Field(len(input))`.
+        field: Optional `km.GF2Field`. Defaults to
+            `km.GF2Field(len(input))`.
 
     Returns:
         A tuple of the initialized register and the scaffold register
@@ -2431,7 +2432,7 @@ def init_gf2_mul(
     rhs: km.array,
     *,
     target: km.array | str = "alloc",
-    field: km.GF2Field | int | None = None,
+    field: km.GF2Field | None = None,
     control: q | b | bool = True,
 ) -> km.array:
     """Initializes a GF(2^m) register to `(lhs * rhs) % modulus`, resetting it first.
@@ -2444,8 +2445,8 @@ def init_gf2_mul(
         rhs: The second factor register. Left unchanged.
         target: The GF(2^m) register to initialize. Defaults to "alloc",
             which allocates a register of the field's degree.
-        field: Optional `km.GF2Field` or irreducible polynomial int.
-            Defaults to `km.GF2Field(len(lhs))`.
+        field: Optional `km.GF2Field`. Defaults to
+            `km.GF2Field(len(lhs))`.
         control: Defaults to True. Determines if the operation occurs.
 
     Returns:
@@ -2589,7 +2590,7 @@ def ixor_gf2_div(
     rhs: km.array,
     *,
     target: km.array,
-    field: km.GF2Field | int | None = None,
+    field: km.GF2Field | None = None,
 ) -> None:
     """Appends operations to perform `target ^= (lhs / rhs) % modulus`.
 
@@ -2602,8 +2603,8 @@ def ixor_gf2_div(
         lhs: The dividend register. Left unchanged.
         rhs: The divisor register. Left unchanged.
         target: The GF(2^m) register to XOR the quotient into.
-        field: Optional `km.GF2Field` or irreducible polynomial int.
-            Defaults to `km.GF2Field(len(target))`.
+        field: Optional `km.GF2Field`. Defaults to
+            `km.GF2Field(len(target))`.
 
     Examples:
         >>> import kickmix as km
@@ -2628,7 +2629,7 @@ def ixor_gf2_mul(
     rhs: km.array,
     *,
     target: km.array,
-    field: km.GF2Field | int | None = None,
+    field: km.GF2Field | None = None,
     control: q | b | bool = True,
 ) -> None:
     """Appends operations to perform `if control: target ^= (lhs * rhs) % modulus`.
@@ -2641,8 +2642,8 @@ def ixor_gf2_mul(
         lhs: The first factor register. Left unchanged.
         rhs: The second factor register. Left unchanged.
         target: The GF(2^m) register to XOR the product into.
-        field: Optional `km.GF2Field` or irreducible polynomial int.
-            Defaults to `km.GF2Field(len(target))`.
+        field: Optional `km.GF2Field`. Defaults to
+            `km.GF2Field(len(target))`.
         control: Defaults to True. Determines if the operation occurs.
 
     Examples:
@@ -3482,6 +3483,8 @@ class GF2Field:
         4
         >>> hex(field.modulus)
         '0x13'
+        >>> field.primitive_element
+        2
         >>> field.mul(3, 5)
         15
     """
@@ -3496,7 +3499,8 @@ def __eq__(
     self,
     other: object,
 ) -> bool:
-    """Returns True if other is a GF2Field with the same degree and modulus.
+    """Returns True if other is a GF2Field with the same degree, modulus,
+    and primitive_element.
     """
 ```
 
@@ -3508,7 +3512,7 @@ def __eq__(
 def __hash__(
     self,
 ) -> int:
-    """Returns a hash of the field's degree and modulus.
+    """Returns a hash of the field's degree, modulus, and primitive_element.
     """
 ```
 
@@ -3517,18 +3521,45 @@ def __hash__(
 # kickmix.GF2Field.__init__
 
 # (in class kickmix.GF2Field)
+@overload
 def __init__(
     self,
-    degree: int,
-    modulus: int | None = None,
+    degree: int | None = None,
+    modulus: int | str | Any | None = None,
+    primitive_element: int | str | Any | None = None,
+) -> None:
+    pass
+@overload
+def __init__(
+    self,
+    galois_field: Any,
+) -> None:
+    pass
+def __init__(
+    self,
+    degree: int | Any | None = None,
+    modulus: int | str | Any | None = None,
+    primitive_element: int | str | Any | None = None,
 ) -> None:
     """Creates the binary extension field GF(2^degree).
 
+    Can also be constructed directly from a `galois.GF(2**m)` field
+    class (e.g. `km.GF2Field(galois.GF(2**8))`), extracting its degree,
+    irreducible polynomial, and primitive element.
+
     Args:
-        degree: The extension degree m (1 <= m <= 512).
+        degree: The extension degree m (1 <= m <= 512), or a
+            `galois.GF(2**m)` field class. If None, m is inferred from
+            the degree of `modulus`.
         modulus: Optional irreducible reduction polynomial of degree m,
-            encoded as an int where bit k is the coefficient of x^k. If
-            None, a low-weight default irreducible polynomial is chosen.
+            encoded as an int where bit k is the coefficient of x^k, a
+            `galois.Poly` over GF(2), or a polynomial string such as
+            "x^4 + x + 1" or "0x13". If None, a low-weight primitive
+            polynomial is chosen, so that x (2) is a primitive element.
+        primitive_element: Optional multiplicative generator of GF(2^m)*
+            (of order 2^m - 1), encoded as an int, a `galois.Poly`, or a
+            polynomial string. Validated if provided; if None, the
+            smallest primitive element in integer order is used.
 
     Examples:
         >>> import kickmix as km
@@ -3537,22 +3568,20 @@ def __init__(
         4
         >>> hex(field.modulus)
         '0x13'
-        >>> custom_field = km.GF2Field(4, modulus=0x19)
-        >>> hex(custom_field.modulus)
-        '0x19'
-    """
-```
-
-<a name="kickmix.GF2Field.__ne__"></a>
-```python
-# kickmix.GF2Field.__ne__
-
-# (in class kickmix.GF2Field)
-def __ne__(
-    self,
-    other: object,
-) -> bool:
-    """Returns True if other is not a GF2Field with the same degree and modulus.
+        >>> field.primitive_element
+        2
+        >>> aes_field = km.GF2Field(8, modulus=0x11B)
+        >>> hex(aes_field.modulus)
+        '0x11b'
+        >>> aes_field.primitive_element
+        3
+        >>> str_field = km.GF2Field(modulus="x^4 + x^3 + 1")
+        >>> str_field == km.GF2Field(4, modulus=0x19)
+        True
+        >>> import galois  # doctest: +SKIP
+        >>> GF = galois.GF(2**8, irreducible_poly=0x11B)  # doctest: +SKIP
+        >>> km.GF2Field(GF) == aes_field  # doctest: +SKIP
+        True
     """
 ```
 
@@ -3727,6 +3756,28 @@ def is_irreducible(
     """
 ```
 
+<a name="kickmix.GF2Field.is_primitive_element"></a>
+```python
+# kickmix.GF2Field.is_primitive_element
+
+# (in class kickmix.GF2Field)
+def is_primitive_element(
+    self,
+    a: int,
+) -> bool:
+    """Returns True if a is a primitive element of GF(2^m) (multiplicative
+    order 2**degree - 1).
+
+    Examples:
+        >>> import kickmix as km
+        >>> aes = km.GF2Field(8, modulus=0x11B)
+        >>> aes.is_primitive_element(2)
+        False
+        >>> aes.is_primitive_element(3)
+        True
+    """
+```
+
 <a name="kickmix.GF2Field.mod"></a>
 ```python
 # kickmix.GF2Field.mod
@@ -3802,6 +3853,19 @@ def pow(
         14
         >>> field.mul(3, 14)
         1
+    """
+```
+
+<a name="kickmix.GF2Field.primitive_element"></a>
+```python
+# kickmix.GF2Field.primitive_element
+
+# (in class kickmix.GF2Field)
+@property
+def primitive_element(
+    self,
+) -> int:
+    """The primitive element (multiplicative generator of order 2**m - 1) of GF(2^m).
     """
 ```
 

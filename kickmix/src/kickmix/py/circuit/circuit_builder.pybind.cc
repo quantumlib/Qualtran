@@ -1914,7 +1914,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("field") = pybind11::none(),
         pybind11::arg("control") = true,
         clean_doc_string(R"DOC(
-            @signature def gf2_iadd(self, offset: km.array | int, *, target: km.array, field: km.GF2Field | int | None = None, control: q | b | bool = True) -> None:
+            @signature def gf2_iadd(self, offset: km.array | int, *, target: km.array, field: km.GF2Field | None = None, control: q | b | bool = True) -> None:
             Appends operations to perform `if control: target ^= offset` in GF(2^m).
 
             Addition in a binary extension field is bitwise XOR, realized as a
@@ -1924,8 +1924,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
             Args:
                 offset: The register or classical constant (int) to add. Left unchanged.
                 target: The register to add into in place.
-                field: Optional field or modulus polynomial. If provided, its
-                    degree must equal `len(target)`.
+                field: Optional `km.GF2Field`. If provided, its degree must
+                    equal `len(target)`.
                 control: Defaults to True. Determines if the addition occurs.
 
             Examples:
@@ -1962,7 +1962,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("target"),
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def gf2_imul(self, factor: int, *, target: km.array, field: km.GF2Field | int | None = None) -> None:
+            @signature def gf2_imul(self, factor: int, *, target: km.array, field: km.GF2Field | None = None) -> None:
             Appends operations to perform `target = (target * factor) % modulus`.
 
             Multiplies a GF(2^m) register in place by a non-zero classical factor
@@ -1974,8 +1974,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
             Args:
                 factor: The non-zero classical field element to multiply by.
                 target: The GF(2^m) register to multiply in place.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(target))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(target))`.
 
             Examples:
                 >>> import kickmix as km
@@ -1997,7 +1997,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("target"),
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def gf2_idiv(self, divisor: int, *, target: km.array, field: km.GF2Field | int | None = None) -> None:
+            @signature def gf2_idiv(self, divisor: int, *, target: km.array, field: km.GF2Field | None = None) -> None:
             Appends operations to perform `target = (target / divisor) % modulus`.
 
             Divides a GF(2^m) register in place by a non-zero classical divisor.
@@ -2009,8 +2009,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
             Args:
                 divisor: The non-zero classical field element to divide by.
                 target: The GF(2^m) register to divide in place.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(target))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(target))`.
 
             Examples:
                 >>> import kickmix as km
@@ -2034,7 +2034,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("field") = pybind11::none(),
         pybind11::arg("control") = true,
         clean_doc_string(R"DOC(
-            @signature def init_gf2_mul(self, lhs: km.array, rhs: km.array, *, target: km.array | str = "alloc", field: km.GF2Field | int | None = None, control: q | b | bool = True) -> km.array:
+            @signature def init_gf2_mul(self, lhs: km.array, rhs: km.array, *, target: km.array | str = "alloc", field: km.GF2Field | None = None, control: q | b | bool = True) -> km.array:
             Initializes a GF(2^m) register to `(lhs * rhs) % modulus`, resetting it first.
 
             This is the computation partner of `del_gf2_mul`. Resets `target`
@@ -2045,8 +2045,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 rhs: The second factor register. Left unchanged.
                 target: The GF(2^m) register to initialize. Defaults to "alloc",
                     which allocates a register of the field's degree.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(lhs))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(lhs))`.
                 control: Defaults to True. Determines if the operation occurs.
 
             Returns:
@@ -2083,7 +2083,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("field") = pybind11::none(),
         pybind11::arg("control") = true,
         clean_doc_string(R"DOC(
-            @signature def ixor_gf2_mul(self, lhs: km.array, rhs: km.array, *, target: km.array, field: km.GF2Field | int | None = None, control: q | b | bool = True) -> None:
+            @signature def ixor_gf2_mul(self, lhs: km.array, rhs: km.array, *, target: km.array, field: km.GF2Field | None = None, control: q | b | bool = True) -> None:
             Appends operations to perform `if control: target ^= (lhs * rhs) % modulus`.
 
             Out-of-place multiplication accumulating the product into `target`
@@ -2094,8 +2094,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 lhs: The first factor register. Left unchanged.
                 rhs: The second factor register. Left unchanged.
                 target: The GF(2^m) register to XOR the product into.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(target))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(target))`.
                 control: Defaults to True. Determines if the operation occurs.
 
             Examples:
@@ -2130,7 +2130,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("field") = pybind11::none(),
         pybind11::arg("control") = true,
         clean_doc_string(R"DOC(
-            @signature def del_gf2_mul(self, lhs: km.array, rhs: km.array, *, target: km.array, field: km.GF2Field | int | None = None, control: q | b | bool = True) -> None:
+            @signature def del_gf2_mul(self, lhs: km.array, rhs: km.array, *, target: km.array, field: km.GF2Field | None = None, control: q | b | bool = True) -> None:
             Clears a GF(2^m) register known to hold `(lhs * rhs) % modulus`.
 
             This is the uncomputation partner of `init_gf2_mul`. When
@@ -2141,8 +2141,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 lhs: The first factor register. Left unchanged.
                 rhs: The second factor register. Left unchanged.
                 target: The GF(2^m) register holding `lhs * rhs`, cleared to 0.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(target))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(target))`.
                 control: Defaults to True. Determines if the operation occurs.
 
             Examples:
@@ -2170,7 +2170,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("mask"),
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def gf2_phase_by_product(self, lhs: km.array, rhs: km.array, *, mask: km.array, field: km.GF2Field | int | None = None) -> None:
+            @signature def gf2_phase_by_product(self, lhs: km.array, rhs: km.array, *, mask: km.array, field: km.GF2Field | None = None) -> None:
             Negates amplitudes where `popcount(mask & (lhs * rhs) % modulus)` is odd.
 
             Kicks back the phase of the product directly without computing it
@@ -2181,8 +2181,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 lhs: The first factor register. Left unchanged.
                 rhs: The second factor register. Left unchanged.
                 mask: Classical bits selecting which product bits contribute.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(lhs))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(lhs))`.
 
             Examples:
                 >>> import kickmix as km
@@ -2211,7 +2211,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("target") = "alloc",
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def init_gf2_inverse(self, input: km.array, *, target: km.array | str = "alloc", field: km.GF2Field | int | None = None) -> km.array:
+            @signature def init_gf2_inverse(self, input: km.array, *, target: km.array | str = "alloc", field: km.GF2Field | None = None) -> km.array:
             Initializes `target := input ** -1` in GF(2^m) (mapping 0 to 0).
 
             This is the computation partner of `del_gf2_inverse`. Resets
@@ -2225,8 +2225,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 input: The GF(2^m) register to invert. Left unchanged.
                 target: The register to store the inverse into. Defaults to
                     "alloc", which allocates a register of the field's degree.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(input))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(input))`.
 
             Returns:
                 The initialized register.
@@ -2255,7 +2255,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("target") = "alloc",
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def init_gf2_inverse_with_scaffold(self, input: km.array, *, target: km.array | str = "alloc", field: km.GF2Field | int | None = None) -> tuple[km.array, km.array]:
+            @signature def init_gf2_inverse_with_scaffold(self, input: km.array, *, target: km.array | str = "alloc", field: km.GF2Field | None = None) -> tuple[km.array, km.array]:
             Initializes `target := input ** -1`, keeping the addition chain.
 
             Same as `init_gf2_inverse`, except the Itoh-Tsujii addition chain
@@ -2269,8 +2269,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 input: The GF(2^m) register to invert. Left unchanged.
                 target: The register to store the inverse into. Defaults to
                     "alloc", which allocates a register of the field's degree.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(input))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(input))`.
 
             Returns:
                 A tuple of the initialized register and the scaffold register
@@ -2296,7 +2296,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("target"),
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def del_gf2_inverse(self, input: km.array, *, target: km.array, field: km.GF2Field | int | None = None) -> None:
+            @signature def del_gf2_inverse(self, input: km.array, *, target: km.array, field: km.GF2Field | None = None) -> None:
             Clears `target` (holding `input ** -1` in GF(2^m)) back to 0.
 
             This is the uncomputation partner of `init_gf2_inverse`. Temporary
@@ -2308,8 +2308,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
             Args:
                 input: The inverted GF(2^m) register. Left unchanged.
                 target: The register holding `input ** -1`, cleared to 0.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(target))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(target))`.
 
             Examples:
                 >>> import kickmix as km
@@ -2331,7 +2331,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("scaffold"),
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def del_gf2_inverse_with_scaffold(self, input: km.array, *, target: km.array, scaffold: km.array, field: km.GF2Field | int | None = None) -> None:
+            @signature def del_gf2_inverse_with_scaffold(self, input: km.array, *, target: km.array, scaffold: km.array, field: km.GF2Field | None = None) -> None:
             Clears `target` and its scaffold, using only Cliffords and measurement.
 
             This is the uncomputation partner of
@@ -2345,8 +2345,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 target: The register holding `input ** -1`, cleared to 0.
                 scaffold: The addition chain from
                     `init_gf2_inverse_with_scaffold`, also cleared to 0.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(target))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(target))`.
 
             Examples:
                 >>> import kickmix as km
@@ -2369,7 +2369,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("target") = "alloc",
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def init_gf2_div(self, lhs: km.array, rhs: km.array, *, target: km.array | str = "alloc", field: km.GF2Field | int | None = None) -> km.array:
+            @signature def init_gf2_div(self, lhs: km.array, rhs: km.array, *, target: km.array | str = "alloc", field: km.GF2Field | None = None) -> km.array:
             Initializes a GF(2^m) register to `(lhs / rhs) % modulus`, resetting it first.
 
             This is the computation partner of `del_gf2_div`. Resets `target`
@@ -2383,8 +2383,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 rhs: The divisor register. Left unchanged.
                 target: The GF(2^m) register to initialize. Defaults to "alloc",
                     which allocates a register of the field's degree.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(lhs))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(lhs))`.
 
             Returns:
                 The initialized register.
@@ -2409,7 +2409,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("target") = "alloc",
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def init_gf2_div_with_scaffold(self, lhs: km.array, rhs: km.array, *, target: km.array | str = "alloc", field: km.GF2Field | int | None = None) -> tuple[km.array, km.array]:
+            @signature def init_gf2_div_with_scaffold(self, lhs: km.array, rhs: km.array, *, target: km.array | str = "alloc", field: km.GF2Field | None = None) -> tuple[km.array, km.array]:
             Initializes `target := lhs / rhs`, keeping the division workspace.
 
             Same as `init_gf2_div`, except the divisor's inverse and its
@@ -2424,8 +2424,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 rhs: The divisor register. Left unchanged.
                 target: The GF(2^m) register to initialize. Defaults to "alloc",
                     which allocates a register of the field's degree.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(lhs))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(lhs))`.
 
             Returns:
                 A tuple of the initialized register and the scaffold register
@@ -2453,7 +2453,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("target"),
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def ixor_gf2_div(self, lhs: km.array, rhs: km.array, *, target: km.array, field: km.GF2Field | int | None = None) -> None:
+            @signature def ixor_gf2_div(self, lhs: km.array, rhs: km.array, *, target: km.array, field: km.GF2Field | None = None) -> None:
             Appends operations to perform `target ^= (lhs / rhs) % modulus`.
 
             Out-of-place division accumulating the quotient into `target` via
@@ -2465,8 +2465,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 lhs: The dividend register. Left unchanged.
                 rhs: The divisor register. Left unchanged.
                 target: The GF(2^m) register to XOR the quotient into.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(target))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(target))`.
 
             Examples:
                 >>> import kickmix as km
@@ -2489,7 +2489,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("target"),
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def del_gf2_div(self, lhs: km.array, rhs: km.array, *, target: km.array, field: km.GF2Field | int | None = None) -> None:
+            @signature def del_gf2_div(self, lhs: km.array, rhs: km.array, *, target: km.array, field: km.GF2Field | None = None) -> None:
             Clears a GF(2^m) register known to hold `(lhs / rhs) % modulus` to 0.
 
             This is the uncomputation partner of `init_gf2_div`. Temporary
@@ -2501,8 +2501,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 lhs: The dividend register. Left unchanged.
                 rhs: The divisor register. Left unchanged.
                 target: The register holding `lhs / rhs`, cleared to 0.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(target))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(target))`.
 
             Examples:
                 >>> import kickmix as km
@@ -2526,7 +2526,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("scaffold"),
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def del_gf2_div_with_scaffold(self, lhs: km.array, rhs: km.array, *, target: km.array, scaffold: km.array, field: km.GF2Field | int | None = None) -> None:
+            @signature def del_gf2_div_with_scaffold(self, lhs: km.array, rhs: km.array, *, target: km.array, scaffold: km.array, field: km.GF2Field | None = None) -> None:
             Clears `target` and its scaffold, using only Cliffords and measurement.
 
             This is the uncomputation partner of `init_gf2_div_with_scaffold`.
@@ -2540,8 +2540,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 target: The register holding `lhs / rhs`, cleared to 0.
                 scaffold: The workspace from `init_gf2_div_with_scaffold`, also
                     cleared to 0.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(target))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(target))`.
 
             Examples:
                 >>> import kickmix as km
