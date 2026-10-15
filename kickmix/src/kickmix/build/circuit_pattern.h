@@ -55,6 +55,26 @@ struct CircuitPattern {
     }
 
     void pattern_swap(const spanish<const QubitId> &target1, const spanish<const QubitId> &target2);
+    void pattern_swap_if(
+        const spanish<const QubitId> &target1,
+        const spanish<const QubitId> &target2,
+        const spanish<const BitId> &condition);
+    void pattern_cswap(
+        const spanish<const QubitId> &control,
+        const spanish<const QubitId> &target1,
+        const spanish<const QubitId> &target2);
+    void pattern_cswap_if(
+        const spanish<const QubitId> &control,
+        const spanish<const QubitId> &target1,
+        const spanish<const QubitId> &target2,
+        const spanish<const BitId> &condition);
+    void mux_pattern_cswap(
+        const QubitOrTrue &control, const spanish<const QubitId> &target1, const spanish<const QubitId> &target2);
+    void mux_pattern_cswap_if(
+        const QubitOrTrue &control,
+        const spanish<const QubitId> &target1,
+        const spanish<const QubitId> &target2,
+        const spanish<const BitId> &condition);
     void pattern_r(const spanish<const QubitId> &target);
     void pattern_r_if(const spanish<const QubitId> &target, const spanish<const BitId> &condition);
     void pattern_hmr(const spanish<const QubitId> &target, const spanish<const BitId> &output);
@@ -116,6 +136,22 @@ struct LoopBuilder {
     }
     void swap(spanish<const QubitId> target1, spanish<const QubitId> target2) {
         out->pattern_swap(target1, target2);
+    }
+    void swap_if(spanish<const QubitId> target1, spanish<const QubitId> target2, spanish<const BitId> cond) {
+        out->pattern_swap_if(target1, target2, cond);
+    }
+    void cswap(spanish<const QubitId> control, spanish<const QubitId> target1, spanish<const QubitId> target2) {
+        out->pattern_cswap(control, target1, target2);
+    }
+    void cswap_if(
+        spanish<const QubitId> control,
+        spanish<const QubitId> target1,
+        spanish<const QubitId> target2,
+        spanish<const BitId> cond) {
+        out->pattern_cswap_if(control, target1, target2, cond);
+    }
+    void mux_cswap(const QubitOrTrue &control, spanish<const QubitId> target1, spanish<const QubitId> target2) {
+        out->mux_pattern_cswap(control, target1, target2);
     }
     void x(spanish<const QubitId> t) {
         out->pattern_x(t);

@@ -17,7 +17,7 @@ using namespace kickmix_py;
 
 namespace {
 
-const std::array<std::pair<std::string_view, std::vector<OpType>>, 17> OP_COUNT_GROUPS{{
+const std::array<std::pair<std::string_view, std::vector<OpType>>, 19> OP_COUNT_GROUPS{{
     {"NEG", {OpType::NEG, OpType::NEG_IF}},
     {"BIT_INVERT", {OpType::BIT_INVERT, OpType::BIT_INVERT_IF}},
     {"BIT_STORE0", {OpType::BIT_STORE0, OpType::BIT_STORE0_IF}},
@@ -29,9 +29,11 @@ const std::array<std::pair<std::string_view, std::vector<OpType>>, 17> OP_COUNT_
     {"CX", {OpType::CX, OpType::CX_IF}},
     {"CZ", {OpType::CZ, OpType::CZ_IF}},
     {"SWAP", {OpType::SWAP, OpType::SWAP_IF}},
+    {"CSWAP", {OpType::CSWAP, OpType::CSWAP_IF}},
     {"CCX", {OpType::CCX, OpType::CCX_IF}},
     {"CCZ", {OpType::CCZ, OpType::CCZ_IF}},
     {"Z_POW", {OpType::Z_POW, OpType::Z_POW_IF}},
+    {"INFO_TAG", {OpType::INFO_TAG}},
     {"DEBUG_PRINT",
      {OpType::DEBUG_PRINT_EMPTY,
       OpType::DEBUG_PRINT_Q,
@@ -111,7 +113,8 @@ PyOperationStatistics PyOperationStatistics::from_simulator(
 
 uint64_t PyOperationStatistics::num_toffoli_like() const {
     return raw_op_counts[static_cast<uint8_t>(OpType::CCX)] + raw_op_counts[static_cast<uint8_t>(OpType::CCX_IF)] +
-           raw_op_counts[static_cast<uint8_t>(OpType::CCZ)] + raw_op_counts[static_cast<uint8_t>(OpType::CCZ_IF)];
+           raw_op_counts[static_cast<uint8_t>(OpType::CCZ)] + raw_op_counts[static_cast<uint8_t>(OpType::CCZ_IF)] +
+           raw_op_counts[static_cast<uint8_t>(OpType::CSWAP)] + raw_op_counts[static_cast<uint8_t>(OpType::CSWAP_IF)];
 }
 
 uint64_t PyOperationStatistics::num_t_like() const {
@@ -263,20 +266,22 @@ void kickmix_py::register_operation_statistics_methods(pybind11::class_<PyOperat
         "num_toffoli_like",
         &PyOperationStatistics::num_toffoli_like,
         clean_doc_string(R"DOC(
-            The number of doubly-controlled Pauli (`CCX` and `CCZ`) operations.
+            The number of Toffoli-like (`CCX`, `CCZ`, and `CSWAP`) operations.
 
-            Includes both unconditional (`CCX q0 q1 q2`, `CCZ q0 q1 q2`) and
-            classically conditioned (`CCX q0 q1 q2 if b3`, etc.) operations.
+            Includes both unconditional (`CCX q0 q1 q2`, `CCZ q0 q1 q2`,
+            `CSWAP q0 q1 q2`) and classically conditioned (`CCX q0 q1 q2 if b3`,
+            etc.) operations.
 
             Examples:
                 >>> import kickmix as km
                 >>> c = km.Circuit('''
                 ...     CCX q0 q1 q2
                 ...     CCZ q0 q1 q2 if b0
+                ...     CSWAP q0 q1 q2
                 ...     CX q0 q1
                 ... ''')
                 >>> c.operation_statistics().num_toffoli_like
-                2
+                3
         )DOC")
             .data());
 
@@ -398,7 +403,7 @@ void kickmix_py::register_operation_statistics_methods(pybind11::class_<PyOperat
         &PyOperationStatistics::get_item,
         pybind11::arg("key"),
         clean_doc_string(R"DOC(
-            @signature def __getitem__(self, key: str | Literal['NEG', 'BIT_INVERT', 'BIT_STORE0', 'BIT_STORE1', 'X', 'Z', 'R', 'HMR', 'CX', 'CZ', 'SWAP', 'CCX', 'CCZ', 'Z_POW', 'DEBUG_PRINT', 'POP_CONDITION', 'PUSH_CONDITION']) -> int:
+            @signature def __getitem__(self, key: str | Literal['NEG', 'BIT_INVERT', 'BIT_STORE0', 'BIT_STORE1', 'X', 'Z', 'R', 'HMR', 'CX', 'CZ', 'SWAP', 'CSWAP', 'CCX', 'CCZ', 'Z_POW', 'INFO_TAG', 'DEBUG_PRINT', 'POP_CONDITION', 'PUSH_CONDITION']) -> int:
             Returns the count for the given base operation name.
 
             Unconditional and conditional variants of an operation (e.g.
@@ -408,9 +413,9 @@ void kickmix_py::register_operation_statistics_methods(pybind11::class_<PyOperat
             Args:
                 key: One of the base operation names (`'NEG'`, `'BIT_INVERT'`,
                     `'BIT_STORE0'`, `'BIT_STORE1'`, `'X'`, `'Z'`, `'R'`,
-                    `'HMR'`, `'CX'`, `'CZ'`, `'SWAP'`, `'CCX'`, `'CCZ'`,
-                    `'Z_POW'`, `'DEBUG_PRINT'`, `'POP_CONDITION'`,
-                    `'PUSH_CONDITION'`).
+                    `'HMR'`, `'CX'`, `'CZ'`, `'SWAP'`, `'CSWAP'`, `'CCX'`,
+                    `'CCZ'`, `'Z_POW'`, `'INFO_TAG'`, `'DEBUG_PRINT'`,
+                    `'POP_CONDITION'`, `'PUSH_CONDITION'`).
 
             Raises:
                 KeyError: `key` is not a recognized base operation name.
@@ -433,7 +438,7 @@ void kickmix_py::register_operation_statistics_methods(pybind11::class_<PyOperat
         pybind11::arg("key"),
         pybind11::arg("default") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def get(self, key: str | Literal['NEG', 'BIT_INVERT', 'BIT_STORE0', 'BIT_STORE1', 'X', 'Z', 'R', 'HMR', 'CX', 'CZ', 'SWAP', 'CCX', 'CCZ', 'Z_POW', 'DEBUG_PRINT', 'POP_CONDITION', 'PUSH_CONDITION'], default: Any = None) -> Any:
+            @signature def get(self, key: str | Literal['NEG', 'BIT_INVERT', 'BIT_STORE0', 'BIT_STORE1', 'X', 'Z', 'R', 'HMR', 'CX', 'CZ', 'SWAP', 'CSWAP', 'CCX', 'CCZ', 'Z_POW', 'INFO_TAG', 'DEBUG_PRINT', 'POP_CONDITION', 'PUSH_CONDITION'], default: Any = None) -> Any:
             Returns the count for `key` if non-zero, else `default`.
 
             Args:

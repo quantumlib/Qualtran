@@ -272,3 +272,15 @@ TEST_EACH_SIZE_W(val, u32_eq, {
     }
     ASSERT_EQ((std::bit_cast<W>(v1).u32_eq(std::bit_cast<W>(v2))), (std::bit_cast<W>(v3)));
 });
+
+TEST_EACH_SIZE_W(val, from_u64s, {
+    auto rng = INDEPENDENT_TEST_RNG();
+    std::array<uint64_t, W::BIT_SIZE / 64> vals{};
+    for (auto &e : vals) {
+        e = rng();
+    }
+    auto val = W::from_u64s(vals);
+    for (size_t k = 0; k < W::BIT_SIZE / 64; k++) {
+        ASSERT_EQ(val.u64(k), vals[k]);
+    }
+})

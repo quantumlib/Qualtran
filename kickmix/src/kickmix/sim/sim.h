@@ -340,6 +340,23 @@ struct Sim {
                     break;
                 }
 
+                case OpType::CSWAP_IF:
+                    cond &= bits[*data_bit_cond++];
+                case OpType::CSWAP: {
+                    auto qc = *data_qqq0++;
+                    auto q0 = *data_qqq1++;
+                    auto q1 = *data_qqq2++;
+                    auto c = qubits[qc] & cond;
+                    auto a = qubits[q0];
+                    auto b = qubits[q1];
+                    a ^= b;
+                    b ^= a & c;
+                    a ^= b;
+                    qubits[q0] = a;
+                    qubits[q1] = b;
+                    break;
+                }
+
                 case OpType::X_IF:
                     cond &= bits[*data_bit_cond++];
                 case OpType::X:
@@ -464,6 +481,12 @@ struct Sim {
                 case OpType::POP_CONDITION:
                     condition_stack.pop_back();
                     current_base_condition = condition_stack.empty() ? ~TWord{} : condition_stack.back();
+                    if constexpr (count_shots) {
+                        cond = ~TWord{};
+                    }
+                    break;
+
+                case OpType::INFO_TAG:
                     if constexpr (count_shots) {
                         cond = ~TWord{};
                     }

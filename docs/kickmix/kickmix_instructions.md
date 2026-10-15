@@ -17,6 +17,7 @@ so it's not possible to create loops.
     - [Z_POW instruction](#z-pow-instruction)
     - [NEG instruction](#neg-instruction)
     - [SWAP instruction](#swap-instruction)
+    - [CSWAP instruction](#cswap-instruction)
     - [R instruction](#r-instruction)
     - [HMR instruction](#hmr-instruction)
 - [Classical Instructions](#classical-instructions)
@@ -30,6 +31,7 @@ so it's not possible to create loops.
     - [REGISTER instruction](#register-instruction)
     - [APPEND_TO_REGISTER instruction](#append_to_register-instruction)
     - [DEBUG_PRINT instruction](#debug_print-instruction)
+    - [INFO_TAG instruction](#info_tag-instruction)
 
 # Quantum Instructions
 
@@ -328,6 +330,47 @@ Optional Condition Bit
 ```
 
 
+## CSWAP instruction
+
+The Controlled-SWAP (Fredkin) gate.
+Exchanges the second and third qubits in the parts of the superposition where
+the first (control) qubit is on.
+Sends
+|000⟩ to |000⟩,
+|001⟩ to |001⟩,
+|010⟩ to |010⟩,
+|011⟩ to |011⟩,
+|100⟩ to |100⟩,
+|101⟩ to |110⟩,
+|110⟩ to |101⟩, and
+|111⟩ to |111⟩.
+
+Examples:
+
+```
+# Swap the values of qubit q1 and qubit q2 in the parts of the superposition
+# where q0 is ON:
+CSWAP q0 q1 q2
+
+# A classically-conditioned CSWAP:
+# If bit b7 is OFF, no operation is performed.
+# If bit b7 is ON, apply a CSWAP with control q0 and targets q1, q2.
+CSWAP q0 q1 q2 if b7
+
+# A decomposition of `CSWAP q0 q1 q2` into CX and CCX gates.
+CX q2 q1
+CCX q0 q1 q2
+CX q2 q1
+```
+
+Arguments:
+
+```
+3 Qubits
+Optional Condition Bit
+```
+
+
 ## R instruction
 
 The reset gate.
@@ -399,7 +442,7 @@ HMR q3 b1 if b2
 # based uncomputation using HMR + phase feedback.
 R q2
 CCX q0 q1 q2
-HMR q1 b0
+HMR q2 b0
 CZ q0 q1 if b0
 ```
 
@@ -687,4 +730,32 @@ DEBUG_PRINT r0
 # Please print something about nothing.
 # ...maybe print a newline character...?
 DEBUG_PRINT
+```
+
+
+## INFO_TAG instruction
+
+The `INFO_TAG` instruction attaches an arbitrary quoted text string to a point in the circuit.
+Info tags have no effect on circuit simulations, but can be used as debug or structural metadata when analyzing circuits.
+For example, `@enter:subroutine_name` and `@exit:subroutine_name` tags are used to mark where subroutines start and end for flame graph analysis and circuit diagrams.
+
+**This operation ignores conditions from `PUSH_CONDITION`**.
+
+Examples:
+
+```
+# Mark the start and end of a subroutine.
+INFO_TAG "@enter:my_subroutine"
+CCX q0 q1 q2
+CX q0 q1
+INFO_TAG "@exit:my_subroutine"
+
+# Attach an arbitrary debug note.
+INFO_TAG "checkpoint 1"
+```
+
+Arguments:
+
+```
+1 quoted text string
 ```

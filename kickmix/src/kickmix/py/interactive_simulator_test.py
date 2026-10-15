@@ -533,7 +533,9 @@ def test_counting_operations():
         PUSH_CONDITION if b0
         CCX q0 q1 q2
         CCZ q0 q1 q2 if b1
+        CSWAP q0 q1 q2 if b1
         Z_POW q0 0.25
+        INFO_TAG "tag"
         POP_CONDITION
         Z_POW q0 0.125 if b1
         DEBUG_PRINT
@@ -550,14 +552,16 @@ def test_counting_operations():
     assert totals == {
         "X": 4,
         "CX": 2,
+        "CSWAP": 1,
         "CCX": 2,
         "CCZ": 1,
         "Z_POW": 4,
+        "INFO_TAG": 4,
         "DEBUG_PRINT": 4 + 4 + 2,
         "POP_CONDITION": 4,
         "PUSH_CONDITION": 4,
     }
-    assert stats.num_toffoli_like == 3
+    assert stats.num_toffoli_like == 4
     assert stats.num_t_like == 2
     assert stats.num_z_pow(min_clifford_hierarchy_level=4) == 2
     assert stats.z_pow_clifford_hierarchy_counts == {3: 2, 4: 2}
@@ -567,9 +571,11 @@ def test_counting_operations():
     assert [s["CX"] for s in shots] == [1, 0, 1, 0]
     assert [s["CCX"] for s in shots] == [1, 0, 1, 0]
     assert [s["CCZ"] for s in shots] == [1, 0, 0, 0]
+    assert [s["CSWAP"] for s in shots] == [1, 0, 0, 0]
+    assert [s["INFO_TAG"] for s in shots] == [1, 1, 1, 1]
     assert [s["Z_POW"] for s in shots] == [2, 1, 1, 0]
     assert [s["DEBUG_PRINT"] for s in shots] == [3, 3, 2, 2]
-    assert [s.num_toffoli_like for s in shots] == [2, 0, 1, 0]
+    assert [s.num_toffoli_like for s in shots] == [3, 0, 1, 0]
     assert [s.num_t_like for s in shots] == [1, 0, 1, 0]
     assert [s.num_z_pow(min_clifford_hierarchy_level=4) for s in shots] == [1, 1, 0, 0]
 

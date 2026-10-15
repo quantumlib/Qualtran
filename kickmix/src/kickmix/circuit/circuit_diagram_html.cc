@@ -80,6 +80,7 @@ Controls: mouse wheel to zoom, click and drag to pan.)HTML";
         size_t num_rz_theta = 0;
         for (const auto &op : operations) {
             switch (op.kind) {
+                case OpType::INFO_TAG:
                 case OpType::NEG_IF:
                 case OpType::NEG:
                 case OpType::DEBUG_PRINT_EMPTY_IF:
@@ -117,8 +118,10 @@ Controls: mouse wheel to zoom, click and drag to pan.)HTML";
                     break;
                 case OpType::CCX:
                 case OpType::CCZ:
+                case OpType::CSWAP:
                 case OpType::CCX_IF:
                 case OpType::CCZ_IF:
+                case OpType::CSWAP_IF:
                     num_ccp += 1;
                     break;
                 case OpType::Z_POW:
@@ -253,6 +256,7 @@ Controls: mouse wheel to zoom, click and drag to pan.)HTML";
     uint32_t text_pos = UINT32_MAX;
     const double MIN_COL_WIDTH = 16;
     double cur_col_width = 32;
+    bool col_has_ops = false;
 
     for (size_t k = 0; k < circuit.register_data.size(); k++) {
         const auto &reg = circuit.register_data[k];
@@ -284,12 +288,14 @@ Controls: mouse wheel to zoom, click and drag to pan.)HTML";
                 }
                 x += cur_col_width;
                 cur_col_width = MIN_COL_WIDTH;
+                col_has_ops = false;
             }
             if (min_q <= max_q) {
                 for (uint32_t q = min_q; q <= max_q; q++) {
                     if (last_used[q] >= x) {
                         x += cur_col_width;
                         cur_col_width = MIN_COL_WIDTH;
+                        col_has_ops = false;
                         break;
                     }
                 }
@@ -297,6 +303,7 @@ Controls: mouse wheel to zoom, click and drag to pan.)HTML";
                     last_used[q] = x;
                 }
             }
+            col_has_ops = true;
 
             // Draw classical command.
             if (is_classical_command) {
@@ -374,11 +381,75 @@ Controls: mouse wheel to zoom, click and drag to pan.)HTML";
         }
     }
 
+    struct OpenInfoTagSpan {
+        std::string_view name;
+        double start_x;
+        size_t depth;
+    };
+    struct ClosedInfoTagSpan {
+        std::string_view name;
+        double start_x;
+        double end_x;
+    };
+    std::vector<OpenInfoTagSpan> open_tags;
+    std::vector<std::vector<ClosedInfoTagSpan>> closed_tags_by_depth;
+
     bool saw_hmr = false;
     size_t group_len = 1;
     for (size_t op_index = 0; op_index < operations.size(); op_index += group_len) {
         group_len = 1;
         const Op &op = operations[op_index];
+        if (op.kind == OpType::INFO_TAG) {
+            if (op.info_tag.starts_with("@enter:")) {
+                if (col_has_ops) {
+                    x += cur_col_width;
+                    cur_col_width = MIN_COL_WIDTH;
+                    text_pos = UINT32_MAX;
+                    saw_hmr = false;
+                    col_has_ops = false;
+                }
+                size_t depth = open_tags.size();
+                if (closed_tags_by_depth.size() <= depth) {
+                    closed_tags_by_depth.resize(depth + 1);
+                }
+                open_tags.push_back(
+                    OpenInfoTagSpan{
+                        .name = op.info_tag.substr(7),
+                        .start_x = x - 6.0,
+                        .depth = depth,
+                    });
+            } else if (op.info_tag.starts_with("@exit:")) {
+                std::string_view exit_name = op.info_tag.substr(6);
+                size_t match_idx = open_tags.size();
+                for (size_t k = open_tags.size(); k--;) {
+                    if (open_tags[k].name == exit_name) {
+                        match_idx = k;
+                        break;
+                    }
+                }
+                if (match_idx < open_tags.size()) {
+                    if (col_has_ops) {
+                        x += cur_col_width;
+                        cur_col_width = MIN_COL_WIDTH;
+                        text_pos = UINT32_MAX;
+                        saw_hmr = false;
+                        col_has_ops = false;
+                    }
+                    while (open_tags.size() > match_idx) {
+                        auto top = open_tags.back();
+                        open_tags.pop_back();
+                        double end_x = std::max(top.start_x + 4.0, x - 10.0);
+                        closed_tags_by_depth[top.depth].push_back(
+                            ClosedInfoTagSpan{
+                                .name = top.name,
+                                .start_x = top.start_x,
+                                .end_x = end_x,
+                            });
+                    }
+                }
+            }
+            continue;
+        }
         if (op.kind == OpType::CX) {
             while (op_index + group_len < operations.size() && operations[op_index + group_len].kind == OpType::CX &&
                    operations[op_index + group_len].q_control1 == op.q_control1) {
@@ -452,12 +523,14 @@ Controls: mouse wheel to zoom, click and drag to pan.)HTML";
             x += cur_col_width;
             saw_hmr = false;
             cur_col_width = MIN_COL_WIDTH;
+            col_has_ops = false;
         }
         if (min_q <= max_q) {
             for (uint32_t q = min_q; q <= max_q; q++) {
                 if (last_used[q] >= x) {
                     x += cur_col_width;
                     cur_col_width = MIN_COL_WIDTH;
+                    col_has_ops = false;
                     break;
                 }
             }
@@ -465,6 +538,7 @@ Controls: mouse wheel to zoom, click and drag to pan.)HTML";
                 last_used[q] = x;
             }
         }
+        col_has_ops = true;
 
         if ((op.kind == OpType::R || op.kind == OpType::R_IF) && !active[op.q_target.untagged_id()]) {
             wire_transitions[op.q_target.untagged_id()].push_back(x);
@@ -510,7 +584,8 @@ Controls: mouse wheel to zoom, click and drag to pan.)HTML";
         }
 
         // Draw black control bulbs.
-        if (op.kind != OpType::SWAP && op.kind != OpType::SWAP_IF) {
+        if (op.kind != OpType::SWAP && op.kind != OpType::SWAP_IF && op.kind != OpType::CSWAP &&
+            op.kind != OpType::CSWAP_IF) {
             for (size_t k = 1; k < qs.size(); k++) {
                 if (qs[k].is_qubit()) {
                     svg << "<circle";
@@ -538,6 +613,23 @@ Controls: mouse wheel to zoom, click and drag to pan.)HTML";
                 svg << " stroke=\"black\"";
                 svg << " fill=\"none\"";
                 svg << " />";
+            }
+            if (op.q_control2.is_qubit()) {
+                svg << "<circle";
+                svg << " cx=\"" << x << "\"";
+                svg << " cy=\"" << q2y(op.q_control2) << "\"";
+                svg << " r=\"4\"";
+                svg << " stroke=\"black\"";
+                svg << " fill=\"black\"";
+                svg << " />";
+
+                far_svg << "<circle";
+                far_svg << " cx=\"" << x << "\"";
+                far_svg << " cy=\"" << q2y(op.q_control2) << "\"";
+                far_svg << " r=\"4\"";
+                far_svg << " stroke=\"black\"";
+                far_svg << " fill=\"black\"";
+                far_svg << " />";
             }
         }
 
@@ -668,6 +760,8 @@ Controls: mouse wheel to zoom, click and drag to pan.)HTML";
                     far_svg << " />";
                     break;
                 }
+                case OpType::CSWAP_IF:
+                case OpType::CSWAP:
                 case OpType::SWAP_IF:
                 case OpType::SWAP: {
                     // Draw diagonal swap cross.
@@ -815,6 +909,22 @@ Controls: mouse wheel to zoom, click and drag to pan.)HTML";
         far_svg.str("");
     }
     x += cur_col_width;
+    while (!open_tags.empty()) {
+        auto top = open_tags.back();
+        open_tags.pop_back();
+        double end_x = std::max(top.start_x + 4.0, x - 10.0);
+        closed_tags_by_depth[top.depth].push_back(
+            ClosedInfoTagSpan{
+                .name = top.name,
+                .start_x = top.start_x,
+                .end_x = end_x,
+            });
+    }
+    while (!closed_tags_by_depth.empty() && closed_tags_by_depth.back().empty()) {
+        closed_tags_by_depth.pop_back();
+    }
+    double total_max_y = q2y(QubitId{(uint32_t)circuit.num_qubits}) + closed_tags_by_depth.size() * 12.0;
+
     for (uint32_t q = 0; q < circuit.num_qubits; q++) {
         if (wire_transitions[q].size() % 2 == 1) {
             wire_transitions[q].push_back(x);
@@ -832,14 +942,20 @@ Controls: mouse wheel to zoom, click and drag to pan.)HTML";
             }
             buf_stream << "],\n";
         }
+        for (size_t d = 0; d < closed_tags_by_depth.size(); d++) {
+            buf_stream << "    [";
+            for (const auto &span : closed_tags_by_depth[d]) {
+                buf_stream << span.start_x << "," << span.end_x << ",";
+            }
+            buf_stream << "],\n";
+        }
         buf_stream << "];\n";
     }
     if (html) {
         buf_stream << "let wire_objects = [\n";
         out_stream << buf_stream.str();
     } else {
-        out_stream << "<svg viewBox=\"0 0 " << x << " " << q2y(QubitId{(uint32_t)circuit.num_qubits})
-                   << "\" xmlns=\"http://www.w3.org/2000/svg\">";
+        out_stream << "<svg viewBox=\"0 0 " << x << " " << total_max_y << "\" xmlns=\"http://www.w3.org/2000/svg\">";
     }
     for (uint32_t q = 0; q < circuit.num_qubits; q++) {
         double y = q2y(QubitId{q});
@@ -864,6 +980,41 @@ Controls: mouse wheel to zoom, click and drag to pan.)HTML";
             out_stream << "],\n";
         }
     }
+    for (size_t d = 0; d < closed_tags_by_depth.size(); d++) {
+        double y = q2y(QubitId{(uint32_t)circuit.num_qubits}) + d * 12.0;
+        if (html) {
+            out_stream << "    [";
+        }
+        for (const auto &span : closed_tags_by_depth[d]) {
+            if (html) {
+                out_stream << "new WireObject(`";
+            }
+            out_stream << "<path";
+            out_stream << " d=\"M" << span.start_x << "," << (y - 4.0) << " L" << span.start_x << "," << y << " L"
+                       << span.end_x << "," << y << " L" << span.end_x << "," << (y - 4.0) << "\"";
+            out_stream << " stroke=\"black\"";
+            out_stream << " fill=\"none\"";
+            out_stream << " />";
+            double width = span.end_x - span.start_x;
+            double mid_x = (span.start_x + span.end_x) * 0.5;
+            double font_size = std::min(6.0, std::max(1.0, width / std::max<size_t>(1, span.name.size()) * 1.5));
+            out_stream << "<text";
+            out_stream << " x=\"" << mid_x << "\"";
+            out_stream << " y=\"" << (y - 1.0) << "\"";
+            out_stream << " text-anchor=\"middle\"";
+            out_stream << " dominant-baseline=\"auto\"";
+            out_stream << " font-size=\"" << font_size << "\"";
+            out_stream << " font-family=\"monospace\"";
+            out_stream << " fill=\"black\"";
+            out_stream << " >" << escape_text_for_html(span.name) << "</text>";
+            if (html) {
+                out_stream << "`),";
+            }
+        }
+        if (html) {
+            out_stream << "],\n";
+        }
+    }
     if (!html) {
         out_stream << buf_stream.str();
     }
@@ -872,7 +1023,7 @@ Controls: mouse wheel to zoom, click and drag to pan.)HTML";
         out_stream << "const min_x = 0;\n";
         out_stream << "const max_x = " << x << ";\n";
         out_stream << "const min_y = 0;\n";
-        out_stream << "const max_y = " << q2y(QubitId{(uint32_t)circuit.num_qubits}) << ";\n";
+        out_stream << "const max_y = " << total_max_y << ";\n";
 
         out_stream << R"HTML(
 

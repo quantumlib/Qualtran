@@ -33,6 +33,9 @@ enum class OpType : uint8_t {
     NEG = 0x0,                // Flip global phase.
     POP_CONDITION = 0x1,      // Unconditionally removes a condition from the condition stack. Operations other than
                               // PUSH_CONDITION/POP_CONDITION only occur when the condition stack is satisfied.
+    INFO_TAG = 0x6,           // Specifies arbitrary text information. No effect on circuit behavior, but can be used
+                              // by tools analyzing the circuit as hints (e.g. `INFO_TAG "@enter:adder"` and
+                              // `INFO_TAG "@exit:adder"` indicating the location of an adder operation).
     DEBUG_PRINT_EMPTY = 0x7,  // Asks simulator to print unspecified debugging information.
 
     BIT_STORE0 = 0x0 | OP_HAS_1B,     // Stores 0 into a bit.
@@ -52,8 +55,9 @@ enum class OpType : uint8_t {
     CX = 0x1 | OP_HAS_2Q,    // Bit flip second qubit if first qubit is 1.
     SWAP = 0x2 | OP_HAS_2Q,  // Exchanges the values of two qubits.
 
-    CCZ = 0x0 | OP_HAS_3Q,  // Negate global phase when three qubits are all 1.
-    CCX = 0x1 | OP_HAS_3Q,  // Bit flip third qubit if first two qubits are 1.
+    CCZ = 0x0 | OP_HAS_3Q,    // Negate global phase when three qubits are all 1.
+    CCX = 0x1 | OP_HAS_3Q,    // Bit flip third qubit if first two qubits are 1.
+    CSWAP = 0x2 | OP_HAS_3Q,  // Exchanges the values of second and third qubits if first qubit is 1.
 
     NEG_IF = 0x0 | OP_HAS_COND,  // Flip global phase if given condition bit is 1.
     PUSH_CONDITION =
@@ -89,6 +93,8 @@ enum class OpType : uint8_t {
         0x0 | OP_HAS_3Q | OP_HAS_COND,  // Negate global phase when three qubits are all 1 if given condition bit is 1.
     CCX_IF =
         0x1 | OP_HAS_3Q | OP_HAS_COND,  // Bit flip third qubit if first two qubits are 1 if given condition bit is 1.
+    CSWAP_IF =
+        0x2 | OP_HAS_3Q | OP_HAS_COND,  // Exchanges second and third qubits if first qubit and condition bit are 1.
     Z_POW_IF = 0x3 | OP_HAS_1Q | OP_HAS_COND,  // Conditional single-qubit arbitrary angle phasing.
 };
 std::ostream &operator<<(std::ostream &out, const OpType &rhs);
@@ -102,7 +108,7 @@ inline uint8_t operator&(OpType t, uint8_t other) {
 }
 
 extern std::array<std::string_view, 256> OP_TYPE_NAME_TABLE;
-extern std::array<OpType, 36> OP_TYPE_TABLE;
+extern std::array<OpType, 39> OP_TYPE_TABLE;
 
 }  // namespace kickmix
 

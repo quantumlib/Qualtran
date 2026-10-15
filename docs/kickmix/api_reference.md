@@ -11,6 +11,7 @@
     - [`kickmix.Circuit.__repr__`](#kickmix.Circuit.__repr__)
     - [`kickmix.Circuit.__rmul__`](#kickmix.Circuit.__rmul__)
     - [`kickmix.Circuit.__str__`](#kickmix.Circuit.__str__)
+    - [`kickmix.Circuit.flame_chart_svg`](#kickmix.Circuit.flame_chart_svg)
     - [`kickmix.Circuit.from_file`](#kickmix.Circuit.from_file)
     - [`kickmix.Circuit.html_diagram`](#kickmix.Circuit.html_diagram)
     - [`kickmix.Circuit.max_magic`](#kickmix.Circuit.max_magic)
@@ -41,9 +42,7 @@
     - [`kickmix.CircuitBuilder.del_gf2_inverse_with_scaffold`](#kickmix.CircuitBuilder.del_gf2_inverse_with_scaffold)
     - [`kickmix.CircuitBuilder.del_gf2_mul`](#kickmix.CircuitBuilder.del_gf2_mul)
     - [`kickmix.CircuitBuilder.del_lookup`](#kickmix.CircuitBuilder.del_lookup)
-    - [`kickmix.CircuitBuilder.end_auto_free_scope`](#kickmix.CircuitBuilder.end_auto_free_scope)
     - [`kickmix.CircuitBuilder.finish_circuit`](#kickmix.CircuitBuilder.finish_circuit)
-    - [`kickmix.CircuitBuilder.flame_chart_svg`](#kickmix.CircuitBuilder.flame_chart_svg)
     - [`kickmix.CircuitBuilder.flip_if_equal`](#kickmix.CircuitBuilder.flip_if_equal)
     - [`kickmix.CircuitBuilder.flip_if_greater_than`](#kickmix.CircuitBuilder.flip_if_greater_than)
     - [`kickmix.CircuitBuilder.flip_if_less_than`](#kickmix.CircuitBuilder.flip_if_less_than)
@@ -54,6 +53,7 @@
     - [`kickmix.CircuitBuilder.gf2_phase_by_product`](#kickmix.CircuitBuilder.gf2_phase_by_product)
     - [`kickmix.CircuitBuilder.hmr`](#kickmix.CircuitBuilder.hmr)
     - [`kickmix.CircuitBuilder.iadd`](#kickmix.CircuitBuilder.iadd)
+    - [`kickmix.CircuitBuilder.info_tag`](#kickmix.CircuitBuilder.info_tag)
     - [`kickmix.CircuitBuilder.init_and`](#kickmix.CircuitBuilder.init_and)
     - [`kickmix.CircuitBuilder.init_gf2_div`](#kickmix.CircuitBuilder.init_gf2_div)
     - [`kickmix.CircuitBuilder.init_gf2_div_with_scaffold`](#kickmix.CircuitBuilder.init_gf2_div_with_scaffold)
@@ -65,6 +65,7 @@
     - [`kickmix.CircuitBuilder.ixor_gf2_div`](#kickmix.CircuitBuilder.ixor_gf2_div)
     - [`kickmix.CircuitBuilder.ixor_gf2_mul`](#kickmix.CircuitBuilder.ixor_gf2_mul)
     - [`kickmix.CircuitBuilder.left_rotate`](#kickmix.CircuitBuilder.left_rotate)
+    - [`kickmix.CircuitBuilder.mark`](#kickmix.CircuitBuilder.mark)
     - [`kickmix.CircuitBuilder.max_qubits`](#kickmix.CircuitBuilder.max_qubits)
     - [`kickmix.CircuitBuilder.multi_controlled_x`](#kickmix.CircuitBuilder.multi_controlled_x)
     - [`kickmix.CircuitBuilder.neg`](#kickmix.CircuitBuilder.neg)
@@ -76,7 +77,6 @@
     - [`kickmix.CircuitBuilder.reset`](#kickmix.CircuitBuilder.reset)
     - [`kickmix.CircuitBuilder.right_rotate`](#kickmix.CircuitBuilder.right_rotate)
     - [`kickmix.CircuitBuilder.set_max_qubits`](#kickmix.CircuitBuilder.set_max_qubits)
-    - [`kickmix.CircuitBuilder.start_auto_free_scope`](#kickmix.CircuitBuilder.start_auto_free_scope)
     - [`kickmix.CircuitBuilder.swap`](#kickmix.CircuitBuilder.swap)
     - [`kickmix.CircuitBuilder.unary_iteration`](#kickmix.CircuitBuilder.unary_iteration)
     - [`kickmix.CircuitBuilder.x`](#kickmix.CircuitBuilder.x)
@@ -150,6 +150,7 @@
     - [`kickmix.array.__add__`](#kickmix.array.__add__)
     - [`kickmix.array.__eq__`](#kickmix.array.__eq__)
     - [`kickmix.array.__getitem__`](#kickmix.array.__getitem__)
+    - [`kickmix.array.__init__`](#kickmix.array.__init__)
     - [`kickmix.array.__len__`](#kickmix.array.__len__)
     - [`kickmix.array.__ne__`](#kickmix.array.__ne__)
     - [`kickmix.array.__repr__`](#kickmix.array.__repr__)
@@ -190,12 +191,14 @@
     - [`kickmix.xb.__str__`](#kickmix.xb.__str__)
     - [`kickmix.xb.id`](#kickmix.xb.id)
 - [`kickmix.xbool`](#kickmix.xbool)
+    - [`kickmix.xbool.__bool__`](#kickmix.xbool.__bool__)
     - [`kickmix.xbool.__eq__`](#kickmix.xbool.__eq__)
     - [`kickmix.xbool.__hash__`](#kickmix.xbool.__hash__)
     - [`kickmix.xbool.__init__`](#kickmix.xbool.__init__)
     - [`kickmix.xbool.__lt__`](#kickmix.xbool.__lt__)
     - [`kickmix.xbool.__ne__`](#kickmix.xbool.__ne__)
     - [`kickmix.xbool.__repr__`](#kickmix.xbool.__repr__)
+    - [`kickmix.xbool.__str__`](#kickmix.xbool.__str__)
 ```python
 # Types used by the method definitions.
 from typing import overload, TYPE_CHECKING, Any, Callable, Dict, Iterable, Iterator, List, Literal, Optional, Tuple, Union
@@ -210,7 +213,21 @@ import numpy as np
 
 # (at top-level in the kickmix module)
 class Circuit:
-    """A kickmix circuit.
+    """An immutable kickmix circuit.
+
+    Examples:
+        >>> import kickmix as km
+        >>> circuit = km.Circuit('''
+        ...     X q0
+        ...     CX q0 q9
+        ... ''')
+
+        >>> simulator = km.Simulator(batch_size=1)
+        >>> print(simulator.read_within_shot(km.q(9), shot_index=0))
+        False
+        >>> simulator.do(circuit)
+        >>> print(simulator.read_within_shot(km.q(9), shot_index=0))
+        True
     """
 ```
 
@@ -305,7 +322,27 @@ def __init__(
     self,
     circuit_text: str = '',
 ) -> None:
-    """Creates a kickmix Circuit by parsing the given text.
+    """Creates a circuit by parsing the given text as kickmix circuit file.
+
+    For a definition of the expected text format, see the kickmix circuit file
+    format documentation at
+    https://github.com/quantumlib/Qualtran/blob/main/docs/kickmix/kickmix_format.md
+
+    Roughly speaking, it's just a series of lines like "CCX q0 q1 q2".
+
+    Examples:
+        >>> import kickmix as km
+        >>> circuit = km.Circuit('''
+        ...     X q0
+        ...     CX q0 q9
+        ... ''')
+
+        >>> simulator = km.Simulator(batch_size=1)
+        >>> print(simulator.read_within_shot(km.q(9), shot_index=0))
+        False
+        >>> simulator.do(circuit)
+        >>> print(simulator.read_within_shot(km.q(9), shot_index=0))
+        True
     """
 ```
 
@@ -318,6 +355,32 @@ def __len__(
     self,
 ) -> int:
     """Returns the number of instructions in the circuit.
+
+    Caution: register data is not counted as instructions.
+
+    Examples:
+        >>> import kickmix as km
+        >>> len(km.Circuit())
+        0
+
+        >>> len(km.Circuit('''
+        ...     X q0
+        ...     CX q0 q9
+        ... '''))
+        2
+
+        >>> len(km.Circuit('''
+        ...     REGISTER r0 "test"
+        ...     APPEND_TO_REGISTER q0 r0
+        ...     APPEND_TO_REGISTER q1 r0
+        ...     APPEND_TO_REGISTER q2 r0
+        ...     INFO_TAG "@enter:increment"
+        ...     CCX q0 q1 q2
+        ...     CX q0 q1
+        ...     X q0
+        ...     INFO_TAG "@exit:increment"
+        ... '''))
+        5
     """
 ```
 
@@ -344,8 +407,7 @@ def __mul__(
         ''')
 
         >>> km.Circuit('CX q0 q1') * 0
-        km.Circuit('''
-        ''')
+        km.Circuit()
 
         >>> 5 * km.Circuit('''
         ...     REGISTER r0 "test"
@@ -422,8 +484,7 @@ def __rmul__(
         ''')
 
         >>> km.Circuit('CX q0 q1') * 0
-        km.Circuit('''
-        ''')
+        km.Circuit()
 
         >>> 5 * km.Circuit('''
         ...     REGISTER r0 "test"
@@ -461,6 +522,51 @@ def __str__(
     self,
 ) -> str:
     """Returns a description of the circuit.
+    """
+```
+
+<a name="kickmix.Circuit.flame_chart_svg"></a>
+```python
+# kickmix.Circuit.flame_chart_svg
+
+# (in class kickmix.Circuit)
+def flame_chart_svg(
+    self,
+) -> str:
+    """Returns a flame chart of qubits and operations in the circuit.
+
+    In order for this method to work, the circuit must be annotated with
+    "@enter:subroutine" and "@exit:subroutine" INFO_TAG instructions. If
+    the circuit isn't annotated, the chart will be very boring.
+
+    Returns:
+        An SVG string containing the flame chart.
+
+    Examples:
+        >>> import tempfile
+        >>> import kickmix as km
+
+        >>> builder = km.CircuitBuilder()
+        >>> a = builder.create_quantum_register(3, "a")
+        >>> b = builder.create_quantum_register(3, "b")
+        >>> c = builder.create_quantum_register(3, "c")
+
+        >>> builder.info_tag("@enter:big_cswap")
+        >>> builder.cx(b, a)
+        >>> builder.ccx(c, a, b)
+        >>> builder.cx(b, a)
+        >>> builder.info_tag("@exit:big_cswap")
+        >>> builder.iadd(offset=a, target=b)
+
+        >>> circuit = builder.finish_circuit()
+        >>> svg = circuit.flame_chart_svg()
+        >>> 'big_cswap' in svg
+        True
+        >>> 'iadd' in svg
+        True
+        >>> with tempfile.NamedTemporaryFile() as fp:
+        ...     with open(fp.name, 'w') as f:
+        ...         print(circuit.flame_chart_svg(), file=f)
     """
 ```
 
@@ -518,6 +624,16 @@ def html_diagram(
     self,
 ) -> str:
     """Returns an html diagram of the circuit.
+
+    Examples:
+        >>> import kickmix as km
+        >>> circuit = km.Circuit('''
+        ...     X q0
+        ...     CX q0 q1
+        ... ''')
+        >>> html = circuit.html_diagram()
+        >>> '<html' in html
+        True
     """
 ```
 
@@ -529,7 +645,19 @@ def html_diagram(
 def max_magic(
     self,
 ) -> int:
-    """Returns an upper bound on the number of CCX/CCZ gates run by the circuit.
+    """Returns an upper bound on the number of CCX/CCZ gates run by the
+    circuit.
+
+    Examples:
+        >>> import kickmix as km
+        >>> circuit = km.Circuit('''
+        ...     X q0
+        ...     CX q0 q1
+        ...     CCX q0 q1 q2
+        ...     CCZ q0 q1 q2
+        ... ''')
+        >>> circuit.max_magic()
+        2
     """
 ```
 
@@ -625,7 +753,17 @@ def operation_statistics(
 def reaction_depth(
     self,
 ) -> int:
-    """Returns the reaction depth of the circuit, assuming it is powered by CCZ states.
+    """Returns the reaction depth of the circuit, assuming it is powered by
+    CCZ states.
+
+    Examples:
+        >>> import kickmix as km
+        >>> circuit = km.Circuit('''
+        ...     CCX q0 q1 q2
+        ...     CCX q2 q3 q4
+        ... ''')
+        >>> circuit.reaction_depth()
+        2
     """
 ```
 
@@ -638,7 +776,31 @@ def reaction_depth(
 def register_data(
     self,
 ) -> object:
-    """Returns the names and contents of registers in the circuit.
+    """The names and contents of registers in the circuit, as a dict.
+
+    Examples:
+        >>> import kickmix as km
+
+        >>> circuit = km.Circuit('''
+        ...     REGISTER r0 "test"
+        ...     APPEND_TO_REGISTER q0 r0
+        ...     APPEND_TO_REGISTER q1 r0
+        ...     APPEND_TO_REGISTER q2 r0
+        ...     REGISTER r2 "empty"
+        ...     REGISTER r3
+        ...     APPEND_TO_REGISTER q3 r3
+        ...     APPEND_TO_REGISTER b0 r3
+        ...     CCX q0 q1 q2
+        ...     CX q0 q1
+        ...     X q0
+        ... ''')
+        >>> data: dict[str, km.array] = circuit.register_data
+        >>> for k, v in data.items():
+        ...     print(f"{k!r}: {v!r}")
+        'test': km.array([km.q(0), km.q(1), km.q(2)])
+        km.r(1): km.array([])
+        'empty': km.array([])
+        km.r(3): km.array([km.q(3), km.b(0)])
     """
 ```
 
@@ -651,6 +813,20 @@ def text_diagram(
     self,
 ) -> str:
     """Returns a text diagram of the circuit.
+
+    Examples:
+        >>> import kickmix as km
+        >>> circuit = km.Circuit('''
+        ...     X q0
+        ...     CX q0 q1
+        ...     CCX q0 q1 q2
+        ... ''')
+        >>> print(circuit.text_diagram())
+        q0: -X-@-@-
+               | |
+        q1: ---X-@-
+                 |
+        q2: -----X-
     """
 ```
 
@@ -700,7 +876,33 @@ def to_file(
 
 # (at top-level in the kickmix module)
 class CircuitBuilder:
-    """A kickmix circuit builder.
+    """A builder class that helps create a kickmix circuit.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+
+        >>> target = builder.create_quantum_register(7, "target")
+        >>> shift = builder.create_quantum_register(2, "shift")
+        >>> builder.left_rotate(target, shift)
+        >>> print(builder.finish_circuit().text_diagram())
+        q0: -target[0]-SWAP-------------SWAP-------------SWAP-----------
+                       |                |                |
+        q1: -target[1]-SWAP-------------|----------------|----SWAP------
+                       |                |                |    |
+        q2: -target[2]-|----SWAP--------SWAP-------------|----|---------
+                       |    |           |                |    |
+        q3: -target[3]-|----|----SWAP---|----SWAP--------|----SWAP------
+                       |    |    |      |    |           |    |
+        q4: -target[4]-|----|----|------|----|----SWAP---SWAP-|---------
+                       |    |    |      |    |    |      |    |
+        q5: -target[5]-|----|----SWAP---|----|----SWAP---|----|----SWAP-
+                       |    |    |      |    |    |      |    |    |
+        q6: -target[6]-|----SWAP-|------|----SWAP-|------|----|----SWAP-
+                       |    |    |      |    |    |      |    |    |
+        q7: -shift[0]--@----@----@----@-|----|----|----@-|----|----|----
+                                      | |    |    |    | |    |    |
+        q8: -shift[1]-----------------X-@----@----@----X-@----@----@----
     """
 ```
 
@@ -713,6 +915,15 @@ def __init__(
     self,
 ) -> None:
     """Initializes a new circuit builder.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.x(km.q(0))
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            X q0
+        ''')
     """
 ```
 
@@ -725,6 +936,25 @@ def alloc_bits(
     self,
     count: int,
 ) -> kickmix.array:
+    """Allocates classical bits to use as workspace in a circuit.
+
+    Allocated bits can be deallocated with the `km.CircuitBuilder.free` method.
+
+    Args:
+        count: The number of classical bits to allocate.
+
+    Returns:
+        An array containing the ids of the allocated bits. Until these ids
+        are freed, they won't be returned by any other allocation calls.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> b = builder.alloc_bits(3)
+        >>> b
+        km.array([km.b(0), km.b(1), km.b(2)])
+        >>> builder.free(b)
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.alloc_qubits"></a>
@@ -738,23 +968,40 @@ def alloc_qubits(
 ) -> kickmix.array:
     """Allocates clean qubits to use as workspace in a circuit.
 
-    Allocated qubits can be deallocated by using the `CircuitBuilder.free` method.
-    Qubits allocated within a `with builder.scope(auto_free=True):` block are
-    deallocated automatically upon execution exiting the block.
+    Allocated qubits can be deallocated with the `km.CircuitBuilder.free` method.
 
-    Although the qubits returned by this method *should* be clean, nothing *enforces*
-    this. If a prior user of the allocated qubit failed to correctly clean some qubits
-    before freeing them, the returned qubits may contain their buggy garbage. As such,
-    it's recommended that you reset the qubits before using them. Reset gates also
-    have the nice side effect of clearly indicating in circuit diagrams when a new
-    usage of a qubit has begun.
+    If the allocation would push `km.CircuitBuilder.num_allocate_qubits` above
+    `km.CircuitBuilder.max_qubits` (which defaults to infinity), it will raise
+    an exception instead of returning a result.
+
+    Although the qubits returned by this method *should* be clean, nothing
+    *enforces* this. If a prior user of the allocated qubits failed to
+    correctly clean some qubits before freeing them, the returned qubits may
+    contain their buggy garbage. As such, it's recommended that you reset
+    the qubits before using them. Reset gates also have the nice side effect
+    of clearly indicating in circuit diagrams when a new usage of a qubit
+    has begun.
 
     Args:
-        length: The number of qubits to allocate.
+        count: The number of qubits to allocate.
 
     Returns:
-        An array containing the ids of the allocated qubits. Until these ids are
-        freed, they won't be returned by any other allocation calls.
+        An array containing the ids of the allocated qubits. Until these ids
+        are freed, they won't be returned by any other allocation calls.
+
+    Raises:
+        ValueError:
+            Attempted to allocate more qubits than the maximum (if set).
+            See also `km.CircuitBuilder.num_free_qubits`.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> q = builder.alloc_qubits(3)
+        >>> q
+        km.array([km.q(0), km.q(1), km.q(2)])
+        >>> builder.num_allocated_qubits
+        3
     """
 ```
 
@@ -883,15 +1130,30 @@ def create_classical_register(
 ) -> kickmix.array:
     """Creates a classical register.
 
-    Reserves the given number of bits for the register, and emits instructions
-    defining the register.
+    Reserves the given number of bits for the register, and emits
+    instructions defining the register.
 
     Args:
-        name: A name for the register, which can be used to refer to it.
         length: The number of bits in the register.
+        name: A name for the register, which can be used to refer to it.
 
     Returns:
-        A kickmix.CircuitRegister containing the allocated qubits.
+        A km.array containing the allocated bits.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> reg = builder.create_classical_register(2, name='meas')
+        >>> reg
+        km.array([km.b(0), km.b(1)])
+        >>> builder.bit_store(reg[0], True)
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            APPEND_TO_REGISTER b0 r0
+            APPEND_TO_REGISTER b1 r0
+            REGISTER r0 "meas"
+            BIT_STORE1 b0
+        ''')
     """
 ```
 
@@ -907,15 +1169,30 @@ def create_quantum_register(
 ) -> kickmix.array:
     """Creates a quantum register.
 
-    Reserves the given number of qubits for the register, and emits instructions
-    defining the register.
+    Reserves the given number of qubits for the register, and emits
+    instructions defining the register.
 
     Args:
-        name: A name for the register, which can be used to refer to it.
         length: The number of qubits in the register.
+        name: A name for the register, which can be used to refer to it.
 
     Returns:
-        A kickmix.CircuitRegister containing the allocated qubits.
+        A km.array containing the allocated qubits.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> reg = builder.create_quantum_register(2, name='data')
+        >>> reg
+        km.array([km.q(0), km.q(1)])
+        >>> builder.x(reg[0])
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            APPEND_TO_REGISTER q0 r0
+            APPEND_TO_REGISTER q1 r0
+            REGISTER r0 "data"
+            X q0
+        ''')
     """
 ```
 
@@ -926,24 +1203,24 @@ def create_quantum_register(
 # (in class kickmix.CircuitBuilder)
 def cswap(
     self,
-    control: q | b | bool,
-    target1: km.array,
-    target2: km.array,
+    control: bool | b | q | km.array,
+    target1: q | km.array,
+    target2: q | km.array,
 ) -> None:
-    """Appends operations to conditionally swap two equal-length registers.
+    """Appends controlled-SWAP (Fredkin) gates to the circuit.
 
-    Performs `if control: target1, target2 = target2, target1`, pairing the
-    registers index by index.
+    Performs `if control: target1, target2 = target2, target1`.
+    This method broadcasts over km.array arguments.
 
-    The cost depends on the control. A qubit control expands to a
-    cx/ccx/cx triple per index. A classical bit control pushes a
-    classical condition around plain swaps, costing no Toffolis. A
-    control of True reduces to a plain swap, and False emits nothing.
+    The cost depends on the control. A qubit control emits a CSWAP
+    instruction (costing one Toffoli) per index. A classical bit control
+    emits a classically-conditioned SWAP instruction, costing no Toffolis.
+    A control of True reduces to a plain SWAP, and False emits nothing.
 
     Args:
         control: Determines if the swap happens.
-        target1: The first register.
-        target2: The second register, which must be the same length as the first.
+        target1: The first qubit or register to swap.
+        target2: The second qubit or register to swap.
 
     Examples:
         >>> import kickmix as km
@@ -953,15 +1230,15 @@ def cswap(
         >>> y = builder.create_quantum_register(2, name='y')
         >>> builder.cswap(c, x, y)
         >>> print(builder.finish_circuit().text_diagram())
-        q0: -c[0]---@-----@---
-                    |     |
-        q1: -x[0]-@-X-@---|---
-                  | | |   |
-        q2: -x[1]-|-|-|-@-X-@-
-                  | | | | | |
-        q3: -y[0]-X-@-X-|-|-|-
-                        | | |
-        q4: -y[1]-------X-@-X-
+        q0: -c[0]-@----@----
+                  |    |
+        q1: -x[0]-SWAP-|----
+                  |    |
+        q2: -x[1]-|----SWAP-
+                  |    |
+        q3: -y[0]-SWAP-|----
+                       |
+        q4: -y[1]------SWAP-
     """
 ```
 
@@ -972,9 +1249,45 @@ def cswap(
 # (in class kickmix.CircuitBuilder)
 def cx(
     self,
-    control: object,
-    target: object,
+    control: bool | km.b | km.q | km.array,
+    target: km.q | km.b | km.xb | km.xbool | km.array,
 ) -> None:
+    """Appends controlled-NOT gates (or classical/phase equivalents) to the circuit.
+
+    This method broadcasts over `km.array` and sequence arguments. When
+    multiple array arguments are given, they are combined by zipping.
+
+    The exact instruction(s) emitted depend on the types of `control`
+    and `target`. For example, a qubit control and qubit target emit
+    `CX`; a classical bit control and qubit target emit `X_IF`; a
+    classical bit control and classical bit target emit `BIT_INVERT_IF`;
+    and an X-basis target (`km.xb` or `km.xbool`) converts the operation
+    into a phase flip (such as `Z_IF` or `Z`).
+
+    Args:
+        control: The control (qubit, bit, bool, or array) determining
+            if the target is flipped.
+        target: The target (qubit, bit, X-basis bit/bool, or array) to
+            flip when `control` is active.
+
+    Raises:
+        ValueError: Broadcast array lengths do not match, or `control`
+            and `target` have incompatible types (such as a qubit
+            control with a classical bit target).
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.cx(km.q(0), km.q(1))
+        >>> builder.cx(km.b(0), km.q(1))
+        >>> builder.cx(True, km.q(1))
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            CX q0 q1
+            X q1 if b0
+            X q1
+        ''')
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.cz"></a>
@@ -989,19 +1302,29 @@ def cz(
 ) -> None:
     """Appends many CZ gates to the circuit.
 
-    This method broadcasts over km.array arguments. If any of the arguments is a
-    km.array, an append is performed for each array index. When multiple km.array
-    arguments are used, they are combined by zipping (i.e. using two arrays of
-    length n will produce n instructions rather than n*n instructions).
+    This method broadcasts over km.array arguments. If any of the arguments
+    is a km.array, an append is performed for each array index. When
+    multiple km.array arguments are used, they are combined by zipping
+    (i.e. using two arrays of length n will produce n instructions rather
+    than n*n instructions).
 
-    The exact kind of operation(s) appended to the circuit depends on the types of
-    the controls. For example, if one of the controls is the boolean value True
-    instead of a qubit, then a Z instruction will be appended instead of a CZ
-    instruction.
+    The exact kind of operation(s) appended to the circuit depends on the
+    types of the controls. For example, if one of the controls is the
+    boolean value True instead of a qubit, then a Z instruction will be
+    appended instead of a CZ instruction.
 
     Args:
         control1: One of the controls determining if phasing occurs.
         control2: The other controls determining if phasing occurs.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.cz(km.q(0), km.q(1))
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            CZ q0 q1
+        ''')
     """
 ```
 
@@ -1012,8 +1335,32 @@ def cz(
 # (in class kickmix.CircuitBuilder)
 def debug_print(
     self,
-    arg: object,
+    arg: km.q | km.b | bool | km.xb | km.xbool | km.array | Sequence[km.q | km.b | bool | km.xb | km.xbool],
 ) -> None:
+    """Appends DEBUG_PRINT instructions to print the given values during simulation.
+
+    Emits a `DEBUG_PRINT` instruction for each item in `arg`, followed
+    by an empty `DEBUG_PRINT` instruction (which ends the debug output
+    line).
+
+    Args:
+        arg: The qubit, bit, boolean, or array/sequence of values to
+            print.
+
+    Raises:
+        TypeError: `arg` cannot be converted to printable kickmix items.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.debug_print([km.q(0), km.b(1)])
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            DEBUG_PRINT q0
+            DEBUG_PRINT b1
+            DEBUG_PRINT
+        ''')
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.del_and"></a>
@@ -1276,34 +1623,37 @@ def del_lookup(
 ) -> None:
     """Appends operations to perform `del target := table[address]`.
 
-    Clears a value created by looking up a value from a classical table, indexed by
-    a quantum register.
+    Clears a value created by looking up a value from a classical table,
+    indexed by a quantum register.
 
-    Because this is a `del` method, the target qubits will end in the 0 state.
+    Because this is a `del` method, the target qubits will end in the 0
+    state.
 
     Args:
         table: The table of classical values, as a list of python integers.
-            The integers are interpreted in a little-endian fashion, meaning that
-            `table_data[address, out_index] == (table[address] >> out_index) & 1`.
+            The integers are interpreted in a little-endian fashion, meaning
+            that `table_data[address, out_index] ==
+            (table[address] >> out_index) & 1`.
         address: The address used to select a value from the table.
             Qubits are in little-endian order.
         target: The qubits to clear the lookup result from.
-    """
-```
 
-<a name="kickmix.CircuitBuilder.end_auto_free_scope"></a>
-```python
-# kickmix.CircuitBuilder.end_auto_free_scope
-
-# (in class kickmix.CircuitBuilder)
-def end_auto_free_scope(
-    self,
-) -> None:
-    """Ends a scope that automatically frees allocations.
-
-    Allocations since the corresponding builder.start_auto_free_scope() will be
-    freed. If multiple scopes are being used, they operate in LIFO order (i.e. like
-    a stack).
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> address = builder.create_quantum_register(2, name='address')
+        >>> target = builder.create_quantum_register(4, name='target')
+        >>> table = [2, 3, 5, 7]
+        >>> builder.init_lookup(table=table, address=address, target=target)
+        >>> builder.del_lookup(table=table, address=address, target=target)
+        >>> circuit = builder.finish_circuit()
+        >>> sim = km.Simulator(batch_size=4)
+        >>> sim.use_same_registers_as(circuit)
+        >>> for a in range(4):
+        ...     sim.write_within_shot('address', a, a)
+        >>> sim.do(circuit)
+        >>> [sim.read_within_shot('target', a, out=int) for a in range(4)]
+        [0, 0, 0, 0]
     """
 ```
 
@@ -1316,18 +1666,17 @@ def finish_circuit(
     self,
 ) -> kickmix.Circuit:
     """Returns the circuit built by the circuit builder.
-    """
-```
 
-<a name="kickmix.CircuitBuilder.flame_chart_svg"></a>
-```python
-# kickmix.CircuitBuilder.flame_chart_svg
-
-# (in class kickmix.CircuitBuilder)
-def flame_chart_svg(
-    self,
-) -> str:
-    """Returns a flame chart of CCX+CCZ and qubit utilization of the circuit being built.
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.x(km.q(0))
+        >>> builder.cx(km.q(0), km.q(1))
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            X q0
+            CX q0 q1
+        ''')
     """
 ```
 
@@ -1584,11 +1933,13 @@ def flip_if_less_than(
             REGISTER r1 "lhs"
             APPEND_TO_REGISTER q2 r2
             REGISTER r2 "rhs"
+            INFO_TAG "@enter:flip_if_lt"
             CX q2 q1
             CCX q1 q2 q0
             X q1
             X q1
             CX q2 q1
+            INFO_TAG "@exit:flip_if_lt"
         ''')
     """
 ```
@@ -1603,6 +1954,16 @@ def free(
     arg: object,
 ) -> None:
     """Frees allocated qubits or bits, so that they can be allocated again.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> q = builder.alloc_qubits(2)
+        >>> builder.num_allocated_qubits
+        2
+        >>> builder.free(q)
+        >>> builder.num_allocated_qubits
+        0
     """
 ```
 
@@ -1647,9 +2008,13 @@ def gf2_iadd(
             APPEND_TO_REGISTER q2 r1
             APPEND_TO_REGISTER q3 r1
             REGISTER r1 "offset"
+            INFO_TAG "@enter:gf_iadd"
             CX q2 q0
             CX q3 q1
+            INFO_TAG "@exit:gf_iadd"
+            INFO_TAG "@enter:gf_iadd"
             X q0
+            INFO_TAG "@exit:gf_iadd"
         ''')
     """
 ```
@@ -1782,9 +2147,38 @@ def gf2_phase_by_product(
 # (in class kickmix.CircuitBuilder)
 def hmr(
     self,
-    target: object,
-    output: object,
+    target: km.q | km.array | Sequence[km.q],
+    output: km.b | km.array | Sequence[km.b],
 ) -> None:
+    """Appends HMR (X-basis measurement and Z-basis reset) instructions.
+
+    Measures each target qubit in the X basis (storing the measurement
+    outcome into the corresponding `output` bit) and resets the qubit to
+    the |0> state. This method broadcasts over `km.array` and sequence
+    arguments of equal length.
+
+    Args:
+        target: The qubit or array/sequence of qubits to measure in the
+            X basis and reset to |0>.
+        output: The classical bit or array/sequence of classical bits to
+            store the measurement results into.
+
+    Raises:
+        ValueError: `target` and `output` have different lengths, or
+            contain non-qubit / non-bit items.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> q = builder.alloc_qubits(2)
+        >>> b = builder.alloc_bits(2)
+        >>> builder.hmr(q, b)
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            HMR q0 b0
+            HMR q1 b1
+        ''')
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.iadd"></a>
@@ -1841,6 +2235,36 @@ def iadd(
         q2: -b[0]-@-@-|-
                       |
         q3: -b[1]-----@-
+    """
+```
+
+<a name="kickmix.CircuitBuilder.info_tag"></a>
+```python
+# kickmix.CircuitBuilder.info_tag
+
+# (in class kickmix.CircuitBuilder)
+def info_tag(
+    self,
+    text: str,
+) -> None:
+    """Appends an INFO_TAG instruction into the circuit.
+
+    INFO_TAG instructions have no effect on simulations, but can be used to make
+    debug information available. For example, the start of a  subroutine can be
+    hinted with `INFO_TAG "@enter:subroutine_name"` and its end can be indicated
+    with `INFO_TAG "@exit:subroutine_name"`.
+
+    Args:
+        text: The content of the INFO_TAG instruction.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.info_tag("test")
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            INFO_TAG "test"
+        ''')
     """
 ```
 
@@ -2131,16 +2555,36 @@ def init_lookup(
 
     Looks up a value from a classical table, indexed by a quantum register.
 
-    Because this is an `init` method, the target qubits must start in the 0 state.
-    The target qubits will be reset before being used, transforming any bit errors
-    into probabilistic phase errors.
+    Because this is an `init` method, the target qubits must start in the 0
+    state. The target qubits will be reset before being used, transforming
+    any bit errors into probabilistic phase errors.
 
     Args:
         table: The table of classical values, as a list of python integers.
-            The integers are interpreted in a little-endian fashion, meaning that
-            `table_data[address, out_index] == (table[address] >> out_index) & 1`.
+            The integers are interpreted in a little-endian fashion, meaning
+            that `table_data[address, out_index] ==
+            (table[address] >> out_index) & 1`.
         address: The address used to select a value from the table.
         target: The clean qubits to store the output into.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> address = builder.create_quantum_register(2, name='address')
+        >>> target = builder.create_quantum_register(4, name='target')
+        >>> builder.init_lookup(
+        ...     table=[2, 3, 5, 7],
+        ...     address=address,
+        ...     target=target,
+        ... )
+        >>> circuit = builder.finish_circuit()
+        >>> sim = km.Simulator(batch_size=4)
+        >>> sim.use_same_registers_as(circuit)
+        >>> for a in range(4):
+        ...     sim.write_within_shot('address', a, a)
+        >>> sim.do(circuit)
+        >>> [sim.read_within_shot('target', a, out=int) for a in range(4)]
+        [2, 3, 5, 7]
     """
 ```
 
@@ -2297,10 +2741,149 @@ def ixor_gf2_mul(
 # (in class kickmix.CircuitBuilder)
 def left_rotate(
     self,
-    target: object,
+    target: km.array | Sequence[km.q],
+    shift: int | km.array | Sequence[km.q | km.b | bool] = 1,
     *,
-    control: object = True,
+    control: km.q | km.b | bool = True,
 ) -> None:
+    """Left rotates the given qubits, cyclically permuting them.
+
+    A left rotation is a permutation that moves the value of the qubit target[k]
+    into the qubit target[(k + shift) % len(target)].
+
+    Args:
+        target: The qubits to permute.
+        shift: Defaults to 1. A little-endian value specifying how much to
+            left-rotate the target qubits.
+        control: Defaults to True. Determines if the left rotation actually occurs.
+
+    Examples:
+        >>> import kickmix as km
+
+        >>> builder = km.CircuitBuilder()
+        >>> target = builder.create_quantum_register(8, name='target')
+        >>> builder.left_rotate(target)
+        >>> print(builder.finish_circuit().text_diagram())
+        q0: -target[0]-SWAP-------------------------------
+                       |
+        q1: -target[1]-|----SWAP-----------SWAP-----------
+                       |    |              |
+        q2: -target[2]-|----|----SWAP------|----SWAP------
+                       |    |    |         |    |
+        q3: -target[3]-|----|----|----SWAP-|----|----SWAP-
+                       |    |    |    |    |    |    |
+        q4: -target[4]-|----|----|----SWAP-|----|----|----
+                       |    |    |         |    |    |
+        q5: -target[5]-|----|----SWAP------|----|----SWAP-
+                       |    |              |    |
+        q6: -target[6]-|----SWAP-----------|----SWAP------
+                       |                   |
+        q7: -target[7]-SWAP----------------SWAP-----------
+
+        >>> builder = km.CircuitBuilder()
+        >>> target = builder.create_quantum_register(8, name='target')
+        >>> builder.left_rotate(target, 3)
+        >>> print(builder.finish_circuit().text_diagram())
+        q0: -target[0]-SWAP-----------SWAP-----------
+                       |              |
+        q1: -target[1]-|----SWAP------|--------------
+                       |    |         |
+        q2: -target[2]-|----|----SWAP-SWAP-----------
+                       |    |    |
+        q3: -target[3]-|----|----|----SWAP-SWAP------
+                       |    |    |    |    |
+        q4: -target[4]-|----|----|----SWAP-|----SWAP-
+                       |    |    |         |    |
+        q5: -target[5]-|----|----SWAP------|----|----
+                       |    |              |    |
+        q6: -target[6]-|----SWAP-----------|----SWAP-
+                       |                   |
+        q7: -target[7]-SWAP----------------SWAP------
+
+        >>> builder = km.CircuitBuilder()
+        >>> target = builder.create_quantum_register(4, name='target')
+        >>> control = builder.create_quantum_register(1, name='control')[0]
+        >>> builder.left_rotate(target, 2, control=control)
+        >>> print(builder.finish_circuit().text_diagram())
+        q0: -target[0]--SWAP------SWAP------
+                        |         |
+        q1: -target[1]--|----SWAP-SWAP------
+                        |    |    |
+        q2: -target[2]--|----SWAP-|----SWAP-
+                        |    |    |    |
+        q3: -target[3]--SWAP-|----|----SWAP-
+                        |    |    |    |
+        q4: -control[0]-@----@----@----@----
+
+        >>> builder = km.CircuitBuilder()
+        >>> target = builder.create_quantum_register(6, name='target')
+        >>> shift = builder.create_quantum_register(3, name='shift')
+        >>> builder.left_rotate(target, shift)
+        >>> print(builder.finish_circuit().text_diagram())
+        q0: -target[0]-SWAP-------------SWAP----------SWAP--------SWAP------
+                       |                |             |           |
+        q1: -target[1]-SWAP-------------|-------------|----SWAP---|---------
+                       |                |             |    |      |
+        q2: -target[2]-|----SWAP--------SWAP----------|----|------SWAP------
+                       |    |           |             |    |      |
+        q3: -target[3]-|----|----SWAP---|----SWAP-----|----SWAP---|----SWAP-
+                       |    |    |      |    |        |    |      |    |
+        q4: -target[4]-|----|----SWAP---|----|--------SWAP-|------|----|----
+                       |    |    |      |    |        |    |      |    |
+        q5: -target[5]-|----SWAP-|------|----SWAP-----|----|------|----SWAP-
+                       |    |    |      |    |        |    |      |    |
+        q6: -shift[0]--@----@----@----@-|----|----@---|----|------|----|----
+                                      | |    |    |   |    |      |    |
+        q7: -shift[1]-----------------X-@----@----X-@-|----|----@-|----|----
+                                                    | |    |    | |    |
+        q8: -shift[2]-------------------------------X-@----@----X-@----@----
+    """
+```
+
+<a name="kickmix.CircuitBuilder.mark"></a>
+```python
+# kickmix.CircuitBuilder.mark
+
+# (in class kickmix.CircuitBuilder)
+def mark(
+    self,
+    name: str,
+) -> Any:
+    """Returns a context manager that emits @enter/@exit INFO_TAG instructions.
+
+    These INFO_TAG instructions are intended as debug information about entering
+    and exiting subroutines. For example, they are used by
+    `km.Circuit.flame_chart_svg()`.
+
+    Args:
+        name: Label shown for the block in `builder.flame_chart_svg()`.
+
+    Returns:
+        A context manager that marks blocks under `name`.
+
+    Examples:
+        >>> import pathlib
+        >>> import tempfile
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> address = builder.create_quantum_register(4, name='address')
+        >>> total = builder.create_quantum_register(8, name='total')
+        >>> lookup_mark = builder.mark('iadd_lookup')
+        >>> def iadd_lookup(table: list[int], idx: km.array, dst: km.array):
+        ...     with lookup_mark:
+        ...         buf = builder.alloc_qubits(len(dst))
+        ...         builder.init_lookup(table=table, address=idx, target=buf)
+        ...         builder.iadd(buf, target=dst)
+        ...         builder.del_lookup(table=table, address=idx, target=buf)
+        ...         builder.free(buf)
+        >>> with builder.mark('accumulate_tables'):
+        ...     iadd_lookup([3 * k for k in range(16)], address, total)
+        ...     iadd_lookup([k * k for k in range(16)], address, total)
+        >>> circuit = builder.finish_circuit()
+        >>> with tempfile.TemporaryDirectory() as d:
+        ...     with open(pathlib.Path(d) / 'flame_chart.svg', 'w') as f:
+        ...         print(circuit.flame_chart_svg(), file=f)
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.max_qubits"></a>
@@ -2323,9 +2906,43 @@ def max_qubits(
 # (in class kickmix.CircuitBuilder)
 def multi_controlled_x(
     self,
-    controls: object,
-    target: object,
+    controls: km.array | Sequence[km.q | km.b | bool],
+    target: km.q | km.array | Sequence[km.q],
 ) -> None:
+    """Appends a multi-controlled NOT operation to the circuit.
+
+    Flips every qubit in `target` when all `controls` are satisfied.
+    When there are 3 or more quantum controls, temporary workspace
+    qubits are allocated from the builder to compute the AND ladder and
+    uncomputed using measurement-based uncomputation (`del_and`).
+
+    Args:
+        controls: A sequence or `km.array` of quantum controls (`km.q`),
+            classical bit controls (`km.b`), or boolean constants
+            (`bool`) that must all be satisfied for the target qubits to
+            flip.
+        target: The qubit or array/sequence of qubits to flip when all
+            controls are satisfied.
+
+    Raises:
+        TypeError: `controls` is not a sequence or `km.array`.
+        ValueError: `controls` or `target` contains invalid item types.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> c = builder.alloc_qubits(3)
+        >>> t = builder.alloc_qubits(1)[0]
+        >>> builder.multi_controlled_x(c, t)
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            R q4
+            CCX q0 q1 q4
+            CCX q2 q4 q3
+            HMR q4 b0
+            CZ q1 q0 if b0
+        ''')
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.neg"></a>
@@ -2336,6 +2953,21 @@ def multi_controlled_x(
 def neg(
     self,
 ) -> None:
+    """Appends a NEG instruction that flips the global phase by -1.
+
+    Inside a classical condition block (see `push_condition`), or when
+    tracking shot phases in `km.Simulator`, `NEG` negates the amplitude
+    of the current branch.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.neg()
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            NEG
+        ''')
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.neg_if"></a>
@@ -2345,8 +2977,29 @@ def neg(
 # (in class kickmix.CircuitBuilder)
 def neg_if(
     self,
-    condition: object,
+    condition: km.b,
 ) -> None:
+    """Appends a classically-conditioned NEG instruction to the circuit.
+
+    Flips the global phase by -1 in shots where the given classical bit
+    is True.
+
+    Args:
+        condition: The classical bit (`km.b`) that controls whether the
+            phase flip occurs.
+
+    Raises:
+        TypeError: `condition` is not a `km.b`.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.neg_if(km.b(0))
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            NEG if b0
+        ''')
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.num_allocated_qubits"></a>
@@ -2383,6 +3036,24 @@ def num_free_qubits(
 def pop_condition(
     self,
 ) -> None:
+    """Appends a POP_CONDITION instruction to pop from the condition stack.
+
+    Should be paired with a preceding call to `push_condition`. A POP_CONDITION
+    without a prior PUSH_CONDITION has no effect on simulation state.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.push_condition(km.b(0))
+        >>> builder.x(km.q(0))
+        >>> builder.pop_condition()
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            PUSH_CONDITION if b0
+            X q0
+            POP_CONDITION
+        ''')
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.push_condition"></a>
@@ -2392,8 +3063,34 @@ def pop_condition(
 # (in class kickmix.CircuitBuilder)
 def push_condition(
     self,
-    condition: object,
+    condition: km.b,
 ) -> None:
+    """Appends a PUSH_CONDITION instruction to push a bit onto the condition stack.
+
+    All subsequent instructions in the circuit will only execute in
+    shots where all bits currently on the condition stack are True,
+    until a matching `pop_condition` is called.
+
+    Args:
+        condition: The classical bit (`km.b`) to push onto the condition
+            stack.
+
+    Raises:
+        TypeError: `condition` is not a `km.b`.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.push_condition(km.b(0))
+        >>> builder.x(km.q(0))
+        >>> builder.pop_condition()
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            PUSH_CONDITION if b0
+            X q0
+            POP_CONDITION
+        ''')
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.reset"></a>
@@ -2403,8 +3100,30 @@ def push_condition(
 # (in class kickmix.CircuitBuilder)
 def reset(
     self,
-    target: object,
+    target: km.q | km.array | Sequence[km.q],
 ) -> None:
+    """Appends Z-basis reset (R) instructions to the circuit.
+
+    Resets each target qubit to the |0> state. This method broadcasts
+    over `km.array` and sequence arguments.
+
+    Args:
+        target: The qubit or array/sequence of qubits to reset.
+
+    Raises:
+        ValueError: `target` contains non-qubit items.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> q = builder.alloc_qubits(2)
+        >>> builder.reset(q)
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            R q0
+            R q1
+        ''')
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.right_rotate"></a>
@@ -2414,10 +3133,103 @@ def reset(
 # (in class kickmix.CircuitBuilder)
 def right_rotate(
     self,
-    target: object,
+    target: km.array | Sequence[km.q],
+    shift: int | km.array | Sequence[km.q | km.b | bool] = 1,
     *,
-    control: object = True,
+    control: km.q | km.b | bool = True,
 ) -> None:
+    """Right rotates the given qubits, cyclically permuting them.
+
+    A right rotation is a permutation that moves the value of the qubit target[k]
+    into the qubit target[(k - shift) % len(target)].
+
+    Args:
+        target: The qubits to permute.
+        shift: Defaults to 1. A little-endian value specifying how much to
+            right-rotate the target qubits.
+        control: Defaults to True. Determines if the right rotation actually occurs.
+
+    Examples:
+        >>> import kickmix as km
+
+        >>> builder = km.CircuitBuilder()
+        >>> target = builder.create_quantum_register(8, name='target')
+        >>> builder.right_rotate(target)
+        >>> print(builder.finish_circuit().text_diagram())
+        q0: -target[0]-SWAP----------------SWAP-----------
+                       |                   |
+        q1: -target[1]-|----SWAP-----------|----SWAP------
+                       |    |              |    |
+        q2: -target[2]-|----|----SWAP------|----|----SWAP-
+                       |    |    |         |    |    |
+        q3: -target[3]-|----|----|----SWAP-|----|----|----
+                       |    |    |    |    |    |    |
+        q4: -target[4]-|----|----|----SWAP-|----|----SWAP-
+                       |    |    |         |    |
+        q5: -target[5]-|----|----SWAP------|----SWAP------
+                       |    |              |
+        q6: -target[6]-|----SWAP-----------SWAP-----------
+                       |
+        q7: -target[7]-SWAP-------------------------------
+
+        >>> builder = km.CircuitBuilder()
+        >>> target = builder.create_quantum_register(8, name='target')
+        >>> builder.right_rotate(target, 3)
+        >>> print(builder.finish_circuit().text_diagram())
+        q0: -target[0]-SWAP----------------SWAP------
+                       |                   |
+        q1: -target[1]-|----SWAP-----------|----SWAP-
+                       |    |              |    |
+        q2: -target[2]-|----|----SWAP------|----|----
+                       |    |    |         |    |
+        q3: -target[3]-|----|----|----SWAP-|----SWAP-
+                       |    |    |    |    |
+        q4: -target[4]-|----|----|----SWAP-SWAP------
+                       |    |    |
+        q5: -target[5]-|----|----SWAP-----------SWAP-
+                       |    |                   |
+        q6: -target[6]-|----SWAP----------------|----
+                       |                        |
+        q7: -target[7]-SWAP---------------------SWAP-
+
+        >>> builder = km.CircuitBuilder()
+        >>> target = builder.create_quantum_register(4, name='target')
+        >>> control = builder.create_quantum_register(1, name='control')[0]
+        >>> builder.right_rotate(target, 2, control=control)
+        >>> print(builder.finish_circuit().text_diagram())
+        q0: -target[0]--SWAP------SWAP------
+                        |         |
+        q1: -target[1]--|----SWAP-SWAP------
+                        |    |    |
+        q2: -target[2]--|----SWAP-|----SWAP-
+                        |    |    |    |
+        q3: -target[3]--SWAP-|----|----SWAP-
+                        |    |    |    |
+        q4: -control[0]-@----@----@----@----
+
+        >>> builder = km.CircuitBuilder()
+        >>> target = builder.create_quantum_register(6, name='target')
+        >>> shift = builder.create_quantum_register(3, name='shift')
+        >>> builder.right_rotate(target, shift)
+        >>> print(builder.finish_circuit().text_diagram())
+        q0: -target[0]-SWAP-------------SWAP----------SWAP--------SWAP------
+                       |                |             |           |
+        q1: -target[1]-|----SWAP--------|----SWAP-----|-----------|----SWAP-
+                       |    |           |    |        |           |    |
+        q2: -target[2]-|----|----SWAP---|----|--------SWAP--------|----|----
+                       |    |    |      |    |        |           |    |
+        q3: -target[3]-|----|----SWAP---|----SWAP-----|----SWAP---|----SWAP-
+                       |    |    |      |    |        |    |      |    |
+        q4: -target[4]-|----SWAP-|------SWAP-|--------|----|------SWAP-|----
+                       |    |    |      |    |        |    |      |    |
+        q5: -target[5]-SWAP-|----|------|----|--------|----SWAP---|----|----
+                       |    |    |      |    |        |    |      |    |
+        q6: -shift[0]--@----@----@----@-|----|----@---|----|------|----|----
+                                      | |    |    |   |    |      |    |
+        q7: -shift[1]-----------------X-@----@----X-@-|----|----@-|----|----
+                                                    | |    |    | |    |
+        q8: -shift[2]-------------------------------X-@----@----X-@----@----
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.set_max_qubits"></a>
@@ -2438,22 +3250,16 @@ def set_max_qubits(
     Args:
         limit: The maximum number of qubits that can be allocated.
             Set to `float('inf')` to disable the limit.
-    """
-```
 
-<a name="kickmix.CircuitBuilder.start_auto_free_scope"></a>
-```python
-# kickmix.CircuitBuilder.start_auto_free_scope
-
-# (in class kickmix.CircuitBuilder)
-def start_auto_free_scope(
-    self,
-) -> None:
-    """Starts a scope that automatically frees allocations.
-
-    Call builder.end_auto_free_scope() to free allocations performed during the
-    scope. If multiple scopes are being used, they operate in LIFO order (i.e. like
-    a stack).
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.set_max_qubits(4)
+        >>> builder.max_qubits
+        4
+        >>> q = builder.alloc_qubits(3)
+        >>> builder.num_free_qubits
+        1
     """
 ```
 
@@ -2464,9 +3270,40 @@ def start_auto_free_scope(
 # (in class kickmix.CircuitBuilder)
 def swap(
     self,
-    target1: object,
-    target2: object,
+    target1: km.q | km.b | km.xb | km.array,
+    target2: km.q | km.b | km.xb | km.array,
 ) -> None:
+    """Appends SWAP gates to the circuit.
+
+    Swaps the values of `target1` and `target2`. This method broadcasts
+    over `km.array` and sequence arguments.
+
+    Swapping qubits emits `SWAP` instructions. Swapping classical bits
+    (`km.b` or `km.xb`) emits three `BIT_INVERT ... if ...` instructions.
+
+    Args:
+        target1: The first qubit, bit, or register to swap.
+        target2: The second qubit, bit, or register to swap.
+
+    Raises:
+        ValueError: Broadcast array lengths do not match, or `target1`
+            and `target2` do not have matching swappable types.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> x = builder.create_quantum_register(2, name='x')
+        >>> y = builder.create_quantum_register(2, name='y')
+        >>> builder.swap(x, y)
+        >>> print(builder.finish_circuit().text_diagram())
+        q0: -x[0]-SWAP------
+                  |
+        q1: -x[1]-|----SWAP-
+                  |    |
+        q2: -y[0]-SWAP-|----
+                       |
+        q3: -y[1]------SWAP-
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.unary_iteration"></a>
@@ -2572,8 +3409,37 @@ def unary_iteration(
 # (in class kickmix.CircuitBuilder)
 def x(
     self,
-    target: object,
+    target: km.q | km.b | km.xb | km.xbool | Literal['|+>', '|->'] | km.array | Sequence[km.q | km.b | km.xb | km.xbool],
 ) -> None:
+    """Appends NOT gates (or their classical/phase equivalents) to the circuit.
+
+    This method broadcasts over `km.array` and sequence arguments.
+    Depending on the type of `target`, it emits `X` for qubits (`km.q`),
+    `BIT_INVERT` for classical bits (`km.b`), `NEG_IF` for X-basis bits
+    (`km.xb`), and `NEG` for `km.xbool(True)` or `'|->'`.
+
+    Args:
+        target: The qubit, bit, X-basis bit, X-basis bool, or
+            array/sequence of them to flip.
+
+    Raises:
+        ValueError: Attempted to invert a compile-time `bool`.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.x(km.q(0))
+        >>> builder.x(km.b(1))
+        >>> builder.x(km.xb(2))
+        >>> builder.x('|->')
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            X q0
+            BIT_INVERT b1
+            NEG if b2
+            NEG
+        ''')
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.z"></a>
@@ -2583,8 +3449,35 @@ def x(
 # (in class kickmix.CircuitBuilder)
 def z(
     self,
-    target: object,
+    target: km.q | km.b | bool,
 ) -> None:
+    """Appends a Z gate (or its classical/constant equivalent) to the circuit.
+
+    Depending on the type of `target`, this emits `Z` for a qubit
+    (`km.q`), `NEG_IF` for a classical bit (`km.b`), `NEG` for `True`,
+    and nothing for `False`.
+
+    Args:
+        target: The qubit, classical bit, or boolean determining if
+            phasing occurs.
+
+    Raises:
+        TypeError: `target` is not a `km.q`, `km.b`, or `bool`.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.z(km.q(0))
+        >>> builder.z(km.b(1))
+        >>> builder.z(True)
+        >>> builder.z(False)
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            Z q0
+            NEG if b1
+            NEG
+        ''')
+    """
 ```
 
 <a name="kickmix.CircuitBuilder.z_pow"></a>
@@ -3067,7 +3960,7 @@ def __eq__(
 # (in class kickmix.OperationStatistics)
 def __getitem__(
     self,
-    key: str | Literal['NEG', 'BIT_INVERT', 'BIT_STORE0', 'BIT_STORE1', 'X', 'Z', 'R', 'HMR', 'CX', 'CZ', 'SWAP', 'CCX', 'CCZ', 'Z_POW', 'DEBUG_PRINT', 'POP_CONDITION', 'PUSH_CONDITION'],
+    key: str | Literal['NEG', 'BIT_INVERT', 'BIT_STORE0', 'BIT_STORE1', 'X', 'Z', 'R', 'HMR', 'CX', 'CZ', 'SWAP', 'CSWAP', 'CCX', 'CCZ', 'Z_POW', 'INFO_TAG', 'DEBUG_PRINT', 'POP_CONDITION', 'PUSH_CONDITION'],
 ) -> int:
     """Returns the count for the given base operation name.
 
@@ -3078,9 +3971,9 @@ def __getitem__(
     Args:
         key: One of the base operation names (`'NEG'`, `'BIT_INVERT'`,
             `'BIT_STORE0'`, `'BIT_STORE1'`, `'X'`, `'Z'`, `'R'`,
-            `'HMR'`, `'CX'`, `'CZ'`, `'SWAP'`, `'CCX'`, `'CCZ'`,
-            `'Z_POW'`, `'DEBUG_PRINT'`, `'POP_CONDITION'`,
-            `'PUSH_CONDITION'`).
+            `'HMR'`, `'CX'`, `'CZ'`, `'SWAP'`, `'CSWAP'`, `'CCX'`,
+            `'CCZ'`, `'Z_POW'`, `'INFO_TAG'`, `'DEBUG_PRINT'`,
+            `'POP_CONDITION'`, `'PUSH_CONDITION'`).
 
     Raises:
         KeyError: `key` is not a recognized base operation name.
@@ -3165,7 +4058,7 @@ def __repr__(
 # (in class kickmix.OperationStatistics)
 def get(
     self,
-    key: str | Literal['NEG', 'BIT_INVERT', 'BIT_STORE0', 'BIT_STORE1', 'X', 'Z', 'R', 'HMR', 'CX', 'CZ', 'SWAP', 'CCX', 'CCZ', 'Z_POW', 'DEBUG_PRINT', 'POP_CONDITION', 'PUSH_CONDITION'],
+    key: str | Literal['NEG', 'BIT_INVERT', 'BIT_STORE0', 'BIT_STORE1', 'X', 'Z', 'R', 'HMR', 'CX', 'CZ', 'SWAP', 'CSWAP', 'CCX', 'CCZ', 'Z_POW', 'INFO_TAG', 'DEBUG_PRINT', 'POP_CONDITION', 'PUSH_CONDITION'],
     default: Any = None,
 ) -> Any:
     """Returns the count for `key` if non-zero, else `default`.
@@ -3278,20 +4171,22 @@ def num_t_like(
 def num_toffoli_like(
     self,
 ) -> int:
-    """The number of doubly-controlled Pauli (`CCX` and `CCZ`) operations.
+    """The number of Toffoli-like (`CCX`, `CCZ`, and `CSWAP`) operations.
 
-    Includes both unconditional (`CCX q0 q1 q2`, `CCZ q0 q1 q2`) and
-    classically conditioned (`CCX q0 q1 q2 if b3`, etc.) operations.
+    Includes both unconditional (`CCX q0 q1 q2`, `CCZ q0 q1 q2`,
+    `CSWAP q0 q1 q2`) and classically conditioned (`CCX q0 q1 q2 if b3`,
+    etc.) operations.
 
     Examples:
         >>> import kickmix as km
         >>> c = km.Circuit('''
         ...     CCX q0 q1 q2
         ...     CCZ q0 q1 q2 if b0
+        ...     CSWAP q0 q1 q2
         ...     CX q0 q1
         ... ''')
         >>> c.operation_statistics().num_toffoli_like
-        2
+        3
     """
 ```
 
@@ -3431,6 +4326,14 @@ def __init__(
             per-shot population counters on every executed instruction,
             slowing down fast gate simulation by ~2-4x and allocating
             extra counter memory, so it defaults to `False`.
+
+    Examples:
+        >>> import kickmix as km
+        >>> sim = km.Simulator(batch_size=4)
+        >>> sim.batch_size
+        4
+        >>> sim.read_across_shots(km.q(0))
+        array([False, False, False, False])
     """
 ```
 
@@ -3519,6 +4422,13 @@ def counting_operations(
     Note that recording operation counts incurs per-instruction counter
     overhead (~2-4x on fast gates), so this must be set when
     constructing the `km.Simulator`.
+
+    Examples:
+        >>> import kickmix as km
+        >>> km.Simulator(4).counting_operations
+        False
+        >>> km.Simulator(4, counting_operations=True).counting_operations
+        True
     """
 ```
 
@@ -3553,7 +4463,7 @@ def debug_print(
         ...     DEBUG_PRINT
         ... '''))
         >>> events[0]
-        (q(0), [True, True, True, True], b(0), [True, False, True, False])
+        (km.q(0), [True, True, True, True], km.b(0), [True, False, True, False])
         >>> events[1]
         (None, [False, False, False, False], None, [True, True, True, True])
     """
@@ -3575,6 +4485,28 @@ def do(
 
     Args:
         circuit: The circuit with instructions to apply.
+
+    Examples:
+        >>> import kickmix as km
+        >>> import numpy as np
+        >>> sim = km.Simulator(batch_size=4)
+        >>> sim.write_across_shots(km.q(0), np.array([False, True, False, True]))
+        >>> sim.write_across_shots(km.q(1), np.array([False, False, True, True]))
+
+        >>> sim.read_across_shots(km.q(0))
+        array([False,  True, False,  True])
+        >>> sim.read_across_shots(km.q(1))
+        array([False, False,  True,  True])
+
+        >>> sim.do(km.Circuit('''
+        ...     CX q0 q1
+        ...     X q0
+        ... '''))
+
+        >>> sim.read_across_shots(km.q(0))
+        array([ True, False,  True, False])
+        >>> sim.read_across_shots(km.q(1))
+        array([False,  True,  True, False])
     """
 ```
 
@@ -3639,10 +4571,49 @@ def operation_statistics(
 # (in class kickmix.Simulator)
 def read_across_shots(
     self,
-    indices: object,
+    indices: km.q | km.b | bool | str | km.r | km.array | Sequence[km.q | km.b | bool],
     *,
-    out: object = None,
-) -> object:
+    out: Any = None,
+) -> np.ndarray | int | List[int]:
+    """Reads the tracked values of the given qubits or bits across all shots.
+
+    Args:
+        indices: The qubit id, bit id, or boolean constant to read, or
+            an array/register of them (such as a register name `str`,
+            `km.r`, `km.array`, or sequence).
+        out: Where to store the output. Defaults to None (allocate a new
+            numpy array). Can be set to a numpy array (with
+            `dtype=np.bool_`) to write the results into, or to `int` to
+            return the results bit-packed across shots in little-endian
+            order.
+
+    Returns:
+        If `indices` is a single qubit, bit, or bool: a 1D numpy bool
+        array of shape `(sim.batch_size,)`, or a single bit-packed `int`
+        if `out=int`.
+        If `indices` is a register or sequence of length n: a 2D numpy
+        bool array of shape `(n, sim.batch_size)`, or a `list` of n
+        bit-packed `int`s if `out=int`.
+
+    Raises:
+        IndexError: A register name or id is not found in the simulator.
+        TypeError: `indices` cannot be converted to qubit ids, bit ids,
+            or booleans.
+        ValueError: `out` is not None, `int`, or a numpy bool array of
+            the expected shape.
+
+    Examples:
+        >>> import kickmix as km
+        >>> sim = km.Simulator(batch_size=4)
+        >>> sim.write_across_shots(km.q(0), 0b1010)
+        >>> sim.write_across_shots(km.q(1), 0b1100)
+        >>> sim.read_across_shots(km.q(0))
+        array([False,  True, False,  True])
+        >>> sim.read_across_shots(km.q(0), out=int)
+        10
+        >>> sim.read_across_shots([km.q(0), km.q(1)], out=int)
+        [10, 12]
+    """
 ```
 
 <a name="kickmix.Simulator.read_phase_flipped_across_shots"></a>
@@ -3667,6 +4638,16 @@ def read_phase_flipped_across_shots(
 
     Returns:
         The phase flip information.
+
+    Examples:
+        >>> import kickmix as km
+        >>> sim = km.Simulator(batch_size=4)
+        >>> sim.write_across_shots(km.q(0), 0b1010)
+        >>> sim.do(km.Circuit('Z q0'))
+        >>> sim.read_phase_flipped_across_shots()
+        array([False,  True, False,  True])
+        >>> sim.read_phase_flipped_across_shots(out=int)
+        10
     """
 ```
 
@@ -3719,11 +4700,53 @@ def read_shot_phase(
 # (in class kickmix.Simulator)
 def read_within_shot(
     self,
-    indices: object,
-    shot_index: object,
+    indices: km.q | km.b | bool | str | km.r | km.array | Sequence[km.q | km.b | bool],
+    shot_index: int,
     *,
-    out: object = None,
-) -> object:
+    out: Any = None,
+) -> np.ndarray | int | bool:
+    """Reads the tracked values of the given qubits or bits within a single shot.
+
+    Args:
+        indices: The qubit id, bit id, or boolean constant to read, or
+            an array/register of them (such as a register name `str`,
+            `km.r`, `km.array`, or sequence).
+        shot_index: The index of the shot to read from, in
+            `range(sim.batch_size)`.
+        out: Where to store the output. Defaults to None (allocate a new
+            numpy array). Can be set to a numpy array (with
+            `dtype=np.bool_`) to write the results into, or to `int` to
+            return the result as a `bool` (for a single item) or a
+            little-endian bit-packed `int` (for a register or sequence).
+
+    Returns:
+        If `indices` is a single qubit, bit, or bool: a 0D numpy bool
+        array, or a `bool` if `out=int`.
+        If `indices` is a register or sequence of length n: a 1D numpy
+        bool array of shape `(n,)`, or a little-endian `int` in
+        `range(2**n)` if `out=int`.
+
+    Raises:
+        IndexError: `shot_index` is out of range, or a register name or
+            id is not found in the simulator.
+        TypeError: `indices` cannot be converted to qubit ids, bit ids,
+            or booleans.
+        ValueError: `out` is not None, `int`, or a numpy bool array of
+            the expected shape.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> reg = builder.create_quantum_register(4, name='reg')
+        >>> circuit = builder.finish_circuit()
+        >>> sim = km.Simulator(batch_size=2)
+        >>> sim.use_same_registers_as(circuit)
+        >>> sim.write_within_shot('reg', 1, 0b1101)
+        >>> sim.read_within_shot('reg', 1)
+        array([ True, False,  True,  True])
+        >>> sim.read_within_shot('reg', 1, out=int)
+        13
+    """
 ```
 
 <a name="kickmix.Simulator.use_same_registers_as"></a>
@@ -3733,8 +4756,31 @@ def read_within_shot(
 # (in class kickmix.Simulator)
 def use_same_registers_as(
     self,
-    arg0: kickmix.Circuit,
+    circuit: km.Circuit,
 ) -> None:
+    """Copies register definitions from a circuit into the simulator.
+
+    After calling this method, registers defined in the circuit can be
+    referenced by name (`str`) or register id (`km.r`) when calling
+    `read_within_shot`, `write_within_shot`, `read_across_shots`, and
+    `write_across_shots`.
+
+    Args:
+        circuit: The circuit whose register definitions should be copied.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> reg = builder.create_quantum_register(3, name='data')
+        >>> builder.x(reg[0])
+        >>> builder.x(reg[2])
+        >>> circuit = builder.finish_circuit()
+        >>> sim = km.Simulator(batch_size=2)
+        >>> sim.use_same_registers_as(circuit)
+        >>> sim.do(circuit)
+        >>> sim.read_within_shot('data', 0, out=int)
+        5
+    """
 ```
 
 <a name="kickmix.Simulator.write_across_shots"></a>
@@ -3768,6 +4814,15 @@ def write_across_shots(
     Raises:
         IndexError: The given index isn't a qubit id or bit id.
         ValueError: The given new_value isn't valid.
+
+    Examples:
+        >>> import kickmix as km
+        >>> sim = km.Simulator(batch_size=4)
+        >>> sim.write_across_shots(km.q(0), 0b1010)
+        >>> sim.read_across_shots(km.q(0))
+        array([False,  True, False,  True])
+        >>> sim.read_across_shots(km.q(0), out=int)
+        10
     """
 ```
 
@@ -3813,10 +4868,39 @@ def write_shot_phase(
 # (in class kickmix.Simulator)
 def write_within_shot(
     self,
-    index: object,
-    shot_index: object,
-    new_value: object,
+    index: km.q | km.b | str | km.r | km.array | Sequence[km.q | km.b],
+    shot_index: int,
+    new_value: int | bool | np.ndarray,
 ) -> None:
+    """Sets the tracked values of the given qubits or bits within a single shot.
+
+    Args:
+        index: The qubit id or bit id to write to, or an array of them
+            (e.g. a register name).
+        shot_index: The index of the shot to write to, in
+            `range(sim.batch_size)`.
+        new_value: The value to write. Can be an `int` (or `bool`) in
+            `range(2**n)` bit-packed in little-endian order, or a 1D
+            `np.ndarray` with `dtype=np.bool_` and shape `(n,)`, where
+            n is the number of targeted qubits or bits.
+
+    Raises:
+        IndexError: `shot_index` is out of range, or the given `index`
+            is not a valid qubit, bit, or register.
+        ValueError: `new_value` is not a valid `int` or 1D numpy bool
+            array of the expected range or shape.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> reg = builder.create_quantum_register(4, name='reg')
+        >>> circuit = builder.finish_circuit()
+        >>> sim = km.Simulator(batch_size=2)
+        >>> sim.use_same_registers_as(circuit)
+        >>> sim.write_within_shot('reg', 0, 0b1011)
+        >>> sim.read_within_shot('reg', 0, out=int)
+        11
+    """
 ```
 
 <a name="kickmix.UnaryIterationCursor"></a>
@@ -4135,6 +5219,14 @@ class array:
     km.array,  rather than a normal python list of values, because a
     km.array's values are stored contiguously in memory alongside compressed
     type information.
+
+    Examples:
+        >>> import kickmix as km
+        >>> arr = km.array([km.q(0), km.b(1), True])
+        >>> arr
+        km.array([km.q(0), km.b(1), True])
+        >>> len(arr)
+        3
     """
 ```
 
@@ -4148,6 +5240,11 @@ def __add__(
     arg0: kickmix.array,
 ) -> kickmix.array:
     """Returns the concatenation of two arrays.
+
+    Examples:
+        >>> import kickmix as km
+        >>> km.array([km.q(0)]) + km.array([km.b(1), True])
+        km.array([km.q(0), km.b(1), True])
     """
 ```
 
@@ -4181,6 +5278,43 @@ def __getitem__(
     Returns:
          If the index is an int: the item at that index.
          If the index is a slice: a view of the array.
+
+    Examples:
+        >>> import kickmix as km
+        >>> arr = km.array([km.q(0), km.q(1), km.q(2)])
+        >>> arr[1]
+        km.q(1)
+        >>> arr[1:]
+        km.array([km.q(1), km.q(2)])
+    """
+```
+
+<a name="kickmix.array.__init__"></a>
+```python
+# kickmix.array.__init__
+
+# (in class kickmix.array)
+def __init__(
+    self,
+    arg: Iterable[km.q | km.b | bool | km.xbool | km.xb] = (),
+    /,
+) -> None:
+    """Initializes a km.array from an iterable of kickmix values.
+
+    Args:
+        arg: Defaults to (). The sequence or iterable of values (such as
+            km.q, km.b, bool, km.xbool, or km.xb) to store in the array.
+
+    Raises:
+        TypeError: An item in `arg` is not a `km.q`, `km.b`, `bool`,
+            `km.xbool`, or `km.xb`.
+
+    Examples:
+        >>> import kickmix as km
+        >>> km.array()
+        km.array([])
+        >>> km.array([km.q(0), km.b(1), True, km.xb(2), km.xbool(False)])
+        km.array([km.q(0), km.b(1), True, km.xb(2), km.xbool(False)])
     """
 ```
 
@@ -4193,6 +5327,11 @@ def __len__(
     self,
 ) -> int:
     """Returns the length of the array.
+
+    Examples:
+        >>> import kickmix as km
+        >>> len(km.array([km.q(0), km.q(1), km.q(2)]))
+        3
     """
 ```
 
@@ -4279,6 +5418,11 @@ def __init__(
     /,
 ) -> None:
     """Initializes a bit identifier with the given value.
+
+    Examples:
+        >>> import kickmix as km
+        >>> print(km.b(5))
+        b5
     """
 ```
 
@@ -4342,6 +5486,11 @@ def id(
     self,
 ) -> int:
     """Returns the index of the bit.
+
+    Examples:
+        >>> import kickmix as km
+        >>> km.b(5).id
+        5
     """
 ```
 
@@ -4390,7 +5539,12 @@ def __init__(
     arg: int,
     /,
 ) -> None:
-    """Returns a q with the given index.
+    """Initializes a qubit identifier.
+
+    Examples:
+        >>> import kickmix as km
+        >>> print(km.q(5))
+        q5
     """
 ```
 
@@ -4463,7 +5617,12 @@ def __str__(
 def id(
     self,
 ) -> int:
-    """Returns the index of the q.
+    """Returns the index of the qubit.
+
+    Examples:
+        >>> import kickmix as km
+        >>> km.q(5).id
+        5
     """
 ```
 
@@ -4512,7 +5671,12 @@ def __init__(
     arg: int,
     /,
 ) -> None:
-    """Returns a register identifier with the given index.
+    """Initializes a register identifier with the given index.
+
+    Examples:
+        >>> import kickmix as km
+        >>> print(km.r(5))
+        r5
     """
 ```
 
@@ -4563,6 +5727,11 @@ def id(
     self,
 ) -> int:
     """Returns the index of the bit.
+
+    Examples:
+        >>> import kickmix as km
+        >>> km.r(5).id
+        5
     """
 ```
 
@@ -4577,6 +5746,12 @@ class xb:
     X basis values act like controls when given as the targets
     of bit flip operations. For example, cx(BitId(0), XBitId(1)) is equivalent
     to cz(BitId(0), BitId(1)).
+
+    Examples:
+        >>> import kickmix as km
+        >>> x = km.xb(5)
+        >>> x.id
+        5
     """
 ```
 
@@ -4601,7 +5776,7 @@ def __eq__(
 def __hash__(
     self,
 ) -> int:
-    """Returns a hash of the xb.
+    """Returns a hash of the x-basis bit id.
     """
 ```
 
@@ -4615,7 +5790,12 @@ def __init__(
     arg: int,
     /,
 ) -> None:
-    """Returns an xb with the given index.
+    """Initializes an x-basis bit identifier.
+
+    Examples:
+        >>> import kickmix as km
+        >>> print(km.xb(5))
+        xb5
     """
 ```
 
@@ -4653,7 +5833,7 @@ def __ne__(
 def __repr__(
     self,
 ) -> str:
-    """Returns a parseable text representation of the xb.
+    """Returns a parseable text representation of the x-basis bit id.
     """
 ```
 
@@ -4678,7 +5858,12 @@ def __str__(
 def id(
     self,
 ) -> int:
-    """Returns the index of the xb.
+    """Returns the index of the bit.
+
+    Examples:
+        >>> import kickmix as km
+        >>> km.xb(5).id
+        5
     """
 ```
 
@@ -4696,6 +5881,37 @@ class xbool:
     X basis values act like controls when given as the targets
     of bit flip operations. For example, cx(a, xbool(b)) is equivalent
     to cz(a, b).
+
+    Examples:
+        >>> import kickmix as km
+        >>> km.xbool(True)
+        km.xbool(True)
+        >>> bool(km.xbool(False))
+        False
+        >>> bool(km.xbool(True))
+        True
+    """
+```
+
+<a name="kickmix.xbool.__bool__"></a>
+```python
+# kickmix.xbool.__bool__
+
+# (in class kickmix.xbool)
+def __bool__(
+    self,
+) -> bool:
+    """Converts the xbool into a bool.
+
+    Returns:
+        True if the xbool represents a minus state, else False.
+
+    Examples:
+        >>> import kickmix as km
+        >>> bool(km.xbool(True))
+        True
+        >>> bool(km.xbool(False))
+        False
     """
 ```
 
@@ -4734,7 +5950,14 @@ def __init__(
     arg: bool,
     /,
 ) -> None:
-    """Returns an xbool of the given boolean.
+    """Initializes an xbool with the given boolean value.
+
+    Examples:
+        >>> import kickmix as km
+        >>> km.xbool(False)
+        km.xbool(False)
+        >>> km.xbool(True)
+        km.xbool(True)
     """
 ```
 
@@ -4773,5 +5996,17 @@ def __repr__(
     self,
 ) -> str:
     """Returns a parseable text representation of the xbool.
+    """
+```
+
+<a name="kickmix.xbool.__str__"></a>
+```python
+# kickmix.xbool.__str__
+
+# (in class kickmix.xbool)
+def __str__(
+    self,
+) -> str:
+    """Returns a text representation of the xbool.
     """
 ```

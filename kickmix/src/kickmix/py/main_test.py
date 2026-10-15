@@ -230,8 +230,11 @@ def test_circuit_operation_statistics_mapping():
         PUSH_CONDITION if b0
         CCX q0 q1 q2
         CCZ q0 q1 q2 if b1
+        CSWAP q0 q1 q2
+        CSWAP q0 q1 q2 if b1
         Z_POW q0 0.25
         Z_POW q0 0.125 if b1
+        INFO_TAG "hello"
         POP_CONDITION
         DEBUG_PRINT
         DEBUG_PRINT q0
@@ -240,12 +243,17 @@ def test_circuit_operation_statistics_mapping():
     stats = c.operation_statistics()
     counts = dict(stats)
     assert bool(stats)
-    assert len(stats) == 8
+    assert len(stats) == 10
     assert "X" in stats
+    assert "CSWAP" in stats
+    assert "INFO_TAG" in stats
     assert "CZ" not in stats
     assert "NOT_AN_OP" not in stats
     assert 123 not in stats
     assert stats["X"] == 2
+    assert stats["CSWAP"] == 2
+    assert stats["INFO_TAG"] == 1
+    assert stats.num_toffoli_like == 4
     assert stats["CZ"] == 0
     assert stats["HMR"] == 0
     assert stats.get("X") == 2
@@ -256,9 +264,11 @@ def test_circuit_operation_statistics_mapping():
     assert counts == {
         "X": 2,
         "CX": 2,
+        "CSWAP": 2,
         "CCX": 1,
         "CCZ": 1,
         "Z_POW": 2,
+        "INFO_TAG": 1,
         "DEBUG_PRINT": 3,
         "POP_CONDITION": 1,
         "PUSH_CONDITION": 1,

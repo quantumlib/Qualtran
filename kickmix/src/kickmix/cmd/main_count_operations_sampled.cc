@@ -135,9 +135,11 @@ int kickmix::main_count_operations_sampled(int argc, const char **argv) {
         {OpType::CX, OpType::CX_IF},
         {OpType::CZ, OpType::CZ_IF},
         {OpType::SWAP, OpType::SWAP_IF},
+        {OpType::CSWAP, OpType::CSWAP_IF},
         {OpType::CCX, OpType::CCX_IF},
         {OpType::CCZ, OpType::CCZ_IF},
         {OpType::Z_POW, OpType::Z_POW_IF},
+        {OpType::INFO_TAG},
         {OpType::DEBUG_PRINT_EMPTY,
          OpType::DEBUG_PRINT_Q,
          OpType::DEBUG_PRINT_C,
@@ -152,7 +154,7 @@ int kickmix::main_count_operations_sampled(int argc, const char **argv) {
         uint64_t max = 0;
         for (const auto &f : e) {
             uint64_t op_count = accumulated_counts[(uint8_t)f];
-            if (f == OpType::POP_CONDITION || f == OpType::PUSH_CONDITION) {
+            if (f == OpType::POP_CONDITION || f == OpType::PUSH_CONDITION || f == OpType::INFO_TAG) {
                 op_count = max_counts[(uint8_t)f];
             }
             tot += op_count;
@@ -169,6 +171,8 @@ int kickmix::main_count_operations_sampled(int argc, const char **argv) {
                  OpType::CCX_IF,
                  OpType::CCZ,
                  OpType::CCZ_IF,
+                 OpType::CSWAP,
+                 OpType::CSWAP_IF,
                  OpType::Z_POW,
                  OpType::Z_POW_IF,
              }) {
@@ -239,7 +243,8 @@ int kickmix::main_count_operations_sampled(int argc, const char **argv) {
                  OpType::CX,         OpType::CX_IF,         OpType::CZ,         OpType::CZ_IF,
                  OpType::R,          OpType::R_IF,          OpType::HMR,        OpType::HMR_IF,
                  OpType::CCX,        OpType::CCX_IF,        OpType::CCZ,        OpType::CCZ_IF,
-                 OpType::SWAP,       OpType::SWAP_IF,       OpType::Z_POW,      OpType::Z_POW_IF,
+                 OpType::CSWAP,      OpType::CSWAP_IF,      OpType::SWAP,       OpType::SWAP_IF,
+                 OpType::Z_POW,      OpType::Z_POW_IF,
              }) {
             all_op_total += accumulated_counts[static_cast<uint64_t>(kind)];
             all_op_max += max_counts[static_cast<uint64_t>(kind)];
