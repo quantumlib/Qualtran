@@ -52,16 +52,44 @@ void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
             }
             return result;
         },
-        "Returns the names and contents of registers in the circuit.");
+        clean_doc_string(R"DOC(
+            The names and contents of registers in the circuit, as a dict.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+
+                >>> circuit = km.Circuit('''
+                ...     REGISTER r0 "test"
+                ...     APPEND_TO_REGISTER q0 r0
+                ...     APPEND_TO_REGISTER q1 r0
+                ...     APPEND_TO_REGISTER q2 r0
+                ...     REGISTER r2 "empty"
+                ...     REGISTER r3
+                ...     APPEND_TO_REGISTER q3 r3
+                ...     APPEND_TO_REGISTER b0 r3
+                ...     CCX q0 q1 q2
+                ...     CX q0 q1
+                ...     X q0
+                ... ''')
+                >>> data: dict[str, km.array] = circuit.register_data
+                >>> for k, v in data.items():
+                ...     print(f"{k!r}: {v!r}")
+                'test': km.array([km.q(0), km.q(1), km.q(2)])
+                km.r(1): km.array([])
+                'empty': km.array([])
+                km.r(3): km.array([km.q(3), km.b(0)])
+         )DOC")
+            .data());
 
     c_circuit.def(
         "__repr__",
         [](const Circuit &self) -> std::string {
-            std::stringstream ss;
-            ss << "km.Circuit('''";
-            if (self.num_ops > 0) {
-                ss << "\n    ";
+            if (self.num_ops == 0 && self.register_data.empty()) {
+                return "km.Circuit()";
             }
+            std::stringstream ss;
+            ss << "km.Circuit('''\n    ";
             for (char c : self.str()) {
                 ss << c;
                 if (c == '\n') {
@@ -78,28 +106,90 @@ void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
         [](const Circuit &self) -> std::string {
             return self.text_diagram();
         },
-        "Returns a text diagram of the circuit.");
+        clean_doc_string(R"DOC(
+            @signature def text_diagram(self) -> str:
+            Returns a text diagram of the circuit.
+
+            Examples:
+                >>> import kickmix as km
+                >>> circuit = km.Circuit('''
+                ...     X q0
+                ...     CX q0 q1
+                ...     CCX q0 q1 q2
+                ... ''')
+                >>> print(circuit.text_diagram())
+                q0: -X-@-@-
+                       | |
+                q1: ---X-@-
+                         |
+                q2: -----X-
+        )DOC")
+            .data());
 
     c_circuit.def(
         "html_diagram",
         [](const Circuit &self) -> std::string {
             return self.html_diagram();
         },
-        "Returns an html diagram of the circuit.");
+        clean_doc_string(R"DOC(
+            @signature def html_diagram(self) -> str:
+            Returns an html diagram of the circuit.
+
+            Examples:
+                >>> import kickmix as km
+                >>> circuit = km.Circuit('''
+                ...     X q0
+                ...     CX q0 q1
+                ... ''')
+                >>> html = circuit.html_diagram()
+                >>> '<html' in html
+                True
+        )DOC")
+            .data());
 
     c_circuit.def(
         "max_magic",
         [](const Circuit &self) -> size_t {
             return self.max_magic();
         },
-        "Returns an upper bound on the number of CCX/CCZ gates run by the circuit.");
+        clean_doc_string(R"DOC(
+            @signature def max_magic(self) -> int:
+            Returns an upper bound on the number of CCX/CCZ gates run by the
+            circuit.
+
+            Examples:
+                >>> import kickmix as km
+                >>> circuit = km.Circuit('''
+                ...     X q0
+                ...     CX q0 q1
+                ...     CCX q0 q1 q2
+                ...     CCZ q0 q1 q2
+                ... ''')
+                >>> circuit.max_magic()
+                2
+        )DOC")
+            .data());
 
     c_circuit.def(
         "reaction_depth",
         [](const Circuit &self) -> size_t {
             return self.reaction_depth();
         },
-        "Returns the reaction depth of the circuit, assuming it is powered by CCZ states.");
+        clean_doc_string(R"DOC(
+            @signature def reaction_depth(self) -> int:
+            Returns the reaction depth of the circuit, assuming it is powered by
+            CCZ states.
+
+            Examples:
+                >>> import kickmix as km
+                >>> circuit = km.Circuit('''
+                ...     CCX q0 q1 q2
+                ...     CCX q2 q3 q4
+                ... ''')
+                >>> circuit.reaction_depth()
+                2
+        )DOC")
+            .data());
 
     c_circuit.def_property_readonly(
         "num_qubits",
@@ -127,14 +217,66 @@ void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
             return Circuit(text);
         }),
         pybind11::arg("circuit_text") = "",
-        "Creates a kickmix Circuit by parsing the given text.");
+        clean_doc_string(R"DOC(
+            Creates a circuit by parsing the given text as kickmix circuit file.
+
+            For a definition of the expected text format, see the kickmix circuit file
+            format documentation at
+            https://github.com/quantumlib/Qualtran/blob/main/docs/kickmix/kickmix_format.md
+
+            Roughly speaking, it's just a series of lines like "CCX q0 q1 q2".
+
+            Examples:
+                >>> import kickmix as km
+                >>> circuit = km.Circuit('''
+                ...     X q0
+                ...     CX q0 q9
+                ... ''')
+
+                >>> simulator = km.Simulator(batch_size=1)
+                >>> print(simulator.read_within_shot(km.q(9), shot_index=0))
+                False
+                >>> simulator.do(circuit)
+                >>> print(simulator.read_within_shot(km.q(9), shot_index=0))
+                True
+         )DOC")
+            .data());
 
     c_circuit.def(
         "__len__",
         [](const Circuit &self) -> size_t {
             return self.num_ops;
         },
-        "Returns the number of instructions in the circuit.");
+        clean_doc_string(R"DOC(
+            Returns the number of instructions in the circuit.
+
+            Caution: register data is not counted as instructions.
+
+            Examples:
+                >>> import kickmix as km
+                >>> len(km.Circuit())
+                0
+
+                >>> len(km.Circuit('''
+                ...     X q0
+                ...     CX q0 q9
+                ... '''))
+                2
+
+                >>> len(km.Circuit('''
+                ...     REGISTER r0 "test"
+                ...     APPEND_TO_REGISTER q0 r0
+                ...     APPEND_TO_REGISTER q1 r0
+                ...     APPEND_TO_REGISTER q2 r0
+                ...     INFO_TAG "@enter:increment"
+                ...     CCX q0 q1 q2
+                ...     CX q0 q1
+                ...     X q0
+                ...     INFO_TAG "@exit:increment"
+                ... '''))
+                5
+         )DOC")
+            .data());
 
     c_circuit.def_static(
         "from_file",
@@ -363,8 +505,7 @@ void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
                 ''')
 
                 >>> km.Circuit('CX q0 q1') * 0
-                km.Circuit('''
-                ''')
+                km.Circuit()
 
                 >>> 5 * km.Circuit('''
                 ...     REGISTER r0 "test"

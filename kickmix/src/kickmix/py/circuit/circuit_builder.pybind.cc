@@ -137,34 +137,15 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         }),
         clean_doc_string(R"DOC(
             Initializes a new circuit builder.
-        )DOC")
-            .data());
 
-    c_circuit_builder.def(
-        "start_auto_free_scope",
-        [](PyCircuitBuilder &self) {
-            self.start_auto_free_scope();
-        },
-        clean_doc_string(R"DOC(
-            Starts a scope that automatically frees allocations.
-
-            Call builder.end_auto_free_scope() to free allocations performed during the
-            scope. If multiple scopes are being used, they operate in LIFO order (i.e. like
-            a stack).
-        )DOC")
-            .data());
-
-    c_circuit_builder.def(
-        "end_auto_free_scope",
-        [](PyCircuitBuilder &self) {
-            self.end_auto_free_scope();
-        },
-        clean_doc_string(R"DOC(
-            Ends a scope that automatically frees allocations.
-
-            Allocations since the corresponding builder.start_auto_free_scope() will be
-            freed. If multiple scopes are being used, they operate in LIFO order (i.e. like
-            a stack).
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.x(km.q(0))
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    X q0
+                ''')
         )DOC")
             .data());
 
@@ -248,6 +229,16 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
             Args:
                 limit: The maximum number of qubits that can be allocated.
                     Set to `float('inf')` to disable the limit.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.set_max_qubits(4)
+                >>> builder.max_qubits
+                4
+                >>> q = builder.alloc_qubits(3)
+                >>> builder.num_free_qubits
+                1
         )DOC")
             .data());
 
@@ -274,27 +265,38 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
             return wrapped;
         },
         pybind11::arg("count"),
-        R"DOC(
+        clean_doc_string(R"DOC(
             Allocates clean qubits to use as workspace in a circuit.
 
-            Allocated qubits can be deallocated by using the `CircuitBuilder.free` method.
-            Qubits allocated within a `with builder.scope(auto_free=True):` block are
-            deallocated automatically upon execution exiting the block.
+            Allocated qubits can be deallocated by using the `CircuitBuilder.free`
+            method. Qubits allocated within a `with builder.scope(auto_free=True):`
+            block are deallocated automatically upon execution exiting the block.
 
-            Although the qubits returned by this method *should* be clean, nothing *enforces*
-            this. If a prior user of the allocated qubit failed to correctly clean some qubits
-            before freeing them, the returned qubits may contain their buggy garbage. As such,
-            it's recommended that you reset the qubits before using them. Reset gates also
-            have the nice side effect of clearly indicating in circuit diagrams when a new
-            usage of a qubit has begun.
+            Although the qubits returned by this method *should* be clean, nothing
+            *enforces* this. If a prior user of the allocated qubit failed to
+            correctly clean some qubits before freeing them, the returned qubits may
+            contain their buggy garbage. As such, it's recommended that you reset
+            the qubits before using them. Reset gates also have the nice side effect
+            of clearly indicating in circuit diagrams when a new usage of a qubit
+            has begun.
 
             Args:
-                length: The number of qubits to allocate.
+                count: The number of qubits to allocate.
 
             Returns:
-                An array containing the ids of the allocated qubits. Until these ids are
-                freed, they won't be returned by any other allocation calls.
-        )DOC");
+                An array containing the ids of the allocated qubits. Until these ids
+                are freed, they won't be returned by any other allocation calls.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> q = builder.alloc_qubits(3)
+                >>> q
+                km.array([km.q(0), km.q(1), km.q(2)])
+                >>> builder.num_allocated_qubits
+                3
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "alloc_bits",
@@ -341,9 +343,20 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
             }
         },
         pybind11::arg("arg"),
-        R"DOC(
+        clean_doc_string(R"DOC(
             Frees allocated qubits or bits, so that they can be allocated again.
-        )DOC");
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> q = builder.alloc_qubits(2)
+                >>> builder.num_allocated_qubits
+                2
+                >>> builder.free(q)
+                >>> builder.num_allocated_qubits
+                0
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "create_quantum_register",
@@ -368,19 +381,35 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         },
         pybind11::arg("length"),
         pybind11::arg("name"),
-        R"DOC(
+        clean_doc_string(R"DOC(
             Creates a quantum register.
 
-            Reserves the given number of qubits for the register, and emits instructions
-            defining the register.
+            Reserves the given number of qubits for the register, and emits
+            instructions defining the register.
 
             Args:
-                name: A name for the register, which can be used to refer to it.
                 length: The number of qubits in the register.
+                name: A name for the register, which can be used to refer to it.
 
             Returns:
-                A kickmix.CircuitRegister containing the allocated qubits.
-        )DOC");
+                A km.array containing the allocated qubits.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> reg = builder.create_quantum_register(2, name='data')
+                >>> reg
+                km.array([km.q(0), km.q(1)])
+                >>> builder.x(reg[0])
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    APPEND_TO_REGISTER q0 r0
+                    APPEND_TO_REGISTER q1 r0
+                    REGISTER r0 "data"
+                    X q0
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "create_classical_register",
@@ -393,28 +422,56 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         },
         pybind11::arg("length"),
         pybind11::arg("name"),
-        R"DOC(
+        clean_doc_string(R"DOC(
             Creates a classical register.
 
-            Reserves the given number of bits for the register, and emits instructions
-            defining the register.
+            Reserves the given number of bits for the register, and emits
+            instructions defining the register.
 
             Args:
-                name: A name for the register, which can be used to refer to it.
                 length: The number of bits in the register.
+                name: A name for the register, which can be used to refer to it.
 
             Returns:
-                A kickmix.CircuitRegister containing the allocated qubits.
-        )DOC");
+                A km.array containing the allocated bits.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> reg = builder.create_classical_register(2, name='meas')
+                >>> reg
+                km.array([km.b(0), km.b(1)])
+                >>> builder.bit_store(reg[0], True)
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    APPEND_TO_REGISTER b0 r0
+                    APPEND_TO_REGISTER b1 r0
+                    REGISTER r0 "meas"
+                    BIT_STORE1 b0
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "finish_circuit",
         [](PyCircuitBuilder &self) -> Circuit {
             return self.builder.finish_circuit();
         },
-        R"DOC(
+        clean_doc_string(R"DOC(
             Returns the circuit built by the circuit builder.
-        )DOC");
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.x(km.q(0))
+                >>> builder.cx(km.q(0), km.q(1))
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    X q0
+                    CX q0 q1
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "mark",
@@ -692,24 +749,35 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         &broadcast_cz_obj,
         pybind11::arg("control1"),
         pybind11::arg("control2"),
-        R"DOC(
+        clean_doc_string(R"DOC(
             @signature def cz(self, control1: bool | b | q | km.array, control2: bool | b | q | km.array) -> None:
             Appends many CZ gates to the circuit.
 
-            This method broadcasts over km.array arguments. If any of the arguments is a
-            km.array, an append is performed for each array index. When multiple km.array
-            arguments are used, they are combined by zipping (i.e. using two arrays of
-            length n will produce n instructions rather than n*n instructions).
+            This method broadcasts over km.array arguments. If any of the arguments
+            is a km.array, an append is performed for each array index. When
+            multiple km.array arguments are used, they are combined by zipping
+            (i.e. using two arrays of length n will produce n instructions rather
+            than n*n instructions).
 
-            The exact kind of operation(s) appended to the circuit depends on the types of
-            the controls. For example, if one of the controls is the boolean value True
-            instead of a qubit, then a Z instruction will be appended instead of a CZ
-            instruction.
+            The exact kind of operation(s) appended to the circuit depends on the
+            types of the controls. For example, if one of the controls is the
+            boolean value True instead of a qubit, then a Z instruction will be
+            appended instead of a CZ instruction.
 
             Args:
                 control1: One of the controls determining if phasing occurs.
                 control2: The other controls determining if phasing occurs.
-        )DOC");
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.cz(km.q(0), km.q(1))
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    CZ q0 q1
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "swap",
@@ -835,23 +903,44 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("table"),
         pybind11::arg("address"),
         pybind11::arg("target"),
-        R"DOC(
+        clean_doc_string(R"DOC(
             @signature def init_lookup(self, *, table: Iterable[int], address: km.array, target: km.array) -> None:
             Appends operations to perform `let target := table[address]`.
 
             Looks up a value from a classical table, indexed by a quantum register.
 
-            Because this is an `init` method, the target qubits must start in the 0 state.
-            The target qubits will be reset before being used, transforming any bit errors
-            into probabilistic phase errors.
+            Because this is an `init` method, the target qubits must start in the 0
+            state. The target qubits will be reset before being used, transforming
+            any bit errors into probabilistic phase errors.
 
             Args:
                 table: The table of classical values, as a list of python integers.
-                    The integers are interpreted in a little-endian fashion, meaning that
-                    `table_data[address, out_index] == (table[address] >> out_index) & 1`.
+                    The integers are interpreted in a little-endian fashion, meaning
+                    that `table_data[address, out_index] ==
+                    (table[address] >> out_index) & 1`.
                 address: The address used to select a value from the table.
                 target: The clean qubits to store the output into.
-        )DOC");
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> address = builder.create_quantum_register(2, name='address')
+                >>> target = builder.create_quantum_register(4, name='target')
+                >>> builder.init_lookup(
+                ...     table=[2, 3, 5, 7],
+                ...     address=address,
+                ...     target=target,
+                ... )
+                >>> circuit = builder.finish_circuit()
+                >>> sim = km.Simulator(batch_size=4)
+                >>> sim.use_same_registers_as(circuit)
+                >>> for a in range(4):
+                ...     sim.write_within_shot('address', a, a)
+                >>> sim.do(circuit)
+                >>> [sim.read_within_shot('target', a, out=int) for a in range(4)]
+                [2, 3, 5, 7]
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "del_lookup",
@@ -860,23 +949,43 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("table"),
         pybind11::arg("address"),
         pybind11::arg("target"),
-        R"DOC(
+        clean_doc_string(R"DOC(
             @signature def del_lookup(self, *, table: Iterable[int], address: km.array, target: km.array) -> None:
             Appends operations to perform `del target := table[address]`.
 
-            Clears a value created by looking up a value from a classical table, indexed by
-            a quantum register.
+            Clears a value created by looking up a value from a classical table,
+            indexed by a quantum register.
 
-            Because this is a `del` method, the target qubits will end in the 0 state.
+            Because this is a `del` method, the target qubits will end in the 0
+            state.
 
             Args:
                 table: The table of classical values, as a list of python integers.
-                    The integers are interpreted in a little-endian fashion, meaning that
-                    `table_data[address, out_index] == (table[address] >> out_index) & 1`.
+                    The integers are interpreted in a little-endian fashion, meaning
+                    that `table_data[address, out_index] ==
+                    (table[address] >> out_index) & 1`.
                 address: The address used to select a value from the table.
                     Qubits are in little-endian order.
                 target: The qubits to clear the lookup result from.
-        )DOC");
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> address = builder.create_quantum_register(2, name='address')
+                >>> target = builder.create_quantum_register(4, name='target')
+                >>> table = [2, 3, 5, 7]
+                >>> builder.init_lookup(table=table, address=address, target=target)
+                >>> builder.del_lookup(table=table, address=address, target=target)
+                >>> circuit = builder.finish_circuit()
+                >>> sim = km.Simulator(batch_size=4)
+                >>> sim.use_same_registers_as(circuit)
+                >>> for a in range(4):
+                ...     sim.write_within_shot('address', a, a)
+                >>> sim.do(circuit)
+                >>> [sim.read_within_shot('target', a, out=int) for a in range(4)]
+                [0, 0, 0, 0]
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "iadd",

@@ -33,7 +33,21 @@ PYBIND11_MODULE(kickmix, m) {
         m,
         "Circuit",
         clean_doc_string(R"DOC(
-             A kickmix circuit.
+            An immutable kickmix circuit.
+
+            Examples:
+                >>> import kickmix as km
+                >>> circuit = km.Circuit('''
+                ...     X q0
+                ...     CX q0 q9
+                ... ''')
+
+                >>> simulator = km.Simulator(batch_size=1)
+                >>> print(simulator.read_within_shot(km.q(9), shot_index=0))
+                False
+                >>> simulator.do(circuit)
+                >>> print(simulator.read_within_shot(km.q(9), shot_index=0))
+                True
          )DOC")
             .data());
 
@@ -41,7 +55,35 @@ PYBIND11_MODULE(kickmix, m) {
         m,
         "CircuitBuilder",
         clean_doc_string(R"DOC(
-             A kickmix circuit builder.
+            A builder class that helps create a kickmix circuit.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+
+                >>> target = builder.create_quantum_register(7, "target")
+                >>> shift = builder.create_quantum_register(3, "shift")
+                >>> builder.left_rotate(target, shift)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]-@-X-@---------@-X-@-----------@---X---@-----@-X-@-----------
+                               | | |         | | |           |   |   |     | | |
+                q1: -target[1]-X-@-X---------|-|-|-----------|-@-|-X-|-@---X-@-X-----------
+                                 |           | | |           | | | | | |     |
+                q2: -target[2]---|-@---X---@-X-@-X-----------|-|-|-|-|-|-----|-@---X---@---
+                                 | |   |   |   |             | | | | | |     | |   |   |
+                q3: -target[3]---|-|-@-|-X-|-@-|-@---X---@---|-X-|-@-|-X-----|-|-@-|-X-|-@-
+                                 | | | | | | | | |   |   |   |   | | |       | | | | | | |
+                q4: -target[4]---|-|-|-|-|-|-|-|-|-@-|-X-|-@-X---@-|-X-------|-|-|-|-|-|-|-
+                                 | | | | | | | | | | | | | |     | |         | | | | | | |
+                q5: -target[5]---|-|-X-|-@-|-X-|-|-X-|-@-|-X-----|-|---@-X-@-|-|-X-|-@-|-X-
+                                 | |   | | |   | |   | | |       | |   | | | | |   | | |
+                q6: -target[6]---|-X---@-|-X---|-X---@-|-X-------|-|---X-@-X-|-X---@-|-X---
+                                 |     | |     |     | |         | |     |   |     | |
+                q7: -shift[0]----@-----@-@---@-|-----|-|---@-----|-|-----|---|-----|-|-----
+                                             | |     | |   |     | |     |   |     | |
+                q8: -shift[1]----------------X-@-----@-@---X-@---|-|-----|-@-|-----|-|-----
+                                                             |   | |     | | |     | |
+                q9: -shift[2]--------------------------------X---@-@-----@-X-@-----@-@-----
          )DOC")
             .data());
 
@@ -55,6 +97,14 @@ PYBIND11_MODULE(kickmix, m) {
             km.array,  rather than a normal python list of values, because a
             km.array's values are stored contiguously in memory alongside compressed
             type information.
+
+            Examples:
+                >>> import kickmix as km
+                >>> arr = km.array([km.q(0), km.b(1), True])
+                >>> arr
+                km.array([km.q(0), km.b(1), True])
+                >>> len(arr)
+                3
          )DOC")
             .data());
 
@@ -91,6 +141,12 @@ PYBIND11_MODULE(kickmix, m) {
              X basis values act like controls when given as the targets
              of bit flip operations. For example, cx(BitId(0), XBitId(1)) is equivalent
              to cz(BitId(0), BitId(1)).
+
+             Examples:
+                 >>> import kickmix as km
+                 >>> x = km.xb(5)
+                 >>> x.id
+                 5
          )DOC")
             .data());
 
@@ -106,6 +162,15 @@ PYBIND11_MODULE(kickmix, m) {
              X basis values act like controls when given as the targets
              of bit flip operations. For example, cx(a, xbool(b)) is equivalent
              to cz(a, b).
+
+             Examples:
+                 >>> import kickmix as km
+                 >>> km.xbool(True)
+                 km.xbool(True)
+                 >>> bool(km.xbool(False))
+                 False
+                 >>> bool(km.xbool(True))
+                 True
          )DOC")
             .data());
 
@@ -121,7 +186,6 @@ PYBIND11_MODULE(kickmix, m) {
     PYBIND_TYPE_PTR_XBIT_ID = pybind11::type::of<kickmix::XBitId>().ptr();
     PYBIND_TYPE_PTR_XBOOL = pybind11::type::of<kickmix::XBool>().ptr();
     PYBIND_TYPE_PTR_REGISTER_ID = pybind11::type::of<kickmix::RegisterId>().ptr();
-    ;
 
     register_circuit_methods(c_circuit);
     register_circuit_builder_mark_class(m);

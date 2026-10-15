@@ -558,6 +558,26 @@ void kickmix_py::register_xbool_methods(pybind11::class_<XBool> &c_xbool) {
             .data());
 
     c_xbool.def(
+        "__bool__",
+        [](XBool &self) -> bool {
+            return self.is_minus_ket();
+        },
+        clean_doc_string(R"DOC(
+            Converts the xbool into a bool.
+
+            Returns:
+                True if the xbool represents a minus state, else False.
+
+            Examples:
+                >>> import kickmix as km
+                >>> bool(km.xbool(True))
+                True
+                >>> bool(km.xbool(False))
+                False
+        )DOC")
+            .data());
+
+    c_xbool.def(
         "__repr__",
         [](XBool &self) -> std::string_view {
             return self.is_minus_ket() ? "km.xbool(True)" : "km.xbool(False)";
