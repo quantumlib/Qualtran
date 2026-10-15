@@ -4,6 +4,7 @@
 #include <ostream>
 #include <sstream>
 #include <stdexcept>
+#include <vector>
 
 using namespace kickmix;
 
@@ -58,6 +59,11 @@ GF2Poly GF2Poly::from_str(std::string_view raw_text) {
 
     if ((text.starts_with("0x") || text.starts_with("0X") || text.starts_with("0b") || text.starts_with("0B")) &&
         text.find('+') == std::string_view::npos) {
+        if (text.substr(2).find_first_not_of('_') == std::string_view::npos) {
+            throw std::invalid_argument(
+                "Invalid polynomial string \"" + std::string(raw_text) +
+                "\". Expected hex/binary digits after prefix, e.g. \"0x13\" or \"0b10011\".");
+        }
         std::string normalized(text);
         if (normalized[1] == 'X') {
             normalized[1] = 'x';
@@ -422,26 +428,42 @@ std::string GF2Poly::str() const {
     return ss.str();
 }
 
-std::string GF2Poly::algebraic_str() const {
-    if (is_zero()) {
+std::string GF2Poly::algebraic_str(size_t max_terms) const {
+    size_t deg = degree();
+    if (deg == SIZE_MAX) {
         return "0";
     }
-    size_t deg = degree();
-    std::string out;
-    for (size_t k = deg + 1; k--;) {
-        if (!bit(k)) {
-            continue;
-        }
-        if (!out.empty()) {
-            out += " + ";
-        }
+    auto format_term = [](size_t k) -> std::string {
         if (k == 0) {
-            out += "1";
-        } else if (k == 1) {
-            out += "x";
-        } else {
-            out += "x^" + std::to_string(k);
+            return "1";
         }
+        if (k == 1) {
+            return "x";
+        }
+        return "x^" + std::to_string(k);
+    };
+    std::vector<size_t> terms;
+    for (size_t k = deg + 1; k--;) {
+        if (bit(k)) {
+            terms.push_back(k);
+        }
+    }
+    std::string out;
+    if (terms.size() <= max_terms || max_terms < 6) {
+        for (size_t i = 0; i < terms.size(); i++) {
+            if (i > 0) {
+                out += " + ";
+            }
+            out += format_term(terms[i]);
+        }
+    } else {
+        for (size_t i = 0; i < 4; i++) {
+            if (i > 0) {
+                out += " + ";
+            }
+            out += format_term(terms[i]);
+        }
+        out += " + ... + " + format_term(terms[terms.size() - 2]) + " + " + format_term(terms.back());
     }
     return out;
 }

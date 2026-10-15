@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 #include "kickmix/util/fixed_width_int.h"
@@ -18,7 +19,8 @@ namespace kickmix {
 /// reduced modulo an irreducible polynomial of degree m.
 ///
 /// The reduction polynomial is either supplied by the caller (any irreducible polynomial of degree
-/// m) or defaults to gf2_default_irreducible_poly(m), which has low weight. Low weight moduli let
+/// m) or defaults to gf2_default_irreducible_poly(m), which is a low weight primitive polynomial
+/// (so x is a primitive element of the default field). Low weight moduli let
 /// `ireduce` clear each high coefficient with a handful of bit flips; dense moduli fall back to a
 /// word-at-a-time reduction, and make some circuit constructions (e.g. gen_gf_phase_by_product)
 /// proportionally more expensive.
@@ -26,37 +28,31 @@ struct GF2Field {
     /// Creates GF(2^m) using gf2_default_irreducible_poly(degree).
     explicit GF2Field(size_t degree);
 
-    /// Creates GF(2^m) using an explicit reduction polynomial.
+    /// Creates GF(2^m) from an irreducible polynomial, inferring the field degree m from the
+    /// degree of `irreducible_poly` (so the x^m leading term must be present).
+    explicit GF2Field(const GF2Poly &irreducible_poly, std::optional<GF2Poly> primitive_element = std::nullopt);
+
+    /// Creates GF(2^m) using an explicit reduction polynomial and, optionally, an explicit
+    /// primitive element (multiplicative generator of GF(2^m)* of order 2^m - 1).
     ///
     /// The polynomial must be irreducible and have degree `degree`. As a convenience the
     /// x^degree term may be omitted from `irreducible_poly`, in which case it is implied.
     ///
-    /// Irreducibility is checked by default (`check_irreducible = true`) and throws
-    /// `std::invalid_argument` if the polynomial is reducible.
-    GF2Field(size_t degree, const GF2Poly &irreducible_poly, bool check_irreducible = true);
-
-    /// Creates GF(2^m) using an explicit reduction polynomial and an explicit primitive element
-    /// (multiplicative generator of GF(2^m)* of order 2^m - 1).
-    ///
-    /// Throws `std::invalid_argument` if `irreducible_poly` is reducible (when `check_irreducible`
-    /// is true) or if `primitive_element` is not a primitive element of the field.
-    GF2Field(
-        size_t degree,
-        const GF2Poly &irreducible_poly,
-        const GF2Poly &primitive_element,
-        bool check_irreducible = true);
+    /// Throws `std::invalid_argument` if the polynomial is reducible or has the wrong degree, or
+    /// if `primitive_element` is given but is not a primitive element of the field.
+    GF2Field(size_t degree, const GF2Poly &irreducible_poly, std::optional<GF2Poly> primitive_element = std::nullopt);
 
     /// Creates GF(2^m) using an explicit reduction polynomial parsed from an algebraic
     /// ("x^100 + x^10 + x^2 + 1"), hex ("0x11B"), or binary ("0b100011011") string.
     ///
     /// Same semantics as the GF2Poly overload: the x^degree term may be omitted, and
-    /// irreducibility is checked unless `check_irreducible` is false.
-    GF2Field(size_t degree, std::string_view irreducible_poly_str, bool check_irreducible = true);
+    /// irreducibility is validated.
+    GF2Field(size_t degree, std::string_view irreducible_poly_str);
 
     /// Creates GF(2^m) by parsing an algebraic ("x^100 + x^10 + x^2 + 1"), hex ("0x11B"), or
     /// binary ("0b100011011") irreducible polynomial string. The field degree m is inferred from
     /// the degree of the parsed polynomial, so the leading term must be written out.
-    explicit GF2Field(std::string_view irreducible_poly_str, bool check_irreducible = true);
+    explicit GF2Field(std::string_view irreducible_poly_str);
 
     /// The extension degree m of the field. The field has 2^m elements.
     inline size_t degree() const {
@@ -70,10 +66,13 @@ struct GF2Field {
     /// Returns the primitive element (multiplicative generator of GF(2^m)* of order 2^m - 1)
     /// associated with this field.
     ///
-    /// If no primitive element was explicitly supplied at construction time, this returns (and
-    /// caches) the smallest primitive element in integer order (1 for m = 1, or the smallest
-    /// polynomial in {x, x + 1, x^2, ...} of multiplicative order 2^m - 1 for m >= 2).
-    GF2Poly primitive_element() const;
+    /// If no primitive element was explicitly supplied at construction time, this is the smallest
+    /// primitive element in integer order (1 for m = 1, x for every default field with m >= 2, or
+    /// the smallest polynomial in {x, x + 1, x^2, ...} of multiplicative order 2^m - 1 for custom
+    /// moduli).
+    inline const GF2Poly &primitive_element() const {
+        return primitive_element_;
+    }
 
     /// Returns true if `a` is a primitive element of this field, i.e. a non-zero element of
     /// GF(2^m) whose multiplicative order is 2^m - 1.
@@ -145,54 +144,32 @@ struct GF2Field {
         return result;
     }
 
-    /// True when a primitive element was supplied at construction time and it differs from the
-    /// default (smallest) one. Fields for which this is false all share the default primitive
-    /// element for their modulus, which lets equality and hashing skip the default search.
-    inline bool has_custom_primitive_element() const {
-        return has_custom_primitive_element_;
-    }
-
     /// Fields are equal when they have the same degree, modulus and primitive element.
-    ///
-    /// The primitive element search is only performed when at least one side has a custom
-    /// primitive element; otherwise both sides necessarily share the default one.
     inline bool operator==(const GF2Field &other) const {
-        if (degree_ != other.degree_ || modulus_ != other.modulus_) {
-            return false;
-        }
-        if (!has_custom_primitive_element_ && !other.has_custom_primitive_element_) {
-            return true;
-        }
-        return primitive_element() == other.primitive_element();
+        return degree_ == other.degree_ && modulus_ == other.modulus_ && primitive_element_ == other.primitive_element_;
     }
     inline bool operator!=(const GF2Field &other) const {
         return !(*this == other);
     }
 
    private:
-    void init();
-
     size_t degree_;
     GF2Poly modulus_;
     /// Exponents of the non-leading terms of the modulus, descending. Used for fast reduction.
     std::vector<uint32_t> mod_terms_;
     /// True when the modulus has few enough terms for the sparse reduction to beat the dense one.
     bool sparse_reduction_ = false;
-    /// Explicitly supplied primitive element, or zero when using the default (smallest) one.
+    /// Primitive element (multiplicative generator of GF(2^m)* of order 2^m - 1).
     GF2Poly primitive_element_;
-    bool has_custom_primitive_element_ = false;
 };
 
-/// Returns a low weight irreducible polynomial of the given degree, including its x^degree term.
+/// Returns a low weight primitive polynomial of the given degree, including its x^degree term.
 ///
-/// For degrees up to 12 this is a fixed table of conventional low-weight irreducible polynomials
-/// (e.g. 0x13 for GF(2^4) and 0x11D for GF(2^8)); note that these are not all primitive (for
-/// m = 12, x^12 + x^3 + 1 is irreducible but x has order 1365, so use GF2Field::primitive_element()
-/// rather than assuming x generates the multiplicative group). For larger degrees it is found by
-/// search: the trinomial x^m + x^a + 1 with the smallest a, or if no irreducible trinomial exists,
-/// the first irreducible pentanomial x^m + x^a + x^b + x^c + 1 in (a, b, c) lexicographic order.
-/// Searched results are cached, since the search is much more expensive than the arithmetic that
-/// uses it.
+/// The result is the trinomial x^m + x^a + 1 with the smallest a that is primitive (irreducible
+/// with x generating the multiplicative group), or if there is none, the first primitive
+/// pentanomial x^m + x^a + x^b + x^c + 1 in (a, b, c) lexicographic order. Consequently x is a
+/// primitive element of GF2Field(m) for every m. Results are cached, since the search is much more
+/// expensive than the arithmetic that uses it.
 ///
 /// Requires 1 <= degree <= GF2_MAX_DEGREE.
 GF2Poly gf2_default_irreducible_poly(size_t degree);

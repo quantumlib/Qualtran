@@ -307,33 +307,34 @@ TEST(gf2_field, is_irreducible_known_cases) {
 }
 
 TEST(gf2_field, default_irreducible_poly_small_degrees) {
-    // The pinned small-degree defaults (conventional low-weight irreducible polynomials; not all
-    // primitive, e.g. m = 12). Changing these would silently change which field GF2Field(m) refers
-    // to, so they are locked down here.
-    ASSERT_EQ(gf2_default_irreducible_poly(1), GF2Poly::from_u64(3));
-    ASSERT_EQ(gf2_default_irreducible_poly(2), GF2Poly::from_u64(7));
-    ASSERT_EQ(gf2_default_irreducible_poly(3), GF2Poly::from_u64(11));
-    ASSERT_EQ(gf2_default_irreducible_poly(4), GF2Poly::from_u64(19));
-    ASSERT_EQ(gf2_default_irreducible_poly(5), GF2Poly::from_u64(37));
-    ASSERT_EQ(gf2_default_irreducible_poly(6), GF2Poly::from_u64(67));
-    ASSERT_EQ(gf2_default_irreducible_poly(7), GF2Poly::from_u64(137));
-    ASSERT_EQ(gf2_default_irreducible_poly(8), GF2Poly::from_u64(285));
-    ASSERT_EQ(gf2_default_irreducible_poly(9), GF2Poly::from_u64(529));
-    ASSERT_EQ(gf2_default_irreducible_poly(10), GF2Poly::from_u64(1033));
-    ASSERT_EQ(gf2_default_irreducible_poly(11), GF2Poly::from_u64(2053));
-    ASSERT_EQ(gf2_default_irreducible_poly(12), GF2Poly::from_u64(4105));
+    // Changing these would silently change which field GF2Field(m) refers to, so they are locked
+    // down here. Each is the first primitive trinomial, or pentanomial if no primitive trinomial
+    // exists (m = 8, 12).
+    ASSERT_EQ(gf2_default_irreducible_poly(1), GF2Poly::from_u64(0x3));
+    ASSERT_EQ(gf2_default_irreducible_poly(2), GF2Poly::from_u64(0x7));
+    ASSERT_EQ(gf2_default_irreducible_poly(3), GF2Poly::from_u64(0xB));
+    ASSERT_EQ(gf2_default_irreducible_poly(4), GF2Poly::from_u64(0x13));
+    ASSERT_EQ(gf2_default_irreducible_poly(5), GF2Poly::from_u64(0x25));
+    ASSERT_EQ(gf2_default_irreducible_poly(6), GF2Poly::from_u64(0x43));
+    ASSERT_EQ(gf2_default_irreducible_poly(7), GF2Poly::from_u64(0x83));
+    ASSERT_EQ(gf2_default_irreducible_poly(8), GF2Poly::from_u64(0x11D));
+    ASSERT_EQ(gf2_default_irreducible_poly(9), GF2Poly::from_u64(0x211));
+    ASSERT_EQ(gf2_default_irreducible_poly(10), GF2Poly::from_u64(0x409));
+    ASSERT_EQ(gf2_default_irreducible_poly(11), GF2Poly::from_u64(0x805));
+    ASSERT_EQ(gf2_default_irreducible_poly(12), GF2Poly::from_u64(0x1053));
 
     ASSERT_THROW({ gf2_default_irreducible_poly(0); }, std::invalid_argument);
     ASSERT_THROW({ gf2_default_irreducible_poly(GF2_MAX_DEGREE + 1); }, std::invalid_argument);
 }
 
-TEST(gf2_field, default_irreducible_poly_is_irreducible) {
-    // Every degree up to 64, plus a spread of larger ones including the maximum.
+TEST(gf2_field, default_irreducible_poly_is_primitive) {
+    // Every degree up to 64, plus a spread of larger ones including the maximum and 504 (the degree
+    // whose search examines the most candidates).
     std::vector<size_t> degrees;
     for (size_t m = 1; m <= 64; m++) {
         degrees.push_back(m);
     }
-    for (size_t m : std::vector<size_t>{65, 100, 127, 128, 163, 233, 255, 256, 283, 384, 409, 511, 512}) {
+    for (size_t m : std::vector<size_t>{65, 100, 127, 128, 163, 233, 255, 256, 283, 384, 409, 504, 511, 512}) {
         degrees.push_back(m);
     }
 
@@ -344,6 +345,10 @@ TEST(gf2_field, default_irreducible_poly_is_irreducible) {
         // Low weight: a trinomial or a pentanomial.
         ASSERT_TRUE(poly.weight() == 3 || poly.weight() == 5 || m == 1) << m << " weight " << poly.weight();
         ASSERT_TRUE(gf2_is_irreducible(poly)) << m;
+        // Primitive: x generates the multiplicative group of the default field.
+        GF2Field field(m);
+        ASSERT_TRUE(field.is_primitive_element(GF2Poly::monomial(1)) || m == 1) << m;
+        ASSERT_EQ(field.primitive_element(), m == 1 ? GF2Poly::from_u64(1) : GF2Poly::from_u64(2)) << m;
     }
 }
 
@@ -392,84 +397,20 @@ TEST(gf2_field, unreduced_inputs_and_zero_constant_term) {
 }
 
 TEST(gf2_field, construction_from_string) {
+    GF2Field aes_from_poly(GF2Poly::from_u64(0x11B));
     GF2Field aes_from_str("x^8 + x^4 + x^3 + x + 1");
     GF2Field aes_with_deg(8, "x^8 + x^4 + x^3 + x + 1");
     GF2Field aes_implied_top(8, "x^4 + x^3 + x + 1");
+    ASSERT_EQ(aes_from_poly, aes_from_str);
     ASSERT_EQ(aes_from_str.degree(), 8);
     ASSERT_EQ(aes_from_str.modulus(), GF2Poly::from_u64(0x11B));
     ASSERT_EQ(aes_with_deg.modulus(), GF2Poly::from_u64(0x11B));
     ASSERT_EQ(aes_implied_top.modulus(), GF2Poly::from_u64(0x11B));
 
+    ASSERT_THROW({ GF2Field{GF2Poly{}}; }, std::invalid_argument);
     ASSERT_THROW({ GF2Field("x^4 + 1"); }, std::invalid_argument);
     ASSERT_THROW({ GF2Field("1"); }, std::invalid_argument);
     ASSERT_THROW({ GF2Field("0"); }, std::invalid_argument);
-}
-
-/// Returns the message of the std::invalid_argument thrown by constructing GF(2^degree) with
-/// `modulus`, or fails the test if nothing is thrown.
-static std::string reducible_modulus_error(size_t degree, const GF2Poly &modulus) {
-    try {
-        GF2Field field(degree, modulus);
-    } catch (const std::invalid_argument &ex) {
-        return ex.what();
-    }
-    ADD_FAILURE() << "GF2Field(" << degree << ", " << modulus << ") did not throw";
-    return "";
-}
-
-/// Returns the nth irreducible polynomial of degree d, counting upward from x^d + 1.
-static GF2Poly nth_irreducible(size_t d, size_t n) {
-    GF2Poly candidate = GF2Poly::monomial(d);
-    candidate.set_bit(0, true);
-    while (true) {
-        if (gf2_is_irreducible(candidate)) {
-            if (n == 0) {
-                return candidate;
-            }
-            n--;
-        }
-        // Step to the next odd polynomial of degree d, by incrementing the bits between 1 and d-1.
-        for (size_t k = 1; k < d; k++) {
-            candidate.xor_bit(k);
-            if (candidate.bit(k)) {
-                break;
-            }
-        }
-    }
-}
-
-TEST(gf2_field, reducible_modulus_error_reports_an_irreducible_factor) {
-    // x^6 + x^5 + x^4 + x^3 + x^2 + x + 1 = (x^3 + x + 1)(x^3 + x^2 + 1). Ben-Or's first non-trivial
-    // gcd is the whole modulus here, which used to be reported as its own factor.
-    std::string msg = reducible_modulus_error(6, GF2Poly::from_u64(0x7F));
-    ASSERT_TRUE(
-        msg.find("divisible by 0xB ") != std::string::npos || msg.find("divisible by 0xD ") != std::string::npos)
-        << msg;
-
-    // All three irreducible quartics multiplied together: the gcd is again the whole modulus, and
-    // splitting it once still leaves a composite part.
-    GF2Poly p = GF2Poly::mul(GF2Poly::mul(GF2Poly::from_u64(0x13), GF2Poly::from_u64(0x19)), GF2Poly::from_u64(0x1F));
-    msg = reducible_modulus_error(12, p);
-    ASSERT_TRUE(
-        msg.find("divisible by 0x13 ") != std::string::npos || msg.find("divisible by 0x19 ") != std::string::npos ||
-        msg.find("divisible by 0x1F ") != std::string::npos)
-        << msg;
-
-    // Products of two distinct equal degree irreducibles, up to the maximum field degree.
-    for (size_t d : std::vector<size_t>{2, 3, 5, 8, 17, 31, 64, 65, 100, 128, 200, 256}) {
-        GF2Poly a = nth_irreducible(d, 0);
-        GF2Poly b = nth_irreducible(d, d == 2 ? 0 : 1);
-        GF2Poly prod = GF2Poly::mul(a, b);
-        msg = reducible_modulus_error(2 * d, prod);
-        ASSERT_TRUE(
-            msg.find("divisible by " + a.str() + " ") != std::string::npos ||
-            msg.find("divisible by " + b.str() + " ") != std::string::npos)
-            << "d=" << d << ": " << msg;
-    }
-
-    // A factor of smaller degree is still reported directly.
-    msg = reducible_modulus_error(8, GF2Poly::from_u64(0x101));
-    ASSERT_NE(msg.find("divisible by 0x3 "), std::string::npos) << msg;
 }
 
 TEST(gf2_field, construction_from_string_rejects_repeated_terms) {
@@ -484,17 +425,17 @@ TEST(gf2_field, primitive_element) {
     ASSERT_TRUE(f1.is_primitive_element(GF2Poly::from_u64(1)));
     ASSERT_FALSE(f1.is_primitive_element(GF2Poly::from_u64(0)));
 
-    for (size_t m = 2; m <= 11; m++) {
+    for (size_t m = 2; m <= 12; m++) {
         GF2Field f(m);
         ASSERT_EQ(f.primitive_element(), GF2Poly::from_u64(2)) << m;
     }
-    // Degree 12 default is the trinomial x^12 + x^3 + 1 (0x1009), whose smallest primitive element
-    // is x + 1 (0x3). With the primitive pentanomial 0x1053, x (0x2) is primitive.
-    GF2Field f12(12);
-    ASSERT_EQ(f12.primitive_element(), GF2Poly::from_u64(3));
-    ASSERT_FALSE(f12.is_primitive_element(GF2Poly::from_u64(2)));
-    GF2Field f12_pent(12, GF2Poly::from_u64(0x1053));
-    ASSERT_EQ(f12_pent.primitive_element(), GF2Poly::from_u64(2));
+    // Irreducible but not primitive moduli: x^12 + x^3 + 1 (x has order 1365) and the AES
+    // polynomial x^8 + x^4 + x^3 + x + 1 (x has order 51). The smallest generator is x + 1.
+    for (auto [m, modulus] : std::vector<std::pair<size_t, uint64_t>>{{12, 0x1009}, {8, 0x11B}}) {
+        GF2Field f(m, GF2Poly::from_u64(modulus));
+        ASSERT_FALSE(f.is_primitive_element(GF2Poly::from_u64(2))) << m;
+        ASSERT_EQ(f.primitive_element(), GF2Poly::from_u64(3)) << m;
+    }
 
     // Verify that primitive_element() generates all 2^m - 1 non-zero elements for m <= 12.
     for (size_t m = 1; m <= 12; m++) {
@@ -524,7 +465,7 @@ TEST(gf2_field, primitive_element) {
     // Custom valid primitive element (0x9 = x^3 + 1 has order 15 in GF(2^4) mod 0x13).
     GF2Field f4_custom(4, GF2Poly::from_u64(0x13), GF2Poly::from_u64(0x9));
     ASSERT_EQ(f4_custom.primitive_element(), GF2Poly::from_u64(0x9));
-    ASSERT_TRUE(f4_custom.has_custom_primitive_element());
+    ASSERT_EQ(GF2Field(GF2Poly::from_u64(0x13), GF2Poly::from_u64(0x9)), f4_custom);
 
     // Larger degrees up to 512.
     for (size_t m : std::vector<size_t>{14, 16, 31, 64, 100, 128, 256, 300, 512}) {
@@ -676,8 +617,6 @@ TEST(gf2_field, equality_includes_primitive_element) {
     GF2Field e(8, GF2Poly::from_u64(0x11B), GF2Poly::from_u64(3));  // 3 is the default for 0x11B.
     GF2Field c(8, GF2Poly::from_u64(0x11B), GF2Poly::from_u64(5));
     GF2Field c2(8, GF2Poly::from_u64(0x11B), GF2Poly::from_u64(5));
-    ASSERT_FALSE(e.has_custom_primitive_element());
-    ASSERT_TRUE(c.has_custom_primitive_element());
     ASSERT_TRUE(d == e);
     ASSERT_TRUE(c == c2);
     ASSERT_TRUE(d != c);

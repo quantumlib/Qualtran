@@ -36,7 +36,8 @@ def test_gf2_field_basics():
     assert f8 != "not a field"
     assert hash(f8) == hash(km.GF2Field(8, 0x11D))
     assert repr(f8) == "km.GF2Field(8)"
-    assert repr(km.GF2Field(8, 0x11B)) == "km.GF2Field(8, modulus=0x11B)"
+    assert repr(km.GF2Field(4, 0x19)) == "km.GF2Field(4, modulus=0x19)"
+    assert repr(km.GF2Field(8, 0x11B)) == "km.GF2Field(8, modulus=0x11B, primitive_element=0x3)"
     assert str(f8) == "GF(2^8, modulus=0x11D)"
 
     aes = km.GF2Field(8, 0x11B)
@@ -104,6 +105,10 @@ def test_gf2_field_string_parsing():
         match=r"degree must be an int or None; to construct from a polynomial string, pass it as modulus=",
     ):
         km.GF2Field("x^4 + x + 1")
+    with pytest.raises(ValueError, match="Expected hex/binary digits after prefix"):
+        km.GF2Field(4, "0x")
+    with pytest.raises(ValueError, match="Expected hex/binary digits after prefix"):
+        km.GF2Field(modulus="0b_")
 
 
 def test_gf2_field_validation():
@@ -118,8 +123,8 @@ def test_gf2_field_validation():
     with pytest.raises(
         ValueError,
         match=(
-            r"modulus 0x11 \(x\^4 \+ 1\) of degree 4 is not irreducible over GF\(2\): "
-            r"divisible by 0x3 \(x \+ 1\)\. For example, use GF2Field\(4\) for the default modulus, "
+            r"modulus 0x11 \(x\^4 \+ 1\) of degree 4 is not irreducible over GF\(2\)\. "
+            r"For example, use GF2Field\(4\) for the default modulus, "
             r"or GF2Field\(4, 0x13\) for 0x13 \(x\^4 \+ x \+ 1\)\."
         ),
     ):
@@ -150,6 +155,10 @@ def test_gf2_field_validation():
         km.GF2Field(4, 0x25)
     with pytest.raises(ValueError, match="non-negative"):
         km.GF2Field(4, -1)
+    with pytest.raises(ValueError, match="modulus must be an int"):
+        km.GF2Field(4, 19.7)
+    with pytest.raises(ValueError, match="primitive_element must be an int"):
+        km.GF2Field(4, 0x13, primitive_element=2.5)
     # Huge ints used to escape as an opaque RuntimeError from the C++ size_t cast.
     with pytest.raises(
         ValueError, match=r"degree must be between 1 and 512, got 1180591620717411303424"
@@ -159,27 +168,6 @@ def test_gf2_field_validation():
         km.GF2Field()
 
 
-def _clmul(a: int, b: int) -> int:
-    """Carry-less (GF(2)[x]) product of two polynomials encoded as ints."""
-    result = 0
-    while b:
-        if b & 1:
-            result ^= a
-        a <<= 1
-        b >>= 1
-    return result
-
-
-def test_gf2_field_reducible_modulus_reports_irreducible_factor():
-    # (x^3 + x + 1)(x^3 + x^2 + 1): used to be reported as "divisible by" itself.
-    assert _clmul(0xB, 0xD) == 0x7F
-    with pytest.raises(ValueError, match=r"divisible by 0x(B|D) "):
-        km.GF2Field(6, 0x7F)
-    # Product of all three irreducible quartics.
-    with pytest.raises(ValueError, match=r"divisible by 0x(13|19|1F) "):
-        km.GF2Field(12, _clmul(_clmul(0x13, 0x19), 0x1F))
-
-
 def test_gf2_field_string_rejects_repeated_terms():
     # Repeated terms cancel over GF(2); this used to silently create GF(2^1).
     with pytest.raises(ValueError, match="appears more than once"):
@@ -187,8 +175,6 @@ def test_gf2_field_string_rejects_repeated_terms():
 
 
 def test_gf2_field_from_galois():
-    assert km.GF2Field(12).modulus == 0x1009
-
     class MockPoly:
         def __init__(self, char: int, deg: int, val: int):
             self.field = type("F", (), {"characteristic": char})()
@@ -206,7 +192,6 @@ def test_gf2_field_from_galois():
 
     aes = km.GF2Field(8, 0x11B)
     assert km.GF2Field(MockGaloisField) == aes
-    assert km.GF2Field.from_galois(MockGaloisField) == aes
     assert km.GF2Field(modulus=MockGaloisField.irreducible_poly) == aes
     assert km.GF2Field(8, MockGaloisField.irreducible_poly) == aes
 
@@ -223,14 +208,10 @@ def test_gf2_field_from_galois():
 
     with pytest.raises(ValueError, match="characteristic 2"):
         km.GF2Field(MockGF3Field)
-    with pytest.raises(ValueError, match="characteristic 2"):
-        km.GF2Field.from_galois(MockGF3Field)
     with pytest.raises(ValueError, match="over GF\\(2\\)"):
         km.GF2Field(modulus=MockGF3Field.irreducible_poly)
     with pytest.raises(ValueError, match="modulus must be None"):
         km.GF2Field(MockGaloisField, 0x11B)
-    with pytest.raises(ValueError, match="galois_field must be"):
-        km.GF2Field.from_galois(8)
 
     try:
         import galois
@@ -239,10 +220,17 @@ def test_gf2_field_from_galois():
 
     gf16 = galois.GF(2**4, irreducible_poly="x^4 + x^3 + 1")
     assert km.GF2Field(gf16) == km.GF2Field(4, 0x19)
-    assert km.GF2Field.from_galois(gf16) == km.GF2Field(4, 0x19)
     assert km.GF2Field(modulus=gf16.irreducible_poly) == km.GF2Field(4, 0x19)
+    assert km.GF2Field(modulus=gf16.irreducible_poly, primitive_element=gf16(9)) == km.GF2Field(
+        4, 0x19, primitive_element=9
+    )
     with pytest.raises(ValueError, match="characteristic 2"):
         km.GF2Field(galois.GF(3**2))
+    # Elements of odd characteristic fields are int-like but must still be rejected.
+    with pytest.raises(ValueError, match="characteristic 2"):
+        km.GF2Field(4, primitive_element=galois.GF(3)(2))
+    with pytest.raises(ValueError, match="characteristic 2"):
+        km.GF2Field(4, modulus=galois.GF(23)(19))
 
 
 def test_gf2_field_primitive_element():
@@ -251,23 +239,18 @@ def test_gf2_field_primitive_element():
     assert not km.GF2Field(1).is_primitive_element(0)
     assert not km.GF2Field(1).is_primitive_element(2)
 
-    for m in range(2, 12):
+    # Default moduli are primitive polynomials, so x = 2 is always the primitive element.
+    for m in (*range(2, 17), 64, 128, 512):
         f = km.GF2Field(m)
         assert f.primitive_element == 2
         assert f.is_primitive_element(2)
 
-    # For m = 12, the default trinomial x^12 + x^3 + 1 (0x1009) has primitive_element = 3 (x + 1).
-    f12 = km.GF2Field(12)
-    assert f12.modulus == 0x1009
+    # The irreducible trinomial x^12 + x^3 + 1 (0x1009) is not primitive: x has order 1365.
+    f12 = km.GF2Field(12, 0x1009)
     assert f12.primitive_element == 3
     assert not f12.is_primitive_element(2)
     assert f12.is_primitive_element(3)
     assert len({f12.pow(f12.primitive_element, k) for k in range((1 << 12) - 1)}) == (1 << 12) - 1
-
-    # Also works for m = 14 and m = 16 where x = 2 is not primitive.
-    for m in (14, 16):
-        f = km.GF2Field(m)
-        assert f.is_primitive_element(f.primitive_element)
 
     # AES polynomial 0x11B: x (2) has order 51, while x + 1 (3) has order 255.
     aes = km.GF2Field(8, 0x11B)

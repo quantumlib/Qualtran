@@ -89,7 +89,6 @@
     - [`kickmix.GF2Field.degree`](#kickmix.GF2Field.degree)
     - [`kickmix.GF2Field.div`](#kickmix.GF2Field.div)
     - [`kickmix.GF2Field.frobenius`](#kickmix.GF2Field.frobenius)
-    - [`kickmix.GF2Field.from_galois`](#kickmix.GF2Field.from_galois)
     - [`kickmix.GF2Field.invert`](#kickmix.GF2Field.invert)
     - [`kickmix.GF2Field.is_element`](#kickmix.GF2Field.is_element)
     - [`kickmix.GF2Field.is_irreducible`](#kickmix.GF2Field.is_irreducible)
@@ -2564,9 +2563,9 @@ def __init__(
 ) -> None:
     """Creates the binary extension field GF(2^degree).
 
-    Can also be constructed directly from a `galois.GF(2**m)` field class
-    (e.g. `km.GF2Field(galois.GF(2**8))` or `km.GF2Field.from_galois(GF)`),
-    extracting its degree, irreducible polynomial, and primitive element.
+    Can also be constructed directly from a `galois.GF(2**m)` field
+    class (e.g. `km.GF2Field(galois.GF(2**8))`), extracting its degree,
+    irreducible polynomial, and primitive element.
 
     Args:
         degree: The extension degree m (1 <= m <= 512), or a
@@ -2575,8 +2574,8 @@ def __init__(
         modulus: Optional irreducible reduction polynomial of degree m,
             encoded as an int where bit k is the coefficient of x^k, a
             `galois.Poly` over GF(2), or a polynomial string such as
-            "x^4 + x + 1" or "0x13". If None, a low-weight default
-            irreducible polynomial is chosen.
+            "x^4 + x + 1" or "0x13". If None, a low-weight primitive
+            polynomial is chosen, so that x (2) is a primitive element.
         primitive_element: Optional multiplicative generator of GF(2^m)*
             (of order 2^m - 1), encoded as an int, a `galois.Poly`, or a
             polynomial string. Validated if provided; if None, the
@@ -2598,6 +2597,10 @@ def __init__(
         3
         >>> str_field = km.GF2Field(modulus="x^4 + x^3 + 1")
         >>> str_field == km.GF2Field(4, modulus=0x19)
+        True
+        >>> import galois  # doctest: +SKIP
+        >>> GF = galois.GF(2**8, irreducible_poly=0x11B)  # doctest: +SKIP
+        >>> km.GF2Field(GF) == aes_field  # doctest: +SKIP
         True
     """
 ```
@@ -2702,32 +2705,6 @@ def frobenius(
         >>> field.frobenius(3, 1)
         5
         >>> field.frobenius(3, 4) == 3  # in GF(2^4), a^(2^4) == a
-        True
-    """
-```
-
-<a name="kickmix.GF2Field.from_galois"></a>
-```python
-# kickmix.GF2Field.from_galois
-
-# (in class kickmix.GF2Field)
-@staticmethod
-def from_galois(
-    galois_field: Any,
-) -> km.GF2Field:
-    """Creates a `km.GF2Field` from a `galois.GF(2**m)` field class.
-
-    Args:
-        galois_field: A binary field class created by `galois.GF(2**m)`.
-
-    Examples:
-        >>> import kickmix as km
-        >>> import galois  # doctest: +SKIP
-        >>> GF = galois.GF(2**8, irreducible_poly=0x11B)  # doctest: +SKIP
-        >>> field = km.GF2Field.from_galois(GF)  # doctest: +SKIP
-        >>> field  # doctest: +SKIP
-        km.GF2Field(8, modulus=0x11B)
-        >>> field.primitive_element == int(GF.primitive_element)  # doctest: +SKIP
         True
     """
 ```

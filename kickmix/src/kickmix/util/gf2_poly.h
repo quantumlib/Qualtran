@@ -131,7 +131,9 @@ struct GF2Poly {
     /// Returns a hex representation, e.g. "0x11B".
     std::string str() const;
     /// Returns an algebraic polynomial representation, e.g. "x^8 + x^4 + x^3 + x + 1".
-    std::string algebraic_str() const;
+    /// If the polynomial has more than `max_terms` non-zero terms (for `max_terms >= 6`), only the
+    /// highest 4 and lowest 2 terms are shown, separated by "...".
+    std::string algebraic_str(size_t max_terms = SIZE_MAX) const;
 };
 
 std::ostream &operator<<(std::ostream &out, const GF2Poly &value);

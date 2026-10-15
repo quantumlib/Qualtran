@@ -342,6 +342,10 @@ TEST(gf2_poly, from_str_and_algebraic_str) {
     ASSERT_EQ(GF2Poly::from_str(p100.algebraic_str()), p100);
 
     ASSERT_THROW({ GF2Poly::from_str(""); }, std::invalid_argument);
+    ASSERT_THROW({ GF2Poly::from_str("0x"); }, std::invalid_argument);
+    ASSERT_THROW({ GF2Poly::from_str("0b"); }, std::invalid_argument);
+    ASSERT_THROW({ GF2Poly::from_str("0x_"); }, std::invalid_argument);
+    ASSERT_THROW({ GF2Poly::from_str("0b_"); }, std::invalid_argument);
     ASSERT_THROW({ GF2Poly::from_str("x^4 + "); }, std::invalid_argument);
     ASSERT_THROW({ GF2Poly::from_str("+ x^4"); }, std::invalid_argument);
     ASSERT_THROW({ GF2Poly::from_str("x^"); }, std::invalid_argument);
