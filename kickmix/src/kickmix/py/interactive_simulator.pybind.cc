@@ -118,30 +118,55 @@ PyInteractiveSimulator::PyInteractiveSimulator(
     set_debug_print(std::move(init_debug_print));
 }
 
+static pybind11::array_t<bool> b256_prefix_to_np_bool_1d(const b256 &word, size_t count) {
+    pybind11::array_t<bool> arr(count);
+    bool *ptr = arr.mutable_data();
+    for (size_t k = 0; k < count; k++) {
+        ptr[k] = word.bit(k);
+    }
+    return arr;
+}
+
 void PyInteractiveSimulator::set_debug_print(pybind11::object value) {
-    bool ignore = false;
-    std::function<void(std::string_view)> handler = nullptr;
     if (pybind11::isinstance<pybind11::bool_>(value)) {
-        ignore = !pybind11::cast<bool>(value);
+        bool enabled = pybind11::cast<bool>(value);
+        with_sims([enabled](auto &sims) {
+            for (auto &sim : sims) {
+                if (enabled) {
+                    sim.set_debug_print_to_stderr();
+                } else {
+                    sim.debug_print_handler = [](QubitOrBitOrBool, const b256 &, BitOrBool, const b256 &) {
+                    };
+                }
+            }
+        });
     } else if (PyCallable_Check(value.ptr())) {
-        handler = [value](std::string_view s) {
-            value(pybind11::str(s.data(), s.size()));
-        };
-    } else if (pybind11::hasattr(value, "write")) {
-        handler = [value](std::string_view s) {
-            value.attr("write")(pybind11::str(s.data(), s.size()));
-        };
+        with_sims([&](auto &sims) {
+            for (size_t sim_idx = 0; sim_idx < sims.size(); sim_idx++) {
+                size_t chunk_size = std::min(batch_size - sim_idx * PY_SIM_WORD_BITS, PY_SIM_WORD_BITS);
+                sims[sim_idx].debug_print_handler =
+                    [value, chunk_size](
+                        QubitOrBitOrBool target, const b256 &target_val, BitOrBool cond_bit, const b256 &cond_val) {
+                        pybind11::object py_target = pybind11::none();
+                        if (target.is_qubit()) {
+                            py_target = pybind11::cast(QubitId(target.untagged_id()));
+                        } else if (target.is_bit()) {
+                            py_target = pybind11::cast(BitId(target.untagged_id()));
+                        }
+                        pybind11::object py_cond = pybind11::none();
+                        if (cond_bit.is_bit()) {
+                            py_cond = pybind11::cast(BitId(cond_bit.untagged_id()));
+                        }
+                        auto py_target_vals = b256_prefix_to_np_bool_1d(target_val, chunk_size);
+                        auto py_cond_vals = b256_prefix_to_np_bool_1d(cond_val, chunk_size);
+                        value(py_target, py_target_vals, py_cond, py_cond_vals);
+                    };
+            }
+        });
     } else {
-        throw pybind11::type_error(
-            "Expected debug_print to be a bool, a callable taking a str, or an object with a write(str) method.");
+        throw pybind11::type_error("Expected debug_print to be a bool or a callable.");
     }
     debug_print_target = std::move(value);
-    with_sims([&](auto &sims) {
-        for (auto &sim : sims) {
-            sim.ignore_debug_print_operations = ignore;
-            sim.debug_print_handler = handler;
-        }
-    });
 }
 
 void PyInteractiveSimulator::clear_operation_statistics() {
@@ -744,7 +769,7 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
         pybind11::arg("debug_print") = pybind11::bool_(true),
         pybind11::arg("counting_operations") = false,
         clean_doc_string(R"DOC(
-            @signature def __init__(self, batch_size: int, *, debug_print: bool | Callable[[str], Any] | io.TextIOBase = True, counting_operations: bool = False):
+            @signature def __init__(self, batch_size: int, *, debug_print: bool | Callable[[km.q | km.b | None, np.ndarray, km.b | None, np.ndarray], None] = True, counting_operations: bool = False):
             Initializes an interactive simulator with the given batch size.
 
             Args:
@@ -753,10 +778,11 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
                 debug_print: Controls how `DEBUG_PRINT` instructions behave.
                     - `True` (default): writes `DEBUG_PRINT` output to stderr.
                     - `False`: suppresses `DEBUG_PRINT` instructions.
-                    - `Callable[[str], Any]`: calls `debug_print(text)` for each
-                      emitted `DEBUG_PRINT` text fragment.
-                    - `io.TextIOBase` (or any object with `.write(str)`): writes
-                      each emitted `DEBUG_PRINT` text fragment to the stream.
+                    - A callable: invokes
+                      `debug_print(target, target_vals, cond, cond_vals)` with
+                      the target (`km.q`, `km.b`, or `None`), its boolean shot
+                      values, the condition bit (`km.b` or `None`), and the
+                      active condition's boolean shot values.
                 counting_operations: If `True`, tracks per-shot operation
                     statistics during `do(...)` that can be queried with
                     `operation_statistics()`. Enabling this option updates
@@ -809,25 +835,32 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
             self.set_debug_print(std::move(value));
         },
         clean_doc_string(R"DOC(
-            @signature def debug_print(self) -> bool | Callable[[str], Any] | io.TextIOBase:
+            @signature def debug_print(self) -> bool | Callable[[km.q | km.b | None, np.ndarray, km.b | None, np.ndarray], None]:
             Controls how `DEBUG_PRINT` instructions are handled during `do(...)`.
 
-            May be set to `True` (stderr), `False` (ignore), a callable taking
-            `str`, or an object with a `.write(str)` method (such as
-            `io.StringIO()`).
+            Can be set to `True` (stderr), `False` (ignore), or a callback
+            `Callable[[km.q | km.b | None, np.ndarray, km.b | None, np.ndarray], None]`
+            receiving `(target, target_vals, condition, condition_vals)`.
 
             Examples:
-                >>> import io
                 >>> import kickmix as km
-                >>> buf = io.StringIO()
-                >>> sim = km.Simulator(batch_size=4, debug_print=buf)
+                >>> events = []
+                >>> sim = km.Simulator(
+                ...     batch_size=4,
+                ...     debug_print=lambda t, tv, c, cv: events.append(
+                ...         (t, tv.tolist(), c, cv.tolist())
+                ...     ),
+                ... )
+                >>> sim.write_across_shots(km.b(0), 0b0101)
                 >>> sim.do(km.Circuit('''
                 ...     X q0
-                ...     DEBUG_PRINT q0
+                ...     DEBUG_PRINT q0 if b0
                 ...     DEBUG_PRINT
                 ... '''))
-                >>> buf.getvalue().strip()
-                '1 (phase=0.0π)'
+                >>> events[0]
+                (q(0), [True, True, True, True], b(0), [True, False, True, False])
+                >>> events[1]
+                (None, [False, False, False, False], None, [True, True, True, True])
         )DOC")
             .data());
 

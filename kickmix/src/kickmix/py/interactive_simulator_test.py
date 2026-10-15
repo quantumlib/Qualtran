@@ -15,9 +15,7 @@
 from __future__ import annotations
 
 import fractions
-import io
 import random
-from typing import Any
 
 import numpy as np
 import pytest
@@ -461,20 +459,45 @@ def test_debug_print(capfd: pytest.CaptureFixture[str]):
     captured = capfd.readouterr()
     assert captured.err == ""
 
-    chunks: list[str] = []
-    sim.debug_print = chunks.append
-    assert sim.debug_print == chunks.append
-    sim.do(c)
-    assert "".join(chunks).startswith("11 (phase=")
-    assert capfd.readouterr().err == ""
+    recorded: list[tuple[km.q | km.b | None, list[bool], km.b | None, list[bool]]] = []
 
-    buf = io.StringIO()
-    sim_stream = km.Simulator(batch_size=300, debug_print=buf)
-    assert sim_stream.debug_print is buf
-    sim_stream.do(c)
-    # Two internal 256-shot SIMD engines emit shot-0 debug prints across 300 shots.
-    assert buf.getvalue().count("11 (phase=") == 2
+    def handler(
+        target: km.q | km.b | None,
+        target_vals: np.ndarray,
+        cond: km.b | None,
+        cond_vals: np.ndarray,
+    ) -> None:
+        assert target_vals.dtype == np.bool_
+        assert cond_vals.dtype == np.bool_
+        recorded.append((target, target_vals.tolist(), cond, cond_vals.tolist()))
+
+    sim.clear_for_shot()
+    sim.write_across_shots(km.q(2), 0b1010)
+    sim.write_across_shots(km.b(0), 0b0101)
+    sim.write_across_shots(km.b(1), 0b0011)
+    sim.debug_print = handler
+    assert sim.debug_print is handler
+    sim.do(km.Circuit("""
+        DEBUG_PRINT q2
+        DEBUG_PRINT b1 if b0
+        PUSH_CONDITION if b1
+        DEBUG_PRINT if b0
+        POP_CONDITION
+    """))
     assert capfd.readouterr().err == ""
+    assert recorded == [
+        (km.q(2), [False, True, False, True], None, [True, True, True, True]),
+        (km.b(1), [True, True, False, False], km.b(0), [True, False, True, False]),
+        (None, [False, False, False, False], km.b(0), [True, False, False, False]),
+    ]
+
+    chunk_shapes: list[tuple[km.q | km.b | None, tuple[int, ...], tuple[int, ...]]] = []
+    sim_chunked = km.Simulator(
+        batch_size=300,
+        debug_print=lambda t, tv, c, cv: chunk_shapes.append((t, tv.shape, cv.shape)),
+    )
+    sim_chunked.do(km.Circuit("DEBUG_PRINT q0"))
+    assert chunk_shapes == [(km.q(0), (256,), (256,)), (km.q(0), (44,), (44,))]
 
     sim_quiet = km.Simulator(batch_size=300, debug_print=False)
     assert sim_quiet.debug_print is False

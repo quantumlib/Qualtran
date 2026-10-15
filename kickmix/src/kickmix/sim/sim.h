@@ -79,8 +79,9 @@ struct Sim {
     std::array<uint64_t, 64> transpose_buffer;
     std::vector<FixedPrecisionAngle128> angles;
     std::vector<RegisterData> registers;
-    bool ignore_debug_print_operations = false;
-    std::function<void(std::string_view)> debug_print_handler = nullptr;
+    std::function<void(QubitOrBitOrBool target, const TWord &target_val, BitOrBool cond_bit, const TWord &cond_val)>
+        debug_print_handler = [](QubitOrBitOrBool, const TWord &, BitOrBool, const TWord &) {
+        };
 
     // shot_index -> register_index -> word_index
     std::array<std::vector<FixedWidthInt>, BATCH_SIZE> register_buffers;
@@ -89,12 +90,18 @@ struct Sim {
     std::conditional_t<count_shots, std::array<PopCounter<TWord>, 256>, EmptyCounters<TWord>> new_op_counters{};
     std::conditional_t<count_shots, std::array<PopCounter<TWord>, 129>, EmptyCounters<TWord>> z_pow_level_counters{};
 
-    inline void emit_debug_print(std::string_view text) const {
-        if (debug_print_handler) {
-            debug_print_handler(text);
-        } else {
-            std::cerr << text;
-        }
+    void set_debug_print_to_stderr() {
+        debug_print_handler = [this](
+                                  QubitOrBitOrBool target, const TWord &target_val, BitOrBool, const TWord &cond_val) {
+            if (!cond_val.bit(0)) {
+                return;
+            }
+            if (target.is_bool()) {
+                std::cerr << " (phase=" << read_shot_phase(0) << ")\n";
+            } else {
+                std::cerr << (target_val.bit(0) ? '1' : '0');
+            }
+        };
     }
 
     inline std::span<TWord> qubit_span() {
@@ -304,6 +311,7 @@ struct Sim {
             auto kind = circuit.op_types[k];
 
             TWord cond = current_base_condition;
+            BitOrBool cond_bit = true;
             switch (kind) {
                 case OpType::CCX_IF:
                     cond &= bits[*data_bit_cond++];
@@ -423,43 +431,42 @@ struct Sim {
                     break;
 
                 case OpType::DEBUG_PRINT_C_IF:
-                    cond &= bits[*data_bit_cond++];
+                    cond_bit = BitId(*data_bit_cond++);
+                    cond &= bits[cond_bit.untagged_id()];
                 case OpType::DEBUG_PRINT_C: {
                     auto b = *data_bit_targ++;
-                    if (cond.bit(0) && !ignore_debug_print_operations) {
-                        emit_debug_print(bits[b].bit(0) ? "1" : "0");
-                    }
+                    debug_print_handler(BitId(b), bits[b], cond_bit, cond);
                     break;
                 }
                 case OpType::DEBUG_PRINT_Q_IF:
-                    cond &= bits[*data_bit_cond++];
+                    cond_bit = BitId(*data_bit_cond++);
+                    cond &= bits[cond_bit.untagged_id()];
                 case OpType::DEBUG_PRINT_Q: {
                     auto q = *data_q0++;
-                    if (cond.bit(0) && !ignore_debug_print_operations) {
-                        emit_debug_print(qubits[q].bit(0) ? "1" : "0");
-                    }
+                    debug_print_handler(QubitId(q), qubits[q], cond_bit, cond);
                     break;
                 }
                 case OpType::DEBUG_PRINT_EMPTY_IF:
-                    cond &= bits[*data_bit_cond++];
+                    cond_bit = BitId(*data_bit_cond++);
+                    cond &= bits[cond_bit.untagged_id()];
                 case OpType::DEBUG_PRINT_EMPTY:
-                    if (cond.bit(0) && !ignore_debug_print_operations) {
-                        std::stringstream ss;
-                        ss << " (phase=" << read_shot_phase(0) << ")\n";
-                        emit_debug_print(ss.str());
-                    }
+                    debug_print_handler(false, TWord{}, cond_bit, cond);
                     break;
 
                 case OpType::PUSH_CONDITION:
                     current_base_condition &= bits[*data_bit_cond++];
                     condition_stack.push_back(current_base_condition);
-                    cond = ~TWord{};
+                    if constexpr (count_shots) {
+                        cond = ~TWord{};
+                    }
                     break;
 
                 case OpType::POP_CONDITION:
                     condition_stack.pop_back();
                     current_base_condition = condition_stack.empty() ? ~TWord{} : condition_stack.back();
-                    cond = ~TWord{};
+                    if constexpr (count_shots) {
+                        cond = ~TWord{};
+                    }
                     break;
 
                 default: {
@@ -468,6 +475,8 @@ struct Sim {
                     throw std::invalid_argument(ss.str());
                 }
             }
+            // Counted after the switch because `*_IF` cases refine `cond &= bits[*data_bit_cond++]`,
+            // while `PUSH_CONDITION` / `POP_CONDITION` unconditionally set `cond = ~TWord{}`.
             if constexpr (count_shots) {
                 new_op_counters[(uint8_t)kind].masked_increments(cond);
             }

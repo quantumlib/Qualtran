@@ -3409,7 +3409,7 @@ def __init__(
     self,
     batch_size: int,
     *,
-    debug_print: bool | Callable[[str], Any] | io.TextIOBase = True,
+    debug_print: bool | Callable[[km.q | km.b | None, np.ndarray, km.b | None, np.ndarray], None] = True,
     counting_operations: bool = False,
 ):
     """Initializes an interactive simulator with the given batch size.
@@ -3420,10 +3420,11 @@ def __init__(
         debug_print: Controls how `DEBUG_PRINT` instructions behave.
             - `True` (default): writes `DEBUG_PRINT` output to stderr.
             - `False`: suppresses `DEBUG_PRINT` instructions.
-            - `Callable[[str], Any]`: calls `debug_print(text)` for each
-              emitted `DEBUG_PRINT` text fragment.
-            - `io.TextIOBase` (or any object with `.write(str)`): writes
-              each emitted `DEBUG_PRINT` text fragment to the stream.
+            - A callable: invokes
+              `debug_print(target, target_vals, cond, cond_vals)` with
+              the target (`km.q`, `km.b`, or `None`), its boolean shot
+              values, the condition bit (`km.b` or `None`), and the
+              active condition's boolean shot values.
         counting_operations: If `True`, tracks per-shot operation
             statistics during `do(...)` that can be queried with
             `operation_statistics()`. Enabling this option updates
@@ -3529,28 +3530,35 @@ def counting_operations(
 @property
 def debug_print(
     self,
-) -> bool | Callable[[str], Any] | io.TextIOBase:
+) -> bool | Callable[[km.q | km.b | None, np.ndarray, km.b | None, np.ndarray], None]:
     """Controls how `DEBUG_PRINT` instructions are handled during `do(...)`.
 
-    May be set to `True` (stderr), `False` (ignore), a callable taking
-    `str`, or an object with a `.write(str)` method (such as
-    `io.StringIO()`).
+    Can be set to `True` (stderr), `False` (ignore), or a callback
+    `Callable[[km.q | km.b | None, np.ndarray, km.b | None, np.ndarray], None]`
+    receiving `(target, target_vals, condition, condition_vals)`.
 
     Examples:
-        >>> import io
         >>> import kickmix as km
-        >>> buf = io.StringIO()
-        >>> sim = km.Simulator(batch_size=4, debug_print=buf)
+        >>> events = []
+        >>> sim = km.Simulator(
+        ...     batch_size=4,
+        ...     debug_print=lambda t, tv, c, cv: events.append(
+        ...         (t, tv.tolist(), c, cv.tolist())
+        ...     ),
+        ... )
+        >>> sim.write_across_shots(km.b(0), 0b0101)
         >>> sim.do(km.Circuit('''
         ...     X q0
-        ...     DEBUG_PRINT q0
+        ...     DEBUG_PRINT q0 if b0
         ...     DEBUG_PRINT
         ... '''))
-        >>> buf.getvalue().strip()
-        '1 (phase=0.0π)'
+        >>> events[0]
+        (q(0), [True, True, True, True], b(0), [True, False, True, False])
+        >>> events[1]
+        (None, [False, False, False, False], None, [True, True, True, True])
     """
 @debug_print.setter
-def debug_print(self, value: bool | Callable[[str], Any] | io.TextIOBase):
+def debug_print(self, value: bool | Callable[[km.q | km.b | None, np.ndarray, km.b | None, np.ndarray], None]):
     pass
 ```
 

@@ -260,6 +260,7 @@ TEST(sim, z_pow_if) {
 
 TEST(sim, debug_print_q_and_b) {
     Sim<b64, false> sim(INDEPENDENT_TEST_RNG());
+    sim.set_debug_print_to_stderr();
     Circuit circuit(R"CIRCUIT(
         X q2
         BIT_STORE1 b1
@@ -273,9 +274,29 @@ TEST(sim, debug_print_q_and_b) {
     std::string output = testing::internal::GetCapturedStderr();
     EXPECT_EQ(output, "11");
 
-    sim.ignore_debug_print_operations = true;
+    sim.debug_print_handler = [](QubitOrBitOrBool, const b64 &, BitOrBool, const b64 &) {
+    };
     testing::internal::CaptureStderr();
     sim.apply(circuit);
     output = testing::internal::GetCapturedStderr();
     EXPECT_EQ(output, "");
+
+    std::vector<std::pair<QubitOrBitOrBool, BitOrBool>> observed;
+    sim.debug_print_handler = [&](QubitOrBitOrBool target, const b64 &, BitOrBool cond_bit, const b64 &) {
+        observed.emplace_back(target, cond_bit);
+    };
+    Circuit circuit_cond(R"CIRCUIT(
+        DEBUG_PRINT q2
+        DEBUG_PRINT b1 if b0
+        DEBUG_PRINT
+    )CIRCUIT");
+    sim.configure_for(circuit_cond);
+    sim.apply(circuit_cond);
+    ASSERT_EQ(observed.size(), 3);
+    EXPECT_EQ(observed[0].first, QubitId(2));
+    EXPECT_EQ(observed[0].second, BitOrBool(true));
+    EXPECT_EQ(observed[1].first, BitId(1));
+    EXPECT_EQ(observed[1].second, BitId(0));
+    EXPECT_EQ(observed[2].first, QubitOrBitOrBool(false));
+    EXPECT_EQ(observed[2].second, BitOrBool(true));
 }
