@@ -29,6 +29,7 @@ size_t kickmix::compute_reaction_depth(size_t num_qubits, size_t num_bits, std::
         switch (op.kind) {
             case OpType::NEG:
             case OpType::NEG_IF:
+            case OpType::INFO_TAG:
             case OpType::DEBUG_PRINT_EMPTY:
             case OpType::DEBUG_PRINT_EMPTY_IF:
             case OpType::DEBUG_PRINT_C:

@@ -26,16 +26,20 @@ void kickmix_py::register_circuit_builder_mark_class(pybind11::module &m) {
         .def(
             "__enter__",
             [](PyCircuitBuilderMark &self) -> PyCircuitBuilderMark & {
-                self.py_builder->builder.marks.push_back(
-                    kickmix::Mark{true, self.name, self.py_builder->builder.mut.op_types.size()});
+                std::stringstream ss;
+                ss << "@enter:";
+                ss << self.name;
+                self.py_builder->builder.info_tag(ss.str());
                 return self;
             })
         .def(
             "__exit__",
             [](PyCircuitBuilderMark &self, const pybind11::object &, const pybind11::object &, const pybind11::object &)
                 -> bool {
-                self.py_builder->builder.marks.push_back(
-                    kickmix::Mark{false, self.name, self.py_builder->builder.mut.op_types.size()});
+                std::stringstream ss;
+                ss << "@exit:";
+                ss << self.name;
+                self.py_builder->builder.info_tag(ss.str());
                 return false;
             })
         .def("__repr__", [](const PyCircuitBuilderMark &self) -> std::string {
@@ -56,6 +60,10 @@ void broadcast_cz_struct(PyCircuitBuilder &self, const stride_span_z &c1, const 
 void append_z_obj(PyCircuitBuilder &self, pybind11::object target_obj) {
     QubitOrBitOrBool t = obj_to_qubit_or_bit_or_bool(target_obj, "target");
     self.builder.z(t);
+}
+
+static void info_tag(PyCircuitBuilder &self, std::string_view text) {
+    self.builder.info_tag(text);
 }
 
 static void z_pow_obj(PyCircuitBuilder &self, const pybind11::object &target_obj, const pybind11::object &angle_obj) {
@@ -409,44 +417,6 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         )DOC");
 
     c_circuit_builder.def(
-        "flame_chart_svg",
-        [](PyCircuitBuilder &self) -> std::string {
-            std::stringstream ss;
-            self.builder.write_analysis_svg_to(ss, 100);
-            return ss.str();
-        },
-        clean_doc_string(R"DOC(
-            @signature def flame_chart_svg(self) -> str:
-            Returns a flame chart of CCX+CCZ and qubit utilization of the
-            circuit being built.
-
-            Use `with builder.mark('name'):` to label regions of the circuit in
-            the flame chart.
-
-            Returns:
-                An SVG string containing the flame chart.
-
-            Examples:
-                >>> import pathlib
-                >>> import tempfile
-                >>> import kickmix as km
-                >>> builder = km.CircuitBuilder()
-                >>> address = builder.create_quantum_register(4, name='address')
-                >>> total = builder.create_quantum_register(8, name='total')
-                >>> table = [k * k for k in range(16)]
-                >>> with builder.mark('iadd_lookup'):
-                ...     buf = builder.alloc_qubits(len(total))
-                ...     builder.init_lookup(table=table, address=address, target=buf)
-                ...     builder.iadd(buf, target=total)
-                ...     builder.del_lookup(table=table, address=address, target=buf)
-                ...     builder.free(buf)
-                >>> with tempfile.TemporaryDirectory() as d:
-                ...     with open(pathlib.Path(d) / 'flame_chart.svg', 'w') as f:
-                ...         print(builder.flame_chart_svg(), file=f)
-        )DOC")
-            .data());
-
-    c_circuit_builder.def(
         "mark",
         [](PyCircuitBuilder &self, std::string_view name) -> PyCircuitBuilderMark {
             return PyCircuitBuilderMark{&self, *self.mark_names.emplace(name).first};
@@ -455,15 +425,11 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::keep_alive<0, 1>(),
         clean_doc_string(R"DOC(
             @signature def mark(self, name: str) -> Any:
-            Returns a context manager that labels a region of the circuit for
-            `builder.flame_chart_svg()`.
+            Returns a context manager that emits @enter/@exit INFO_TAG instructions.
 
-            `m = builder.mark('name')` does not modify the circuit by itself.
-            When you enter `with m:`, the builder records start and end markers
-            around the operations inside that block. You can reuse `m` across
-            multiple `with m:` blocks. If you enter `m` N times at the same
-            nesting depth, `builder.flame_chart_svg()` groups those runs as
-            `'name (xN)'`.
+            These INFO_TAG instructions are intended as debug information about entering
+            and exiting subroutines. For example, they are used by
+            `km.Circuit.flame_chart_svg()`.
 
             Args:
                 name: Label shown for the block in `builder.flame_chart_svg()`.
@@ -489,9 +455,10 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 >>> with builder.mark('accumulate_tables'):
                 ...     iadd_lookup([3 * k for k in range(16)], address, total)
                 ...     iadd_lookup([k * k for k in range(16)], address, total)
+                >>> circuit = builder.finish_circuit()
                 >>> with tempfile.TemporaryDirectory() as d:
                 ...     with open(pathlib.Path(d) / 'flame_chart.svg', 'w') as f:
-                ...         print(builder.flame_chart_svg(), file=f)
+                ...         print(circuit.flame_chart_svg(), file=f)
         )DOC")
             .data());
 
@@ -1021,18 +988,204 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         "left_rotate",
         &append_left_rotate_obj,
         pybind11::arg("target"),
+        pybind11::arg("shift") = 1,
         pybind11::kw_only(),
         pybind11::arg("control") = true,
         R"DOC(
+            @signature def left_rotate(self, target: km.array | Sequence[km.q], shift: int | km.array | Sequence[km.q | km.b | bool] = 1, *, control: km.q | km.b | bool = True) -> None:
+            Left rotates the given qubits, cyclically permuting them.
+
+            A left rotation is a permutation that moves the value of the qubit target[k]
+            into the qubit target[(k + shift) % len(target)].
+
+            Args:
+                target: The qubits to permute.
+                shift: Defaults to 1. A little-endian value specifying how much to
+                    left-rotate the target qubits.
+                control: Defaults to True. Determines if the left rotation actually occurs.
+
+            Examples:
+                >>> import kickmix as km
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(8, name='target')
+                >>> builder.left_rotate(target)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]-SWAP-------------------------------
+                               |
+                q1: -target[1]-|----SWAP-----------SWAP-----------
+                               |    |              |
+                q2: -target[2]-|----|----SWAP------|----SWAP------
+                               |    |    |         |    |
+                q3: -target[3]-|----|----|----SWAP-|----|----SWAP-
+                               |    |    |    |    |    |    |
+                q4: -target[4]-|----|----|----SWAP-|----|----|----
+                               |    |    |         |    |    |
+                q5: -target[5]-|----|----SWAP------|----|----SWAP-
+                               |    |              |    |
+                q6: -target[6]-|----SWAP-----------|----SWAP------
+                               |                   |
+                q7: -target[7]-SWAP----------------SWAP-----------
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(8, name='target')
+                >>> builder.left_rotate(target, 3)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]-SWAP-----------SWAP-----------
+                               |              |
+                q1: -target[1]-|----SWAP------|--------------
+                               |    |         |
+                q2: -target[2]-|----|----SWAP-SWAP-----------
+                               |    |    |
+                q3: -target[3]-|----|----|----SWAP-SWAP------
+                               |    |    |    |    |
+                q4: -target[4]-|----|----|----SWAP-|----SWAP-
+                               |    |    |         |    |
+                q5: -target[5]-|----|----SWAP------|----|----
+                               |    |              |    |
+                q6: -target[6]-|----SWAP-----------|----SWAP-
+                               |                   |
+                q7: -target[7]-SWAP----------------SWAP------
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(4, name='target')
+                >>> control = builder.create_quantum_register(1, name='control')[0]
+                >>> builder.left_rotate(target, 2, control=control)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]--SWAP------SWAP------
+                                |         |
+                q1: -target[1]--|----SWAP-SWAP------
+                                |    |    |
+                q2: -target[2]--|----SWAP-|----SWAP-
+                                |    |    |    |
+                q3: -target[3]--SWAP-|----|----SWAP-
+                                |    |    |    |
+                q4: -control[0]-@----@----@----@----
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(6, name='target')
+                >>> shift = builder.create_quantum_register(3, name='shift')
+                >>> builder.left_rotate(target, shift)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]-SWAP-------------SWAP----------SWAP--------SWAP------
+                               |                |             |           |
+                q1: -target[1]-SWAP-------------|-------------|----SWAP---|---------
+                               |                |             |    |      |
+                q2: -target[2]-|----SWAP--------SWAP----------|----|------SWAP------
+                               |    |           |             |    |      |
+                q3: -target[3]-|----|----SWAP---|----SWAP-----|----SWAP---|----SWAP-
+                               |    |    |      |    |        |    |      |    |
+                q4: -target[4]-|----|----SWAP---|----|--------SWAP-|------|----|----
+                               |    |    |      |    |        |    |      |    |
+                q5: -target[5]-|----SWAP-|------|----SWAP-----|----|------|----SWAP-
+                               |    |    |      |    |        |    |      |    |
+                q6: -shift[0]--@----@----@----@-|----|----@---|----|------|----|----
+                                              | |    |    |   |    |      |    |
+                q7: -shift[1]-----------------X-@----@----X-@-|----|----@-|----|----
+                                                            | |    |    | |    |
+                q8: -shift[2]-------------------------------X-@----@----X-@----@----
         )DOC");
 
     c_circuit_builder.def(
         "right_rotate",
         &append_right_rotate_obj,
         pybind11::arg("target"),
+        pybind11::arg("shift") = 1,
         pybind11::kw_only(),
         pybind11::arg("control") = true,
         R"DOC(
+            @signature def right_rotate(self, target: km.array | Sequence[km.q], shift: int | km.array | Sequence[km.q | km.b | bool] = 1, *, control: km.q | km.b | bool = True) -> None:
+            Right rotates the given qubits, cyclically permuting them.
+
+            A right rotation is a permutation that moves the value of the qubit target[k]
+            into the qubit target[(k - shift) % len(target)].
+
+            Args:
+                target: The qubits to permute.
+                shift: Defaults to 1. A little-endian value specifying how much to
+                    right-rotate the target qubits.
+                control: Defaults to True. Determines if the right rotation actually occurs.
+
+            Examples:
+                >>> import kickmix as km
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(8, name='target')
+                >>> builder.right_rotate(target)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]-SWAP----------------SWAP-----------
+                               |                   |
+                q1: -target[1]-|----SWAP-----------|----SWAP------
+                               |    |              |    |
+                q2: -target[2]-|----|----SWAP------|----|----SWAP-
+                               |    |    |         |    |    |
+                q3: -target[3]-|----|----|----SWAP-|----|----|----
+                               |    |    |    |    |    |    |
+                q4: -target[4]-|----|----|----SWAP-|----|----SWAP-
+                               |    |    |         |    |
+                q5: -target[5]-|----|----SWAP------|----SWAP------
+                               |    |              |
+                q6: -target[6]-|----SWAP-----------SWAP-----------
+                               |
+                q7: -target[7]-SWAP-------------------------------
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(8, name='target')
+                >>> builder.right_rotate(target, 3)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]-SWAP----------------SWAP------
+                               |                   |
+                q1: -target[1]-|----SWAP-----------|----SWAP-
+                               |    |              |    |
+                q2: -target[2]-|----|----SWAP------|----|----
+                               |    |    |         |    |
+                q3: -target[3]-|----|----|----SWAP-|----SWAP-
+                               |    |    |    |    |
+                q4: -target[4]-|----|----|----SWAP-SWAP------
+                               |    |    |
+                q5: -target[5]-|----|----SWAP-----------SWAP-
+                               |    |                   |
+                q6: -target[6]-|----SWAP----------------|----
+                               |                        |
+                q7: -target[7]-SWAP---------------------SWAP-
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(4, name='target')
+                >>> control = builder.create_quantum_register(1, name='control')[0]
+                >>> builder.right_rotate(target, 2, control=control)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]--SWAP------SWAP------
+                                |         |
+                q1: -target[1]--|----SWAP-SWAP------
+                                |    |    |
+                q2: -target[2]--|----SWAP-|----SWAP-
+                                |    |    |    |
+                q3: -target[3]--SWAP-|----|----SWAP-
+                                |    |    |    |
+                q4: -control[0]-@----@----@----@----
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(6, name='target')
+                >>> shift = builder.create_quantum_register(3, name='shift')
+                >>> builder.right_rotate(target, shift)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]-SWAP-------------SWAP----------SWAP--------SWAP------
+                               |                |             |           |
+                q1: -target[1]-|----SWAP--------|----SWAP-----|-----------|----SWAP-
+                               |    |           |    |        |           |    |
+                q2: -target[2]-|----|----SWAP---|----|--------SWAP--------|----|----
+                               |    |    |      |    |        |           |    |
+                q3: -target[3]-|----|----SWAP---|----SWAP-----|----SWAP---|----SWAP-
+                               |    |    |      |    |        |    |      |    |
+                q4: -target[4]-|----SWAP-|------SWAP-|--------|----|------SWAP-|----
+                               |    |    |      |    |        |    |      |    |
+                q5: -target[5]-SWAP-|----|------|----|--------|----SWAP---|----|----
+                               |    |    |      |    |        |    |      |    |
+                q6: -shift[0]--@----@----@----@-|----|----@---|----|------|----|----
+                                              | |    |    |   |    |      |    |
+                q7: -shift[1]-----------------X-@----@----X-@-|----|----@-|----|----
+                                                            | |    |    | |    |
+                q8: -shift[2]-------------------------------X-@----@----X-@----@----
         )DOC");
 
     c_circuit_builder.def(
@@ -1100,11 +1253,13 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                     REGISTER r1 "lhs"
                     APPEND_TO_REGISTER q2 r2
                     REGISTER r2 "rhs"
+                    INFO_TAG "@enter:flip_if_lt"
                     CX q2 q1
                     CCX q1 q2 q0
                     X q1
                     X q1
                     CX q2 q1
+                    INFO_TAG "@exit:flip_if_lt"
                 ''')
         )DOC");
 
@@ -1331,9 +1486,13 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                     APPEND_TO_REGISTER q2 r1
                     APPEND_TO_REGISTER q3 r1
                     REGISTER r1 "offset"
+                    INFO_TAG "@enter:gf_iadd"
                     CX q2 q0
                     CX q3 q1
+                    INFO_TAG "@exit:gf_iadd"
+                    INFO_TAG "@enter:gf_iadd"
                     X q0
+                    INFO_TAG "@exit:gf_iadd"
                 ''')
         )DOC")
             .data());
@@ -2031,6 +2190,33 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 5: 1
                 6: 0
                 7: 1
+        )DOC")
+            .data());
+
+    c_circuit_builder.def(
+        "info_tag",
+        &info_tag,
+        pybind11::arg("text"),
+        clean_doc_string(R"DOC(
+            @signature def info_tag(self, text: str) -> None:
+            Appends an INFO_TAG instruction into the circuit.
+
+            INFO_TAG instructions have no effect on simulations, but can be used to make
+            debug information available. For example, the start of a  subroutine can be
+            hinted with `INFO_TAG "@enter:subroutine_name"` and its end can be indicated
+            with `INFO_TAG "@exit:subroutine_name"`.
+
+            Args:
+                text: The content of the INFO_TAG instruction.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.info_tag("test")
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    INFO_TAG "test"
+                ''')
         )DOC")
             .data());
 }

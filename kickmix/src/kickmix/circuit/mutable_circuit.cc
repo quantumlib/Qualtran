@@ -16,10 +16,14 @@ struct OpData {
 };
 
 static constexpr uint8_t name_hash(std::string_view name) {
+    // The constants in this method are totally arbitrary. There are three goals the method must meet:
+    // 1. Very efficient to evaluate.
+    // 2. Result in a small range (currently < 64).
+    // 3. Different value for every defined operation name.
     uint8_t result = name.size();
     if (name.size() > 0) {
-        result += name.back() * 133;
-        result ^= name[0] * 22;
+        result += name.back() * 3;
+        result ^= name[0] * 24;
     }
     return result & 127;
 }
@@ -64,6 +68,7 @@ static std::array<OpData, 128> compute_op_data() {
     define("BIT_STORE1", OpType::BIT_STORE1, true, true);
     define("PUSH_CONDITION", OpType::PUSH_CONDITION, false, true);
     define("POP_CONDITION", OpType::POP_CONDITION, true, false);
+    define("INFO_TAG", OpType::INFO_TAG, true, false);
     define("REGISTER", (OpType)0xFF, true, false);
     define("APPEND_TO_REGISTER", (OpType)0xFF, true, false);
     define("DEBUG_PRINT", (OpType)0xFF, true, true);
@@ -127,18 +132,7 @@ static uint32_t read_register_id(const char *&c, const char *end, std::string_vi
     return try_parse_uint32_t_below_max(word.substr(1), error, UINT32_MAX);
 }
 
-static std::string read_register_name(const char *&c, const char *end, std::string_view *error) {
-    while (c != end && (*c == ' ' || *c == '\t')) {
-        c++;
-    }
-    if (c == end) {
-        return "";
-    }
-    if (*c != '"') {
-        throw std::invalid_argument("Expected register name to be unspecified or start with \".");
-    }
-    c++;
-
+static std::string read_quoted_string_body(const char *&c, const char *end, std::string_view *error) {
     std::string name;
     while (c != end && *c != '"') {
         if (*c == '\\') {
@@ -174,6 +168,34 @@ static std::string read_register_name(const char *&c, const char *end, std::stri
     c++;
 
     return name;
+}
+
+static std::string read_register_name(const char *&c, const char *end, std::string_view *error) {
+    while (c != end && (*c == ' ' || *c == '\t')) {
+        c++;
+    }
+    if (c == end) {
+        return "";
+    }
+    if (*c != '"') {
+        throw std::invalid_argument("Expected register name to be unspecified or start with \".");
+    }
+    c++;
+
+    return read_quoted_string_body(c, end, error);
+}
+
+static std::string read_info_tag(const char *&c, const char *end, std::string_view *error) {
+    while (c != end && (*c == ' ' || *c == '\t')) {
+        c++;
+    }
+    if (c == end || *c != '"') {
+        *error = "expected_quoted_string";
+        return "";
+    }
+    c++;
+
+    return read_quoted_string_body(c, end, error);
 }
 
 static BitId read_bit_id(const char *&c, const char *end, std::string_view *error) {
@@ -350,6 +372,8 @@ void MutableCircuit::append_from_kmx_line(std::string_view kmx_line) {
         return;
     }
     bool has_angle = data.op_type == OpType::Z_POW || data.op_type == OpType::Z_POW_IF;
+    bool has_info_tag = data.op_type == OpType::INFO_TAG;
+    std::string info_tag_storage;
 
     Op op{
         .kind = data.op_type,
@@ -375,6 +399,9 @@ void MutableCircuit::append_from_kmx_line(std::string_view kmx_line) {
     }
     if (has_angle) {
         op.angle = read_angle(c, end);
+    }
+    if (has_info_tag) {
+        info_tag_storage = read_info_tag(c, end, &error);
     }
     op.c_condition = try_read_cond(c, end, &error);
     if (!op.c_condition.is_bit() && !data.allows_no_condition) {
@@ -411,6 +438,10 @@ void MutableCircuit::append_from_kmx_line(std::string_view kmx_line) {
     }
     if (has_angle) {
         angles.push_back(op.angle);
+    }
+    if (has_info_tag) {
+        info_tag_chars.push_back_many(std::span<const char>{info_tag_storage.data(), info_tag_storage.size()});
+        info_tag_end_offsets.push_back(info_tag_chars.size());
     }
     if (op.kind & OP_HAS_COND) {
         bc.push_back(op.c_condition.tagged_id);
@@ -529,6 +560,8 @@ Circuit MutableCircuit::to_validated_circuit() const {
     result.num_c_ops = bc.size();
     result.num_b_ops = b0.size();
     result.num_angle_ops = angles.size();
+    result.num_info_tags = info_tag_end_offsets.size();
+    result.num_info_tag_chars = info_tag_chars.size();
 
     // Copy qubit and bit data into contiguous memory blocks.
     result.op_types = aligned_alloc_32<kickmix::OpType>(op_types.size());
@@ -541,6 +574,8 @@ Circuit MutableCircuit::to_validated_circuit() const {
     result.bc = aligned_alloc_32<uint32_t>(bc.size());
     result.b0 = aligned_alloc_32<uint32_t>(b0.size());
     result.angles = aligned_alloc_32<FixedPrecisionAngle128>(angles.size());
+    result.info_tag_end_offsets = aligned_alloc_32<uint64_t>(info_tag_end_offsets.size());
+    result.info_tag_chars = aligned_alloc_32<char>(info_tag_chars.size());
     op_types.memcpy_into(result.op_types);
     qqq0.memcpy_into(result.qqq0);
     qqq1.memcpy_into(result.qqq1);
@@ -551,6 +586,8 @@ Circuit MutableCircuit::to_validated_circuit() const {
     bc.memcpy_into(result.bc);
     b0.memcpy_into(result.b0);
     angles.memcpy_into(result.angles);
+    info_tag_end_offsets.memcpy_into(result.info_tag_end_offsets);
+    info_tag_chars.memcpy_into(result.info_tag_chars);
 
     // Delete tags.
     for (size_t k = 0; k < result.num_qqq_ops; k++) {
@@ -590,6 +627,14 @@ void MutableCircuit::clear() {
     bc.clear();
     b0.clear();
     angles.clear();
+    info_tag_end_offsets.clear();
+    info_tag_chars.clear();
+}
+
+void MutableCircuit::append_info_tag(std::string_view text) {
+    op_types.push_back(OpType::INFO_TAG);
+    info_tag_chars.push_back_many(std::span<const char>{text.data(), text.size()});
+    info_tag_end_offsets.push_back(info_tag_chars.size());
 }
 
 void MutableCircuit::append(const Circuit &other) {
@@ -603,6 +648,14 @@ void MutableCircuit::append(const Circuit &other) {
     bc.push_back_many({other.bc, other.num_c_ops});
     b0.push_back_many({other.b0, other.num_b_ops});
     angles.push_back_many({other.angles, other.num_angle_ops});
+    if (other.num_info_tags > 0) {
+        uint64_t base_offset = info_tag_chars.size();
+        uint64_t *out_offsets = info_tag_end_offsets.grab_writeable(other.num_info_tags);
+        for (size_t k = 0; k < other.num_info_tags; k++) {
+            out_offsets[k] = other.info_tag_end_offsets[k] + base_offset;
+        }
+    }
+    info_tag_chars.push_back_many({other.info_tag_chars, other.num_info_tag_chars});
 }
 
 void MutableCircuit::append(const MutableCircuit &other) {
@@ -616,6 +669,16 @@ void MutableCircuit::append(const MutableCircuit &other) {
     bc.push_back_many(other.bc);
     b0.push_back_many(other.b0);
     angles.push_back_many(other.angles);
+    size_t n_tags = other.info_tag_end_offsets.size();
+    if (n_tags > 0) {
+        uint64_t base_offset = info_tag_chars.size();
+        uint64_t *out_offsets = info_tag_end_offsets.grab_writeable(n_tags);
+        other.info_tag_end_offsets.memcpy_into(out_offsets);
+        for (size_t k = 0; k < n_tags; k++) {
+            out_offsets[k] += base_offset;
+        }
+    }
+    info_tag_chars.push_back_many(other.info_tag_chars);
 }
 void MutableCircuit::append_reversed(const MutableCircuit &other) {
     op_types.push_back_many_reversed(other.op_types);
@@ -628,4 +691,27 @@ void MutableCircuit::append_reversed(const MutableCircuit &other) {
     bc.push_back_many_reversed(other.bc);
     b0.push_back_many_reversed(other.b0);
     angles.push_back_many_reversed(other.angles);
+    size_t n_tags = other.info_tag_end_offsets.size();
+    if (n_tags > 0) {
+        size_t n_chars = other.info_tag_chars.size();
+        std::vector<uint64_t> other_offsets(n_tags);
+        other.info_tag_end_offsets.memcpy_into(other_offsets.data());
+        std::vector<char> other_chars(n_chars);
+        other.info_tag_chars.memcpy_into(other_chars.data());
+
+        uint64_t cur_offset = info_tag_chars.size();
+        uint64_t *out_offsets = info_tag_end_offsets.grab_writeable(n_tags);
+        char *out_chars = n_chars > 0 ? info_tag_chars.grab_writeable(n_chars) : nullptr;
+        for (size_t i = n_tags; i--;) {
+            uint64_t start = i == 0 ? 0 : other_offsets[i - 1];
+            uint64_t end = other_offsets[i];
+            uint64_t len = end - start;
+            if (len > 0) {
+                memcpy(out_chars, other_chars.data() + start, len);
+                out_chars += len;
+            }
+            cur_offset += len;
+            *out_offsets++ = cur_offset;
+        }
+    }
 }

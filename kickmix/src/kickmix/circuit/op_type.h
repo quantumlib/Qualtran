@@ -33,6 +33,9 @@ enum class OpType : uint8_t {
     NEG = 0x0,                // Flip global phase.
     POP_CONDITION = 0x1,      // Unconditionally removes a condition from the condition stack. Operations other than
                               // PUSH_CONDITION/POP_CONDITION only occur when the condition stack is satisfied.
+    INFO_TAG = 0x6,           // Specifies arbitrary text information. No effect on circuit behavior, but can be used
+                              // by tools analyzing the circuit as hints (e.g. `INFO_TAG "@enter:adder"` and
+                              // `INFO_TAG "@exit:adder"` indicating the location of an adder operation).
     DEBUG_PRINT_EMPTY = 0x7,  // Asks simulator to print unspecified debugging information.
 
     BIT_STORE0 = 0x0 | OP_HAS_1B,     // Stores 0 into a bit.
@@ -105,7 +108,7 @@ inline uint8_t operator&(OpType t, uint8_t other) {
 }
 
 extern std::array<std::string_view, 256> OP_TYPE_NAME_TABLE;
-extern std::array<OpType, 38> OP_TYPE_TABLE;
+extern std::array<OpType, 39> OP_TYPE_TABLE;
 
 }  // namespace kickmix
 

@@ -756,17 +756,27 @@ TEST(CircuitBuilder, cswap) {
     }
 }
 
-TEST(CircuitBuilder, write_analysis_svg_to_every_gate) {
+TEST(CircuitBuilder, raii_mark_block_entry) {
     CircuitBuilder builder;
     {
-        auto mark = builder.raii_mark_block_entry("every <gate & op>");
-        builder.mut.append(circuit_with_every_operation());
+        auto m1 = builder.raii_mark_block_entry("outer");
+        builder.x(QubitId{0});
+        {
+            auto m2 = builder.raii_mark_block_entry("inner_empty");
+        }
+        {
+            auto m3 = builder.raii_mark_block_entry("inner");
+            builder.cx(QubitId{0}, QubitId{1});
+        }
     }
-    std::stringstream ss;
-    builder.write_analysis_svg_to(ss, 10);
-    std::string svg = ss.str();
-    ASSERT_TRUE(!svg.empty());
-    ASSERT_EQ(svg.find("entire circuit"), std::string::npos);
-    ASSERT_EQ(svg.find("<gate & op>"), std::string::npos);
-    ASSERT_NE(svg.find(">every &lt;gate &amp; op&gt;</text>"), std::string::npos);
+    ASSERT_EQ(builder.finish_circuit(), Circuit(R"CIRCUIT(
+            INFO_TAG "@enter:outer"
+            X q0
+            INFO_TAG "@enter:inner_empty"
+            INFO_TAG "@exit:inner_empty"
+            INFO_TAG "@enter:inner"
+            CX q0 q1
+            INFO_TAG "@exit:inner"
+            INFO_TAG "@exit:outer"
+        )CIRCUIT"));
 }

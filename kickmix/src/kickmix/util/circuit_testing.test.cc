@@ -106,7 +106,14 @@ Circuit kickmix::circuit_with_every_operation() {
         APPEND_TO_REGISTER q0 r0
         APPEND_TO_REGISTER b0 r0
         REGISTER r1 "test\r\n\B\Q\P"
+
         DEBUG_PRINT
+        DEBUG_PRINT q0
+        DEBUG_PRINT b0
+        DEBUG_PRINT if b1
+        DEBUG_PRINT q0 if b1
+        DEBUG_PRINT b0 if b1
+        INFO_TAG "test"
 
         X q0
         X q1 if b0

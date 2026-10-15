@@ -55,8 +55,7 @@ void kickmix_py::broadcast_cswap_obj(
     const pybind11::object &control_obj,
     const pybind11::object &target1_obj,
     const pybind11::object &target2_obj) {
-    BroadcastResolver<3> resolver(
-        {control_obj, target1_obj, target2_obj}, "cswap", {"control", "target1", "target2"});
+    BroadcastResolver<3> resolver({control_obj, target1_obj, target2_obj}, "cswap", {"control", "target1", "target2"});
     stride_span_z c = resolver.results_xz[0].span.checked_cast_to_qubit_or_bit_or_bool("control");
     stride_span<const QubitId> t1 = resolver.results_xz[1].span.checked_cast_to_qubit_ids("target1");
     stride_span<const QubitId> t2 = resolver.results_xz[2].span.checked_cast_to_qubit_ids("target2");

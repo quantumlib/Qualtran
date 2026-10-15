@@ -444,6 +444,22 @@ TEST(mutable_circuit, parse_each_operation) {
                 .c_condition = BitId{7},
             },
         }));
+
+    {
+        MutableCircuit c;
+        c.append_from_kmx_text("INFO_TAG \"hello\"\nINFO_TAG \"\"");
+        Circuit vc = c.to_validated_circuit();
+        std::vector<Op> result;
+        vc.iter_ops([&](Op op) {
+            result.push_back(op);
+        });
+        EXPECT_EQ(
+            result,
+            (std::vector<Op>{
+                Op{.kind = OpType::INFO_TAG, .info_tag = "hello"},
+                Op{.kind = OpType::INFO_TAG, .info_tag = ""},
+            }));
+    }
 }
 
 TEST(mutable_circuit, fail_parsing) {
@@ -488,6 +504,10 @@ TEST(mutable_circuit, fail_parsing) {
     EXPECT_THROW({ c.append_from_kmx_text("NOP q0"); }, std::invalid_argument);
     EXPECT_THROW({ c.append_from_kmx_text("CCX q0 q1"); }, std::invalid_argument);
     EXPECT_THROW({ c.append_from_kmx_text("CCX q0 q1 b2"); }, std::invalid_argument);
+    EXPECT_THROW({ c.append_from_kmx_text("INFO_TAG"); }, std::invalid_argument);
+    EXPECT_THROW({ c.append_from_kmx_text("INFO_TAG q0"); }, std::invalid_argument);
+    EXPECT_THROW({ c.append_from_kmx_text("INFO_TAG \"a\" if b0"); }, std::invalid_argument);
+    EXPECT_THROW({ c.append_from_kmx_text("INFO_TAG \"a\" \"b\""); }, std::invalid_argument);
 }
 
 TEST(mutable_circuit, boundary_values) {
@@ -555,6 +575,21 @@ TEST(mutable_circuit, fail_validation_size_mismatch) {
     c.b0.push_back(1);
     EXPECT_THROW({ c.to_validated_circuit(); }, std::invalid_argument);
     c.bc.push_back(1);
+    EXPECT_NO_THROW({ c.to_validated_circuit(); });
+
+    c.op_types.push_back(OpType::INFO_TAG);
+    EXPECT_THROW({ c.to_validated_circuit(); }, std::invalid_argument);
+    c.info_tag_end_offsets.push_back(2);
+    EXPECT_THROW({ c.to_validated_circuit(); }, std::invalid_argument);
+    c.info_tag_chars.push_back('a');
+    c.info_tag_chars.push_back('b');
+    EXPECT_NO_THROW({ c.to_validated_circuit(); });
+
+    c.op_types.push_back(OpType::INFO_TAG);
+    uint64_t *end_ptr = c.info_tag_end_offsets.grab_writeable(1);
+    *end_ptr = 1;
+    EXPECT_THROW({ c.to_validated_circuit(); }, std::invalid_argument);
+    *end_ptr = 2;
     EXPECT_NO_THROW({ c.to_validated_circuit(); });
 }
 
@@ -690,4 +725,22 @@ TEST(mutable_circuit, append) {
     m4.append_reversed(m3);
     m4.register_data = m3.register_data;
     ASSERT_EQ(m4.to_validated_circuit(), every);
+
+    MutableCircuit multi_tags;
+    multi_tags.append_from_kmx_text(R"CIRCUIT(
+        INFO_TAG "first"
+        X q0
+        INFO_TAG ""
+        CX q0 q1
+        INFO_TAG "third_tag"
+    )CIRCUIT");
+    MutableCircuit mr;
+    mr.append_reversed(multi_tags);
+    ASSERT_EQ(mr.to_validated_circuit(), Circuit(R"CIRCUIT(
+            INFO_TAG "third_tag"
+            CX q0 q1
+            INFO_TAG ""
+            X q0
+            INFO_TAG "first"
+        )CIRCUIT"));
 }
