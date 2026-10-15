@@ -96,6 +96,15 @@ struct alignas(sizeof(uint64_t) * 4) b256_avx {
     inline b256_avx u64_left_shift(size_t shift) const {
         return {_mm256_slli_epi64(v, shift)};
     }
+    inline b256_avx u32_add(const b256_avx &other) const {
+        return {_mm256_add_epi32(v, other.v)};
+    }
+    inline b256_avx u32_right_shift(size_t shift) const {
+        return {_mm256_srli_epi32(v, shift)};
+    }
+    inline b256_avx u32_left_shift(size_t shift) const {
+        return {_mm256_slli_epi32(v, shift)};
+    }
     inline b256_avx u32_eq(const b256_avx &other) const {
         return {_mm256_cmpeq_epi32(v, other.v)};
     }

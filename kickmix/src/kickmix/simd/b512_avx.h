@@ -97,6 +97,15 @@ struct alignas(sizeof(uint64_t) * 8) b512_avx {
     inline b512_avx u64_left_shift(size_t shift) const {
         return {_mm512_slli_epi64(v, shift)};
     }
+    inline b512_avx u32_add(const b512_avx &other) const {
+        return {_mm512_add_epi32(v, other.v)};
+    }
+    inline b512_avx u32_right_shift(size_t shift) const {
+        return {_mm512_srli_epi32(v, shift)};
+    }
+    inline b512_avx u32_left_shift(size_t shift) const {
+        return {_mm512_slli_epi32(v, shift)};
+    }
     inline b512_avx u32_eq(const b512_avx &other) const {
         return {_mm512_movm_epi32(_mm512_cmpeq_epi32_mask(v, other.v))};
     }

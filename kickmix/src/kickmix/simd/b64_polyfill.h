@@ -99,6 +99,34 @@ struct alignas(sizeof(uint64_t) * 1) b64_polyfill {
         }
         return out;
     }
+    inline b64_polyfill u32_add(const b64_polyfill &other) const {
+        const uint32_t *v1 = (const uint32_t *)&v;
+        const uint32_t *v2 = (const uint32_t *)&other.v;
+        b64_polyfill result;
+        uint32_t *v3 = (uint32_t *)&result.v;
+        for (size_t k = 0; k < BIT_SIZE / 32; k++) {
+            v3[k] = v1[k] + v2[k];
+        }
+        return result;
+    }
+    inline b64_polyfill u32_right_shift(size_t shift) const {
+        const uint32_t *v1 = (const uint32_t *)&v;
+        b64_polyfill result;
+        uint32_t *v3 = (uint32_t *)&result.v;
+        for (size_t k = 0; k < BIT_SIZE / 32; k++) {
+            v3[k] = v1[k] >> shift;
+        }
+        return result;
+    }
+    inline b64_polyfill u32_left_shift(size_t shift) const {
+        const uint32_t *v1 = (const uint32_t *)&v;
+        b64_polyfill result;
+        uint32_t *v3 = (uint32_t *)&result.v;
+        for (size_t k = 0; k < BIT_SIZE / 32; k++) {
+            v3[k] = v1[k] << shift;
+        }
+        return result;
+    }
     inline b64_polyfill u32_eq(const b64_polyfill &other) const {
         const uint32_t *v1 = (uint32_t *)&v;
         const uint32_t *v2 = (uint32_t *)&other.v;
