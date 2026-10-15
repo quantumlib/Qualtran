@@ -12,6 +12,33 @@
 
 namespace kickmix {
 
+/// Unchecked arithmetic in GF(2)[x] / (modulus) on already reduced polynomials (degree < `degree`).
+///
+/// This is the arithmetic core of GF2Field, which adds validation and element bookkeeping on top.
+/// It is also used directly on candidate polynomials (by gf2_is_irreducible and the default
+/// polynomial search) where constructing a validated GF2Field would be circular.
+struct GF2PolyMod {
+    size_t degree;
+    GF2Poly modulus;
+    /// Exponents of the non-leading terms of the modulus, descending. Used for fast reduction.
+    std::vector<uint32_t> mod_terms;
+    /// True when the modulus has few enough terms for the sparse reduction to beat the dense one.
+    bool sparse_reduction;
+
+    GF2PolyMod(size_t degree, const GF2Poly &modulus);
+
+    /// Reduces `v` in place. Requires degree(v) < 2 * degree.
+    void ireduce(GF2Poly &v) const;
+    GF2Poly mul(const GF2Poly &a, const GF2Poly &b) const;
+    GF2Poly square(const GF2Poly &a) const;
+    GF2Poly pow(const GF2Poly &a, const FixedWidthInt &exponent) const;
+    /// Ben-Or's irreducibility test on `modulus`. Requires degree >= 2 and modulus.bit(0).
+    bool is_irreducible() const;
+    /// Returns true if the non-zero reduced element `a` has multiplicative order 2^degree - 1
+    /// (assuming `modulus` is irreducible).
+    bool is_primitive_element(const GF2Poly &a) const;
+};
+
 /// Arithmetic in the binary extension field GF(2^m), for 1 <= m <= GF2_MAX_DEGREE.
 ///
 /// Elements are polynomials of degree less than m over GF(2), represented as GF2Poly values whose
@@ -56,11 +83,11 @@ struct GF2Field {
 
     /// The extension degree m of the field. The field has 2^m elements.
     inline size_t degree() const {
-        return degree_;
+        return mod_.degree;
     }
     /// The reduction polynomial, including its x^degree() term.
     inline const GF2Poly &modulus() const {
-        return modulus_;
+        return mod_.modulus;
     }
 
     /// Returns the primitive element (multiplicative generator of GF(2^m)* of order 2^m - 1)
@@ -132,10 +159,11 @@ struct GF2Field {
     /// The caller is responsible for `func` actually being GF(2)-linear.
     template <typename F>
     GF2Matrix linear_map_matrix(F &&func) const {
-        GF2Matrix result(degree_, degree_);
-        for (size_t j = 0; j < degree_; j++) {
+        size_t m = degree();
+        GF2Matrix result(m, m);
+        for (size_t j = 0; j < m; j++) {
             GF2Poly image = func(GF2Poly::monomial(j));
-            for (size_t i = 0; i < degree_; i++) {
+            for (size_t i = 0; i < m; i++) {
                 if (image.bit(i)) {
                     result.set(i, j, true);
                 }
@@ -146,19 +174,15 @@ struct GF2Field {
 
     /// Fields are equal when they have the same degree, modulus and primitive element.
     inline bool operator==(const GF2Field &other) const {
-        return degree_ == other.degree_ && modulus_ == other.modulus_ && primitive_element_ == other.primitive_element_;
+        return degree() == other.degree() && modulus() == other.modulus() &&
+               primitive_element_ == other.primitive_element_;
     }
     inline bool operator!=(const GF2Field &other) const {
         return !(*this == other);
     }
 
    private:
-    size_t degree_;
-    GF2Poly modulus_;
-    /// Exponents of the non-leading terms of the modulus, descending. Used for fast reduction.
-    std::vector<uint32_t> mod_terms_;
-    /// True when the modulus has few enough terms for the sparse reduction to beat the dense one.
-    bool sparse_reduction_ = false;
+    GF2PolyMod mod_;
     /// Primitive element (multiplicative generator of GF(2^m)* of order 2^m - 1).
     GF2Poly primitive_element_;
 };
