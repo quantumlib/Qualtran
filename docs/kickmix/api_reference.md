@@ -712,7 +712,6 @@ def register_data(
 
     Examples:
         >>> import kickmix as km
-        >>> builder = km.CircuitBuilder()
 
         >>> circuit = km.Circuit('''
         ...     REGISTER r0 "test"
@@ -816,28 +815,26 @@ class CircuitBuilder:
         >>> builder = km.CircuitBuilder()
 
         >>> target = builder.create_quantum_register(7, "target")
-        >>> shift = builder.create_quantum_register(3, "shift")
+        >>> shift = builder.create_quantum_register(2, "shift")
         >>> builder.left_rotate(target, shift)
         >>> print(builder.finish_circuit().text_diagram())
-        q0: -target[0]-@-X-@---------@-X-@-----------@---X---@-----@-X-@-----------
-                       | | |         | | |           |   |   |     | | |
-        q1: -target[1]-X-@-X---------|-|-|-----------|-@-|-X-|-@---X-@-X-----------
-                         |           | | |           | | | | | |     |
-        q2: -target[2]---|-@---X---@-X-@-X-----------|-|-|-|-|-|-----|-@---X---@---
-                         | |   |   |   |             | | | | | |     | |   |   |
-        q3: -target[3]---|-|-@-|-X-|-@-|-@---X---@---|-X-|-@-|-X-----|-|-@-|-X-|-@-
-                         | | | | | | | | |   |   |   |   | | |       | | | | | | |
-        q4: -target[4]---|-|-|-|-|-|-|-|-|-@-|-X-|-@-X---@-|-X-------|-|-|-|-|-|-|-
-                         | | | | | | | | | | | | | |     | |         | | | | | | |
-        q5: -target[5]---|-|-X-|-@-|-X-|-|-X-|-@-|-X-----|-|---@-X-@-|-|-X-|-@-|-X-
-                         | |   | | |   | |   | | |       | |   | | | | |   | | |
-        q6: -target[6]---|-X---@-|-X---|-X---@-|-X-------|-|---X-@-X-|-X---@-|-X---
-                         |     | |     |     | |         | |     |   |     | |
-        q7: -shift[0]----@-----@-@---@-|-----|-|---@-----|-|-----|---|-----|-|-----
-                                     | |     | |   |     | |     |   |     | |
-        q8: -shift[1]----------------X-@-----@-@---X-@---|-|-----|-@-|-----|-|-----
-                                                     |   | |     | | |     | |
-        q9: -shift[2]--------------------------------X---@-@-----@-X-@-----@-@-----
+        q0: -target[0]-SWAP-------------SWAP-------------SWAP-----------
+                       |                |                |
+        q1: -target[1]-SWAP-------------|----------------|----SWAP------
+                       |                |                |    |
+        q2: -target[2]-|----SWAP--------SWAP-------------|----|---------
+                       |    |           |                |    |
+        q3: -target[3]-|----|----SWAP---|----SWAP--------|----SWAP------
+                       |    |    |      |    |           |    |
+        q4: -target[4]-|----|----|------|----|----SWAP---SWAP-|---------
+                       |    |    |      |    |    |      |    |
+        q5: -target[5]-|----|----SWAP---|----|----SWAP---|----|----SWAP-
+                       |    |    |      |    |    |      |    |    |
+        q6: -target[6]-|----SWAP-|------|----SWAP-|------|----|----SWAP-
+                       |    |    |      |    |    |      |    |    |
+        q7: -shift[0]--@----@----@----@-|----|----|----@-|----|----|----
+                                      | |    |    |    | |    |    |
+        q8: -shift[1]-----------------X-@----@----@----X-@----@----@----
     """
 ```
 
@@ -884,12 +881,14 @@ def alloc_qubits(
 ) -> kickmix.array:
     """Allocates clean qubits to use as workspace in a circuit.
 
-    Allocated qubits can be deallocated by using the `CircuitBuilder.free`
-    method. Qubits allocated within a `with builder.scope(auto_free=True):`
-    block are deallocated automatically upon execution exiting the block.
+    Allocated qubits can be deallocated with the `km.CircuitBuilder.free` method.
+
+    If the allocation would push `km.CircuitBuilder.num_allocate_qubits` above
+    `km.CircuitBuilder.max_qubits` (which defaults to infinity), it will raise
+    an exception instead of returning a result.
 
     Although the qubits returned by this method *should* be clean, nothing
-    *enforces* this. If a prior user of the allocated qubit failed to
+    *enforces* this. If a prior user of the allocated qubits failed to
     correctly clean some qubits before freeing them, the returned qubits may
     contain their buggy garbage. As such, it's recommended that you reset
     the qubits before using them. Reset gates also have the nice side effect
@@ -902,6 +901,11 @@ def alloc_qubits(
     Returns:
         An array containing the ids of the allocated qubits. Until these ids
         are freed, they won't be returned by any other allocation calls.
+
+    Raises:
+        ValueError:
+            Attempted to allocate more qubits than the maximum (if set).
+            See also `km.CircuitBuilder.num_free_qubits`.
 
     Examples:
         >>> import kickmix as km

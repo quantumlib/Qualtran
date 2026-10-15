@@ -57,7 +57,6 @@ void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
 
             Examples:
                 >>> import kickmix as km
-                >>> builder = km.CircuitBuilder()
 
                 >>> circuit = km.Circuit('''
                 ...     REGISTER r0 "test"
