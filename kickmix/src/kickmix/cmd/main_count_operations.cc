@@ -49,8 +49,10 @@ int kickmix::main_count_operations(int argc, const char **argv) {
 
     magic_total += counts[(uint8_t)OpType::CCX];
     magic_total += counts[(uint8_t)OpType::CCZ];
+    magic_total += counts[(uint8_t)OpType::CSWAP];
     magic_total += counts[(uint8_t)OpType::CCX_IF];
     magic_total += counts[(uint8_t)OpType::CCZ_IF];
+    magic_total += counts[(uint8_t)OpType::CSWAP_IF];
     magic_total += counts[(uint8_t)OpType::Z_POW];
     magic_total += counts[(uint8_t)OpType::Z_POW_IF];
 
@@ -102,6 +104,7 @@ int kickmix::main_count_operations(int argc, const char **argv) {
         {OpType::CX, OpType::CX_IF},
         {OpType::CZ, OpType::CZ_IF},
         {OpType::SWAP, OpType::SWAP_IF},
+        {OpType::CSWAP, OpType::CSWAP_IF},
         {OpType::CCX, OpType::CCX_IF},
         {OpType::CCZ, OpType::CCZ_IF},
         {OpType::Z_POW, OpType::Z_POW_IF},

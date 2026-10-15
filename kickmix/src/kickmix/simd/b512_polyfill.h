@@ -1,6 +1,7 @@
 #ifndef KICKMIX_SIMD_512_H
 #define KICKMIX_SIMD_512_H
 
+#include <array>
 #include <ostream>
 #include <random>
 
@@ -33,6 +34,9 @@ struct alignas(sizeof(uint64_t) * 8) b512_polyfill {
     }
     inline uint32_t u32(size_t k) const {
         return static_cast<uint32_t>(v[k / 2] >> ((k % 2) * 32));
+    }
+    inline static b512_polyfill from_u64s(std::array<uint64_t, 8> vs) {
+        return {vs[0], vs[1], vs[2], vs[3], vs[4], vs[5], vs[6], vs[7]};
     }
     inline static b512_polyfill from_u32_broadcast(uint32_t v) {
         uint64_t v2 = static_cast<uint64_t>(v);

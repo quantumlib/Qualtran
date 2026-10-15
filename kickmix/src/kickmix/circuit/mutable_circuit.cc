@@ -25,12 +25,12 @@ static constexpr uint8_t name_hash(std::string_view name) {
         result += name.back() * 3;
         result ^= name[0] * 24;
     }
-    return result & 63;
+    return result & 127;
 }
 
-static std::array<OpData, 64> compute_op_data() {
-    std::array<OpData, 64> result{};
-    for (size_t k = 0; k < 64; k++) {
+static std::array<OpData, 128> compute_op_data() {
+    std::array<OpData, 128> result{};
+    for (size_t k = 0; k < 128; k++) {
         result[k].name = "";
         result[k].op_type = (OpType)0xFF;
         result[k].exists = false;
@@ -60,6 +60,7 @@ static std::array<OpData, 64> compute_op_data() {
     define("Z_POW", OpType::Z_POW, true, true);
     define("NEG", OpType::NEG, true, true);
     define("SWAP", OpType::SWAP, true, true);
+    define("CSWAP", OpType::CSWAP, true, true);
     define("R", OpType::R, true, true);
     define("HMR", OpType::HMR, true, true);
     define("BIT_INVERT", OpType::BIT_INVERT, true, true);
@@ -74,7 +75,7 @@ static std::array<OpData, 64> compute_op_data() {
     return result;
 }
 
-static std::array<OpData, 64> OP_DATA = compute_op_data();
+static std::array<OpData, 128> OP_DATA = compute_op_data();
 
 static uint32_t try_parse_uint32_t_below_max(std::string_view text, std::string_view *error, uint32_t max) {
     if (text.empty()) {

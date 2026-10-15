@@ -9,6 +9,59 @@ void CircuitPattern::pattern_swap(const spanish<const QubitId> &target1, const s
     pat_qq1.push_back(ptr(target2));
 }
 
+void CircuitPattern::pattern_swap_if(
+    const spanish<const QubitId> &target1,
+    const spanish<const QubitId> &target2,
+    const spanish<const BitId> &condition) {
+    pat_op_types.push_back(OpType::SWAP_IF);
+    pat_qq0.push_back(ptr(target1));
+    pat_qq1.push_back(ptr(target2));
+    pat_bc.push_back(ptr(condition));
+}
+
+void CircuitPattern::pattern_cswap(
+    const spanish<const QubitId> &control,
+    const spanish<const QubitId> &target1,
+    const spanish<const QubitId> &target2) {
+    pat_op_types.push_back(OpType::CSWAP);
+    pat_qqq0.push_back(ptr(control));
+    pat_qqq1.push_back(ptr(target1));
+    pat_qqq2.push_back(ptr(target2));
+}
+
+void CircuitPattern::pattern_cswap_if(
+    const spanish<const QubitId> &control,
+    const spanish<const QubitId> &target1,
+    const spanish<const QubitId> &target2,
+    const spanish<const BitId> &condition) {
+    pat_op_types.push_back(OpType::CSWAP_IF);
+    pat_qqq0.push_back(ptr(control));
+    pat_qqq1.push_back(ptr(target1));
+    pat_qqq2.push_back(ptr(target2));
+    pat_bc.push_back(ptr(condition));
+}
+
+void CircuitPattern::mux_pattern_cswap(
+    const QubitOrTrue &control, const spanish<const QubitId> &target1, const spanish<const QubitId> &target2) {
+    if (control.is_qubit()) {
+        pattern_cswap((QubitId)control, target1, target2);
+    } else {
+        pattern_swap(target1, target2);
+    }
+}
+
+void CircuitPattern::mux_pattern_cswap_if(
+    const QubitOrTrue &control,
+    const spanish<const QubitId> &target1,
+    const spanish<const QubitId> &target2,
+    const spanish<const BitId> &condition) {
+    if (control.is_qubit()) {
+        pattern_cswap_if((QubitId)control, target1, target2, condition);
+    } else {
+        pattern_swap_if(target1, target2, condition);
+    }
+}
+
 void CircuitPattern::pattern_r(const spanish<const QubitId> &target) {
     pat_op_types.push_back(OpType::R);
     pat_q0.push_back(ptr(target));

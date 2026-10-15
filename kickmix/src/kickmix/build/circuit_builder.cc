@@ -357,18 +357,35 @@ RaiiCircuitBuilderPopPushedCondition CircuitBuilder::raii_push_condition(BitId c
     return RaiiCircuitBuilderPopPushedCondition(this);
 }
 
-void CircuitBuilder::cswap(BitId control, QubitId q1, QubitId q2) {
+void CircuitBuilder::cswap(QubitId control, QubitId q1, QubitId q2) {
+    mut.op_types.push_back(OpType::CSWAP);
+    mut.qqq0.push_back(control.tagged_id);
+    mut.qqq1.push_back(q1.tagged_id);
+    mut.qqq2.push_back(q2.tagged_id);
+}
+
+void CircuitBuilder::cswap_if(QubitId control, QubitId q1, QubitId q2, BitId cond) {
+    mut.op_types.push_back(OpType::CSWAP_IF);
+    mut.bc.push_back(cond.tagged_id);
+    mut.qqq0.push_back(control.tagged_id);
+    mut.qqq1.push_back(q1.tagged_id);
+    mut.qqq2.push_back(q2.tagged_id);
+}
+
+void CircuitBuilder::swap_if(QubitId q1, QubitId q2, BitId cond) {
     mut.op_types.push_back(OpType::SWAP_IF);
-    mut.bc.push_back(control.tagged_id);
+    mut.bc.push_back(cond.tagged_id);
     mut.qq0.push_back(q1.tagged_id);
     mut.qq1.push_back(q2.tagged_id);
 }
 
+void CircuitBuilder::cswap(BitId control, QubitId q1, QubitId q2) {
+    swap_if(q1, q2, control);
+}
+
 void CircuitBuilder::cswap(QubitOrBitOrBool control, QubitId q1, QubitId q2) {
     if (control.is_qubit()) {
-        cx(q1, q2);
-        ccx((QubitId)control, q2, q1);
-        cx(q1, q2);
+        cswap((QubitId)control, q1, q2);
     } else if (control.is_bit()) {
         cswap((BitId)control, q1, q2);
     } else if ((bool)control) {
@@ -392,15 +409,14 @@ void CircuitBuilder::broadcast_cswap(
     }
 
     if (control.is_qubit()) {
-        for_each(0, q1.size(), [&](LoopBuilder &loop, iota k) {
-            loop.cx(q1[k], q2[k]);
-            loop.ccx((QubitId)control, q2[k], q1[k]);
-            loop.cx(q1[k], q2[k]);
-        });
+        mut.op_types.push_back_repeat(OpType::CSWAP, q1.size());
+        mut.qqq0.push_back_repeat(control.tagged_id, q1.size());
+        mut.qqq1.push_back_many(q1.cast_data<const uint32_t>());
+        mut.qqq2.push_back_many(q2.cast_data<const uint32_t>());
     } else {
-        for_each(0, q1.size(), [&](LoopBuilder &loop, iota k) {
-            loop.swap(q1[k], q2[k]);
-        });
+        mut.op_types.push_back_repeat(OpType::SWAP, q1.size());
+        mut.qq0.push_back_many(q1.cast_data<const uint32_t>());
+        mut.qq1.push_back_many(q2.cast_data<const uint32_t>());
     }
 }
 

@@ -118,8 +118,10 @@ Controls: mouse wheel to zoom, click and drag to pan.)HTML";
                     break;
                 case OpType::CCX:
                 case OpType::CCZ:
+                case OpType::CSWAP:
                 case OpType::CCX_IF:
                 case OpType::CCZ_IF:
+                case OpType::CSWAP_IF:
                     num_ccp += 1;
                     break;
                 case OpType::Z_POW:
@@ -582,7 +584,8 @@ Controls: mouse wheel to zoom, click and drag to pan.)HTML";
         }
 
         // Draw black control bulbs.
-        if (op.kind != OpType::SWAP && op.kind != OpType::SWAP_IF) {
+        if (op.kind != OpType::SWAP && op.kind != OpType::SWAP_IF && op.kind != OpType::CSWAP &&
+            op.kind != OpType::CSWAP_IF) {
             for (size_t k = 1; k < qs.size(); k++) {
                 if (qs[k].is_qubit()) {
                     svg << "<circle";
@@ -610,6 +613,23 @@ Controls: mouse wheel to zoom, click and drag to pan.)HTML";
                 svg << " stroke=\"black\"";
                 svg << " fill=\"none\"";
                 svg << " />";
+            }
+            if (op.q_control2.is_qubit()) {
+                svg << "<circle";
+                svg << " cx=\"" << x << "\"";
+                svg << " cy=\"" << q2y(op.q_control2) << "\"";
+                svg << " r=\"4\"";
+                svg << " stroke=\"black\"";
+                svg << " fill=\"black\"";
+                svg << " />";
+
+                far_svg << "<circle";
+                far_svg << " cx=\"" << x << "\"";
+                far_svg << " cy=\"" << q2y(op.q_control2) << "\"";
+                far_svg << " r=\"4\"";
+                far_svg << " stroke=\"black\"";
+                far_svg << " fill=\"black\"";
+                far_svg << " />";
             }
         }
 
@@ -740,6 +760,8 @@ Controls: mouse wheel to zoom, click and drag to pan.)HTML";
                     far_svg << " />";
                     break;
                 }
+                case OpType::CSWAP_IF:
+                case OpType::CSWAP:
                 case OpType::SWAP_IF:
                 case OpType::SWAP: {
                     // Draw diagonal swap cross.

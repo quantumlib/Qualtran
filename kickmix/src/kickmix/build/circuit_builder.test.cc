@@ -734,6 +734,28 @@ TEST(CircuitBuilder, parity_cccz) {
     }
 }
 
+TEST(CircuitBuilder, cswap) {
+    for (QubitOrBitOrBool c : qz_cases(0)) {
+        CircuitBuilder builder;
+        QubitId t1{1};
+        QubitId t2{2};
+        builder.cswap(c, t1, t2);
+        builder.z(QubitId{10});
+        builder.z(BitId{10});
+
+        std::map<Key, uint32_t> vals;
+        uint32_t phase = 0;
+        vals[c] = B0;
+        vals[t1] = B1;
+        vals[t2] = B2;
+        apply_to(builder.finish_circuit(), vals, phase);
+        ASSERT_EQ(phase, 0) << c;
+        ASSERT_EQ(vals[t1], (vals[c] & B2) | (~vals[c] & B1)) << c;
+        ASSERT_EQ(vals[t2], (vals[c] & B1) | (~vals[c] & B2)) << c;
+        ASSERT_TRUE(c.is_bool() || vals[c] == B0);
+    }
+}
+
 TEST(CircuitBuilder, raii_mark_block_entry) {
     CircuitBuilder builder;
     {
