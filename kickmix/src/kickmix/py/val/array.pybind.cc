@@ -179,6 +179,14 @@ void kickmix_py::register_qcarray_methods(pybind11::class_<PyArrayXZ> &c_qcarray
             Returns:
                  If the index is an int: the item at that index.
                  If the index is a slice: a view of the array.
+
+            Examples:
+                >>> import kickmix as km
+                >>> arr = km.array([km.q(0), km.q(1), km.q(2)])
+                >>> arr[1]
+                km.q(1)
+                >>> arr[1:]
+                km.array([km.q(1), km.q(2)])
         )DOC")
             .data());
 
@@ -189,6 +197,11 @@ void kickmix_py::register_qcarray_methods(pybind11::class_<PyArrayXZ> &c_qcarray
         },
         clean_doc_string(R"DOC(
             Returns the length of the array.
+
+            Examples:
+                >>> import kickmix as km
+                >>> len(km.array([km.q(0), km.q(1), km.q(2)]))
+                3
         )DOC")
             .data());
 
@@ -202,6 +215,11 @@ void kickmix_py::register_qcarray_methods(pybind11::class_<PyArrayXZ> &c_qcarray
         },
         clean_doc_string(R"DOC(
             Returns the concatenation of two arrays.
+
+            Examples:
+                >>> import kickmix as km
+                >>> km.array([km.q(0)]) + km.array([km.b(1), True])
+                km.array([km.q(0), km.b(1), True])
         )DOC")
             .data());
 

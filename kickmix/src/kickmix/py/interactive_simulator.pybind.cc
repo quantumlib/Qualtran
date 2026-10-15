@@ -402,6 +402,7 @@ void write_across_shots_1d_array(PyInteractiveSimulator &self, QubitOrBit index,
     }
     auto stride = array.strides(0);
     auto in_ptr = array.data(0);
+    self.ensure_big_enough_state_for(index);
     for (size_t k = 0; k < self.batch_size; k++) {
         set_single_bit(self, index, k, *in_ptr);
         in_ptr += stride;
@@ -420,6 +421,9 @@ void write_across_shots_2d_int(
         throw std::invalid_argument(ss.str());
     }
 
+    for (auto q : indices) {
+        self.ensure_big_enough_state_for(q);
+    }
     size_t k = 0;
     for (const auto &item : value_obj) {
         write_across_shots_1d_int(self, indices[k++], pybind11::cast<pybind11::object>(item));
@@ -681,6 +685,14 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
             Args:
                 batch_size: Determines how many simultaneous shots are being tracked by the
                     simulator.
+
+            Examples:
+                >>> import kickmix as km
+                >>> sim = km.Simulator(batch_size=4)
+                >>> sim.batch_size
+                4
+                >>> sim.read_across_shots(km.q(0))
+                array([False, False, False, False])
         )DOC")
             .data());
 
@@ -703,6 +715,28 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
 
             Args:
                 circuit: The circuit with instructions to apply.
+
+            Examples:
+                >>> import kickmix as km
+                >>> import numpy as np
+                >>> sim = km.Simulator(batch_size=4)
+                >>> sim.write_across_shots(km.q(0), np.array([False, True, False, True]))
+                >>> sim.write_across_shots(km.q(1), np.array([False, False, True, True]))
+
+                >>> sim.read_across_shots(km.q(0))
+                array([False,  True, False,  True])
+                >>> sim.read_across_shots(km.q(1))
+                array([False, False,  True,  True])
+
+                >>> sim.do(km.Circuit('''
+                ...     CX q0 q1
+                ...     X q0
+                ... '''))
+
+                >>> sim.read_across_shots(km.q(0))
+                array([ True, False,  True, False])
+                >>> sim.read_across_shots(km.q(1))
+                array([False,  True,  True, False])
         )DOC")
             .data());
 
@@ -840,6 +874,16 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
 
             Returns:
                 The phase flip information.
+
+            Examples:
+                >>> import kickmix as km
+                >>> sim = km.Simulator(batch_size=4)
+                >>> sim.write_across_shots(km.q(0), 0b1010)
+                >>> sim.do(km.Circuit('Z q0'))
+                >>> sim.read_phase_flipped_across_shots()
+                array([False,  True, False,  True])
+                >>> sim.read_phase_flipped_across_shots(out=int)
+                10
          )DOC")
             .data());
 
@@ -910,6 +954,15 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
             Raises:
                 IndexError: The given index isn't a qubit id or bit id.
                 ValueError: The given new_value isn't valid.
+
+            Examples:
+                >>> import kickmix as km
+                >>> sim = km.Simulator(batch_size=4)
+                >>> sim.write_across_shots(km.q(0), 0b1010)
+                >>> sim.read_across_shots(km.q(0))
+                array([False,  True, False,  True])
+                >>> sim.read_across_shots(km.q(0), out=int)
+                10
         )DOC")
             .data());
 

@@ -5,6 +5,7 @@
 #include <ostream>
 
 #include "bit_or_bool.h"
+#include "qubit_or_bit.h"
 #include "qubit_or_true.h"
 
 namespace kickmix {
@@ -26,6 +27,8 @@ struct QubitOrBitOrBool {
     inline QubitOrBitOrBool(QubitId v) : tagged_id(v.tagged_id) {
     }
     inline QubitOrBitOrBool(QubitOrTrue v) : tagged_id(v.tagged_id) {
+    }
+    inline QubitOrBitOrBool(QubitOrBit v) : tagged_id(v.tagged_id) {
     }
     inline QubitOrBitOrBool(BitOrBool v) : tagged_id(v.tagged_id) {
     }

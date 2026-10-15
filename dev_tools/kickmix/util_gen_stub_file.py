@@ -21,6 +21,7 @@ from typing import Any, cast, Iterator, List, Optional, Tuple
 
 keep = {
     "__add__",
+    "__bool__",
     "__ipow__",
     "__radd__",
     "__eq__",
