@@ -18,6 +18,7 @@ static consteval std::array<std::string_view, 256> make_op_type_name_table() {
     table[(uint8_t)OpType::CX] = "CX";
     table[(uint8_t)OpType::CZ] = "CZ";
     table[(uint8_t)OpType::SWAP] = "SWAP";
+    table[(uint8_t)OpType::CSWAP] = "CSWAP";
     table[(uint8_t)OpType::CCX] = "CCX";
     table[(uint8_t)OpType::CCZ] = "CCZ";
     table[(uint8_t)OpType::DEBUG_PRINT_EMPTY] = "DEBUG_PRINT_EMPTY";
@@ -36,6 +37,7 @@ static consteval std::array<std::string_view, 256> make_op_type_name_table() {
     table[(uint8_t)OpType::CX_IF] = "CX_IF";
     table[(uint8_t)OpType::CZ_IF] = "CZ_IF";
     table[(uint8_t)OpType::SWAP_IF] = "SWAP_IF";
+    table[(uint8_t)OpType::CSWAP_IF] = "CSWAP_IF";
     table[(uint8_t)OpType::CCX_IF] = "CCX_IF";
     table[(uint8_t)OpType::CCZ_IF] = "CCZ_IF";
     table[(uint8_t)OpType::DEBUG_PRINT_EMPTY_IF] = "DEBUG_PRINT_EMPTY_IF";
@@ -47,7 +49,7 @@ static consteval std::array<std::string_view, 256> make_op_type_name_table() {
 }
 std::array<std::string_view, 256> kickmix::OP_TYPE_NAME_TABLE = make_op_type_name_table();
 
-std::array<OpType, 36> kickmix::OP_TYPE_TABLE{
+std::array<OpType, 38> kickmix::OP_TYPE_TABLE{
     OpType::NEG,
     OpType::BIT_INVERT,
     OpType::BIT_STORE0,
@@ -59,6 +61,7 @@ std::array<OpType, 36> kickmix::OP_TYPE_TABLE{
     OpType::CX,
     OpType::CZ,
     OpType::SWAP,
+    OpType::CSWAP,
     OpType::CCX,
     OpType::CCZ,
     OpType::Z_POW,
@@ -78,6 +81,7 @@ std::array<OpType, 36> kickmix::OP_TYPE_TABLE{
     OpType::CX_IF,
     OpType::CZ_IF,
     OpType::SWAP_IF,
+    OpType::CSWAP_IF,
     OpType::CCX_IF,
     OpType::CCZ_IF,
     OpType::Z_POW_IF,

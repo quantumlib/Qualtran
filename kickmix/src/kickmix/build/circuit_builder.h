@@ -329,6 +329,9 @@ struct CircuitBuilder {
         const stride_span<const BitId> &targets, bool value, const stride_span<const bool> &controls);
     void broadcast_bit_store(const stride_span<const BitId> &targets, bool value, const stride_span_z &controls);
 
+    void cswap(QubitId control, QubitId q1, QubitId q2);
+    void cswap_if(QubitId control, QubitId q1, QubitId q2, BitId cond);
+    void swap_if(QubitId q1, QubitId q2, BitId cond);
     void cswap(BitId control, QubitId q1, QubitId q2);
     void cswap(QubitOrBitOrBool control, QubitId q1, QubitId q2);
     void broadcast_cswap(QubitOrTrue control, stride_span<const QubitId> q1, stride_span<const QubitId> q2);

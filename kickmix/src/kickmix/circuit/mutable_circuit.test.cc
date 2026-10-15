@@ -212,6 +212,28 @@ TEST(mutable_circuit, parse_each_operation) {
         }}));
 
     EXPECT_EQ(
+        parse_into_vec("CSWAP q3 q11 q13"),
+        (std::vector<Op>{Op{
+            .kind = OpType::CSWAP,
+            .q_control2 = QubitId{3},
+            .q_control1 = QubitId{11},
+            .q_target = QubitId{13},
+            .c_target = {},
+            .c_condition = {},
+        }}));
+
+    EXPECT_EQ(
+        parse_into_vec("CSWAP q3 q11 q13 if b5"),
+        (std::vector<Op>{Op{
+            .kind = OpType::CSWAP_IF,
+            .q_control2 = QubitId{3},
+            .q_control1 = QubitId{11},
+            .q_target = QubitId{13},
+            .c_target = {},
+            .c_condition = BitId{5},
+        }}));
+
+    EXPECT_EQ(
         parse_into_vec("R q2"),
         (std::vector<Op>{Op{
             .kind = OpType::R,
@@ -494,6 +516,9 @@ TEST(mutable_circuit, parse_later_fail_validation) {
     expect_fail_validation("CCZ q0 q0 q1");
     expect_fail_validation("CCZ q1 q0 q0");
     expect_fail_validation("CCZ q0 q1 q0");
+    expect_fail_validation("CSWAP q0 q0 q1");
+    expect_fail_validation("CSWAP q1 q0 q0");
+    expect_fail_validation("CSWAP q0 q1 q0");
 }
 
 TEST(mutable_circuit, fail_validation_size_mismatch) {
@@ -584,6 +609,8 @@ TEST(mutable_circuit, bulk_parse) {
 
         SWAP q13 q14
         SWAP q15 q16 if b20
+        CSWAP q13 q14 q15
+        CSWAP q15 q16 q17 if b20
 
         PUSH_CONDITION if b21
         BIT_STORE1 b23
@@ -597,7 +624,7 @@ TEST(mutable_circuit, bulk_parse) {
 
     std::vector<OpType> ops;
     auto f = c.to_validated_circuit();
-    ASSERT_EQ(f.num_ops, 35);
+    ASSERT_EQ(f.num_ops, 37);
     ASSERT_EQ(f.register_data.size(), 2);
     ASSERT_EQ(f.register_data[0].contents, (std::vector<QubitOrBit>{QubitId{0}, BitId{0}}));
     ASSERT_EQ(f.register_data[1].contents, (std::vector<QubitOrBit>{}));
@@ -629,6 +656,8 @@ TEST(mutable_circuit, bulk_parse) {
     ASSERT_EQ(*e++, OpType::BIT_STORE1_IF);
     ASSERT_EQ(*e++, OpType::SWAP);
     ASSERT_EQ(*e++, OpType::SWAP_IF);
+    ASSERT_EQ(*e++, OpType::CSWAP);
+    ASSERT_EQ(*e++, OpType::CSWAP_IF);
     ASSERT_EQ(*e++, OpType::PUSH_CONDITION);
     ASSERT_EQ(*e++, OpType::BIT_STORE1);
     ASSERT_EQ(*e++, OpType::X);
@@ -637,7 +666,7 @@ TEST(mutable_circuit, bulk_parse) {
     ASSERT_EQ(*e++, OpType::X);
     ASSERT_EQ(*e++, OpType::POP_CONDITION);
     ASSERT_EQ(*e++, OpType::POP_CONDITION);
-    ASSERT_EQ(e - f.op_types, 35);
+    ASSERT_EQ(e - f.op_types, 37);
 }
 
 TEST(mutable_circuit, append) {

@@ -236,9 +236,7 @@ void CircuitBuilder::cleft_rotate(QubitOrTrue control, stride_span<const QubitId
 
     if (control.is_qubit()) {
         for_each_reversed(0, reg.size() - 1, [&](LoopBuilder &loop, iota k) {
-            loop.cx(reg[k], reg[k + 1]);
-            loop.ccx((QubitId)control, reg[k + 1], reg[k]);
-            loop.cx(reg[k], reg[k + 1]);
+            loop.cswap((QubitId)control, reg[k], reg[k + 1]);
         });
     } else {
         for_each_reversed(0, reg.size() - 1, [&](LoopBuilder &loop, iota k) {
@@ -379,9 +377,7 @@ void CircuitBuilder::cright_rotate(QubitOrTrue control, stride_span<const QubitI
 
     if (control.is_qubit()) {
         for_each(0, reg.size() - 1, [&](LoopBuilder &loop, iota k) {
-            loop.cx(reg[k], reg[k + 1]);
-            loop.ccx((QubitId)control, reg[k + 1], reg[k]);
-            loop.cx(reg[k], reg[k + 1]);
+            loop.cswap((QubitId)control, reg[k], reg[k + 1]);
         });
     } else {
         for_each(0, reg.size() - 1, [&](LoopBuilder &loop, iota k) {
@@ -404,18 +400,35 @@ void CircuitBuilder::right_rotate(stride_span<const QubitId> reg) {
     });
 }
 
-void CircuitBuilder::cswap(BitId control, QubitId q1, QubitId q2) {
+void CircuitBuilder::cswap(QubitId control, QubitId q1, QubitId q2) {
+    mut.op_types.push_back(OpType::CSWAP);
+    mut.qqq0.push_back(control.tagged_id);
+    mut.qqq1.push_back(q1.tagged_id);
+    mut.qqq2.push_back(q2.tagged_id);
+}
+
+void CircuitBuilder::cswap_if(QubitId control, QubitId q1, QubitId q2, BitId cond) {
+    mut.op_types.push_back(OpType::CSWAP_IF);
+    mut.bc.push_back(cond.tagged_id);
+    mut.qqq0.push_back(control.tagged_id);
+    mut.qqq1.push_back(q1.tagged_id);
+    mut.qqq2.push_back(q2.tagged_id);
+}
+
+void CircuitBuilder::swap_if(QubitId q1, QubitId q2, BitId cond) {
     mut.op_types.push_back(OpType::SWAP_IF);
-    mut.bc.push_back(control.tagged_id);
+    mut.bc.push_back(cond.tagged_id);
     mut.qq0.push_back(q1.tagged_id);
     mut.qq1.push_back(q2.tagged_id);
 }
 
+void CircuitBuilder::cswap(BitId control, QubitId q1, QubitId q2) {
+    swap_if(q1, q2, control);
+}
+
 void CircuitBuilder::cswap(QubitOrBitOrBool control, QubitId q1, QubitId q2) {
     if (control.is_qubit()) {
-        cx(q1, q2);
-        ccx((QubitId)control, q2, q1);
-        cx(q1, q2);
+        cswap((QubitId)control, q1, q2);
     } else if (control.is_bit()) {
         cswap((BitId)control, q1, q2);
     } else if ((bool)control) {
@@ -440,9 +453,7 @@ void CircuitBuilder::broadcast_cswap(
 
     if (control.is_qubit()) {
         for_each(0, q1.size(), [&](LoopBuilder &loop, iota k) {
-            loop.cx(q1[k], q2[k]);
-            loop.ccx((QubitId)control, q2[k], q1[k]);
-            loop.cx(q1[k], q2[k]);
+            loop.cswap((QubitId)control, q1[k], q2[k]);
         });
     } else {
         for_each(0, q1.size(), [&](LoopBuilder &loop, iota k) {
@@ -1199,8 +1210,10 @@ void CircuitBuilder::write_analysis_svg_to(std::ostream &out, size_t reference_q
             switch (op.kind) {
                 case OpType::CCX:
                 case OpType::CCZ:
+                case OpType::CSWAP:
                 case OpType::CCX_IF:
                 case OpType::CCZ_IF:
+                case OpType::CSWAP_IF:
                     toffoli_count += 1;
                     break;
                 case OpType::Z_POW:

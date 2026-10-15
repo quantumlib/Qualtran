@@ -406,6 +406,16 @@ static std::vector<std::string> generate_text_diagram_lines(const Circuit &circu
                 line.pop_back();
                 line.append("SWAP");
                 break;
+            case OpType::CSWAP:
+            case OpType::CSWAP_IF:
+                filler_chars[q2y(op.q_target)] = '-';
+                filler_chars[q2y(op.q_control1)] = '-';
+                result_lines[q2y(op.q_control2)].back() = '@';
+                result_lines[q2y(op.q_control1)].pop_back();
+                result_lines[q2y(op.q_control1)].append("SWAP");
+                line.pop_back();
+                line.append("SWAP");
+                break;
             case OpType::DEBUG_PRINT_EMPTY:
             case OpType::DEBUG_PRINT_Q:
             case OpType::DEBUG_PRINT_C:

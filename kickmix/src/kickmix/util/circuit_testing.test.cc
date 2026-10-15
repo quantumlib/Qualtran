@@ -136,6 +136,8 @@ Circuit kickmix::circuit_with_every_operation() {
 
         SWAP q13 q14
         SWAP q15 q16 if b20
+        CSWAP q13 q14 q15
+        CSWAP q15 q16 q17 if b20
 
         PUSH_CONDITION if b21
         BIT_STORE1 b23

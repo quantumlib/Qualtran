@@ -570,6 +570,10 @@ void Circuit::write_kmx_to(FILE *file) const {
             case OpType::CCX:
                 fprintf(file, "CCX q%u q%u q%u\n", (unsigned)*cur_qqq0++, (unsigned)*cur_qqq1++, (unsigned)*cur_qqq2++);
                 break;
+            case OpType::CSWAP:
+                fprintf(
+                    file, "CSWAP q%u q%u q%u\n", (unsigned)*cur_qqq0++, (unsigned)*cur_qqq1++, (unsigned)*cur_qqq2++);
+                break;
             case OpType::PUSH_CONDITION:
                 fprintf(file, "PUSH_CONDITION if b%u\n", (unsigned)*cur_bit_cond++);
                 break;
@@ -637,6 +641,15 @@ void Circuit::write_kmx_to(FILE *file) const {
                 fprintf(
                     file,
                     "CCX q%u q%u q%u if b%u\n",
+                    (unsigned)*cur_qqq0++,
+                    (unsigned)*cur_qqq1++,
+                    (unsigned)*cur_qqq2++,
+                    (unsigned)*cur_bit_cond++);
+                break;
+            case OpType::CSWAP_IF:
+                fprintf(
+                    file,
+                    "CSWAP q%u q%u q%u if b%u\n",
                     (unsigned)*cur_qqq0++,
                     (unsigned)*cur_qqq1++,
                     (unsigned)*cur_qqq2++,
@@ -794,6 +807,9 @@ void Circuit::write_kmx_to(std::ostream &out) const {
             case OpType::CCX:
                 out << "CCX q" << *cur_qqq0++ << " q" << *cur_qqq1++ << " q" << *cur_qqq2++;
                 break;
+            case OpType::CSWAP:
+                out << "CSWAP q" << *cur_qqq0++ << " q" << *cur_qqq1++ << " q" << *cur_qqq2++;
+                break;
             case OpType::PUSH_CONDITION:
                 out << "PUSH_CONDITION if b" << *cur_bit_cond++;
                 break;
@@ -849,6 +865,10 @@ void Circuit::write_kmx_to(std::ostream &out) const {
                 break;
             case OpType::CCX_IF:
                 out << "CCX q" << *cur_qqq0++ << " q" << *cur_qqq1++ << " q" << *cur_qqq2++ << " if b"
+                    << *cur_bit_cond++;
+                break;
+            case OpType::CSWAP_IF:
+                out << "CSWAP q" << *cur_qqq0++ << " q" << *cur_qqq1++ << " q" << *cur_qqq2++ << " if b"
                     << *cur_bit_cond++;
                 break;
             default: {
@@ -938,6 +958,22 @@ size_t Circuit::compute_num_bit_targ() const {
     return total;
 }
 
+bool Circuit::compute_has_unknown_ops() const {
+    bool mask[256]{};
+    for (size_t k = 0; k < num_ops; k++) {
+        mask[(uint8_t)op_types[k]] = true;
+    }
+    for (const auto &op : OP_TYPE_TABLE) {
+        mask[(uint8_t)op] = false;
+    }
+    for (auto e : mask) {
+        if (e) {
+            return true;
+        }
+    }
+    return false;
+}
+
 size_t Circuit::compute_num_angles() const {
     size_t total = 0;
     for (size_t k = 0; k < num_ops; k++) {
@@ -1021,6 +1057,11 @@ void Circuit::validate_and_compute_stats() {
     if (num_angle_ops != compute_num_angles()) {
         std::stringstream ss;
         ss << "num_angle_ops=" << num_angle_ops << " != compute_num_angles()=" << compute_num_angles();
+        throw std::invalid_argument(ss.str());
+    }
+    if (compute_has_unknown_ops()) {
+        std::stringstream ss;
+        ss << "The circuit contains unknown operation ids.";
         throw std::invalid_argument(ss.str());
     }
 }

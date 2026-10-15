@@ -126,6 +126,33 @@ size_t kickmix::compute_reaction_depth(size_t num_qubits, size_t num_bits, std::
                 z_bump(op.q_control2.qubit(), z_depth[op.q_target.untagged_id()] + 1);
                 z_bump(op.q_control2.qubit(), x_depth[op.q_control1.untagged_id()] + 1);
                 break;
+            case OpType::CSWAP:
+            case OpType::CSWAP_IF: {
+                size_t dx = std::max(x_depth[op.q_target.untagged_id()], x_depth[op.q_control1.untagged_id()]);
+                size_t dz = std::max(z_depth[op.q_target.untagged_id()], z_depth[op.q_control1.untagged_id()]);
+                size_t dxc = x_depth[op.q_control2.untagged_id()];
+
+                x_bump(op.q_target.qubit(), cond_depth + 1);
+                x_bump(op.q_target.qubit(), dx + 1);
+                x_bump(op.q_target.qubit(), dxc + 1);
+
+                x_bump(op.q_control1.qubit(), cond_depth + 1);
+                x_bump(op.q_control1.qubit(), dx + 1);
+                x_bump(op.q_control1.qubit(), dxc + 1);
+
+                z_bump(op.q_target.qubit(), cond_depth + 1);
+                z_bump(op.q_target.qubit(), dz + 1);
+                z_bump(op.q_target.qubit(), dxc + 1);
+
+                z_bump(op.q_control1.qubit(), cond_depth + 1);
+                z_bump(op.q_control1.qubit(), dz + 1);
+                z_bump(op.q_control1.qubit(), dxc + 1);
+
+                z_bump(op.q_control2.qubit(), cond_depth + 1);
+                z_bump(op.q_control2.qubit(), dx + 1);
+                z_bump(op.q_control2.qubit(), dz + 1);
+                break;
+            }
             case OpType::Z_POW:
             case OpType::Z_POW_IF:
                 if (op.angle.is_multiple_of_180_degrees()) {

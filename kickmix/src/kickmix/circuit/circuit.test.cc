@@ -95,6 +95,19 @@ TEST(circuit, text_diagram_z_pow) {
                         if(b0)
             q1: --------Z^1.5--
     )DIAGRAM");
+    expect_circuit_has_text_diagram(
+        Circuit(R"CIRCUIT(
+            CSWAP q0 q1 q2
+            CSWAP q2 q1 q0 if b1
+        )CIRCUIT"),
+        R"DIAGRAM(
+                      if(b1)
+            q0: -@----SWAP---
+                 |    |
+            q1: -SWAP-SWAP---
+                 |    |
+            q2: -SWAP-@------
+    )DIAGRAM");
 }
 
 TEST(circuit, max_magic) {
@@ -107,11 +120,13 @@ TEST(circuit, max_magic) {
         Circuit(R"CIRCUIT(
             CCX q0 q1 q2
             CCZ q0 q1 q2
+            CSWAP q0 q1 q2
             CCX q0 q1 q2 if b0
             CCZ q0 q1 q2 if b1
+            CSWAP q0 q1 q2 if b2
         )CIRCUIT")
             .max_magic(),
-        4);
+        6);
     ASSERT_EQ(
         Circuit(R"CIRCUIT(
         REGISTER r0
@@ -346,6 +361,29 @@ TEST(circuit, reaction_depth) {
         )CIRCUIT")
             .reaction_depth(),
         1);
+
+    ASSERT_EQ(
+        Circuit(R"CIRCUIT(
+            CSWAP q0 q1 q2
+        )CIRCUIT")
+            .reaction_depth(),
+        1);
+
+    ASSERT_EQ(
+        Circuit(R"CIRCUIT(
+            CSWAP q0 q1 q2
+            CSWAP q0 q3 q4
+        )CIRCUIT")
+            .reaction_depth(),
+        1);
+
+    ASSERT_EQ(
+        Circuit(R"CIRCUIT(
+            CSWAP q0 q1 q2
+            CSWAP q2 q3 q4
+        )CIRCUIT")
+            .reaction_depth(),
+        2);
 }
 
 TEST(circuit, write_to) {
@@ -447,6 +485,12 @@ void expect_circuit_serializes_to_kmb(std::string_view circuit_text, const char 
     if (actual != expected) {
         EXPECT_EQ(actual, expected) << "\n    actual: " << bytestr(actual) << "\n    expect: " << bytestr(expected);
     }
+
+    // Also verify that deserialization preserves the circuit.
+    f = fopen(kmb.path.c_str(), "rb");
+    Circuit deserialized = Circuit::from_kmb_file(f);
+    fclose(f);
+    EXPECT_EQ(circuit, deserialized);
 }
 
 TEST(circuit, kmb_empty) {
@@ -509,6 +553,47 @@ TEST(circuit, kmb_x) {
     )HEX");
 }
 
+TEST(circuit, kmb_parsing_rejects_unknown_operation) {
+    for (const auto &e : OP_TYPE_TABLE) {
+        ASSERT_NE(e, (OpType)0x6) << "Test became stale. Pick an operation id that actually doesn't exist.";
+    }
+    RaiiTempNamedFile kmb;
+    FILE *f = fopen(kmb.path.c_str(), "wb");
+    auto data = bytestr(R"HEX(
+        d7 50 c7 d5 c3 29 d3 26 e3 cc 9f 68 34 f2 b8 bf
+         2  .  .  .  # version
+         0  .  .  .  # num_qubits
+         0  .  .  .  # num_bits
+         0  .  .  .  # num_reg
+         1  .  .  .  .  .  .  .  # num_ops
+         0  .  .  .  .  .  .  .  # num_qqq_ops
+         0  .  .  .  .  .  .  .  # num_qq_ops
+         0  .  .  .  .  .  .  .  # num_q_ops
+         0  .  .  .  .  .  .  .  # num_b_ops
+         0  .  .  .  .  .  .  .  # num_c_ops
+         0  .  .  .  .  .  .  .  # num_angles
+         1  .  .  .  .  .  .  .  1  .  .  .  .  .  .  .  # op types
+         6
+         2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
+         3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
+         4  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq2s
+         5  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qq0s
+         6  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qq1s
+         7  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # q0s
+         8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
+         9  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # bcs
+         A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+    )HEX");
+    fwrite(data.data(), data.size(), 1, f);
+    fclose(f);
+
+    f = fopen(kmb.path.c_str(), "rb");
+    ASSERT_THROW({
+        Circuit::from_kmb_file(f);
+    }, std::invalid_argument);
+    fclose(f);
+}
+
 TEST(circuit, kmb_cx) {
     expect_circuit_serializes_to_kmb(
         R"CIRCUIT(
@@ -563,6 +648,42 @@ TEST(circuit, kmb_ccz_if) {
          0  .  .  .  .  .  .  .  # num_angles
          1  .  .  .  .  .  .  .  1  .  .  .  .  .  .  .  # op types
         b0
+         2  .  .  .  .  .  .  .  4  .  .  .  .  .  .  .  # qqq0s
+         e  .  .  .
+         3  .  .  .  .  .  .  .  4  .  .  .  .  .  .  .  # qqq1s
+        13  .  .  .
+         4  .  .  .  .  .  .  .  4  .  .  .  .  .  .  .  # qqq2s
+        15  .  .  .
+         5  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qq0s
+         6  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qq1s
+         7  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # q0s
+         8  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # b0s
+         9  .  .  .  .  .  .  .  4  .  .  .  .  .  .  .  # bcs
+         5  .  .  .
+         A  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # angles
+    )HEX");
+}
+
+TEST(circuit, kmb_cswap_if) {
+    expect_circuit_serializes_to_kmb(
+        R"CIRCUIT(
+        CSWAP q14 q19 q21 if b5
+    )CIRCUIT",
+        R"HEX(
+        d7 50 c7 d5 c3 29 d3 26 e3 cc 9f 68 34 f2 b8 bf
+         2  .  .  .  # version
+        16  .  .  .  # num_qubits
+         6  .  .  .  # num_bits
+         0  .  .  .  # num_reg
+         1  .  .  .  .  .  .  .  # num_ops
+         1  .  .  .  .  .  .  .  # num_qqq_ops
+         0  .  .  .  .  .  .  .  # num_qq_ops
+         0  .  .  .  .  .  .  .  # num_q_ops
+         0  .  .  .  .  .  .  .  # num_b_ops
+         1  .  .  .  .  .  .  .  # num_c_ops
+         0  .  .  .  .  .  .  .  # num_angles
+         1  .  .  .  .  .  .  .  1  .  .  .  .  .  .  .  # op types
+        b2
          2  .  .  .  .  .  .  .  4  .  .  .  .  .  .  .  # qqq0s
          e  .  .  .
          3  .  .  .  .  .  .  .  4  .  .  .  .  .  .  .  # qqq1s
@@ -1522,4 +1643,22 @@ TEST(circuit, reaction_depth_of_zpow_1_if) {
     EXPECT_EQ(with_z_pow_1_if.reaction_depth(), with_z_if.reaction_depth())
         << "`Z_POW q1 1.0 if b0` and `Z q1 if b0` are physically identical, "
            "but have different reaction_depth()!";
+}
+
+TEST(circuit, compute_has_unknown_ops) {
+    ASSERT_EQ(Circuit().compute_has_unknown_ops(), false);
+    ASSERT_EQ(circuit_with_every_operation().compute_has_unknown_ops(), false);
+
+    Circuit c("NEG");
+    for (size_t k = 0; k < 256; k++) {
+        bool unknown = true;
+        for (auto e : OP_TYPE_TABLE) {
+            if ((uint64_t)e == k) {
+                unknown = false;
+            }
+        }
+        // Intentionally break the circuit op data to test that it gets detected correctly.
+        c.op_types[0] = (OpType)k;
+        ASSERT_EQ(c.compute_has_unknown_ops(), unknown);
+    }
 }

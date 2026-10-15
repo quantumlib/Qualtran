@@ -759,21 +759,21 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("target1"),
         pybind11::arg("target2"),
         R"DOC(
-            @signature def cswap(self, control: q | b | bool, target1: km.array, target2: km.array) -> None:
-            Appends operations to conditionally swap two equal-length registers.
+            @signature def cswap(self, control: bool | b | q | km.array, target1: q | km.array, target2: q | km.array) -> None:
+            Appends controlled-SWAP (Fredkin) gates to the circuit.
 
-            Performs `if control: target1, target2 = target2, target1`, pairing the
-            registers index by index.
+            Performs `if control: target1, target2 = target2, target1`.
+            This method broadcasts over km.array arguments.
 
-            The cost depends on the control. A qubit control expands to a
-            cx/ccx/cx triple per index. A classical bit control pushes a
-            classical condition around plain swaps, costing no Toffolis. A
-            control of True reduces to a plain swap, and False emits nothing.
+            The cost depends on the control. A qubit control emits a CSWAP
+            instruction (costing one Toffoli) per index. A classical bit control
+            emits a classically-conditioned SWAP instruction, costing no Toffolis.
+            A control of True reduces to a plain SWAP, and False emits nothing.
 
             Args:
                 control: Determines if the swap happens.
-                target1: The first register.
-                target2: The second register, which must be the same length as the first.
+                target1: The first qubit or register to swap.
+                target2: The second qubit or register to swap.
 
             Examples:
                 >>> import kickmix as km
@@ -783,15 +783,15 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 >>> y = builder.create_quantum_register(2, name='y')
                 >>> builder.cswap(c, x, y)
                 >>> print(builder.finish_circuit().text_diagram())
-                q0: -c[0]---@-----@---
-                            |     |
-                q1: -x[0]-@-X-@---|---
-                          | | |   |
-                q2: -x[1]-|-|-|-@-X-@-
-                          | | | | | |
-                q3: -y[0]-X-@-X-|-|-|-
-                                | | |
-                q4: -y[1]-------X-@-X-
+                q0: -c[0]-@----@----
+                          |    |
+                q1: -x[0]-SWAP-|----
+                          |    |
+                q2: -x[1]-|----SWAP-
+                          |    |
+                q3: -y[0]-SWAP-|----
+                               |
+                q4: -y[1]------SWAP-
         )DOC");
 
     c_circuit_builder.def(

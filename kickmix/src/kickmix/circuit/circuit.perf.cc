@@ -31,3 +31,43 @@ BENCHMARK(circuit_max_push_condition_depth) {
         std::cerr << "data dependence\n";
     }
 }
+
+BENCHMARK(circuit_from_kmx) {
+    auto path = resolve_testdata_file_path("big_circuit.kmx");
+    FILE *f = fopen(path.c_str(), "rb");
+
+    size_t total = 0;
+    size_t sum = 0;
+    benchmark_go([&]() {
+        fseek(f, 0, SEEK_SET);
+        Circuit c = Circuit::from_kmx_file(f);
+        total = c.num_ops;
+        sum += c.num_ops;
+    })
+        .goal_millis(16)
+        .show_rate("ops", total);
+
+    if (sum == UINT64_MAX) {
+        std::cerr << "data dependence\n";
+    }
+}
+
+BENCHMARK(circuit_from_kmb) {
+    auto path = resolve_testdata_file_path("big_circuit.kmb");
+    FILE *f = fopen(path.c_str(), "rb");
+
+    size_t total = 0;
+    size_t sum = 0;
+    benchmark_go([&]() {
+        fseek(f, 0, SEEK_SET);
+        Circuit c = Circuit::from_kmb_file(f);
+        total = c.num_ops;
+        sum += c.num_ops;
+    })
+        .goal_micros(640)
+        .show_rate("ops", total);
+
+    if (sum == UINT64_MAX) {
+        std::cerr << "data dependence\n";
+    }
+}

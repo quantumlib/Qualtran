@@ -92,6 +92,7 @@ struct Circuit {
     size_t compute_num_bit_cond() const;
     size_t compute_num_bit_targ() const;
     size_t compute_num_angles() const;
+    bool compute_has_unknown_ops() const;
 
     std::string str() const;
     void write_kmx_to(std::ostream &out) const;
