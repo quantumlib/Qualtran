@@ -10,9 +10,9 @@
 #include "kickmix/circuit/circuit.h"
 #include "kickmix/id/qubit_or_bit_or_bool.h"
 #include "kickmix/id/register_id.h"
+#include "kickmix/util/chacha.h"
 #include "kickmix/util/fixed_width_int.h"
 #include "kickmix/util/pop_counter.h"
-#include "kickmix/util/xoshiro_256_plusplus.h"
 
 namespace kickmix {
 
@@ -76,6 +76,7 @@ struct Sim {
     size_t num_qubits;
     size_t num_bits;
     std::mt19937_64 rng;
+    ChaCha8<TWord> chacha_rng;
     std::array<uint64_t, 64> transpose_buffer;
     std::vector<FixedPrecisionAngle128> angles;
     std::vector<RegisterData> registers;
@@ -105,29 +106,23 @@ struct Sim {
     }
 
     inline std::span<TWord> qubit_span() {
-        return {state_block.data() + 5, num_qubits};
+        return {state_block.data() + 1, num_qubits};
     }
     inline std::span<TWord> bit_span() {
-        return {state_block.data() + 5 + num_qubits, num_bits};
+        return {state_block.data() + 1 + num_qubits, num_bits};
     }
     inline TWord &global_phase_ref() {
         return state_block[0];
     }
-    inline std::span<TWord> rng_state_span() {
-        return {&state_block[1], 4};
-    }
 
     inline std::span<const TWord> qubit_span() const {
-        return {state_block.data() + 5, num_qubits};
+        return {state_block.data() + 1, num_qubits};
     }
     inline std::span<const TWord> bit_span() const {
-        return {state_block.data() + 5 + num_qubits, num_bits};
+        return {state_block.data() + 1 + num_qubits, num_bits};
     }
     inline const TWord &global_phase_ref() const {
         return state_block[0];
-    }
-    inline std::span<const TWord> rng_state_span() const {
-        return {&state_block[1], 4};
     }
 
     FixedPrecisionAngle128 read_shot_phase(size_t shot_index) const {
@@ -139,11 +134,8 @@ struct Sim {
     }
 
     explicit Sim(std::mt19937_64 &&rng)
-        : state_block(5), num_qubits(0), num_bits(0), rng(rng), transpose_buffer{}, angles(BATCH_SIZE) {
-        state_block[1].randomize(rng);
-        state_block[2].randomize(rng);
-        state_block[3].randomize(rng);
-        state_block[4].randomize(rng);
+        : state_block(1), num_qubits(0), num_bits(0), rng(rng), chacha_rng{}, transpose_buffer{}, angles(BATCH_SIZE) {
+        chacha_rng.randomize(this->rng);
     }
     Sim(const Sim &sim) = default;
     Sim(Sim &&sim) = default;
@@ -259,13 +251,13 @@ struct Sim {
         std::span<TWord> old_qubits = qubit_span();
         std::vector<TWord> old_state = std::move(state_block);
         state_block = std::vector<TWord>();
-        state_block.resize(min_num_qubits + min_num_bits + 5);
+        state_block.resize(min_num_qubits + min_num_bits + 1);
         size_t old_num_qubits = num_qubits;
         size_t old_num_bits = num_bits;
         num_qubits = min_num_qubits;
         num_bits = min_num_bits;
 
-        memcpy(state_block.data(), old_state.data(), 5 * sizeof(TWord));
+        memcpy(state_block.data(), old_state.data(), 1 * sizeof(TWord));
         if (old_num_bits) {
             memcpy(bit_span().data(), old_bits.data(), old_num_bits * sizeof(TWord));
         }
@@ -286,13 +278,12 @@ struct Sim {
 
         num_qubits = circuit.num_qubits;
         num_bits = circuit.num_bits;
-        state_block.resize(num_qubits + num_bits + 5);
+        state_block.resize(num_qubits + num_bits + 1);
         clear_for_shot();
     }
 
     void apply(const Circuit &circuit) {
-        Xoshiro256PlusPlus<TWord> rng_state;
-        memcpy(&rng_state, rng_state_span().data(), sizeof(rng_state));
+        auto &rng_state = chacha_rng;
         const auto qubits = qubit_span();
         const auto bits = bit_span();
         TWord current_base_condition = condition_stack.empty() ? ~TWord{} : condition_stack.back();
@@ -506,7 +497,6 @@ struct Sim {
         }
 
         global_phase_ref() = phase;
-        memcpy(rng_state_span().data(), &rng_state, sizeof(rng_state));
     }
 
     void clear_operation_statistics() {

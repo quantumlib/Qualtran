@@ -35,7 +35,7 @@ struct PyInteractiveSimulator {
         size_t batch_size,
         pybind11::object debug_print = pybind11::bool_(true),
         bool counting_operations = false,
-        std::optional<uint64_t> seed = std::nullopt);
+        pybind11::object seed = pybind11::none());
     void ensure_big_enough_state_for(size_t num_qubits, size_t num_bits);
     void ensure_big_enough_state_for(kickmix::QubitOrBit val);
 };

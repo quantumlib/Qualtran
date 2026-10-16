@@ -101,6 +101,15 @@ struct alignas(sizeof(uint64_t) * 2) b128_sse {
     inline b128_sse u64_left_shift(size_t shift) const {
         return {_mm_slli_epi64(v, shift)};
     }
+    inline b128_sse u32_add(const b128_sse &other) const {
+        return {_mm_add_epi32(v, other.v)};
+    }
+    inline b128_sse u32_right_shift(size_t shift) const {
+        return {_mm_srli_epi32(v, shift)};
+    }
+    inline b128_sse u32_left_shift(size_t shift) const {
+        return {_mm_slli_epi32(v, shift)};
+    }
     inline b128_sse u32_eq(const b128_sse &other) const {
         return {_mm_cmpeq_epi32(v, other.v)};
     }

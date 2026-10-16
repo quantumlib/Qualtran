@@ -620,15 +620,19 @@ def test_counting_operations_batch_sizes(batch_size: int):
 
 
 def test_simulator_seed():
+    import hashlib
+
     circuit = km.Circuit("""
         X q0
         X q1
         HMR q0 b0
         R q1
     """)
-    sim1 = km.Simulator(batch_size=512, seed=12345)
-    sim2 = km.Simulator(batch_size=512, seed=12345, counting_operations=True)
-    sim3 = km.Simulator(batch_size=512, seed=99999)
+    sha_seed = int(hashlib.sha256(str(circuit).encode()).hexdigest(), 16)
+    sim1 = km.Simulator(batch_size=512, seed=sha_seed)
+    sim2 = km.Simulator(batch_size=512, seed=sha_seed, counting_operations=True)
+    # Differ only in the highest bit (bit 255) to verify all 256 seed bits are used.
+    sim3 = km.Simulator(batch_size=512, seed=sha_seed ^ (1 << 255))
     sim1.do(circuit)
     sim2.do(circuit)
     sim3.do(circuit)
@@ -643,8 +647,21 @@ def test_simulator_seed():
     # Identical seeds produce identical HMR and R outcomes across all chunks.
     assert b0_1 == b0_2
     assert phase_1 == phase_2
-    # Different seeds produce different outcomes.
+    # Different seeds (even differing only in bit 255) produce different outcomes.
     assert b0_1 != b0_3
     assert phase_1 != phase_3
     # Independent 256-shot chunks within the same simulator do not repeat the same 256 bits.
     assert (b0_1 & ((1 << 256) - 1)) != (b0_1 >> 256)
+
+    # Boundary values 0 and 2**256 - 1 are accepted.
+    km.Simulator(batch_size=256, seed=0)
+    km.Simulator(batch_size=256, seed=(1 << 256) - 1)
+
+    with pytest.raises(ValueError, match="not in range"):
+        km.Simulator(batch_size=256, seed=-1)
+    with pytest.raises(ValueError, match="not in range"):
+        km.Simulator(batch_size=256, seed=1 << 256)
+    with pytest.raises(TypeError, match="Expected seed to be an int or None"):
+        km.Simulator(batch_size=256, seed=True)  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="Expected seed to be an int or None"):
+        km.Simulator(batch_size=256, seed="bad")  # type: ignore[arg-type]

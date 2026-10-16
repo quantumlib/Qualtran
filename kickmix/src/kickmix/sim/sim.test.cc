@@ -219,7 +219,7 @@ TEST(sim, safe_read_val_bounds) {
     Sim<b64, false> sim(INDEPENDENT_TEST_RNG());
     sim.num_qubits = 2;
     sim.num_bits = 2;
-    sim.state_block.assign(5 + 4, ~b64{});
+    sim.state_block.assign(1 + 4, ~b64{});
     ASSERT_EQ(sim.safe_read_val(QubitId(0)), ~b64{});
     ASSERT_EQ(sim.safe_read_val(QubitId(1)), ~b64{});
     ASSERT_EQ(sim.safe_read_val(QubitId(2)), b64{});
