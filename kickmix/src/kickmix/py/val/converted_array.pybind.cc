@@ -42,7 +42,7 @@ ConvertedArrayXZ ConvertedArrayXZ::from_obj_expecting_list(
     }
 
     // Treat list-like objects as km.array.
-    if (pybind11::hasattr(obj, "__len__")) {
+    if (pybind11::hasattr(obj, "__len__") && type_ptr != &PyUnicode_Type && type_ptr != &PyBytes_Type) {
         size_t n = pybind11::len(obj);
         QubitOrXZBitOrXZBool *out = aligned_alloc_32<QubitOrXZBitOrXZBool>(n);
         ConvertedArrayXZ result(stride_span_xz(out, 1, n, QXZTypeTag8::MAY_BE_MIXED), out, false);
@@ -125,7 +125,7 @@ ConvertedArrayXZ ConvertedArrayXZ::from_obj(const pybind11::handle &obj, const c
     }
 
     // Treat list-like objects as kmarrays.
-    if (pybind11::hasattr(obj, "__len__")) {
+    if (pybind11::hasattr(obj, "__len__") && type_ptr != &PyUnicode_Type && type_ptr != &PyBytes_Type) {
         size_t n = pybind11::len(obj);
         QubitOrXZBitOrXZBool *out = aligned_alloc_32<QubitOrXZBitOrXZBool>(n);
         ConvertedArrayXZ result(stride_span_xz(out, 1, n, QXZTypeTag8::MAY_BE_MIXED), out, false);

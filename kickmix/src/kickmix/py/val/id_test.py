@@ -86,3 +86,23 @@ def test_xbool():
     assert repr(km.xbool(True)) == 'km.xbool(True)'
     assert eval(repr(km.xbool(False)), {'km': km}, {}) == km.xbool(False)
     assert eval(repr(km.xbool(True)), {'km': km}, {}) == km.xbool(True)
+
+
+def test_rid():
+    r = km.r(5)
+
+    assert r == km.r(5)
+    assert r != km.r(4)
+    assert r != km.q(5)
+    assert r != km.b(5)
+    assert r != object()
+    assert r != "r5"
+    assert hash(r) == hash(km.r(5))
+    assert str(r) == "r5"
+    assert km.r(0) != bool(False)
+    assert km.r(4) < km.r(5)
+    assert not (km.r(5) < km.r(5))
+
+    assert repr(r) == "km.r(5)"
+    assert r.id == 5
+    assert eval(repr(r), {'km': km}, {}) == r

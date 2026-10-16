@@ -73,3 +73,12 @@ def test_builder_broadcast_x_behaves_identically_to_repeated_appends(t: Any):
     reference_circuit = reference_builder.finish_circuit()
 
     assert circuit == reference_circuit
+
+
+def test_builder_x_errors():
+    builder = km.CircuitBuilder()
+    with pytest.raises((TypeError, ValueError)):
+        builder.x(True)
+    with pytest.raises((TypeError, ValueError)):
+        builder.x(km.array([km.q(0), True]))
+    assert builder.finish_circuit() == km.Circuit()

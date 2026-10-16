@@ -19,7 +19,7 @@ int main(int argc, const char **argv) {
             } else if (strcmp(argv[1], "count_operations_sampled") == 0) {
                 return main_count_operations_sampled(argc, argv);
             } else if (strcmp(argv[1], "sample") == 0) {
-                return main_sample(argc - 1, argv + 1);
+                return main_sample(argc, argv);
             } else if (strcmp(argv[1], "spin") == 0) {
                 return main_spin(argc, argv);
             } else if (strcmp(argv[1], "diagram") == 0) {

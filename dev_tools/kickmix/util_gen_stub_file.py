@@ -119,10 +119,10 @@ class DescribedObject:
 
 def splay_signature(sig: str) -> List[str]:
     # Maintain backwards compatibility with python 3.6
-    sig = sig.replace('list[', 'List[')
-    sig = sig.replace('dict[', 'Dict[')
-    sig = sig.replace('tuple[', 'Tuple[')
-    sig = sig.replace('set[', 'Set[')
+    sig = sig.replace('List[', 'list[')
+    sig = sig.replace('Dict[', 'dict[')
+    sig = sig.replace('Tuple[', 'tuple[')
+    sig = sig.replace('Set[', 'set[')
     sig = sig.replace('pathlib._local.Path', 'pathlib.Path')
 
     assert sig.startswith('def')

@@ -7,11 +7,11 @@ These circuits are designed to be efficient to simulate and easy to analyze.
 
 ## Index
 
-- [Version Differences](#Version_Differences)
-- [Encoding](#Encoding)
-- [Syntax](#Syntax)
-- [Semantics](#Semantics)
-- [Examples](#Examples)
+- [Version History](#version-history)
+- [Encoding](#encoding)
+- [Syntax](#syntax)
+- [Semantics](#semantics)
+- [Examples](#examples)
 
 
 ## Version History
@@ -117,9 +117,9 @@ A kickmix circuit file is executed by executing each of its instructions, one by
 
 ### Instruction Types
 
-For a complete list of instructions see the adjacent file [kickmix_instruction_set.md](kickmix_instruction_set.md).
+For a complete list of instructions see the adjacent file [kickmix_instructions.md](kickmix_instructions.md).
 
-Generally speaking, the instructions that can appear can be divided up into three groups:
+Generally speaking, the instructions that can appear can be divided up into four groups:
 
 1. Quantum Operations
 2. Classical Operations
@@ -147,7 +147,7 @@ writing multiple qubits/bits as if they were one single value when performing si
 
 ### State Space
 
-A simulator executing a kickmix circuit is expected to store three things:
+A simulator executing a kickmix circuit is expected to store four things:
 
 1. **The Qubits**.
    The simulator should track a boolean for each qubit index mentioned by the circuit.
@@ -211,7 +211,7 @@ APPEND_TO_REGISTER q6 r0
 APPEND_TO_REGISTER q7 r0
 REGISTER r0 "target"
 
-# Note: qubits q12 thrugh q16 are used as workspace
+# Note: qubits q12 through q16 are used as workspace
 
 # Compute prefix ANDs into q12..q16.
 R q12
