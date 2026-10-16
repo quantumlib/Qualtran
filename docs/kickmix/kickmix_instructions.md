@@ -113,7 +113,7 @@ CCX q0 q1 q2
 # A classically-conditioned CCX:
 # If bit b7 is OFF, no operation is performed.
 # If bit b7 is ON, apply a CCX to qubits q2, q3, q4.
-CX q2 q3 q4 if b7
+CCX q2 q3 q4 if b7
 ```
 
 Arguments:
@@ -285,8 +285,8 @@ NEG if b1
 
 # Prepare a qubit in the 1 state, then clear it with
 # measurement-based uncomputation.
-R 0
-X 0
+R q0
+X q0
 HMR q0 b0
 NEG if b0  # Corrects phase kickback from the HMR.
 ```
@@ -566,14 +566,14 @@ Pushes a bit's value onto the condition stack.
 Basically: the equivalent of `if (condition) {` in C.
 
 Most instructions won't occur unless all values on the condition stack are TRUE.
-There are four exceptions: `PUSH_CONDITION`, `POP_CONDITION`, `REGISTER`, and `APPEND_TO_REGISTER`.
+There are five exceptions: `PUSH_CONDITION`, `POP_CONDITION`, `REGISTER`, `APPEND_TO_REGISTER`, and `INFO_TAG`.
 `POP_CONDITION` has to ignore the condition stack because otherwise it would be impossible
 to clear the stack.
 `PUSH_CONDITION` has to ignore the condition stack because otherwise it would desync
 from `POP_CONDITION`.
-`REGISTER` and `APPEND_TO_REGISTER` ignore the condition stack
+`REGISTER`, `APPEND_TO_REGISTER`, and `INFO_TAG` ignore the condition stack
 so that it's not necessary to run a simulation in order to identify the shape of the
-registers in a circuit.
+registers or subroutine structure in a circuit.
 
 Note: it's the bit's *current* value that is pushed onto the stack.
 Writing to a bit after pushing it won't change the state of the condition stack.
@@ -703,6 +703,8 @@ Arguments:
 
 This instruction is a request to please print some information about simulator state.
 Simulators are free to interpret this instruction however they want, including ignoring it.
+
+Arguments:
 
 ```
 optional qubit

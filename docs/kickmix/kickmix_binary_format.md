@@ -1,7 +1,7 @@
 # The Kickmix Binary Circuit File Format (.kmb)
 
 This document describes the kickmix binary circuit file format (.kmb).
-A .kmb file stores broadly similar information to [a .kmx file](kickmix_file_format.md),
+A .kmb file stores broadly similar information to [a .kmx file](kickmix_format.md),
 but in a binary format optimized for performance rather than for human readability.
 
 ## Index
@@ -108,7 +108,7 @@ struct Packet_REGISTER_TARGETS {
 This packet lists the name, bits, and/or qubits of a register.
 The number of characters in the name is `name_length`.
 The number of bit ids and/or qubit ids in the register is `register_length`.
-Each bit-or-qubit id is specified by a big endian uint32_t.
+Each bit-or-qubit id is specified by a little endian uint32_t.
 The high bit of the uint32_t is set if the id is a qubit, rather than a bit.
 For example, 0x3 is bit id 3 and 0x80000002 is qubit id 2.
 Beware that registers may alias (i.e. the same qubit or bit can appear in multiple registers).
@@ -270,7 +270,7 @@ enum OperationType : uint8_t {
 };
 ```
 
-See [kickmix_instruction_set.md](kickmix_instruction_set.md) for more information on each kind of operation.
+See [kickmix_instructions.md](kickmix_instructions.md) for more information on each kind of operation.
 Note that specific bit positions are used to indicate what kinds of data the operation acts on.
 This makes it possible to efficiently compute statistics, such as the number of 3 qubit gates,
 using only the operation type data.
@@ -287,15 +287,15 @@ This allows data to be read in bulk, and also for certain important properties t
 The main downside of this layout is that it doesn't support constant time random access into the operations of the circuit,
 because different operations pull data from different arrays.
 
-For concreteness, here is a partial example of consuming struct-of-array kmb data in order to print out a [human readable .kmx file](kickmix_file_format.md):
+For concreteness, here is a partial example of consuming struct-of-array kmb data in order to print out a [human readable .kmx file](kickmix_format.md):
 
 ```
 struct KmbStructOfArrays {
     size_t num_ops;                 // from header
     OpType *type;                   // from KMB_OPERATION_TYPES packet
     uint32_t *qqq0;                 // from KMB_QUBIT0_DATA_FOR_3_TARGET_QUBIT_GATES packet
-    uint32_t *qqq1;                 // from KMB_QUBIT0_DATA_FOR_3_TARGET_QUBIT_GATES packet
-    uint32_t *qqq2;                 // from KMB_QUBIT0_DATA_FOR_3_TARGET_QUBIT_GATES packet
+    uint32_t *qqq1;                 // from KMB_QUBIT1_DATA_FOR_3_TARGET_QUBIT_GATES packet
+    uint32_t *qqq2;                 // from KMB_QUBIT2_DATA_FOR_3_TARGET_QUBIT_GATES packet
     uint32_t *qq0;                  // from KMB_QUBIT0_DATA_FOR_2_TARGET_QUBIT_GATES packet
     uint32_t *qq1;                  // from KMB_QUBIT1_DATA_FOR_2_TARGET_QUBIT_GATES packet
     uint32_t *q0;                   // from KMB_QUBIT0_DATA_FOR_1_TARGET_QUBIT_GATES packet
@@ -315,11 +315,11 @@ void print_kmb_as_kmx(const KmbStructOfArrays *circuit) {
     const uint32_t *bc = circuit->bc;
     const FixedPrecisionAngle128 *angles = circuit->angles;
     for (size_t k = 0; k < circuit->num_ops; k++) {
-        switch (type[k]) {
+        switch (circuit->type[k]) {
         case OpType::X:      printf("X q%u\n", *q0++);                               break;
-        case OpType::X_IF:   printf("X q%u if b%u\n", *q0++, *b0++);                 break;
-        case OpType::HMR:    printf("HMR q%u b%u\n", *q0++, *bc++);                  break;
-        case OpType::HMR_IF: printf("HMR q%u b%u if b%u\n", *q0++, *bc++, *b0++);    break;
+        case OpType::X_IF:   printf("X q%u if b%u\n", *q0++, *bc++);                 break;
+        case OpType::HMR:    printf("HMR q%u b%u\n", *q0++, *b0++);                  break;
+        case OpType::HMR_IF: printf("HMR q%u b%u if b%u\n", *q0++, *b0++, *bc++);    break;
         case OpType::CCX:    printf("CCX q%u q%u q%u\n", *qqq0++, *qqq1++, *qqq2++); break;
         // ... and so forth for all other operation types ...
         }
@@ -331,7 +331,7 @@ void print_kmb_as_kmx(const KmbStructOfArrays *circuit) {
 
 1. **Validate packet order**. For a version 2 .kmb file, the payload packets must appear in exactly the following order:
    - A `KMB_REGISTER_TARGETS` packet for each register (as indicated by `header.num_registers`).
-   - Exactly one `KMB_OPERATION_TYPES` packet with a payload length `header.num_operations`.
+   - Exactly one `KMB_OPERATION_TYPES` packet with a payload length `header.num_ops`.
    - Exactly one `KMB_QUBIT0_DATA_FOR_3_TARGET_QUBIT_GATES` packet.
    - Exactly one `KMB_QUBIT1_DATA_FOR_3_TARGET_QUBIT_GATES` packet.
    - Exactly one `KMB_QUBIT2_DATA_FOR_3_TARGET_QUBIT_GATES` packet.
@@ -370,8 +370,8 @@ void print_kmb_as_kmx(const KmbStructOfArrays *circuit) {
    The value of `num_ops_with_2_target_qubits` in the header MUST be equal to the number of operations
    in the circuit that target 2 qubits (CX, CX_IF, CZ, etc).
 
-7. **Validate header.num_ops_with_1_target_qubit**.
-   The value of `num_ops_with_1_target_qubit` in the header MUST be equal to the number of operations
+7. **Validate header.num_ops_with_1_target_qubits**.
+   The value of `num_ops_with_1_target_qubits` in the header MUST be equal to the number of operations
    in the circuit that target 1 qubit (X, X_IF, R, R_IF, HMR, etc).
 
 8. **Validate header.num_ops_with_1_target_bit**.
@@ -382,8 +382,8 @@ void print_kmb_as_kmx(const KmbStructOfArrays *circuit) {
    The value of `num_ops_with_1_condition_bit` in the header MUST be equal to the number of operations
    in the circuit that have 1 condition bit (X_IF, CX_IF, CCX_IF, BIT_STORE0_IF, PUSH_CONDITION, etc).
 
-10. **Validate header.num_angles**.
-   The value of `num_angles` in the header MUST be equal to the number of operations
+10. **Validate header.num_ops_with_angle**.
+   The value of `num_ops_with_angle` in the header MUST be equal to the number of operations
    in the circuit that have a rotation angle (Z_POW and Z_POW_IF).
 
 11. **Validate header.num_info_tags and KMB_INFO_TAG_DATA**.

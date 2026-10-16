@@ -788,7 +788,7 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
         pybind11::arg("counting_operations") = false,
         pybind11::arg("seed") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def __init__(self, batch_size: int, *, debug_print: bool | Callable[[km.q | km.b | None, np.ndarray, km.b | None, np.ndarray], None] = True, counting_operations: bool = False, seed: int | None = None):
+            @signature def __init__(self, batch_size: int, *, debug_print: bool | Callable[[km.q | km.b | None, np.ndarray, km.b | None, np.ndarray], None] = True, counting_operations: bool = False, seed: int | None = None) -> None:
             Initializes an interactive simulator with the given batch size.
 
             Args:
@@ -866,7 +866,7 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
         },
         pybind11::arg("circuit"),
         clean_doc_string(R"DOC(
-            @signature def do(self, circuit: km.Circuit):
+            @signature def do(self, circuit: km.Circuit) -> None:
             Applies the instructions from the circuit to the simulator's state.
 
             Args:
@@ -1073,6 +1073,7 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
         &sim_read_phase,
         pybind11::arg("shot_index"),
         clean_doc_string(R"DOC(
+            @signature def read_shot_phase(self, shot_index: int) -> int | fractions.Fraction:
             Returns the tracked global phase of a shot.
 
             The phase is affected by operations like Z, HMR, and Z_POW.
@@ -1112,6 +1113,7 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
         pybind11::arg("shot_index"),
         pybind11::arg("new_phase_half_turns"),
         clean_doc_string(R"DOC(
+            @signature def write_shot_phase(self, shot_index: int, new_phase_half_turns: int | float | fractions.Fraction | str) -> None:
             Sets the tracked global phase of a shot.
 
             The phase is affected by operations like Z, HMR, and Z_POW.
@@ -1148,6 +1150,7 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
         pybind11::kw_only(),
         pybind11::arg("out") = pybind11::none(),
         clean_doc_string(R"DOC(
+            @signature def read_phase_flipped_across_shots(self, *, out: Any = None) -> np.ndarray | int:
             Reads whether or not each shot is phase flipped.
 
             A shot is considered phase flipped if its tracked phase is closer to a
@@ -1300,6 +1303,7 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
         pybind11::arg("index"),
         pybind11::arg("new_value"),
         clean_doc_string(R"DOC(
+            @signature def write_across_shots(self, index: km.q | km.b | str | km.r | km.array | Sequence[km.q | km.b], new_value: int | Sequence[int] | np.ndarray) -> None:
             Sets the tracked value of the given qubits or bits, across all shots.
 
             Args:

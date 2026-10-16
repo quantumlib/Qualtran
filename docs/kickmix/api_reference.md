@@ -178,6 +178,7 @@
     - [`kickmix.r.__eq__`](#kickmix.r.__eq__)
     - [`kickmix.r.__hash__`](#kickmix.r.__hash__)
     - [`kickmix.r.__init__`](#kickmix.r.__init__)
+    - [`kickmix.r.__lt__`](#kickmix.r.__lt__)
     - [`kickmix.r.__ne__`](#kickmix.r.__ne__)
     - [`kickmix.r.__repr__`](#kickmix.r.__repr__)
     - [`kickmix.r.__str__`](#kickmix.r.__str__)
@@ -202,7 +203,7 @@
     - [`kickmix.xbool.__str__`](#kickmix.xbool.__str__)
 ```python
 # Types used by the method definitions.
-from typing import overload, TYPE_CHECKING, Any, Callable, Dict, Iterable, Iterator, List, Literal, Optional, Tuple, Union
+from typing import overload, TYPE_CHECKING, Any, Callable, Iterable, Iterator, Literal
 import io
 import pathlib
 import numpy as np
@@ -776,7 +777,7 @@ def reaction_depth(
 @property
 def register_data(
     self,
-) -> object:
+) -> dict[str | km.r, km.array]:
     """The names and contents of registers in the circuit, as a dict.
 
     Examples:
@@ -795,7 +796,7 @@ def register_data(
         ...     CX q0 q1
         ...     X q0
         ... ''')
-        >>> data: dict[str, km.array] = circuit.register_data
+        >>> data: dict[str | km.r, km.array] = circuit.register_data
         >>> for k, v in data.items():
         ...     print(f"{k!r}: {v!r}")
         'test': km.array([km.q(0), km.q(1), km.q(2)])
@@ -971,7 +972,7 @@ def alloc_qubits(
 
     Allocated qubits can be deallocated with the `km.CircuitBuilder.free` method.
 
-    If the allocation would push `km.CircuitBuilder.num_allocate_qubits` above
+    If the allocation would push `km.CircuitBuilder.num_allocated_qubits` above
     `km.CircuitBuilder.max_qubits` (which defaults to infinity), it will raise
     an exception instead of returning a result.
 
@@ -1013,10 +1014,10 @@ def alloc_qubits(
 # (in class kickmix.CircuitBuilder)
 def bit_store(
     self,
-    target: b | km.array,
+    target: km.b | km.array,
     value: bool,
     *,
-    control: b | bool | km.array = True,
+    control: km.b | bool | km.array = True,
 ) -> None:
     """Appends operations to perform `if control: target = value`.
 
@@ -1062,9 +1063,9 @@ def bit_store(
 # (in class kickmix.CircuitBuilder)
 def ccx(
     self,
-    control1: bool | b | q | km.array,
-    control2: bool | b | q | km.array,
-    target: q | km.array,
+    control1: bool | km.b | km.q | km.array,
+    control2: bool | km.b | km.q | km.array,
+    target: km.q | km.array,
 ) -> None:
     """Appends many doubly-controlled NOT gates to the circuit.
 
@@ -1204,9 +1205,9 @@ def create_quantum_register(
 # (in class kickmix.CircuitBuilder)
 def cswap(
     self,
-    control: bool | b | q | km.array,
-    target1: q | km.array,
-    target2: q | km.array,
+    control: bool | km.b | km.q | km.array,
+    target1: km.q | km.array,
+    target2: km.q | km.array,
 ) -> None:
     """Appends controlled-SWAP (Fredkin) gates to the circuit.
 
@@ -1298,8 +1299,8 @@ def cx(
 # (in class kickmix.CircuitBuilder)
 def cz(
     self,
-    control1: bool | b | q | km.array,
-    control2: bool | b | q | km.array,
+    control1: bool | km.b | km.q | km.array,
+    control2: bool | km.b | km.q | km.array,
 ) -> None:
     """Appends many CZ gates to the circuit.
 
@@ -1371,11 +1372,11 @@ def debug_print(
 # (in class kickmix.CircuitBuilder)
 def del_and(
     self,
-    control1: bool | b | q | km.array,
-    control2: bool | b | q | km.array,
-    target: q | km.array,
+    control1: bool | km.b | km.q | km.array,
+    control2: bool | km.b | km.q | km.array,
+    target: km.q | km.array,
 ) -> None:
-    """Clears a qubit holding `control1 and control2`, using only Cliffords and measurement.
+    """Clears a qubit holding `control1 and control2` using stabilizer operations.
 
     This is the uncomputation partner of `init_and`, or of a `ccx` into
     a qubit that started at |0>. It applies an `HMR` (X-basis
@@ -1578,7 +1579,7 @@ def del_gf2_mul(
     *,
     target: km.array,
     field: km.GF2Field | None = None,
-    control: q | b | bool = True,
+    control: km.q | km.b | bool = True,
 ) -> None:
     """Clears a GF(2^m) register known to hold `(lhs * rhs) % modulus`.
 
@@ -1691,8 +1692,8 @@ def flip_if_equal(
     lhs: km.array,
     rhs: km.array | int,
     *,
-    target: q,
-    control: q | b | bool = True,
+    target: km.q,
+    control: km.q | km.b | bool = True,
 ) -> None:
     """Appends operations to perform `if control: target ^= lhs == rhs`.
 
@@ -1754,9 +1755,9 @@ def flip_if_greater_than(
     lhs: km.array,
     rhs: km.array | int,
     *,
-    target: q,
-    or_equal: q | b | bool = false,
-    control: q | b | bool = True,
+    target: km.q,
+    or_equal: km.q | km.b | bool = False,
+    control: km.q | km.b | bool = True,
     btol: float = float('inf'),
 ) -> None:
     """Appends operations to perform `if control: target ^= lhs > rhs - or_equal`.
@@ -1884,9 +1885,9 @@ def flip_if_less_than(
     lhs: km.array,
     rhs: km.array | int,
     *,
-    target: q,
-    or_equal: q | b | bool = false,
-    control: q | b | bool = True,
+    target: km.q,
+    or_equal: km.q | km.b | bool = False,
+    control: km.q | km.b | bool = True,
     btol: float = float('inf'),
 ) -> None:
     """Appends operations to perform `if control: target ^= lhs < rhs + or_equal`.
@@ -1952,7 +1953,7 @@ def flip_if_less_than(
 # (in class kickmix.CircuitBuilder)
 def free(
     self,
-    arg: object,
+    arg: km.q | km.b | km.array | Sequence[km.q | km.b],
 ) -> None:
     """Frees allocated qubits or bits, so that they can be allocated again.
 
@@ -1979,7 +1980,7 @@ def gf2_iadd(
     *,
     target: km.array,
     field: km.GF2Field | None = None,
-    control: q | b | bool = True,
+    control: km.q | km.b | bool = True,
 ) -> None:
     """Appends operations to perform `if control: target ^= offset` in GF(2^m).
 
@@ -2192,7 +2193,7 @@ def iadd(
     offset: km.array | int,
     *,
     target: km.array,
-    control: q | b | bool = True,
+    control: km.q | km.b | bool = True,
     btol: float = float('inf'),
 ) -> None:
     """Appends operations to perform `if control: target += offset`.
@@ -2276,9 +2277,9 @@ def info_tag(
 # (in class kickmix.CircuitBuilder)
 def init_and(
     self,
-    control1: bool | b | q | km.array,
-    control2: bool | b | q | km.array,
-    target: q | km.array,
+    control1: bool | km.b | km.q | km.array,
+    control2: bool | km.b | km.q | km.array,
+    target: km.q | km.array,
 ) -> None:
     """Initializes a qubit to `control1 and control2`, resetting it first.
 
@@ -2362,7 +2363,7 @@ def init_gf2_div_with_scaffold(
     *,
     target: km.array | str = "alloc",
     field: km.GF2Field | None = None,
-) -> Tuple[km.array, km.array]:
+) -> tuple[km.array, km.array]:
     """Initializes `target := lhs / rhs`, keeping the division workspace.
 
     Same as `init_gf2_div`, except the divisor's inverse and its
@@ -2455,7 +2456,7 @@ def init_gf2_inverse_with_scaffold(
     *,
     target: km.array | str = "alloc",
     field: km.GF2Field | None = None,
-) -> Tuple[km.array, km.array]:
+) -> tuple[km.array, km.array]:
     """Initializes `target := input ** -1`, keeping the addition chain.
 
     Same as `init_gf2_inverse`, except the Itoh-Tsujii addition chain
@@ -2500,7 +2501,7 @@ def init_gf2_mul(
     *,
     target: km.array | str = "alloc",
     field: km.GF2Field | None = None,
-    control: q | b | bool = True,
+    control: km.q | km.b | bool = True,
 ) -> km.array:
     """Initializes a GF(2^m) register to `(lhs * rhs) % modulus`, resetting it first.
 
@@ -2599,7 +2600,7 @@ def isub(
     offset: km.array | int,
     *,
     target: km.array,
-    control: q | b | bool = True,
+    control: km.q | km.b | bool = True,
     btol: float = float('inf'),
 ) -> None:
     """Appends operations to perform `if control: target -= offset`.
@@ -2697,7 +2698,7 @@ def ixor_gf2_mul(
     *,
     target: km.array,
     field: km.GF2Field | None = None,
-    control: q | b | bool = True,
+    control: km.q | km.b | bool = True,
 ) -> None:
     """Appends operations to perform `if control: target ^= (lhs * rhs) % modulus`.
 
@@ -2895,8 +2896,17 @@ def mark(
 @property
 def max_qubits(
     self,
-) -> object:
+) -> int | float:
     """Returns the maximum number of qubits allowed when building circuits.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.max_qubits
+        inf
+        >>> builder.set_max_qubits(500)
+        >>> builder.max_qubits
+        500
     """
 ```
 
@@ -3024,8 +3034,21 @@ def num_allocated_qubits(
 @property
 def num_free_qubits(
     self,
-) -> object:
-    """Returns the maximum number of qubits allowed when building circuits.
+) -> int | float:
+    """Returns how many more qubits can be allocated before hitting max_qubits.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> _ = builder.alloc_qubits(4)
+        >>> builder.num_free_qubits
+        inf
+        >>> builder.set_max_qubits(500)
+        >>> builder.num_free_qubits
+        496
+        >>> _ = builder.alloc_qubits(4)
+        >>> builder.num_free_qubits
+        492
     """
 ```
 
@@ -3238,8 +3261,8 @@ def right_rotate(
 # kickmix.CircuitBuilder.set_max_qubits
 
 # (in class kickmix.CircuitBuilder)
-@staticmethod
 def set_max_qubits(
+    self,
     limit: int | float,
 ) -> None:
     """Sets the maximum number of qubits allowed when building circuits.
@@ -3317,7 +3340,7 @@ def unary_iteration(
     address: km.array,
     address_values: range | None = None,
     *,
-    control: q | b | bool = True,
+    control: km.q | km.b | bool = True,
 ) -> km.UnaryIterationCursor:
     """Returns a cursor for stepping through values of `address`.
 
@@ -3450,20 +3473,24 @@ def x(
 # (in class kickmix.CircuitBuilder)
 def z(
     self,
-    target: km.q | km.b | bool,
+    target: km.q | km.b | bool | km.array | Sequence[km.q | km.b | bool],
 ) -> None:
-    """Appends a Z gate (or its classical/constant equivalent) to the circuit.
+    """Appends Z gates (or their classical/constant equivalents) to the circuit.
 
+    This method broadcasts over `km.array` and sequence arguments.
     Depending on the type of `target`, this emits `Z` for a qubit
     (`km.q`), `NEG_IF` for a classical bit (`km.b`), `NEG` for `True`,
     and nothing for `False`.
 
     Args:
-        target: The qubit, classical bit, or boolean determining if
-            phasing occurs.
+        target: The qubit, classical bit, boolean, or array/sequence of
+            them determining if phasing occurs.
 
     Raises:
-        TypeError: `target` is not a `km.q`, `km.b`, or `bool`.
+        TypeError: `target` is not a `km.q`, `km.b`, `bool`, or
+            array/sequence of them.
+        ValueError: `target` contains X-basis values (`km.xb` or
+            `km.xbool`).
 
     Examples:
         >>> import kickmix as km
@@ -4147,7 +4174,7 @@ def get(
 # (in class kickmix.OperationStatistics)
 def items(
     self,
-) -> List[Tuple[str, int]]:
+) -> list[tuple[str, int]]:
     """Returns `(op_name, count)` pairs for all non-zero operation counts.
 
     Examples:
@@ -4164,7 +4191,7 @@ def items(
 # (in class kickmix.OperationStatistics)
 def keys(
     self,
-) -> List[str]:
+) -> list[str]:
     """Returns base operation names that have non-zero counts.
 
     Examples:
@@ -4312,7 +4339,7 @@ def num_z_pow(
 # (in class kickmix.OperationStatistics)
 def values(
     self,
-) -> List[int]:
+) -> list[int]:
     """Returns non-zero counts corresponding to `stats.keys()`.
 
     Examples:
@@ -4330,7 +4357,7 @@ def values(
 @property
 def z_pow_clifford_hierarchy_counts(
     self,
-) -> Dict[int, int]:
+) -> dict[int, int]:
     """Maps each present `Z_POW` Clifford hierarchy level to its count.
 
     Only levels `k` (`0 <= k <= 128`) with a non-zero count are
@@ -4371,7 +4398,7 @@ def __init__(
     debug_print: bool | Callable[[km.q | km.b | None, np.ndarray, km.b | None, np.ndarray], None] = True,
     counting_operations: bool = False,
     seed: int | None = None,
-):
+) -> None:
     """Initializes an interactive simulator with the given batch size.
 
     Args:
@@ -4547,7 +4574,7 @@ def debug_print(self, value: bool | Callable[[km.q | km.b | None, np.ndarray, km
 def do(
     self,
     circuit: km.Circuit,
-):
+) -> None:
     """Applies the instructions from the circuit to the simulator's state.
 
     Args:
@@ -4641,7 +4668,7 @@ def read_across_shots(
     indices: km.q | km.b | bool | str | km.r | km.array | Sequence[km.q | km.b | bool],
     *,
     out: Any = None,
-) -> np.ndarray | int | List[int]:
+) -> np.ndarray | int | list[int]:
     """Reads the tracked values of the given qubits or bits across all shots.
 
     Args:
@@ -4691,8 +4718,8 @@ def read_across_shots(
 def read_phase_flipped_across_shots(
     self,
     *,
-    out: object = None,
-) -> object:
+    out: Any = None,
+) -> np.ndarray | int:
     """Reads whether or not each shot is phase flipped.
 
     A shot is considered phase flipped if its tracked phase is closer to a
@@ -4726,7 +4753,7 @@ def read_phase_flipped_across_shots(
 def read_shot_phase(
     self,
     shot_index: int,
-) -> object:
+) -> int | fractions.Fraction:
     """Returns the tracked global phase of a shot.
 
     The phase is affected by operations like Z, HMR, and Z_POW.
@@ -4857,8 +4884,8 @@ def use_same_registers_as(
 # (in class kickmix.Simulator)
 def write_across_shots(
     self,
-    index: object,
-    new_value: object,
+    index: km.q | km.b | str | km.r | km.array | Sequence[km.q | km.b],
+    new_value: int | Sequence[int] | np.ndarray,
 ) -> None:
     """Sets the tracked value of the given qubits or bits, across all shots.
 
@@ -4901,7 +4928,7 @@ def write_across_shots(
 def write_shot_phase(
     self,
     shot_index: int,
-    new_phase_half_turns: object,
+    new_phase_half_turns: int | float | fractions.Fraction | str,
 ) -> None:
     """Sets the tracked global phase of a shot.
 
@@ -5084,7 +5111,7 @@ def __init__(
     address: km.array,
     address_values: range | None = None,
     *,
-    control: q | b | bool = True,
+    control: km.q | km.b | bool = True,
 ) -> None:
     """Initializes a reusable unary iteration cursor over `address`.
 
@@ -5118,7 +5145,7 @@ def __init__(
 # (in class kickmix.UnaryIterationCursor)
 def __iter__(
     self,
-) -> Iterator[Tuple[int, q]]:
+) -> Iterator[tuple[int, km.q]]:
     """Yields `(address_value, match_qubit)` pairs for each configured value.
 
     The cursor must already be open inside a `with` block. Finishing or breaking
@@ -5136,7 +5163,7 @@ def __iter__(
 # (in class kickmix.UnaryIterationCursor)
 def __next__(
     self,
-) -> Tuple[int, q]:
+) -> tuple[int, km.q]:
     """Advances to the next value and returns `(address_value, match_qubit)`.
 
     Raises:
@@ -5217,7 +5244,7 @@ def cur_address_value(
 @property
 def match_qubit(
     self,
-) -> q:
+) -> km.q:
     """Returns the qubit that is ON in the parts of the superposition where `control`
     is active and `address == cur_address_value`.
 
@@ -5335,11 +5362,11 @@ def __eq__(
 # (in class kickmix.array)
 def __getitem__(
     self,
-    index: object,
-) -> object:
+    index: int | slice,
+) -> km.q | km.b | bool | km.xb | km.xbool | km.array:
     """Returns an item or slice from the array.
 
-    Arg:
+    Args:
         index: An int or a slice.
 
     Returns:
@@ -5363,7 +5390,7 @@ def __getitem__(
 # (in class kickmix.array)
 def __init__(
     self,
-    arg: Iterable[km.q | km.b | bool | km.xbool | km.xb] = (),
+    arg: Iterable[km.q | km.b | bool | km.xbool | km.xb | Literal['|+>', '|->']] = (),
     /,
 ) -> None:
     """Initializes a km.array from an iterable of kickmix values.
@@ -5592,7 +5619,7 @@ def __eq__(
 def __hash__(
     self,
 ) -> int:
-    """Returns a hash of the bit.
+    """Returns a hash of the qubit.
     """
 ```
 
@@ -5620,21 +5647,11 @@ def __init__(
 # kickmix.q.__lt__
 
 # (in class kickmix.q)
-@staticmethod
 def __lt__(
-    *args,
-    **kwargs,
-):
-    """Overloaded function.
-
-    1. __lt__(self: kickmix.q, arg0: object) -> bool
-
-    Does a less-than comparison.
-
-
-    2. __lt__(self: kickmix.q, arg0: kickmix.q) -> bool
-
-    Compares two QIds.
+    self,
+    arg0: object,
+) -> bool:
+    """Does a less-than comparison.
     """
 ```
 
@@ -5724,7 +5741,7 @@ def __eq__(
 def __hash__(
     self,
 ) -> int:
-    """Returns a hash of the bit.
+    """Returns a hash of the register.
     """
 ```
 
@@ -5744,6 +5761,19 @@ def __init__(
         >>> import kickmix as km
         >>> print(km.r(5))
         r5
+    """
+```
+
+<a name="kickmix.r.__lt__"></a>
+```python
+# kickmix.r.__lt__
+
+# (in class kickmix.r)
+def __lt__(
+    self,
+    arg0: object,
+) -> bool:
+    """Does a less-than comparison.
     """
 ```
 
@@ -5768,7 +5798,7 @@ def __ne__(
 def __repr__(
     self,
 ) -> str:
-    """Returns a parseable text representation of the bit.
+    """Returns a parseable text representation of the register.
     """
 ```
 
@@ -5793,7 +5823,7 @@ def __str__(
 def id(
     self,
 ) -> int:
-    """Returns the index of the bit.
+    """Returns the index of the register.
 
     Examples:
         >>> import kickmix as km
@@ -6003,7 +6033,7 @@ def __eq__(
 def __hash__(
     self,
 ) -> int:
-    """Returns a hash of the bit.
+    """Returns a hash of the xbool.
     """
 ```
 

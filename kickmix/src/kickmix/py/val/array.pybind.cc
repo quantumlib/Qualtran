@@ -163,7 +163,7 @@ void kickmix_py::register_qcarray_methods(pybind11::class_<PyArrayXZ> &c_qcarray
         pybind11::arg("arg") = pybind11::make_tuple(),
         pybind11::pos_only(),
         clean_doc_string(R"DOC(
-            @signature def __init__(self, arg: Iterable[km.q | km.b | bool | km.xbool | km.xb] = (), /) -> None:
+            @signature def __init__(self, arg: Iterable[km.q | km.b | bool | km.xbool | km.xb | Literal['|+>', '|->']] = (), /) -> None:
             Initializes a km.array from an iterable of kickmix values.
 
             Args:
@@ -188,9 +188,10 @@ void kickmix_py::register_qcarray_methods(pybind11::class_<PyArrayXZ> &c_qcarray
         &qxz_array_getitem,
         pybind11::arg("index"),
         clean_doc_string(R"DOC(
+            @signature def __getitem__(self, index: int | slice) -> km.q | km.b | bool | km.xb | km.xbool | km.array:
             Returns an item or slice from the array.
 
-            Arg:
+            Args:
                 index: An int or a slice.
 
             Returns:
