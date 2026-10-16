@@ -4391,8 +4391,10 @@ def __init__(
             per-shot population counters on every executed instruction,
             slowing down fast gate simulation by ~2-4x and allocating
             extra counter memory, so it defaults to `False`.
-        seed: Optional PRNG seed for deterministic `HMR` and `R`
-            operations. If `None` (the default), seeds from OS entropy.
+        seed: Optional 256-bit integer PRNG seed (`0 <= seed < 2**256`)
+            for deterministic `HMR` and `R` operations (e.g. a SHA-256
+            digest `int(hashlib.sha256(...).hexdigest(), 16)`). If
+            `None` (the default), seeds from OS entropy.
 
     Examples:
         >>> import kickmix as km

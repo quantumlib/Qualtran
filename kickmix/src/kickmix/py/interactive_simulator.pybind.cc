@@ -21,12 +21,31 @@ static std::mt19937_64 externally_seeded_rng() {
     return result;
 }
 
-static std::mt19937_64 make_rng(std::optional<uint64_t> seed) {
-    if (seed.has_value()) {
-        std::seed_seq seq{static_cast<uint32_t>(*seed), static_cast<uint32_t>(*seed >> 32)};
-        return std::mt19937_64(seq);
+static std::mt19937_64 make_rng(const pybind11::object &seed) {
+    if (seed.is_none()) {
+        return externally_seeded_rng();
     }
-    return externally_seeded_rng();
+    if (!pybind11::isinstance<pybind11::int_>(seed) || pybind11::isinstance<pybind11::bool_>(seed)) {
+        std::stringstream ss;
+        ss << "Expected seed to be an int or None, but got seed=" << pybind11::repr(seed);
+        throw pybind11::type_error(ss.str());
+    }
+    std::array<uint32_t, 8> seed_words{};
+    if (!seed.equal(pybind11::cast(0))) {
+        Py_ssize_t num_bytes = PyLong_AsNativeBytes(
+            seed.ptr(),
+            seed_words.data(),
+            sizeof(seed_words),
+            Py_ASNATIVEBYTES_LITTLE_ENDIAN | Py_ASNATIVEBYTES_REJECT_NEGATIVE | Py_ASNATIVEBYTES_UNSIGNED_BUFFER);
+        if (num_bytes < 0 || static_cast<size_t>(num_bytes) > sizeof(seed_words)) {
+            PyErr_Clear();
+            std::stringstream ss;
+            ss << "seed=" << pybind11::repr(seed) << " not in range(2**256)";
+            throw std::invalid_argument(ss.str());
+        }
+    }
+    std::seed_seq seq(seed_words.begin(), seed_words.end());
+    return std::mt19937_64(seq);
 }
 
 static void sim_clear_for_shot(PyInteractiveSimulator &self) {
@@ -114,16 +133,19 @@ pybind11::object int_obj_from_bytes_with_max_bits(uint8_t *bytes_buffer, size_t 
 }
 
 PyInteractiveSimulator::PyInteractiveSimulator(
-    size_t init_batch_size,
-    pybind11::object init_debug_print,
-    bool init_counting_operations,
-    std::optional<uint64_t> seed) {
+    size_t init_batch_size, pybind11::object init_debug_print, bool init_counting_operations, pybind11::object seed) {
     batch_size = init_batch_size;
     counting_operations = init_counting_operations;
     std::mt19937_64 master_rng = make_rng(seed);
     with_sims([&](auto &sims) {
         for (size_t k = 0; k < batch_size; k += PY_SIM_WORD_BITS) {
-            std::seed_seq seq{master_rng(), master_rng(), master_rng(), master_rng()};
+            std::array<uint32_t, 8> chunk_seed{};
+            for (size_t w = 0; w < 4; w++) {
+                uint64_t r = master_rng();
+                chunk_seed[2 * w] = static_cast<uint32_t>(r);
+                chunk_seed[2 * w + 1] = static_cast<uint32_t>(r >> 32);
+            }
+            std::seed_seq seq(chunk_seed.begin(), chunk_seed.end());
             sims.emplace_back(std::mt19937_64(seq));
         }
         ensure_byte_buf_can_store_bits(sims.size() * PY_SIM_WORD_BITS);
@@ -778,9 +800,9 @@ void write_within_shot(
 void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInteractiveSimulator> &c_sim) {
     c_sim.def(
         pybind11::init(
-            [](size_t batch_size, pybind11::object debug_print, bool counting_operations, std::optional<uint64_t> seed)
+            [](size_t batch_size, pybind11::object debug_print, bool counting_operations, pybind11::object seed)
                 -> PyInteractiveSimulator {
-                return PyInteractiveSimulator(batch_size, std::move(debug_print), counting_operations, seed);
+                return PyInteractiveSimulator(batch_size, std::move(debug_print), counting_operations, std::move(seed));
             }),
         pybind11::arg("batch_size"),
         pybind11::kw_only(),
@@ -808,8 +830,10 @@ void kickmix_py::register_interactive_simulator_methods(pybind11::class_<PyInter
                     per-shot population counters on every executed instruction,
                     slowing down fast gate simulation by ~2-4x and allocating
                     extra counter memory, so it defaults to `False`.
-                seed: Optional PRNG seed for deterministic `HMR` and `R`
-                    operations. If `None` (the default), seeds from OS entropy.
+                seed: Optional 256-bit integer PRNG seed (`0 <= seed < 2**256`)
+                    for deterministic `HMR` and `R` operations (e.g. a SHA-256
+                    digest `int(hashlib.sha256(...).hexdigest(), 16)`). If
+                    `None` (the default), seeds from OS entropy.
 
             Examples:
                 >>> import kickmix as km
