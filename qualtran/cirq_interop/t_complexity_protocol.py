@@ -67,9 +67,7 @@ class TComplexity:
         return {'t': self.t, 'rotations': self.rotations, 'clifford': self.clifford}
 
     def __str__(self) -> str:
-        return (
-            f'T-count:   {self.t:g}\nRotations: {self.rotations:g}\nCliffords: {self.clifford:g}\n'
-        )
+        return f'T-count:   {self.t}\nRotations: {self.rotations}\nCliffords: {self.clifford}\n'
 
 
 def _from_explicit_annotation(stc: Any) -> Optional[TComplexity]:
