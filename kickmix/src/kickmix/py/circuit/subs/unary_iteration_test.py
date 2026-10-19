@@ -80,7 +80,7 @@ def test_full_sweep_toffoli_count(n: int):
         for _ in it:
             pass
     assert (
-        builder.finish_circuit().max_magic()
+        builder.finish_circuit().operation_statistics().num_non_clifford
         == expected_toffolis(n, range(1 << n), controlled=False)
         == (1 << n) - 2
     )
@@ -92,7 +92,7 @@ def test_full_sweep_toffoli_count(n: int):
         for _ in it:
             pass
     assert (
-        builder.finish_circuit().max_magic()
+        builder.finish_circuit().operation_statistics().num_non_clifford
         == expected_toffolis(n, range(1 << n), controlled=True)
         == (1 << n) - 1
     )
@@ -107,7 +107,7 @@ def test_partial_sweep_toffoli_count():
     with builder.unary_iteration(address, range(73), control=control[0]) as it:
         for _ in it:
             pass
-    assert builder.finish_circuit().max_magic() == 78
+    assert builder.finish_circuit().operation_statistics().num_non_clifford == 78
 
     # Omitting the control saves one Toffoli.
     assert expected_toffolis(8, range(73), controlled=False) == 77
@@ -116,7 +116,7 @@ def test_partial_sweep_toffoli_count():
     with builder.unary_iteration(address, range(73)) as it:
         for _ in it:
             pass
-    assert builder.finish_circuit().max_magic() == 77
+    assert builder.finish_circuit().operation_statistics().num_non_clifford == 77
 
     # Stopping at 72 instead of 73 saves the 3 Toffolis needed to step from 71 to 72.
     assert expected_toffolis(8, range(72), controlled=True) == 75
@@ -126,7 +126,7 @@ def test_partial_sweep_toffoli_count():
     with builder.unary_iteration(address, range(72), control=control[0]) as it:
         for _ in it:
             pass
-    assert builder.finish_circuit().max_magic() == 75
+    assert builder.finish_circuit().operation_statistics().num_non_clifford == 75
 
 
 def test_a_false_control_emits_nothing():
@@ -156,7 +156,7 @@ def test_unrepresentable_address_values_are_free():
             assert it.cur_address_value == address_value
             builder.cx(it.match_qubit, target[0])
 
-    assert builder.finish_circuit().max_magic() == 0
+    assert builder.finish_circuit().operation_statistics().num_non_clifford == 0
 
 
 def test_moving_between_unrepresentable_and_representable_address_values():
@@ -174,7 +174,7 @@ def test_moving_between_unrepresentable_and_representable_address_values():
         assert it.cur_address_value == 10**30
         it.move_to(4)
         assert it.cur_address_value == 4
-    assert builder.finish_circuit().max_magic() == 4
+    assert builder.finish_circuit().operation_statistics().num_non_clifford == 4
 
 
 def test_an_empty_address_value_range_builds_nothing():
@@ -200,7 +200,7 @@ def test_an_empty_address_value_range_builds_nothing():
     with builder.unary_iteration(address, range(0)) as it:
         assert it.cur_address_value == 8
         it.move_to(3)
-    assert builder.finish_circuit().max_magic() == 2
+    assert builder.finish_circuit().operation_statistics().num_non_clifford == 2
 
 
 def test_empty_address_register_tracks_the_control():
@@ -216,7 +216,7 @@ def test_empty_address_register_tracks_the_control():
             builder.cx(match_qubit, out[0])
     assert visited == [0]
     circuit = builder.finish_circuit()
-    assert circuit.max_magic() == 0
+    assert circuit.operation_statistics().num_non_clifford == 0
 
     assert_fuzz_testing_acts_like(
         circuit,
@@ -343,7 +343,7 @@ def test_an_unpositioned_cursor_is_parked_past_the_last_address_value():
         it.move_to(9)
         assert it.cur_address_value == 9
         assert it.match_qubit == unpositioned
-    assert builder.finish_circuit().max_magic() == 0
+    assert builder.finish_circuit().operation_statistics().num_non_clifford == 0
 
 
 def test_a_classical_bit_control_is_lowered_to_a_pushed_condition():
@@ -358,7 +358,7 @@ def test_a_classical_bit_control_is_lowered_to_a_pushed_condition():
             if address_value == 5:
                 builder.cx(match_qubit, target[0])
     circuit = builder.finish_circuit()
-    assert circuit.max_magic() == expected_toffolis(3, range(8), controlled=False)
+    assert circuit.operation_statistics().num_non_clifford == expected_toffolis(3, range(8), controlled=False)
     assert builder.num_allocated_qubits == 4
 
 
@@ -605,7 +605,7 @@ def test_fuzz_random_access_order():
                 builder.cx(it.match_qubit, target[0])
                 visits[address_value] ^= 1
     circuit = builder.finish_circuit()
-    assert circuit.max_magic() == expected_toffolis(n_address, address_values, controlled=False)
+    assert circuit.operation_statistics().num_non_clifford == expected_toffolis(n_address, address_values, controlled=False)
 
     assert_fuzz_testing_acts_like(
         circuit,

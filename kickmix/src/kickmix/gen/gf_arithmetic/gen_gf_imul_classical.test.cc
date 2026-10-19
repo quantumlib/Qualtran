@@ -143,5 +143,5 @@ TEST(gen_gf_imul_classical, uses_no_ancillas) {
     gen_gf_imul_classical(builder, CircuitGenCtx{}, field, target, GF2Poly::from_u64(0b1011010110101101));
     Circuit circuit = builder.finish_circuit();
     ASSERT_EQ(circuit.num_qubits, 16);
-    ASSERT_EQ(circuit.max_magic(), 0);
+    ASSERT_EQ(circuit.estimate_ccz_state_weight(), 0);
 }

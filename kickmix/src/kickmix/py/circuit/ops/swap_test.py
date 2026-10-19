@@ -178,7 +178,7 @@ def test_cswap_kmx_and_sim():
         CSWAP q3 q4 q5 if b0
     """)
     assert str(c).strip() == "CSWAP q0 q1 q2\nCSWAP q3 q4 q5 if b0"
-    assert c.max_magic() == 2
+    assert c.operation_statistics().num_non_clifford == 2
     assert c.reaction_depth() == 1
     bio = io.BytesIO()
     c.to_file(bio, format="kmb")

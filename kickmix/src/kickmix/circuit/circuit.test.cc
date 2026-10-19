@@ -110,12 +110,19 @@ TEST(circuit, text_diagram_z_pow) {
     )DIAGRAM");
 }
 
-TEST(circuit, max_magic) {
+TEST(circuit, estimate_ccz_states) {
     ASSERT_EQ(
         Circuit(R"CIRCUIT(
         )CIRCUIT")
-            .max_magic(),
+            .estimate_ccz_state_weight(),
         0);
+    ASSERT_EQ(
+        Circuit(R"CIRCUIT(
+            Z_POW q0 0.25
+            Z_POW q1 0.25
+        )CIRCUIT")
+            .estimate_ccz_state_weight(),
+        1);
     ASSERT_EQ(
         Circuit(R"CIRCUIT(
             CCX q0 q1 q2
@@ -125,7 +132,7 @@ TEST(circuit, max_magic) {
             CCZ q0 q1 q2 if b1
             CSWAP q0 q1 q2 if b2
         )CIRCUIT")
-            .max_magic(),
+            .estimate_ccz_state_weight(),
         6);
     ASSERT_EQ(
         Circuit(R"CIRCUIT(
@@ -158,7 +165,7 @@ TEST(circuit, max_magic) {
         SWAP q15 q16 if b20
         POP_CONDITION
     )CIRCUIT")
-            .max_magic(),
+            .estimate_ccz_state_weight(),
         0);
 }
 

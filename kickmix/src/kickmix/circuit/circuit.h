@@ -76,7 +76,12 @@ struct Circuit {
     static Circuit from_kmb_file(FILE *file, bool skip_magic = false);
     static Circuit from_kmx_or_kmb_file(FILE *file);
 
-    size_t max_magic() const;
+    /// Quick and dirty estimate of how many magic states are needed.
+    /// This estimates Z_pow[level=3] instructions as half a CCZ state (based on CCZ-to-2T catalysis).
+    /// This over-estimates Z_POW[level<3] instructions as half of a CCZ state.
+    /// This under-estimates Z_POW[level>3] instructions as half of a CCZ state.
+    size_t estimate_ccz_state_weight() const;
+
     size_t reaction_depth() const;
     size_t compute_max_condition_depth() const;
     std::string text_diagram() const;

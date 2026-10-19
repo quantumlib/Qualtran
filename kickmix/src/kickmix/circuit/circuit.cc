@@ -769,8 +769,8 @@ size_t Circuit::reaction_depth() const {
     return compute_reaction_depth(num_qubits, num_bits, ops);
 }
 
-size_t Circuit::max_magic() const {
-    return num_qqq_ops;
+size_t Circuit::estimate_ccz_state_weight() const {
+    return num_qqq_ops + (num_angle_ops + 1) / 2;
 }
 
 void Circuit::write_kmx_to(std::ostream &out) const {
@@ -981,6 +981,9 @@ size_t Circuit::compute_num_bits() const {
     max_bit = std::max(max_bit, max_u32(bc, num_c_ops));
     saw |= num_b_ops > 0;
     max_bit = std::max(max_bit, max_u32(b0, num_b_ops));
+    if (max_bit & TAG_MASK) {
+        throw std::invalid_argument("Malformed circuit data: bit data isn't supposed to be tagged.");
+    }
     for (const auto &r : register_data) {
         for (const auto &e : r.contents) {
             if (e.is_bit()) {
@@ -1001,6 +1004,9 @@ size_t Circuit::compute_num_qubits() const {
     max_qubit = std::max(max_qubit, max_u32(qq0, num_qq_ops));
     max_qubit = std::max(max_qubit, max_u32(qq1, num_qq_ops));
     max_qubit = std::max(max_qubit, max_u32(q0, num_q_ops));
+    if (max_qubit & TAG_MASK) {
+        throw std::invalid_argument("Malformed circuit data: qubit data isn't supposed to be tagged.");
+    }
     for (const auto &r : register_data) {
         for (const auto &e : r.contents) {
             if (e.is_qubit()) {
@@ -1508,12 +1514,12 @@ void Circuit::write_analysis_svg_to(std::ostream &out, size_t reference_qubit_co
     // Perform circuit analysis.
     std::vector<uint64_t> active_qubits((num_qubits + 63) / 64);
     std::vector<std::string_view> name_stack;
-    std::vector<size_t> toffoli_stack;
+    std::vector<double> ccz_weight_stack;
     std::vector<std::vector<uint64_t>> qubit_touched_stack;
-    size_t toffoli_count = 0;
+    double ccz_weight = 0;  // CCX + CCZ + CSWAP + T/2 + (other non-Clifford rotations) * 4
     std::vector<std::string> group_names;
     std::vector<size_t> group_heights;
-    std::vector<size_t> group_toffoli_counts;
+    std::vector<double> group_ccz_weights;
     std::vector<size_t> group_max_active_qubits;
     std::vector<size_t> group_hits;
     std::string cur_name;
@@ -1522,7 +1528,7 @@ void Circuit::write_analysis_svg_to(std::ostream &out, size_t reference_qubit_co
         cur_name.append(":");
         cur_name.append(name);
         name_stack.push_back(name);
-        toffoli_stack.push_back(toffoli_count);
+        ccz_weight_stack.push_back(ccz_weight);
         qubit_touched_stack.push_back(active_qubits);
     };
 
@@ -1539,14 +1545,14 @@ void Circuit::write_analysis_svg_to(std::ostream &out, size_t reference_qubit_co
         }
         if (k_group == group_names.size()) {
             group_names.push_back(cur_name);
-            group_toffoli_counts.push_back(0);
+            group_ccz_weights.push_back(0);
             group_heights.push_back(name_stack.size());
             group_max_active_qubits.push_back(0);
             group_hits.push_back(0);
         }
 
         // Update group stats.
-        group_toffoli_counts[k_group] += toffoli_count - toffoli_stack.back();
+        group_ccz_weights[k_group] += ccz_weight - ccz_weight_stack.back();
         auto popped_touched = std::move(qubit_touched_stack.back());
         size_t max_active_qubits = 0;
         for (size_t k = 0; k < popped_touched.size(); k++) {
@@ -1557,7 +1563,7 @@ void Circuit::write_analysis_svg_to(std::ostream &out, size_t reference_qubit_co
 
         // Pop stack frame.
         cur_name.resize(cur_name.size() - (name.size() + 1));
-        toffoli_stack.pop_back();
+        ccz_weight_stack.pop_back();
         name_stack.pop_back();
         qubit_touched_stack.pop_back();
     };
@@ -1614,12 +1620,14 @@ void Circuit::write_analysis_svg_to(std::ostream &out, size_t reference_qubit_co
             case OpType::CCX_IF:
             case OpType::CCZ_IF:
             case OpType::CSWAP_IF:
-                toffoli_count += 1;
+                ccz_weight += 1;
                 break;
             case OpType::Z_POW:
             case OpType::Z_POW_IF:
-                if (!op.angle.is_multiple_of_90_degrees()) {
-                    toffoli_count += 1;  // TODO: better handle the conversion from Z_POW to Toffoli
+                if (!op.angle.is_multiple_of_45_degrees()) {
+                    ccz_weight += 4;  // Assumes ~20T ~= 4 Toffoli synthesis.
+                } else if (!op.angle.is_multiple_of_90_degrees()) {
+                    ccz_weight += 0.5;  // Assumes CCZ-to-2T catalysis.
                 }
                 break;
             case OpType::INFO_TAG:
@@ -1664,25 +1672,25 @@ void Circuit::write_analysis_svg_to(std::ostream &out, size_t reference_qubit_co
 
     out << R"SVG(<svg viewBox="-100 -140 1200.0 340.0" style="display: block; margin: auto;" xmlns="http://www.w3.org/2000/svg">)SVG"
         << "\n";
-    double x_scale = 1000.0 / toffoli_count;
+    double x_scale = 1000.0 / std::max(ccz_weight, 1.0);
     double y_scale = 100.0 / num_qubits;
-    std::vector<size_t> layer_xs{0};
+    std::vector<double> layer_xs{0};
     for (size_t k = 0; k < group_names.size(); k++) {
         auto h = group_heights[k];
         while (layer_xs.size() <= h) {
             layer_xs.push_back(0);
         }
-        size_t layer_x = layer_xs[h];
+        double layer_x = layer_xs[h];
         for (size_t k2 = 0; k2 < h; k2++) {
             layer_x = std::max(layer_xs[k2], layer_x);
         }
-        layer_xs[h] = layer_x + group_toffoli_counts[k];
+        layer_xs[h] = layer_x + group_ccz_weights[k];
         std::string_view group_name = group_names[k];
         group_name = group_name.substr(group_name.rfind(':') + 1);
         out << "<rect";
         out << " x=\"" << layer_x * x_scale << "\"";
         out << " y=\"" << -y_scale * group_max_active_qubits[k] << "\"";
-        out << " width=\"" << group_toffoli_counts[k] * x_scale << "\"";
+        out << " width=\"" << group_ccz_weights[k] * x_scale << "\"";
         out << " height=\"" << y_scale * group_max_active_qubits[k] << "\"";
         out << " stroke=\"black\"";
         out << " fill=\"blue\"";
@@ -1691,14 +1699,14 @@ void Circuit::write_analysis_svg_to(std::ostream &out, size_t reference_qubit_co
             out << "<rect";
             out << " x=\"" << layer_x * x_scale << "\"";
             out << " y=\"" << h * 10 - 20 << "\"";
-            out << " width=\"" << group_toffoli_counts[k] * x_scale << "\"";
+            out << " width=\"" << group_ccz_weights[k] * x_scale << "\"";
             out << " height=\"" << 10 << "\"";
             out << " stroke=\"black\"";
             out << " fill=\"red\"";
             out << " opacity=\"0.8\"";
             out << " />\n";
             out << "<text";
-            out << " x=\"" << (layer_x + group_toffoli_counts[k] * 0.5) * x_scale << "\"";
+            out << " x=\"" << (layer_x + group_ccz_weights[k] * 0.5) * x_scale << "\"";
             out << " y=\"" << h * 10 - 13 << "\"";
             std::string title;
             title.append(group_name);
@@ -1707,7 +1715,7 @@ void Circuit::write_analysis_svg_to(std::ostream &out, size_t reference_qubit_co
                 title.append(std::to_string(group_hits[k]));
                 title.append(")");
             }
-            float box_width = group_toffoli_counts[k] * x_scale;
+            float box_width = group_ccz_weights[k] * x_scale;
             float font_size = title.empty() ? 0.5f : box_width / title.size() * 2;
             font_size = std::min(5.0f, font_size);
             font_size = std::max(0.5f, font_size);
@@ -1748,7 +1756,8 @@ void Circuit::write_analysis_svg_to(std::ostream &out, size_t reference_qubit_co
     out << " dominant-baseline=\"bottom\"";
     out << " text-anchor=\"middle\"";
     out << " fill=\"black\"";
-    out << " >" << num_qubits << " qubits, " << max_magic() << " toffolis</text>\n";
+    out << " >" << num_qubits << " qubits, ";
+    out << ccz_weight << " CCZ states (=CCX + CCZ + CSWAP + Z_POW[level=3]/2 + 4 Z_POW[level>=4])</text>\n";
     if (reference_qubit_count > 0) {
         out << "<path";
         out << " d=\"";

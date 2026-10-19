@@ -229,7 +229,7 @@ TEST(UnaryIterationCursor, toffoli_count_of_a_controlled_sweep) {
     }
 
     ASSERT_EQ(expected_toffolis(8, true, address_values), 78);
-    ASSERT_EQ(builder.finish_circuit().max_magic(), 78);
+    ASSERT_EQ(builder.finish_circuit().estimate_ccz_state_weight(), 78);
 }
 
 TEST(UnaryIterationCursor, toffoli_count_of_an_uncontrolled_sweep) {
@@ -251,7 +251,7 @@ TEST(UnaryIterationCursor, toffoli_count_of_an_uncontrolled_sweep) {
     }
 
     ASSERT_EQ(expected_toffolis(8, false, address_values), 77);
-    ASSERT_EQ(builder.finish_circuit().max_magic(), 77);
+    ASSERT_EQ(builder.finish_circuit().estimate_ccz_state_weight(), 77);
 }
 
 TEST(UnaryIterationCursor, toffoli_count_of_a_bit_controlled_sweep) {
@@ -276,7 +276,7 @@ TEST(UnaryIterationCursor, toffoli_count_of_a_bit_controlled_sweep) {
     }
 
     ASSERT_EQ(expected_toffolis(8, false, address_values), 77);
-    ASSERT_EQ(builder.finish_circuit().max_magic(), 77);
+    ASSERT_EQ(builder.finish_circuit().estimate_ccz_state_weight(), 77);
 }
 
 TEST(UnaryIterationCursor, moving_between_unrepresentable_and_representable_address_values) {
@@ -297,7 +297,7 @@ TEST(UnaryIterationCursor, moving_between_unrepresentable_and_representable_addr
             cursor.move_to(6);
             cursor.close();
         }
-        ASSERT_EQ(builder.finish_circuit().max_magic(), 2 * full_build) << "controlled=" << controlled;
+        ASSERT_EQ(builder.finish_circuit().estimate_ccz_state_weight(), 2 * full_build) << "controlled=" << controlled;
     }
 }
 
@@ -334,7 +334,7 @@ TEST(UnaryIterationCursor, toffoli_count_of_random_access_matches_the_closed_for
             cursor.close();
         }
 
-        ASSERT_EQ(builder.finish_circuit().max_magic(), expected_toffolis(num_address_bits, controlled, address_values))
+        ASSERT_EQ(builder.finish_circuit().estimate_ccz_state_weight(), expected_toffolis(num_address_bits, controlled, address_values))
             << "num_address_bits=" << num_address_bits << " controlled=" << controlled;
     }
 }
@@ -395,7 +395,7 @@ TEST(UnaryIterationCursor, close_parks_the_cursor_and_is_idempotent_and_reusable
     ASSERT_EQ(cursor.cur_address_value(), 3);
     cursor.close();
 
-    ASSERT_EQ(builder.finish_circuit().max_magic(), 4);
+    ASSERT_EQ(builder.finish_circuit().estimate_ccz_state_weight(), 4);
 }
 
 TEST(UnaryIterationCursor, empty_address_tracks_the_control) {

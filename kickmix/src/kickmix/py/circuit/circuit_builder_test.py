@@ -92,7 +92,7 @@ def test_builder_mark():
         ">reused (x2)</text>",
         ">outer</text>",
         ">inner &lt;0 &amp; 1&gt;</text>",
-        ">4 qubits, 3 toffolis</text>",
+        ">4 qubits, 3 CCZ states",
     ]:
         assert expected in svg
 

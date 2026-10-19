@@ -284,7 +284,9 @@ void kickmix_py::register_unary_iteration_methods(pybind11::class_<PyUnaryIterat
                 >>> with cursor:
                 ...     cursor.move_to(2)
                 ...     builder.cx(cursor.match_qubit, target[0])
-                >>> builder.finish_circuit().max_magic()
+                >>> circuit = builder.finish_circuit()
+                >>> stats = circuit.operation_statistics()
+                >>> stats.num_toffoli_like
                 1
         )DOC")
             .data());

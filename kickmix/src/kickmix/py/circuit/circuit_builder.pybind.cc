@@ -2306,7 +2306,9 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 >>> inv, scaffold = builder.init_gf2_inverse_with_scaffold(inp)
                 >>> len(scaffold)
                 24
-                >>> builder.finish_circuit().max_magic()
+                >>> circuit = builder.finish_circuit()
+                >>> stats = circuit.operation_statistics()
+                >>> stats.num_toffoli_like
                 108
         )DOC")
             .data());
@@ -2340,7 +2342,9 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 >>> inp = builder.create_quantum_register(8, name='inp')
                 >>> inv = builder.init_gf2_inverse(inp)
                 >>> builder.del_gf2_inverse(inp, target=inv)
-                >>> builder.finish_circuit().max_magic()  # 108 to build, 108 to rebuild
+                >>> circuit = builder.finish_circuit()
+                >>> stats = circuit.operation_statistics()
+                >>> stats.num_toffoli_like  # 108 to build, 108 to rebuild
                 216
         )DOC")
             .data());
@@ -2378,7 +2382,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 >>> inv, scaffold = builder.init_gf2_inverse_with_scaffold(inp)
                 >>> builder.del_gf2_inverse_with_scaffold(
                 ...     inp, target=inv, scaffold=scaffold)
-                >>> builder.finish_circuit().max_magic()  # no more than building it once
+                >>> stats = builder.finish_circuit().operation_statistics()
+                >>> stats.num_toffoli_like  # no more than building it once
                 108
         )DOC")
             .data());
@@ -2418,7 +2423,9 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 >>> lhs = builder.create_quantum_register(8, name='lhs')
                 >>> rhs = builder.create_quantum_register(8, name='rhs')
                 >>> quotient = builder.init_gf2_div(lhs, rhs)
-                >>> builder.finish_circuit().max_magic()
+                >>> circuit = builder.finish_circuit()
+                >>> stats = circuit.operation_statistics()
+                >>> stats.num_toffoli_like
                 135
         )DOC")
             .data());
@@ -2462,7 +2469,9 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 >>> quotient, scaffold = builder.init_gf2_div_with_scaffold(lhs, rhs)
                 >>> len(scaffold)
                 32
-                >>> builder.finish_circuit().max_magic()
+                >>> circuit = builder.finish_circuit()
+                >>> stats = circuit.operation_statistics()
+                >>> stats.num_toffoli_like
                 135
         )DOC")
             .data());
@@ -2498,7 +2507,9 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 >>> rhs = builder.create_quantum_register(8, name='rhs')
                 >>> target = builder.create_quantum_register(8, name='target')
                 >>> builder.ixor_gf2_div(lhs, rhs, target=target)
-                >>> builder.finish_circuit().max_magic()
+                >>> circuit = builder.finish_circuit()
+                >>> stats = circuit.operation_statistics()
+                >>> stats.num_toffoli_like
                 135
         )DOC")
             .data());
@@ -2534,7 +2545,9 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 >>> rhs = builder.create_quantum_register(8, name='rhs')
                 >>> quotient = builder.init_gf2_div(lhs, rhs)
                 >>> builder.del_gf2_div(lhs, rhs, target=quotient)
-                >>> builder.finish_circuit().max_magic()  # 135 to build, 108 to rebuild
+                >>> circuit = builder.finish_circuit()
+                >>> stats = circuit.operation_statistics()
+                >>> stats.num_toffoli_like  # 135 to build, 108 to rebuild
                 243
         )DOC")
             .data());
@@ -2574,7 +2587,9 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 >>> quotient, scaffold = builder.init_gf2_div_with_scaffold(lhs, rhs)
                 >>> builder.del_gf2_div_with_scaffold(
                 ...     lhs, rhs, target=quotient, scaffold=scaffold)
-                >>> builder.finish_circuit().max_magic()  # no more than building it once
+                >>> circuit = builder.finish_circuit()
+                >>> stats = circuit.operation_statistics()
+                >>> stats.num_toffoli_like  # no more than building it once
                 135
         )DOC")
             .data());
