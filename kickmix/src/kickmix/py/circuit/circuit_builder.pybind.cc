@@ -3,6 +3,7 @@
 #include "circuit.pybind.h"
 #include "kickmix/py/circuit/ops/bit_store.pybind.h"
 #include "kickmix/py/circuit/ops/ccx.pybind.h"
+#include "kickmix/py/circuit/ops/ccz.pybind.h"
 #include "kickmix/py/circuit/ops/cswap.pybind.h"
 #include "kickmix/py/circuit/ops/cx.pybind.h"
 #include "kickmix/py/circuit/ops/cz.pybind.h"
@@ -995,6 +996,43 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 >>> builder.finish_circuit()
                 km.Circuit('''
                     CZ q0 q1
+                ''')
+        )DOC")
+            .data());
+
+    c_circuit_builder.def(
+        "ccz",
+        &broadcast_ccz_obj,
+        pybind11::arg("control1"),
+        pybind11::arg("control2"),
+        pybind11::arg("control3"),
+        clean_doc_string(R"DOC(
+            @signature def ccz(self, control1: bool | km.b | km.q | km.array, control2: bool | km.b | km.q | km.array, control3: bool | km.b | km.q | km.array) -> None:
+            Appends many CCZ gates to the circuit.
+
+            This method broadcasts over km.array arguments. If any of the arguments
+            is a km.array, an append is performed for each array index. When
+            multiple km.array arguments are used, they are combined by zipping
+            (i.e. using two arrays of length n will produce n instructions rather
+            than n*n instructions).
+
+            The exact kind of operation(s) appended to the circuit depends on the
+            types of the controls. For example, if one of the controls is the
+            boolean value True instead of a qubit, then a CZ instruction will be
+            appended instead of a CCZ instruction.
+
+            Args:
+                control1: The first control determining if phasing occurs.
+                control2: The second control determining if phasing occurs.
+                control3: The third control determining if phasing occurs.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.ccz(km.q(0), km.q(1), km.q(2))
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    CCZ q0 q1 q2
                 ''')
         )DOC")
             .data());
