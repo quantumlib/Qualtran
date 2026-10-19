@@ -54,6 +54,7 @@ void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
             return result;
         },
         clean_doc_string(R"DOC(
+            @signature def register_data(self) -> dict[str | km.r, km.array]:
             The names and contents of registers in the circuit, as a dict.
 
             Examples:
@@ -72,7 +73,7 @@ void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
                 ...     CX q0 q1
                 ...     X q0
                 ... ''')
-                >>> data: dict[str, km.array] = circuit.register_data
+                >>> data: dict[str | km.r, km.array] = circuit.register_data
                 >>> for k, v in data.items():
                 ...     print(f"{k!r}: {v!r}")
                 'test': km.array([km.q(0), km.q(1), km.q(2)])

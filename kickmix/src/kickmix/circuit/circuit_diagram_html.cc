@@ -332,7 +332,7 @@ Controls: mouse wheel to zoom, click and drag to pan.)HTML";
                 } else {
                     svg << escape_text_for_html(reg.name);
                 }
-                svg << "[" << k2 << "]==" << qb.untagged_id();
+                svg << "[" << k2 << "]=" << qb;
                 svg << "</text>";
             }
 
@@ -366,7 +366,12 @@ Controls: mouse wheel to zoom, click and drag to pan.)HTML";
                 svg << " font-family=\"monospace\"";
                 svg << " fill=\"black\"";
                 svg << " >";
-                svg << RegisterId{(uint32_t)k} << "[" << k2 << "]";
+                if (reg.name.empty()) {
+                    svg << RegisterId{(uint32_t)k};
+                } else {
+                    svg << escape_text_for_html(reg.name);
+                }
+                svg << "[" << k2 << "]";
                 svg << "</text>";
             }
 

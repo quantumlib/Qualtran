@@ -133,6 +133,15 @@ QubitOrXZBitOrXZBool kickmix_py::obj_to_qubit_or_xzbit_or_xzbool(
             PyErr_Clear();
         }
     }
+    if (type_ptr == &PyUnicode_Type) {
+        auto value = pybind11::cast<std::string_view>(obj);
+        if (value == "|+>") {
+            return XBool(false);
+        }
+        if (value == "|->") {
+            return XBool(true);
+        }
+    }
 
     std::stringstream ss;
     ss << "Expected a km.q | km.b | bool | km.xbool | km.xb but got ";
@@ -163,7 +172,7 @@ BitId kickmix_py::obj_to_bit_id(const pybind11::handle &obj, const char *context
     }
 
     std::stringstream ss;
-    ss << "Expected a qm.b but got ";
+    ss << "Expected a km.b but got ";
     ss << context_value_name;
     ss << "=" << pybind11::repr(obj);
     throw pybind11::type_error(ss.str());
@@ -284,7 +293,7 @@ void kickmix_py::register_rid_methods(pybind11::class_<RegisterId> &c_rid) {
             return self.id;
         },
         clean_doc_string(R"DOC(
-            Returns the index of the bit.
+            Returns the index of the register.
 
             Examples:
                 >>> import kickmix as km
@@ -299,7 +308,7 @@ void kickmix_py::register_rid_methods(pybind11::class_<RegisterId> &c_rid) {
             return pybind11::hash(pybind11::cast(self.id));
         },
         clean_doc_string(R"DOC(
-            Returns a hash of the bit.
+            Returns a hash of the register.
         )DOC")
             .data());
 
@@ -313,7 +322,7 @@ void kickmix_py::register_rid_methods(pybind11::class_<RegisterId> &c_rid) {
             return ss.str();
         },
         clean_doc_string(R"DOC(
-            Returns a parseable text representation of the bit.
+            Returns a parseable text representation of the register.
         )DOC")
             .data());
 
@@ -326,6 +335,22 @@ void kickmix_py::register_rid_methods(pybind11::class_<RegisterId> &c_rid) {
         },
         clean_doc_string(R"DOC(
             Returns a description of the register identifier.
+        )DOC")
+            .data());
+
+    c_rid.def(
+        "__lt__",
+        [](RegisterId &self, const pybind11::object &rhs) {
+            if ((void *)Py_TYPE(rhs.ptr()) == PYBIND_TYPE_PTR_REGISTER_ID) {
+                return self.id < unsafe_pyobject_ptr_to_register_id_ptr(rhs.ptr())->id;
+            }
+            std::stringstream ss;
+            ss << "Don't know how to compare to ";
+            ss << pybind11::repr(rhs);
+            throw pybind11::type_error(ss.str());
+        },
+        clean_doc_string(R"DOC(
+            Does a less-than comparison.
         )DOC")
             .data());
 
@@ -473,7 +498,7 @@ void kickmix_py::register_qid_methods(pybind11::class_<QubitId> &c_qid) {
             return pybind11::hash(pybind11::cast(self.tagged_id));
         },
         clean_doc_string(R"DOC(
-            Returns a hash of the bit.
+            Returns a hash of the qubit.
         )DOC")
             .data());
 
@@ -513,7 +538,6 @@ void kickmix_py::register_qid_methods(pybind11::class_<QubitId> &c_qid) {
         )DOC")
             .data());
 
-    c_qid.def(pybind11::self < pybind11::self, "Compares two QIds.");
     c_qid.def(pybind11::self == pybind11::self, "Determines if two QIds are equal.");
     c_qid.def(pybind11::self != pybind11::self, "Determines if two QIds are not equal.");
 
@@ -553,7 +577,7 @@ void kickmix_py::register_xbool_methods(pybind11::class_<XBool> &c_xbool) {
             return pybind11::hash(pybind11::cast(self.tagged_id));
         },
         clean_doc_string(R"DOC(
-            Returns a hash of the bit.
+            Returns a hash of the xbool.
         )DOC")
             .data());
 
