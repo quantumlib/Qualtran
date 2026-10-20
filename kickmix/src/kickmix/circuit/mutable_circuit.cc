@@ -490,7 +490,7 @@ void MutableCircuit::append_from_kmx_text(std::string_view kmx_text) {
 }
 
 template <typename T>
-static T *aligned_alloc_32(size_t count) {
+static T *aligned_alloc_32_else_throw(size_t count) {
     if (count == 0) {
         return nullptr;
     }
@@ -564,18 +564,18 @@ Circuit MutableCircuit::to_validated_circuit() const {
     result.num_info_tag_chars = info_tag_chars.size();
 
     // Copy qubit and bit data into contiguous memory blocks.
-    result.op_types = aligned_alloc_32<kickmix::OpType>(op_types.size());
-    result.qqq0 = aligned_alloc_32<uint32_t>(qqq0.size());
-    result.qqq1 = aligned_alloc_32<uint32_t>(qqq1.size());
-    result.qqq2 = aligned_alloc_32<uint32_t>(qqq2.size());
-    result.qq0 = aligned_alloc_32<uint32_t>(qq0.size());
-    result.qq1 = aligned_alloc_32<uint32_t>(qq1.size());
-    result.q0 = aligned_alloc_32<uint32_t>(q0.size());
-    result.bc = aligned_alloc_32<uint32_t>(bc.size());
-    result.b0 = aligned_alloc_32<uint32_t>(b0.size());
-    result.angles = aligned_alloc_32<FixedPrecisionAngle128>(angles.size());
-    result.info_tag_end_offsets = aligned_alloc_32<uint64_t>(info_tag_end_offsets.size());
-    result.info_tag_chars = aligned_alloc_32<char>(info_tag_chars.size());
+    result.op_types = aligned_alloc_32_else_throw<kickmix::OpType>(op_types.size());
+    result.qqq0 = aligned_alloc_32_else_throw<uint32_t>(qqq0.size());
+    result.qqq1 = aligned_alloc_32_else_throw<uint32_t>(qqq1.size());
+    result.qqq2 = aligned_alloc_32_else_throw<uint32_t>(qqq2.size());
+    result.qq0 = aligned_alloc_32_else_throw<uint32_t>(qq0.size());
+    result.qq1 = aligned_alloc_32_else_throw<uint32_t>(qq1.size());
+    result.q0 = aligned_alloc_32_else_throw<uint32_t>(q0.size());
+    result.bc = aligned_alloc_32_else_throw<uint32_t>(bc.size());
+    result.b0 = aligned_alloc_32_else_throw<uint32_t>(b0.size());
+    result.angles = aligned_alloc_32_else_throw<FixedPrecisionAngle128>(angles.size());
+    result.info_tag_end_offsets = aligned_alloc_32_else_throw<uint64_t>(info_tag_end_offsets.size());
+    result.info_tag_chars = aligned_alloc_32_else_throw<char>(info_tag_chars.size());
     op_types.memcpy_into(result.op_types);
     qqq0.memcpy_into(result.qqq0);
     qqq1.memcpy_into(result.qqq1);
