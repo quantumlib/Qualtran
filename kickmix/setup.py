@@ -31,11 +31,7 @@ RELEVANT_SOURCE_FILES = sorted(set(ALL_SOURCE_FILES) - set(TEST_FILES + PERF_FIL
 __version__ = '0.1.dev0'
 
 if platform.system().startswith('Win'):
-    common_compile_args = [
-        '/std:c++20',
-        '/O2',
-        f'/DVERSION_INFO={__version__}',
-    ]
+    common_compile_args = ['/std:c++20', '/O2', f'/DVERSION_INFO={__version__}']
 else:
     common_compile_args = [
         '-std=c++20',
