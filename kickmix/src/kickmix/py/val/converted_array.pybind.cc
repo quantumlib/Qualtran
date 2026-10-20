@@ -26,6 +26,9 @@ static T *aligned_alloc_32(size_t count) {
     if (count == 0) {
         return nullptr;
     }
+    if (count > SIZE_MAX / sizeof(T)) {
+        throw std::invalid_argument("Too much memory to allocate.");
+    }
     size_t bytes = count * sizeof(T);
     bytes += size_t{31};
     bytes &= ~size_t{31};

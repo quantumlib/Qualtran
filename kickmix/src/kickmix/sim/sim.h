@@ -465,12 +465,14 @@ struct Sim {
                     current_base_condition &= bits[*data_bit_cond++];
                     condition_stack.push_back(current_base_condition);
                     if constexpr (count_shots) {
-                        cond = ~TWord{};
+                        cond = ~TWord{};  // Always count this operation in stats (not affected by conditions).
                     }
                     break;
 
                 case OpType::POP_CONDITION:
-                    condition_stack.pop_back();
+                    if (!condition_stack.empty()) {
+                        condition_stack.pop_back();
+                    }
                     current_base_condition = condition_stack.empty() ? ~TWord{} : condition_stack.back();
                     if constexpr (count_shots) {
                         cond = ~TWord{};
@@ -479,7 +481,7 @@ struct Sim {
 
                 case OpType::INFO_TAG:
                     if constexpr (count_shots) {
-                        cond = ~TWord{};
+                        cond = ~TWord{};  // Always count this operation in stats (not affected by conditions).
                     }
                     break;
 
