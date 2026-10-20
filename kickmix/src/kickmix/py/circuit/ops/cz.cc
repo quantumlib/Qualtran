@@ -60,8 +60,8 @@ void CircuitBuilder::broadcast_cz(
         throw std::invalid_argument("broadcast_cz: len(controls1) != len(controls2)");
     }
     size_t n = controls1.size();
-    pattern.pattern_push_condition(controls2);
-    pattern.pattern_neg_if(controls1);
+    pattern.pattern_push_condition(controls1);
+    pattern.pattern_neg_if(controls2);
     pattern.pattern_pop_condition();
     pattern.dump_into(mut, 0, n, false);
 }
@@ -150,8 +150,8 @@ void CircuitBuilder::cz(QubitOrBitOrBool c1, QubitOrBitOrBool c2) {
         if (c2.is_qubit()) {
             z_if((QubitId)c2, (BitId)c1);
         } else if (c2.is_bit()) {
-            push_condition((BitId)c2);
-            neg_if((BitId)c1);
+            push_condition((BitId)c1);
+            neg_if((BitId)c2);
             pop_condition();
         } else if ((bool)c2) {
             neg_if((BitId)c1);

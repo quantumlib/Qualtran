@@ -117,6 +117,10 @@ uint64_t PyOperationStatistics::num_toffoli_like() const {
            raw_op_counts[static_cast<uint8_t>(OpType::CSWAP)] + raw_op_counts[static_cast<uint8_t>(OpType::CSWAP_IF)];
 }
 
+uint64_t PyOperationStatistics::num_non_clifford() const {
+    return num_toffoli_like() + num_z_pow(3, {});
+}
+
 uint64_t PyOperationStatistics::num_t_like() const {
     return z_pow_level_counts[3];
 }
@@ -272,6 +276,15 @@ void kickmix_py::register_operation_statistics_methods(pybind11::class_<PyOperat
             `CSWAP q0 q1 q2`) and classically conditioned (`CCX q0 q1 q2 if b3`,
             etc.) operations.
 
+            Caution: This doesn't count Z_POW operations! For example, note that a CCZ
+            can be decomposed into seven Z_POW instructions (plus six CNOTs). Different
+            architectures have different costs for different Z_POWs and CCZs, so kickmix
+            leaves merging those costs as a task for the user. (Consider: it takes four
+            T states to produce a CCZ state, but a CCZ state can only be split into two T
+            states [using catalysis], so whether the T-to-CCZ cost ratio is 4:1 or 2:1
+            depends on whether your magic state factories are producing T states or CCZ
+            states.)
+
             Examples:
                 >>> import kickmix as km
                 >>> c = km.Circuit('''
@@ -279,9 +292,35 @@ void kickmix_py::register_operation_statistics_methods(pybind11::class_<PyOperat
                 ...     CCZ q0 q1 q2 if b0
                 ...     CSWAP q0 q1 q2
                 ...     CX q0 q1
+                ...     Z_POW q0 0.25  # not counted!
                 ... ''')
                 >>> c.operation_statistics().num_toffoli_like
                 3
+        )DOC")
+            .data());
+
+    c_stats.def_property_readonly(
+        "num_non_clifford",
+        &PyOperationStatistics::num_non_clifford,
+        clean_doc_string(R"DOC(
+            The number of non-Clifford operations that were counted.
+
+            This count includes CCX gates, CCZ gates, CSWAP gates, and Z_POW gates with
+            an exponent that isn't a multiple of 0.5 (i.e. non-Clifford rotations).
+
+            Examples:
+                >>> import kickmix as km
+                >>> c = km.Circuit('''
+                ...     CCX q0 q1 q2
+                ...     CCZ q0 q1 q2
+                ...     CSWAP q0 q1 q2
+                ...     Z_POW q0 0.25
+                ...
+                ...     CZ q0 q1
+                ...     Z_POW q0 0.5
+                ... ''')
+                >>> c.operation_statistics().num_non_clifford
+                4
         )DOC")
             .data());
 

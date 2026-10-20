@@ -95,7 +95,7 @@ TEST(gen_gf_inverse, explicit_chain_saves_toffolis_on_uncompute) {
         CircuitGenCtx ctx{.clean_workspace = clean};
         gen_gf_inverse(builder, ctx, field, target, input);
         gen_gf_uninverse(builder, ctx, field, target, input);
-        self_cleaning_round_trip_toffolis = builder.finish_circuit().max_magic();
+        self_cleaning_round_trip_toffolis = builder.finish_circuit().estimate_ccz_state_weight();
     }
     {
         CircuitBuilder builder;
@@ -104,7 +104,7 @@ TEST(gen_gf_inverse, explicit_chain_saves_toffolis_on_uncompute) {
         auto chain = builder.reserve_qubits(gf_inverse_chain_size(field));
         gen_gf_inverse(builder, CircuitGenCtx{}, field, target, input, chain);
         gen_gf_uninverse(builder, CircuitGenCtx{}, field, target, input, chain);
-        explicit_chain_round_trip_toffolis = builder.finish_circuit().max_magic();
+        explicit_chain_round_trip_toffolis = builder.finish_circuit().estimate_ccz_state_weight();
     }
     {
         CircuitBuilder builder;
@@ -112,7 +112,7 @@ TEST(gen_gf_inverse, explicit_chain_saves_toffolis_on_uncompute) {
         auto target = builder.append_register(64);
         auto chain = builder.reserve_qubits(gf_inverse_chain_size(field));
         gen_gf_uninverse(builder, CircuitGenCtx{}, field, target, input, chain);
-        uninverse_with_chain_toffolis = builder.finish_circuit().max_magic();
+        uninverse_with_chain_toffolis = builder.finish_circuit().estimate_ccz_state_weight();
     }
     ASSERT_EQ(uninverse_with_chain_toffolis, 0);
     ASSERT_EQ(explicit_chain_round_trip_toffolis, 7290);

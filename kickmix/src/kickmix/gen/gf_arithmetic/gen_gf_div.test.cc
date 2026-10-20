@@ -107,14 +107,14 @@ TEST(gen_gf_div, workspace_and_cost_accounting) {
     auto target = div_builder.append_register(32);
     auto clean = div_builder.reserve_qubits(gf_div_workspace_size(field));
     gen_gf_div(div_builder, CircuitGenCtx{.clean_workspace = clean}, field, target, lhs, rhs);
-    size_t div_ops = div_builder.finish_circuit().max_magic();
+    size_t div_ops = div_builder.finish_circuit().estimate_ccz_state_weight();
 
     CircuitBuilder inv_builder;
     auto in2 = inv_builder.append_register(32);
     auto out2 = inv_builder.append_register(32);
     auto clean2 = inv_builder.reserve_qubits(gf_inverse_workspace_size(field));
     gen_gf_inverse(inv_builder, CircuitGenCtx{.clean_workspace = clean2}, field, out2, in2);
-    size_t inv_ops = inv_builder.finish_circuit().max_magic();
+    size_t inv_ops = inv_builder.finish_circuit().estimate_ccz_state_weight();
 
     ASSERT_LT(div_ops, 2 * inv_ops) << div_ops << " vs " << inv_ops;
 }

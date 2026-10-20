@@ -43,7 +43,7 @@ def test_controlled_left_rotate_cost():
     control = builder.create_quantum_register(1, "control")[0]
     builder.left_rotate(target, control=control)
     circuit = builder.finish_circuit()
-    assert circuit.max_magic() == (len(target) - 1)
+    assert circuit.operation_statistics().num_non_clifford == (len(target) - 1)
 
 
 def test_indexed_left_rotate_cost():
@@ -53,7 +53,7 @@ def test_indexed_left_rotate_cost():
     builder.left_rotate(target, shift=shift)
     circuit = builder.finish_circuit()
     expected = (len(target) // 2) * (len(shift) + 1) - len(shift)
-    assert circuit.max_magic() == expected
+    assert circuit.operation_statistics().num_non_clifford == expected
 
 
 def test_controlled_indexed_left_rotate_cost():
@@ -64,7 +64,7 @@ def test_controlled_indexed_left_rotate_cost():
     builder.left_rotate(target, shift=shift, control=control)
     circuit = builder.finish_circuit()
     expected = (len(target) // 2 + 1) * (len(shift) + 1) - len(shift)
-    assert circuit.max_magic() == expected
+    assert circuit.operation_statistics().num_non_clifford == expected
 
 
 @pytest.mark.parametrize("n", [*range(8), 13, 64])

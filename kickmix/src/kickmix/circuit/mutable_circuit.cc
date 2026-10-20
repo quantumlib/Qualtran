@@ -129,7 +129,7 @@ static uint32_t read_register_id(const char *&c, const char *end, std::string_vi
         *error = "expected_a_register_id";
         return 0;
     }
-    return try_parse_uint32_t_below_max(word.substr(1), error, UINT32_MAX);
+    return try_parse_uint32_t_below_max(word.substr(1), error, MAX_NUM_REGISTERS);
 }
 
 static std::string read_quoted_string_body(const char *&c, const char *end, std::string_view *error) {
@@ -296,7 +296,7 @@ static void parse_debug_print_line(MutableCircuit &builder, const char *c, const
                 }
             }
         } else if (w.starts_with("r")) {
-            RegisterId r = {try_parse_uint32_t_below_max(w.substr(1), error, UINT32_MAX)};
+            RegisterId r = {try_parse_uint32_t_below_max(w.substr(1), error, MAX_NUM_REGISTERS)};
             if (error->empty()) {
                 if (r.id < builder.register_data.size()) {
                     for (const auto &e : builder.register_data[r.id].contents) {
@@ -490,14 +490,21 @@ void MutableCircuit::append_from_kmx_text(std::string_view kmx_text) {
 }
 
 template <typename T>
-static T *aligned_alloc_32(size_t count) {
+static T *aligned_alloc_32_else_throw(size_t count) {
     if (count == 0) {
         return nullptr;
+    }
+    if (count > (SIZE_MAX - 31) / sizeof(T)) {
+        throw std::invalid_argument("Too much memory to allocate.");
     }
     size_t bytes = count * sizeof(T);
     bytes += size_t{31};
     bytes &= ~size_t{31};
-    return (T *)std::aligned_alloc(32, bytes);
+    T *result = (T *)std::aligned_alloc(32, bytes);
+    if (result == nullptr) {
+        throw std::invalid_argument("Failed to allocate.");
+    }
+    return result;
 }
 
 template <typename T>
@@ -564,18 +571,18 @@ Circuit MutableCircuit::to_validated_circuit() const {
     result.num_info_tag_chars = info_tag_chars.size();
 
     // Copy qubit and bit data into contiguous memory blocks.
-    result.op_types = aligned_alloc_32<kickmix::OpType>(op_types.size());
-    result.qqq0 = aligned_alloc_32<uint32_t>(qqq0.size());
-    result.qqq1 = aligned_alloc_32<uint32_t>(qqq1.size());
-    result.qqq2 = aligned_alloc_32<uint32_t>(qqq2.size());
-    result.qq0 = aligned_alloc_32<uint32_t>(qq0.size());
-    result.qq1 = aligned_alloc_32<uint32_t>(qq1.size());
-    result.q0 = aligned_alloc_32<uint32_t>(q0.size());
-    result.bc = aligned_alloc_32<uint32_t>(bc.size());
-    result.b0 = aligned_alloc_32<uint32_t>(b0.size());
-    result.angles = aligned_alloc_32<FixedPrecisionAngle128>(angles.size());
-    result.info_tag_end_offsets = aligned_alloc_32<uint64_t>(info_tag_end_offsets.size());
-    result.info_tag_chars = aligned_alloc_32<char>(info_tag_chars.size());
+    result.op_types = aligned_alloc_32_else_throw<kickmix::OpType>(op_types.size());
+    result.qqq0 = aligned_alloc_32_else_throw<uint32_t>(qqq0.size());
+    result.qqq1 = aligned_alloc_32_else_throw<uint32_t>(qqq1.size());
+    result.qqq2 = aligned_alloc_32_else_throw<uint32_t>(qqq2.size());
+    result.qq0 = aligned_alloc_32_else_throw<uint32_t>(qq0.size());
+    result.qq1 = aligned_alloc_32_else_throw<uint32_t>(qq1.size());
+    result.q0 = aligned_alloc_32_else_throw<uint32_t>(q0.size());
+    result.bc = aligned_alloc_32_else_throw<uint32_t>(bc.size());
+    result.b0 = aligned_alloc_32_else_throw<uint32_t>(b0.size());
+    result.angles = aligned_alloc_32_else_throw<FixedPrecisionAngle128>(angles.size());
+    result.info_tag_end_offsets = aligned_alloc_32_else_throw<uint64_t>(info_tag_end_offsets.size());
+    result.info_tag_chars = aligned_alloc_32_else_throw<char>(info_tag_chars.size());
     op_types.memcpy_into(result.op_types);
     qqq0.memcpy_into(result.qqq0);
     qqq1.memcpy_into(result.qqq1);

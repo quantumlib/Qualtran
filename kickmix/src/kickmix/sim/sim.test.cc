@@ -336,3 +336,15 @@ TEST(sim, cswap_if) {
     ASSERT_EQ(sim.qubit_span()[2], b64::from_u32_broadcast(0b1100101010101010));
     ASSERT_EQ(sim.global_phase_ref(), b64{});
 }
+
+TEST(sim, ensure_big_enough_state_for_independent_dimensions) {
+    Sim<b64, false> sim(INDEPENDENT_TEST_RNG());
+    sim.ensure_big_enough_state_for(840, 0);
+    size_t initial_num_qubits = sim.num_qubits;
+    ASSERT_GE(initial_num_qubits, 840);
+    for (size_t b = 1; b <= 50000; b++) {
+        sim.ensure_big_enough_state_for(0, b);
+    }
+    ASSERT_EQ(sim.num_qubits, initial_num_qubits);
+    ASSERT_GE(sim.num_bits, 50000);
+}

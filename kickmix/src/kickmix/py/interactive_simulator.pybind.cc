@@ -652,6 +652,11 @@ pybind11::object read_phase_flipped_across_shots_int(PyInteractiveSimulator &sel
             if (sim.global_phase_ref().bit(r)) {
                 angle = angle.rotated180();
             }
+            if (!angle.is_multiple_of_180_degrees()) {
+                throw std::invalid_argument(
+                    "Phase angles other than 0 (unphased) and 1 (phase flipped) are present. Use `read_shot_phase` "
+                    "instead of `read_phase_flipped_across_shots`.");
+            }
             bool bit = angle.is_closer_to_half_turn_than_no_turn();
             uint8_t &out_byte = out[k / 8];
             if (k % 8 == 0) {
@@ -698,6 +703,11 @@ pybind11::object peek_phase_flipped_across_shots_np_bool(const PyInteractiveSimu
                     angle = angle.rotated180();
                 }
 
+                if (!angle.is_multiple_of_180_degrees()) {
+                    throw std::invalid_argument(
+                        "Phase angles other than 0 (unphased) and 1 (phase flipped) are present. Use `read_shot_phase` "
+                        "instead of `read_phase_flipped_across_shots`.");
+                }
                 bool bit = angle.is_closer_to_half_turn_than_no_turn();
                 *out_ptr = bit;
                 out_ptr += s1;
