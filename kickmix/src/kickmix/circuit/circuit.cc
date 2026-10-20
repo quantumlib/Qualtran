@@ -1313,7 +1313,7 @@ template <typename T>
 static void alloc_and_read_T_blob_packet(FILE *file, KmbPacketType type, T **data_out, size_t count) {
     read_u64_be_expect(file, (uint64_t)type, "Payload packets in wrong order.");
     read_u64_be_expect(file, count * sizeof(T), "Size mismatch: actual payload size vs size specified in header.");
-    *data_out = aligned_alloc_32<T>(count);
+    *data_out = aligned_alloc_32_else_throw<T>(count);
     fread_else_throw(*data_out, count * sizeof(T), file);
 }
 
