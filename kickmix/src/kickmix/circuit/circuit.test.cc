@@ -1093,7 +1093,7 @@ TEST(circuit, kmb_validate_num_bits) {
 }
 
 TEST(circuit, kmb_validate_num_registers) {
-    expect_fails_to_parse("Expected register target data", R"HEX(
+    expect_fails_to_parse("Failed to read register target data", R"HEX(
         d7 50 c7 d5 c3 29 d3 26 e3 cc 9f 68 34 f2 b8 bf
          2  .  .  .  # version
          0  .  .  .  # num_qubits
@@ -1198,7 +1198,7 @@ TEST(circuit, kmb_validate_num_qqq_ops) {
          0  .  .  .  # num_qubits
          0  .  .  .  # num_bits
          0  .  .  .  # num_reg
-         0  .  .  .  .  .  .  .  # num_ops
+         1  .  .  .  .  .  .  .  # num_ops
          1  .  .  .  .  .  .  .  # num_qqq_ops
          0  .  .  .  .  .  .  .  # num_qq_ops
          0  .  .  .  .  .  .  .  # num_q_ops
@@ -1207,7 +1207,8 @@ TEST(circuit, kmb_validate_num_qqq_ops) {
          0  .  .  .  .  .  .  .  # num_angles
          0  .  .  .  .  .  .  .  # num_info_tags
          0  .  .  .  .  .  .  .  # num_info_tag_chars
-         1  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # op types
+         1  .  .  .  .  .  .  .  1  .  .  .  .  .  .  .  # op types
+         0
          2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
          3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
          4  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq2s
@@ -1229,7 +1230,7 @@ TEST(circuit, kmb_validate_num_qq_ops) {
          0  .  .  .  # num_qubits
          0  .  .  .  # num_bits
          0  .  .  .  # num_reg
-         0  .  .  .  .  .  .  .  # num_ops
+         1  .  .  .  .  .  .  .  # num_ops
          0  .  .  .  .  .  .  .  # num_qqq_ops
          1  .  .  .  .  .  .  .  # num_qq_ops
          0  .  .  .  .  .  .  .  # num_q_ops
@@ -1238,7 +1239,8 @@ TEST(circuit, kmb_validate_num_qq_ops) {
          0  .  .  .  .  .  .  .  # num_angles
          0  .  .  .  .  .  .  .  # num_info_tags
          0  .  .  .  .  .  .  .  # num_info_tag_chars
-         1  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # op types
+         1  .  .  .  .  .  .  .  1  .  .  .  .  .  .  .  # op types
+         0
          2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
          3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
          4  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq2s
@@ -1260,7 +1262,7 @@ TEST(circuit, kmb_validate_num_q_ops) {
          0  .  .  .  # num_qubits
          0  .  .  .  # num_bits
          0  .  .  .  # num_reg
-         0  .  .  .  .  .  .  .  # num_ops
+         1  .  .  .  .  .  .  .  # num_ops
          0  .  .  .  .  .  .  .  # num_qqq_ops
          0  .  .  .  .  .  .  .  # num_qq_ops
          1  .  .  .  .  .  .  .  # num_q_ops
@@ -1269,7 +1271,8 @@ TEST(circuit, kmb_validate_num_q_ops) {
          0  .  .  .  .  .  .  .  # num_angles
          0  .  .  .  .  .  .  .  # num_info_tags
          0  .  .  .  .  .  .  .  # num_info_tag_chars
-         1  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # op types
+         1  .  .  .  .  .  .  .  1  .  .  .  .  .  .  .  # op types
+         0
          2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
          3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
          4  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq2s
@@ -1291,7 +1294,7 @@ TEST(circuit, kmb_validate_num_b_ops) {
          0  .  .  .  # num_qubits
          0  .  .  .  # num_bits
          0  .  .  .  # num_reg
-         0  .  .  .  .  .  .  .  # num_ops
+         1  .  .  .  .  .  .  .  # num_ops
          0  .  .  .  .  .  .  .  # num_qqq_ops
          0  .  .  .  .  .  .  .  # num_qq_ops
          0  .  .  .  .  .  .  .  # num_q_ops
@@ -1300,7 +1303,8 @@ TEST(circuit, kmb_validate_num_b_ops) {
          0  .  .  .  .  .  .  .  # num_angles
          0  .  .  .  .  .  .  .  # num_info_tags
          0  .  .  .  .  .  .  .  # num_info_tag_chars
-         1  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # op types
+         1  .  .  .  .  .  .  .  1  .  .  .  .  .  .  .  # op types
+         0
          2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
          3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
          4  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq2s
@@ -1322,7 +1326,7 @@ TEST(circuit, kmb_validate_num_c_ops) {
          0  .  .  .  # num_qubits
          0  .  .  .  # num_bits
          0  .  .  .  # num_reg
-         0  .  .  .  .  .  .  .  # num_ops
+         1  .  .  .  .  .  .  .  # num_ops
          0  .  .  .  .  .  .  .  # num_qqq_ops
          0  .  .  .  .  .  .  .  # num_qq_ops
          0  .  .  .  .  .  .  .  # num_q_ops
@@ -1331,7 +1335,8 @@ TEST(circuit, kmb_validate_num_c_ops) {
          0  .  .  .  .  .  .  .  # num_angles
          0  .  .  .  .  .  .  .  # num_info_tags
          0  .  .  .  .  .  .  .  # num_info_tag_chars
-         1  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # op types
+         1  .  .  .  .  .  .  .  1  .  .  .  .  .  .  .  # op types
+         0
          2  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq0s
          3  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq1s
          4  .  .  .  .  .  .  .  0  .  .  .  .  .  .  .  # qqq2s
@@ -2029,4 +2034,11 @@ TEST(circuit, compute_has_unknown_ops) {
         c.op_types[0] = (OpType)k;
         ASSERT_EQ(c.compute_has_unknown_ops(), unknown);
     }
+}
+
+TEST(circuit, parse_big_circuit_kmb) {
+    auto path = resolve_testdata_file_path("big_circuit.kmb");
+    FILE *f = fopen(path.c_str(), "rb");
+    Circuit c = Circuit::from_kmb_file(f);
+    ASSERT_EQ(c.num_ops, 263405);
 }

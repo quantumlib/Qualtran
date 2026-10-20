@@ -13,6 +13,9 @@
 
 using namespace kickmix;
 
+constexpr uint32_t MAX_CIRCUIT_INSTRUCTIONS = 2000000000;
+constexpr uint32_t MAX_INFO_TAG_DATA = 2000000000;
+
 constexpr std::array<uint8_t, 16> KMB_MAGIC_BYTES{
     0xd7, 0x50, 0xc7, 0xd5, 0xc3, 0x29, 0xd3, 0x26, 0xe3, 0xcc, 0x9f, 0x68, 0x34, 0xf2, 0xb8, 0xbf};
 
@@ -1134,8 +1137,10 @@ void Circuit::validate_and_compute_stats() {
     if ((intptr_t)info_tag_chars & 31) {
         throw std::invalid_argument("info_tag_chars isn't aligned to a 32 byte boundary.");
     }
-    if (compute_has_qubit_control_collision()) {
-        throw std::invalid_argument(describe_qubit_control_collision());
+    if (num_ops > MAX_CIRCUIT_INSTRUCTIONS) {
+        std::stringstream ss;
+        ss << "num_ops=" << num_bits << " > MAX_CIRCUIT_INSTRUCTIONS=" << MAX_CIRCUIT_INSTRUCTIONS;
+        throw std::invalid_argument(ss.str());
     }
 
     num_qubits = compute_num_qubits();
@@ -1190,18 +1195,34 @@ void Circuit::validate_and_compute_stats() {
         ss << "num_info_tags=" << num_info_tags << " != compute_num_info_tags()=" << compute_num_info_tags();
         throw std::invalid_argument(ss.str());
     }
-    bool out_of_order = false;
-    for (size_t k = 1; k < num_info_tags; k++) {
-        out_of_order |= info_tag_end_offsets[k] < info_tag_end_offsets[k - 1];
+
+    {
+        bool out_of_order = false;
+        for (size_t k = 1; k < num_info_tags; k++) {
+            out_of_order |= info_tag_end_offsets[k] < info_tag_end_offsets[k - 1];
+        }
+        if (out_of_order) {
+            throw std::invalid_argument("info_tag_end_offsets is not in monotonic ascending order.");
+        }
     }
-    if (out_of_order) {
-        throw std::invalid_argument("info_tag_end_offsets is not in monotonic ascending order.");
-    }
+
     uint64_t expected_chars = num_info_tags == 0 ? 0 : info_tag_end_offsets[num_info_tags - 1];
     if (num_info_tag_chars != expected_chars) {
         std::stringstream ss;
         ss << "num_info_tag_chars=" << num_info_tag_chars << " != final info_tag_end_offset=" << expected_chars;
         throw std::invalid_argument(ss.str());
+    }
+
+    if (compute_has_qubit_control_collision()) {
+        throw std::invalid_argument(describe_qubit_control_collision());
+    }
+
+    for (size_t k = 0; k < register_data.size(); k++) {
+        for (size_t k2 = k + 1; k2 < register_data.size(); k2++) {
+            if (!register_data[k].name.empty() && register_data[k].name == register_data[k2].name) {
+                throw std::invalid_argument("Duplicate register name: " + register_data[k].name);
+            }
+        }
     }
 }
 
@@ -1284,7 +1305,7 @@ void Circuit::write_kmb_to(FILE *file) const {
     fwrite_else_throw(info_tag_chars, num_info_tag_chars, file);
 }
 
-static uint32_t read_u32_be(FILE *file) {
+inline static uint32_t read_u32_be(FILE *file) {
     uint32_t result{};
     fread_else_throw(&result, sizeof(uint32_t), file);
     if constexpr (std::endian::native == std::endian::big) {
@@ -1293,7 +1314,7 @@ static uint32_t read_u32_be(FILE *file) {
     return result;
 }
 
-static uint64_t read_u64_be(FILE *file) {
+inline static uint64_t read_u64_be(FILE *file) {
     uint64_t result{};
     fread_else_throw(&result, sizeof(uint64_t), file);
     if constexpr (std::endian::native == std::endian::big) {
@@ -1302,7 +1323,17 @@ static uint64_t read_u64_be(FILE *file) {
     return result;
 }
 
-static void read_u64_be_expect(FILE *file, uint64_t expected, const char *message) {
+inline static uint64_t read_u64_be_max_else_throw(FILE *file, uint64_t max_value, const char *lhs, const char *rhs) {
+    uint64_t result = read_u64_be(file);
+    if (result > max_value) {
+        std::stringstream ss;
+        ss << lhs << "=" << result << " is supposed to be at most " << rhs << "=" << max_value;
+        throw std::invalid_argument(ss.str());
+    }
+    return result;
+}
+
+inline static void read_u64_be_expect(FILE *file, uint64_t expected, const char *message) {
     uint64_t actual = read_u64_be(file);
     if (actual != expected) {
         throw std::invalid_argument(message);
@@ -1335,19 +1366,20 @@ Circuit Circuit::from_kmb_file(FILE *file, bool skip_magic) {
     uint32_t num_qubits = read_u32_be(file);
     uint32_t num_bits = read_u32_be(file);
     uint32_t num_registers = read_u32_be(file);
-    result.num_ops = read_u64_be(file);
-    result.num_qqq_ops = read_u64_be(file);
-    result.num_qq_ops = read_u64_be(file);
-    result.num_q_ops = read_u64_be(file);
-    result.num_b_ops = read_u64_be(file);
-    result.num_c_ops = read_u64_be(file);
-    result.num_angle_ops = read_u64_be(file);
-    result.num_info_tags = read_u64_be(file);
-    result.num_info_tag_chars = read_u64_be(file);
+    result.num_ops = read_u64_be_max_else_throw(file, MAX_CIRCUIT_INSTRUCTIONS, "num_ops", "MAX_CIRCUIT_INSTRUCTIONS");
+    result.num_qqq_ops = read_u64_be_max_else_throw(file, result.num_ops, "num_qqq_ops", "num_ops");
+    result.num_qq_ops = read_u64_be_max_else_throw(file, result.num_ops, "num_qq_ops", "num_ops");
+    result.num_q_ops = read_u64_be_max_else_throw(file, result.num_ops, "num_q_ops", "num_ops");
+    result.num_b_ops = read_u64_be_max_else_throw(file, result.num_ops, "num_b_ops", "num_ops");
+    result.num_c_ops = read_u64_be_max_else_throw(file, result.num_ops, "num_c_ops", "num_ops");
+    result.num_angle_ops = read_u64_be_max_else_throw(file, result.num_ops, "num_angle_ops", "num_ops");
+    result.num_info_tags = read_u64_be_max_else_throw(file, result.num_ops, "num_info_tags", "num_ops");
+    result.num_info_tag_chars =
+        read_u64_be_max_else_throw(file, MAX_INFO_TAG_DATA, "num_info_tag_chars", "MAX_INFO_TAG_DATA");
 
     // Register data.
     for (size_t k = 0; k < num_registers; k++) {
-        read_u64_be_expect(file, (uint64_t)KmbPacketType::REGISTER_TARGETS, "Expected register target data.");
+        read_u64_be_expect(file, (uint64_t)KmbPacketType::REGISTER_TARGETS, "Failed to read register target data.");
         uint64_t register_payload_size = read_u64_be(file);
         size_t name_len = read_u32_be(file);
         size_t reg_len = read_u32_be(file);

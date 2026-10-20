@@ -181,7 +181,9 @@ size_t kickmix::compute_reaction_depth(size_t num_qubits, size_t num_bits, std::
                 condition_depth_stack.push_back(cond_depth);
                 break;
             case OpType::POP_CONDITION:
-                condition_depth_stack.pop_back();
+                if (condition_depth_stack.size() > 1) {
+                    condition_depth_stack.pop_back();
+                }
                 break;
             default:
                 throw std::invalid_argument("operation type not handled in reaction_depth: " + op.str());
