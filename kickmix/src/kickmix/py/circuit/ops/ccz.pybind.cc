@@ -8,11 +8,7 @@ using namespace kickmix;
 using namespace kickmix_py;
 
 static inline void broadcast_ccz_case(
-    PyCircuitBuilder &self,
-    stride_ptr<const bool> c1,
-    stride_ptr<const bool> c2,
-    stride_ptr<const bool> c3,
-    size_t n) {
+    PyCircuitBuilder &self, stride_ptr<const bool> c1, stride_ptr<const bool> c2, stride_ptr<const bool> c3, size_t n) {
     size_t total = 0;
     for (size_t k = 0; k < n; k++) {
         bool b1 = *c1++;
@@ -177,11 +173,7 @@ static inline constexpr uint8_t merge_zzz_tag(QXZTypeTag8 c1, QXZTypeTag8 c2, QX
 }
 
 static inline void append_ccz_resolve_mixed(
-    PyCircuitBuilder &self,
-    const stride_span_z &c1,
-    const stride_span_z &c2,
-    const stride_span_z &c3,
-    size_t n) {
+    PyCircuitBuilder &self, const stride_span_z &c1, const stride_span_z &c2, const stride_span_z &c3, size_t n) {
     for (size_t k = 0; k < n; k++) {
         self.builder.ccz(c1[k], c2[k], c3[k]);
     }

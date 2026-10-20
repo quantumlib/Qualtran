@@ -334,7 +334,9 @@ TEST(UnaryIterationCursor, toffoli_count_of_random_access_matches_the_closed_for
             cursor.close();
         }
 
-        ASSERT_EQ(builder.finish_circuit().estimate_ccz_state_weight(), expected_toffolis(num_address_bits, controlled, address_values))
+        ASSERT_EQ(
+            builder.finish_circuit().estimate_ccz_state_weight(),
+            expected_toffolis(num_address_bits, controlled, address_values))
             << "num_address_bits=" << num_address_bits << " controlled=" << controlled;
     }
 }

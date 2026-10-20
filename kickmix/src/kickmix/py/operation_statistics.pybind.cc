@@ -316,7 +316,7 @@ void kickmix_py::register_operation_statistics_methods(pybind11::class_<PyOperat
                 ...     CSWAP q0 q1 q2
                 ...     Z_POW q0 0.25
                 ...
-                ...     CZ q0 1
+                ...     CZ q0 q1
                 ...     Z_POW q0 0.5
                 ... ''')
                 >>> c.operation_statistics().num_non_clifford

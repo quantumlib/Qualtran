@@ -358,7 +358,9 @@ def test_a_classical_bit_control_is_lowered_to_a_pushed_condition():
             if address_value == 5:
                 builder.cx(match_qubit, target[0])
     circuit = builder.finish_circuit()
-    assert circuit.operation_statistics().num_non_clifford == expected_toffolis(3, range(8), controlled=False)
+    assert circuit.operation_statistics().num_non_clifford == expected_toffolis(
+        3, range(8), controlled=False
+    )
     assert builder.num_allocated_qubits == 4
 
 
@@ -605,7 +607,9 @@ def test_fuzz_random_access_order():
                 builder.cx(it.match_qubit, target[0])
                 visits[address_value] ^= 1
     circuit = builder.finish_circuit()
-    assert circuit.operation_statistics().num_non_clifford == expected_toffolis(n_address, address_values, controlled=False)
+    assert circuit.operation_statistics().num_non_clifford == expected_toffolis(
+        n_address, address_values, controlled=False
+    )
 
     assert_fuzz_testing_acts_like(
         circuit,
