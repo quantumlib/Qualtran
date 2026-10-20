@@ -244,8 +244,16 @@ struct Sim {
         }
 
         // Multiplicative resizing ensures no quadratic overhead.
-        min_num_qubits = std::max(num_qubits * 2, min_num_qubits);
-        min_num_bits = std::max(num_bits * 2, min_num_bits);
+        if (min_num_qubits > num_qubits) {
+            min_num_qubits = std::max(num_qubits * 2, min_num_qubits);
+        } else {
+            min_num_qubits = num_qubits;
+        }
+        if (min_num_bits > num_bits) {
+            min_num_bits = std::max(num_bits * 2, min_num_bits);
+        } else {
+            min_num_bits = num_bits;
+        }
 
         std::span<TWord> old_bits = bit_span();
         std::span<TWord> old_qubits = qubit_span();

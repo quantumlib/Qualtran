@@ -2042,3 +2042,24 @@ TEST(circuit, parse_big_circuit_kmb) {
     Circuit c = Circuit::from_kmb_file(f);
     ASSERT_EQ(c.num_ops, 263405);
 }
+
+TEST(circuit, max_num_registers) {
+    ASSERT_THROW(Circuit("APPEND_TO_REGISTER q0 r5000000"), std::invalid_argument);
+    ASSERT_THROW(Circuit("APPEND_TO_REGISTER q0 r4000000000"), std::invalid_argument);
+    ASSERT_THROW(Circuit("REGISTER r5000000 \"foo\""), std::invalid_argument);
+
+    Circuit c;
+    c.register_data.resize(MAX_NUM_REGISTERS + 1);
+    ASSERT_THROW(c.validate_and_compute_stats(), std::invalid_argument);
+}
+
+TEST(circuit, validate_max_circuit_instructions_error_message) {
+    Circuit c;
+    c.num_ops = 2000000001;
+    try {
+        c.validate_and_compute_stats();
+        FAIL() << "Expected std::invalid_argument";
+    } catch (const std::invalid_argument &ex) {
+        ASSERT_NE(std::string(ex.what()).find("num_ops=2000000001 > MAX_CIRCUIT_INSTRUCTIONS="), std::string::npos);
+    }
+}

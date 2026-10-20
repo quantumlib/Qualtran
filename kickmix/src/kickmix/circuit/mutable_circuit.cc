@@ -129,7 +129,7 @@ static uint32_t read_register_id(const char *&c, const char *end, std::string_vi
         *error = "expected_a_register_id";
         return 0;
     }
-    return try_parse_uint32_t_below_max(word.substr(1), error, UINT32_MAX);
+    return try_parse_uint32_t_below_max(word.substr(1), error, MAX_NUM_REGISTERS);
 }
 
 static std::string read_quoted_string_body(const char *&c, const char *end, std::string_view *error) {
@@ -296,7 +296,7 @@ static void parse_debug_print_line(MutableCircuit &builder, const char *c, const
                 }
             }
         } else if (w.starts_with("r")) {
-            RegisterId r = {try_parse_uint32_t_below_max(w.substr(1), error, UINT32_MAX)};
+            RegisterId r = {try_parse_uint32_t_below_max(w.substr(1), error, MAX_NUM_REGISTERS)};
             if (error->empty()) {
                 if (r.id < builder.register_data.size()) {
                     for (const auto &e : builder.register_data[r.id].contents) {
@@ -494,10 +494,17 @@ static T *aligned_alloc_32_else_throw(size_t count) {
     if (count == 0) {
         return nullptr;
     }
+    if (count > (SIZE_MAX - 31) / sizeof(T)) {
+        throw std::invalid_argument("Too much memory to allocate.");
+    }
     size_t bytes = count * sizeof(T);
     bytes += size_t{31};
     bytes &= ~size_t{31};
-    return (T *)std::aligned_alloc(32, bytes);
+    T *result = (T *)std::aligned_alloc(32, bytes);
+    if (result == nullptr) {
+        throw std::invalid_argument("Failed to allocate.");
+    }
+    return result;
 }
 
 template <typename T>

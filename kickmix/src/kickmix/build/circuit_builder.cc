@@ -115,6 +115,9 @@ CircuitBuilderRaiiBit CircuitBuilder::alloc_clean_raii_bit() {
 }
 
 void CircuitBuilder::append_bit_to_register(std::span<const BitId> bits, RegisterId reg) {
+    if (reg.id >= MAX_NUM_REGISTERS) {
+        throw std::invalid_argument("reg.id >= MAX_NUM_REGISTERS");
+    }
     while (mut.register_data.size() <= reg.id) {
         mut.register_data.push_back({});
     }
@@ -123,6 +126,9 @@ void CircuitBuilder::append_bit_to_register(std::span<const BitId> bits, Registe
     }
 }
 void CircuitBuilder::append_qubit_to_register(std::span<const QubitId> qubits, RegisterId reg) {
+    if (reg.id >= MAX_NUM_REGISTERS) {
+        throw std::invalid_argument("reg.id >= MAX_NUM_REGISTERS");
+    }
     while (mut.register_data.size() <= reg.id) {
         mut.register_data.push_back({});
     }

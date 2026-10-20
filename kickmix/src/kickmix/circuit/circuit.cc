@@ -280,7 +280,7 @@ static T *aligned_alloc_32_else_throw(size_t count) {
     if (count == 0) {
         return nullptr;
     }
-    if (count > SIZE_MAX / sizeof(T)) {
+    if (count > (SIZE_MAX - 31) / sizeof(T)) {
         throw std::invalid_argument("Too much memory to allocate.");
     }
     size_t bytes = count * sizeof(T);
@@ -1139,7 +1139,7 @@ void Circuit::validate_and_compute_stats() {
     }
     if (num_ops > MAX_CIRCUIT_INSTRUCTIONS) {
         std::stringstream ss;
-        ss << "num_ops=" << num_bits << " > MAX_CIRCUIT_INSTRUCTIONS=" << MAX_CIRCUIT_INSTRUCTIONS;
+        ss << "num_ops=" << num_ops << " > MAX_CIRCUIT_INSTRUCTIONS=" << MAX_CIRCUIT_INSTRUCTIONS;
         throw std::invalid_argument(ss.str());
     }
 
@@ -1153,6 +1153,11 @@ void Circuit::validate_and_compute_stats() {
     if (num_bits > MAX_NUM_BITS) {
         std::stringstream ss;
         ss << "num_bits=" << num_bits << " > MAX_NUM_BITS=" << MAX_NUM_BITS;
+        throw std::invalid_argument(ss.str());
+    }
+    if (register_data.size() > MAX_NUM_REGISTERS) {
+        std::stringstream ss;
+        ss << "register_data.size()=" << register_data.size() << " > MAX_NUM_REGISTERS=" << MAX_NUM_REGISTERS;
         throw std::invalid_argument(ss.str());
     }
     if (num_q_ops != compute_num_q()) {
@@ -1366,6 +1371,11 @@ Circuit Circuit::from_kmb_file(FILE *file, bool skip_magic) {
     uint32_t num_qubits = read_u32_be(file);
     uint32_t num_bits = read_u32_be(file);
     uint32_t num_registers = read_u32_be(file);
+    if (num_registers > MAX_NUM_REGISTERS) {
+        std::stringstream ss;
+        ss << "num_registers=" << num_registers << " > MAX_NUM_REGISTERS=" << MAX_NUM_REGISTERS;
+        throw std::invalid_argument(ss.str());
+    }
     result.num_ops = read_u64_be_max_else_throw(file, MAX_CIRCUIT_INSTRUCTIONS, "num_ops", "MAX_CIRCUIT_INSTRUCTIONS");
     result.num_qqq_ops = read_u64_be_max_else_throw(file, result.num_ops, "num_qqq_ops", "num_ops");
     result.num_qq_ops = read_u64_be_max_else_throw(file, result.num_ops, "num_qq_ops", "num_ops");

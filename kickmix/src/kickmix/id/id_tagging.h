@@ -61,6 +61,7 @@ enum class QCTypeTag32 : uint32_t {
 
 constexpr uint32_t MAX_NUM_QUBITS = 500000000;
 constexpr uint32_t MAX_NUM_BITS = 500000000;
+constexpr uint32_t MAX_NUM_REGISTERS = 1000000;
 
 }  // namespace kickmix
 
