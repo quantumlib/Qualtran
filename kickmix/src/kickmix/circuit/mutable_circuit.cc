@@ -4,6 +4,7 @@
 #include <sstream>
 
 #include "kickmix/id/register_id.h"
+#include "kickmix/mem/util.h"
 
 using namespace kickmix;
 
@@ -490,24 +491,6 @@ void MutableCircuit::append_from_kmx_text(std::string_view kmx_text) {
 }
 
 template <typename T>
-static T *aligned_alloc_32_else_throw(size_t count) {
-    if (count == 0) {
-        return nullptr;
-    }
-    if (count > (SIZE_MAX - 31) / sizeof(T)) {
-        throw std::invalid_argument("Too much memory to allocate.");
-    }
-    size_t bytes = count * sizeof(T);
-    bytes += size_t{31};
-    bytes &= ~size_t{31};
-    T *result = (T *)std::aligned_alloc(32, bytes);
-    if (result == nullptr) {
-        throw std::invalid_argument("Failed to allocate.");
-    }
-    return result;
-}
-
-template <typename T>
 static uint32_t max_u32_buf_untagged(const MonotonicArena<T, 32> &buf) {
     uint32_t result = 0;
     buf.iter_spans([&](std::span<T> items) {
@@ -571,18 +554,18 @@ Circuit MutableCircuit::to_validated_circuit() const {
     result.num_info_tag_chars = info_tag_chars.size();
 
     // Copy qubit and bit data into contiguous memory blocks.
-    result.op_types = aligned_alloc_32_else_throw<kickmix::OpType>(op_types.size());
-    result.qqq0 = aligned_alloc_32_else_throw<uint32_t>(qqq0.size());
-    result.qqq1 = aligned_alloc_32_else_throw<uint32_t>(qqq1.size());
-    result.qqq2 = aligned_alloc_32_else_throw<uint32_t>(qqq2.size());
-    result.qq0 = aligned_alloc_32_else_throw<uint32_t>(qq0.size());
-    result.qq1 = aligned_alloc_32_else_throw<uint32_t>(qq1.size());
-    result.q0 = aligned_alloc_32_else_throw<uint32_t>(q0.size());
-    result.bc = aligned_alloc_32_else_throw<uint32_t>(bc.size());
-    result.b0 = aligned_alloc_32_else_throw<uint32_t>(b0.size());
-    result.angles = aligned_alloc_32_else_throw<FixedPrecisionAngle128>(angles.size());
-    result.info_tag_end_offsets = aligned_alloc_32_else_throw<uint64_t>(info_tag_end_offsets.size());
-    result.info_tag_chars = aligned_alloc_32_else_throw<char>(info_tag_chars.size());
+    result.op_types = aligned_alloc_else_throw<OpType, 32>(op_types.size());
+    result.qqq0 = aligned_alloc_else_throw<uint32_t, 32>(qqq0.size());
+    result.qqq1 = aligned_alloc_else_throw<uint32_t, 32>(qqq1.size());
+    result.qqq2 = aligned_alloc_else_throw<uint32_t, 32>(qqq2.size());
+    result.qq0 = aligned_alloc_else_throw<uint32_t, 32>(qq0.size());
+    result.qq1 = aligned_alloc_else_throw<uint32_t, 32>(qq1.size());
+    result.q0 = aligned_alloc_else_throw<uint32_t, 32>(q0.size());
+    result.bc = aligned_alloc_else_throw<uint32_t, 32>(bc.size());
+    result.b0 = aligned_alloc_else_throw<uint32_t, 32>(b0.size());
+    result.angles = aligned_alloc_else_throw<FixedPrecisionAngle128, 32>(angles.size());
+    result.info_tag_end_offsets = aligned_alloc_else_throw<uint64_t, 32>(info_tag_end_offsets.size());
+    result.info_tag_chars = aligned_alloc_else_throw<char, 32>(info_tag_chars.size());
     op_types.memcpy_into(result.op_types);
     qqq0.memcpy_into(result.qqq0);
     qqq1.memcpy_into(result.qqq1);

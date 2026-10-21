@@ -30,51 +30,51 @@ void Circuit::clear() {
     num_info_tags = 0;
     num_info_tag_chars = 0;
     if (op_types != nullptr) {
-        free(op_types);
+        free_aligned(op_types);
         op_types = nullptr;
     }
     if (qqq0 != nullptr) {
-        free(qqq0);
+        free_aligned(qqq0);
         qqq0 = nullptr;
     }
     if (qqq1 != nullptr) {
-        free(qqq1);
+        free_aligned(qqq1);
         qqq1 = nullptr;
     }
     if (qqq2 != nullptr) {
-        free(qqq2);
+        free_aligned(qqq2);
         qqq2 = nullptr;
     }
     if (qq0 != nullptr) {
-        free(qq0);
+        free_aligned(qq0);
         qq0 = nullptr;
     }
     if (qq1 != nullptr) {
-        free(qq1);
+        free_aligned(qq1);
         qq1 = nullptr;
     }
     if (q0 != nullptr) {
-        free(q0);
+        free_aligned(q0);
         q0 = nullptr;
     }
     if (bc != nullptr) {
-        free(bc);
+        free_aligned(bc);
         bc = nullptr;
     }
     if (b0 != nullptr) {
-        free(b0);
+        free_aligned(b0);
         b0 = nullptr;
     }
     if (angles != nullptr) {
-        free(angles);
+        free_aligned(angles);
         angles = nullptr;
     }
     if (info_tag_end_offsets != nullptr) {
-        free(info_tag_end_offsets);
+        free_aligned(info_tag_end_offsets);
         info_tag_end_offsets = nullptr;
     }
     if (info_tag_chars != nullptr) {
-        free(info_tag_chars);
+        free_aligned(info_tag_chars);
         info_tag_chars = nullptr;
     }
 }
@@ -275,24 +275,6 @@ Circuit::Circuit(Circuit &&other) noexcept {
     other.num_info_tag_chars = 0;
 }
 
-template <typename T>
-static T *aligned_alloc_32_else_throw(size_t count) {
-    if (count == 0) {
-        return nullptr;
-    }
-    if (count > (SIZE_MAX - 31) / sizeof(T)) {
-        throw std::invalid_argument("Too much memory to allocate.");
-    }
-    size_t bytes = count * sizeof(T);
-    bytes += size_t{31};
-    bytes &= ~size_t{31};
-    T *result = (T *)std::aligned_alloc(32, bytes);
-    if (result == nullptr) {
-        throw std::invalid_argument("Failed to allocate.");
-    }
-    return result;
-}
-
 Circuit::Circuit(const Circuit &other) {
     register_data = other.register_data;
     num_ops = other.num_ops;
@@ -307,18 +289,18 @@ Circuit::Circuit(const Circuit &other) {
     num_info_tags = other.num_info_tags;
     num_info_tag_chars = other.num_info_tag_chars;
 
-    op_types = aligned_alloc_32_else_throw<OpType>(num_ops);
-    qqq0 = aligned_alloc_32_else_throw<uint32_t>(num_qqq_ops);
-    qqq1 = aligned_alloc_32_else_throw<uint32_t>(num_qqq_ops);
-    qqq2 = aligned_alloc_32_else_throw<uint32_t>(num_qqq_ops);
-    qq0 = aligned_alloc_32_else_throw<uint32_t>(num_qq_ops);
-    qq1 = aligned_alloc_32_else_throw<uint32_t>(num_qq_ops);
-    q0 = aligned_alloc_32_else_throw<uint32_t>(num_q_ops);
-    bc = aligned_alloc_32_else_throw<uint32_t>(num_c_ops);
-    b0 = aligned_alloc_32_else_throw<uint32_t>(num_b_ops);
-    angles = aligned_alloc_32_else_throw<FixedPrecisionAngle128>(num_angle_ops);
-    info_tag_end_offsets = aligned_alloc_32_else_throw<uint64_t>(num_info_tags);
-    info_tag_chars = aligned_alloc_32_else_throw<char>(num_info_tag_chars);
+    op_types = aligned_alloc_else_throw<OpType, 32>(num_ops);
+    qqq0 = aligned_alloc_else_throw<uint32_t, 32>(num_qqq_ops);
+    qqq1 = aligned_alloc_else_throw<uint32_t, 32>(num_qqq_ops);
+    qqq2 = aligned_alloc_else_throw<uint32_t, 32>(num_qqq_ops);
+    qq0 = aligned_alloc_else_throw<uint32_t, 32>(num_qq_ops);
+    qq1 = aligned_alloc_else_throw<uint32_t, 32>(num_qq_ops);
+    q0 = aligned_alloc_else_throw<uint32_t, 32>(num_q_ops);
+    bc = aligned_alloc_else_throw<uint32_t, 32>(num_c_ops);
+    b0 = aligned_alloc_else_throw<uint32_t, 32>(num_b_ops);
+    angles = aligned_alloc_else_throw<FixedPrecisionAngle128, 32>(num_angle_ops);
+    info_tag_end_offsets = aligned_alloc_else_throw<uint64_t, 32>(num_info_tags);
+    info_tag_chars = aligned_alloc_else_throw<char, 32>(num_info_tag_chars);
 
     memcpy(op_types, other.op_types, num_ops);
     memcpy(qqq0, other.qqq0, num_qqq_ops * sizeof(uint32_t));
@@ -353,18 +335,18 @@ Circuit &Circuit::operator=(const Circuit &other) {
     num_info_tags = other.num_info_tags;
     num_info_tag_chars = other.num_info_tag_chars;
 
-    op_types = aligned_alloc_32_else_throw<OpType>(num_ops);
-    qqq0 = aligned_alloc_32_else_throw<uint32_t>(num_qqq_ops);
-    qqq1 = aligned_alloc_32_else_throw<uint32_t>(num_qqq_ops);
-    qqq2 = aligned_alloc_32_else_throw<uint32_t>(num_qqq_ops);
-    qq0 = aligned_alloc_32_else_throw<uint32_t>(num_qq_ops);
-    qq1 = aligned_alloc_32_else_throw<uint32_t>(num_qq_ops);
-    q0 = aligned_alloc_32_else_throw<uint32_t>(num_q_ops);
-    bc = aligned_alloc_32_else_throw<uint32_t>(num_c_ops);
-    b0 = aligned_alloc_32_else_throw<uint32_t>(num_b_ops);
-    angles = aligned_alloc_32_else_throw<FixedPrecisionAngle128>(num_angle_ops);
-    info_tag_end_offsets = aligned_alloc_32_else_throw<uint64_t>(num_info_tags);
-    info_tag_chars = aligned_alloc_32_else_throw<char>(num_info_tag_chars);
+    op_types = aligned_alloc_else_throw<OpType, 32>(num_ops);
+    qqq0 = aligned_alloc_else_throw<uint32_t, 32>(num_qqq_ops);
+    qqq1 = aligned_alloc_else_throw<uint32_t, 32>(num_qqq_ops);
+    qqq2 = aligned_alloc_else_throw<uint32_t, 32>(num_qqq_ops);
+    qq0 = aligned_alloc_else_throw<uint32_t, 32>(num_qq_ops);
+    qq1 = aligned_alloc_else_throw<uint32_t, 32>(num_qq_ops);
+    q0 = aligned_alloc_else_throw<uint32_t, 32>(num_q_ops);
+    bc = aligned_alloc_else_throw<uint32_t, 32>(num_c_ops);
+    b0 = aligned_alloc_else_throw<uint32_t, 32>(num_b_ops);
+    angles = aligned_alloc_else_throw<FixedPrecisionAngle128, 32>(num_angle_ops);
+    info_tag_end_offsets = aligned_alloc_else_throw<uint64_t, 32>(num_info_tags);
+    info_tag_chars = aligned_alloc_else_throw<char, 32>(num_info_tag_chars);
 
     memcpy(op_types, other.op_types, num_ops);
     memcpy(qqq0, other.qqq0, num_qqq_ops * sizeof(uint32_t));
@@ -1349,7 +1331,7 @@ template <typename T>
 static void alloc_and_read_T_blob_packet(FILE *file, KmbPacketType type, T **data_out, size_t count) {
     read_u64_be_expect(file, (uint64_t)type, "Payload packets in wrong order.");
     read_u64_be_expect(file, count * sizeof(T), "Size mismatch: actual payload size vs size specified in header.");
-    *data_out = aligned_alloc_32_else_throw<T>(count);
+    *data_out = aligned_alloc_else_throw<T, 32>(count);
     fread_else_throw(*data_out, count * sizeof(T), file);
 }
 
@@ -1417,7 +1399,7 @@ Circuit Circuit::from_kmb_file(FILE *file, bool skip_magic) {
     read_u64_be_expect(file, (uint64_t)KmbPacketType::OPERATION_TYPES, "Expected operation type data.");
     read_u64_be_expect(
         file, result.num_ops, "Operation type payload size was inconsistent with amount specified in header.");
-    result.op_types = aligned_alloc_32_else_throw<OpType>(result.num_ops);
+    result.op_types = aligned_alloc_else_throw<OpType, 32>(result.num_ops);
     fread_else_throw((void *)result.op_types, result.num_ops, file);
 
     // Operation target data.
@@ -1445,9 +1427,9 @@ Circuit Circuit::from_kmb_file(FILE *file, bool skip_magic) {
         (result.num_info_tags + 1) * sizeof(uint64_t) + result.num_info_tag_chars,
         "Size mismatch: actual payload size vs size specified in header.");
     read_u64_be_expect(file, result.num_info_tags, "Size mismatch: actual payload size vs size specified in header.");
-    result.info_tag_end_offsets = aligned_alloc_32_else_throw<uint64_t>(result.num_info_tags);
+    result.info_tag_end_offsets = aligned_alloc_else_throw<uint64_t, 32>(result.num_info_tags);
     fread_else_throw(result.info_tag_end_offsets, result.num_info_tags * sizeof(uint64_t), file);
-    result.info_tag_chars = aligned_alloc_32_else_throw<char>(result.num_info_tag_chars);
+    result.info_tag_chars = aligned_alloc_else_throw<char, 32>(result.num_info_tag_chars);
     fread_else_throw(result.info_tag_chars, result.num_info_tag_chars, file);
 
     if (fgetc(file) != EOF) {

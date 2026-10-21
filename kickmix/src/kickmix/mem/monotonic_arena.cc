@@ -1,15 +1,19 @@
 #include "kickmix/mem/monotonic_arena.h"
 
+#include "util.h"
+
+using namespace kickmix;
+
 static void dealloc(kickmix::MonotonicArena_Helper &buf) {
     for (const auto &e : buf.frozen_allocations) {
-        free(e.data());
+        free_aligned(e.data());
     }
     buf.frozen_allocations.clear();
     buf.cur_length_used = 0;
     buf.total_frozen_length_used = 0;
     buf.cur_length_cap = 0;
     if (buf.cur != nullptr) {
-        free(buf.cur);
+        free_aligned(buf.cur);
         buf.cur = nullptr;
     }
 }
@@ -52,7 +56,7 @@ kickmix::MonotonicArena_Helper::~MonotonicArena_Helper() {
 
 void kickmix::MonotonicArena_Helper::clear() {
     for (const auto &e : frozen_allocations) {
-        free(e.data());
+        free_aligned(e.data());
     }
     frozen_allocations.clear();
     cur_length_used = 0;

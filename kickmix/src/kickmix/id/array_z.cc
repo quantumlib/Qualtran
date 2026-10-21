@@ -3,11 +3,13 @@
 #include <iostream>
 #include <sstream>
 
+#include "kickmix/mem/util.h"
+
 using namespace kickmix;
 
 array_z array_z::alloc_noinit(size_t count, QXZTypeTag8 tag) {
     array_z result;
-    result.items = (QubitOrBitOrBool *)malloc(count * sizeof(uint32_t));
+    result.items = alloc_else_throw<QubitOrBitOrBool>(count);
     result.count = count;
     result.common_type = tag;
     return result;
@@ -24,7 +26,7 @@ array_z &array_z::operator=(array_z &&other) noexcept {
         return *this;
     }
     if (items != nullptr) {
-        free(items);
+        free_aligned(items);
     }
     items = other.items;
     count = other.count;
@@ -36,7 +38,7 @@ array_z &array_z::operator=(array_z &&other) noexcept {
 
 array_z::~array_z() {
     if (items != nullptr) {
-        free(items);
+        free_aligned(items);
     }
 }
 
