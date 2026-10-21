@@ -1,10 +1,15 @@
 #ifndef _KICKMIX_BIG_INT_H
 #define _KICKMIX_BIG_INT_H
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <ostream>
 #include <random>
+#include <stdexcept>
 #include <string>
+#include <string_view>
+#include <utility>
 
 namespace kickmix {
 

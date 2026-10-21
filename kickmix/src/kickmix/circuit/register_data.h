@@ -1,6 +1,8 @@
 #ifndef KICKMIX_REGISTER_DATA_H
 #define KICKMIX_REGISTER_DATA_H
 
+#include <ostream>
+#include <string>
 #include <vector>
 
 #include "kickmix/id/qubit_or_bit.h"

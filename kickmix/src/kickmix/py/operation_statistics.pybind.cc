@@ -1,10 +1,14 @@
 #include "kickmix/py/operation_statistics.pybind.h"
 
 #include <algorithm>
+#include <array>
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <sstream>
+#include <stdexcept>
+#include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
