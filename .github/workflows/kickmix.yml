@@ -37,6 +37,21 @@ jobs:
           {os: ubuntu-24.04, dist: cp312-manylinux_x86_64},
           {os: ubuntu-24.04, dist: cp313-manylinux_x86_64},
           {os: ubuntu-24.04, dist: cp314-manylinux_x86_64},
+          {os: macos-15-intel, dist: cp310-macosx_x86_64},
+          {os: macos-15-intel, dist: cp311-macosx_x86_64},
+          {os: macos-15-intel, dist: cp312-macosx_x86_64},
+          {os: macos-15-intel, dist: cp313-macosx_x86_64},
+          {os: macos-15-intel, dist: cp314-macosx_x86_64},
+          {os: macos-15, dist: cp310-macosx_arm64},
+          {os: macos-15, dist: cp311-macosx_arm64},
+          {os: macos-15, dist: cp312-macosx_arm64},
+          {os: macos-15, dist: cp313-macosx_arm64},
+          {os: macos-15, dist: cp314-macosx_arm64},
+          {os: windows-2025, dist: cp310-win_amd64},
+          {os: windows-2025, dist: cp311-win_amd64},
+          {os: windows-2025, dist: cp312-win_amd64},
+          {os: windows-2025, dist: cp313-win_amd64},
+          {os: windows-2025, dist: cp314-win_amd64},
         ]
     env:
       CIBW_BUILD: "${{ matrix.os_dist.dist }}"
