@@ -22,7 +22,7 @@ static constexpr uint8_t name_hash(std::string_view name) {
     // 1. Very efficient to evaluate.
     // 2. Result in a small range (currently < 64).
     // 3. Different value for every defined operation name.
-    uint8_t result = name.size();
+    uint8_t result = static_cast<uint8_t>(name.size());
     if (name.size() > 0) {
         result += name.back() * 3;
         result ^= name[0] * 24;
@@ -332,7 +332,7 @@ static void parse_debug_print_line(MutableCircuit &builder, const char *c, const
 }
 
 void MutableCircuit::append_from_kmx_line(std::string_view kmx_line) {
-    const char *end = kmx_line.end();
+    const char *end = kmx_line.data() + kmx_line.size();
     const char *c = kmx_line.data();
 
     std::string_view op_name = read_word(c, end);
@@ -468,7 +468,7 @@ void MutableCircuit::append_from_kmx_file(FILE *file) {
 }
 
 void MutableCircuit::append_from_kmx_text(std::string_view kmx_text) {
-    const char *end = kmx_text.end();
+    const char *end = kmx_text.data() + kmx_text.size();
     const char *c = kmx_text.data();
     while (c < end) {
         // Scan for end of line (or beginning of comment).
