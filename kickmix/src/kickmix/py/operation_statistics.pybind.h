@@ -26,8 +26,27 @@ struct PyOperationStatistics {
 
     uint64_t num_toffoli_like() const;
     uint64_t num_t_like() const;
+    uint64_t num_non_clifford() const;
     uint64_t num_instructions() const;
+    /// Counts Z pow operations (filtered by Clifford hierarchy level).
+    ///
+    /// Example rotations at various Clifford levels:
+    ///     Level 0: I (vacuous rotations)
+    ///     Level 1: Z (Pauli rotations)
+    ///     Level 2: S, S_DAG (Clifford rotations)
+    ///     Level 3: T, T_DAG, T**3 (rotations by an odd multiple of 45 degrees)
+    ///     Level 4: SQRT_T (rotations by an odd multiple of 22.5 degrees)
+    ///     Level 5: (rotations by an odd multiple of 11.25 degrees)
+    ///     ...
+    ///
+    /// Args:
+    ///     min_level: The minimum level of the Clifford hierarchy that is counted (inclusive).
+    ///     max_level: The maximum level of the Clifford hierarchy that is counted (inclusive).
+    ///
+    /// Returns:
+    ///     The number of matching operations.
     uint64_t num_z_pow(int64_t min_level, std::optional<int64_t> max_level) const;
+
     pybind11::dict z_pow_clifford_hierarchy_counts() const;
     uint64_t get_item(std::string_view key) const;
     pybind11::object get_with_default(std::string_view key, const pybind11::object &default_val) const;

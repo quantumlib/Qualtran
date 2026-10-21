@@ -14,7 +14,6 @@
     - [`kickmix.Circuit.flame_chart_svg`](#kickmix.Circuit.flame_chart_svg)
     - [`kickmix.Circuit.from_file`](#kickmix.Circuit.from_file)
     - [`kickmix.Circuit.html_diagram`](#kickmix.Circuit.html_diagram)
-    - [`kickmix.Circuit.max_magic`](#kickmix.Circuit.max_magic)
     - [`kickmix.Circuit.num_bits`](#kickmix.Circuit.num_bits)
     - [`kickmix.Circuit.num_qubits`](#kickmix.Circuit.num_qubits)
     - [`kickmix.Circuit.num_registers`](#kickmix.Circuit.num_registers)
@@ -29,6 +28,7 @@
     - [`kickmix.CircuitBuilder.alloc_qubits`](#kickmix.CircuitBuilder.alloc_qubits)
     - [`kickmix.CircuitBuilder.bit_store`](#kickmix.CircuitBuilder.bit_store)
     - [`kickmix.CircuitBuilder.ccx`](#kickmix.CircuitBuilder.ccx)
+    - [`kickmix.CircuitBuilder.ccz`](#kickmix.CircuitBuilder.ccz)
     - [`kickmix.CircuitBuilder.create_classical_register`](#kickmix.CircuitBuilder.create_classical_register)
     - [`kickmix.CircuitBuilder.create_quantum_register`](#kickmix.CircuitBuilder.create_quantum_register)
     - [`kickmix.CircuitBuilder.cswap`](#kickmix.CircuitBuilder.cswap)
@@ -114,6 +114,7 @@
     - [`kickmix.OperationStatistics.items`](#kickmix.OperationStatistics.items)
     - [`kickmix.OperationStatistics.keys`](#kickmix.OperationStatistics.keys)
     - [`kickmix.OperationStatistics.num_instructions`](#kickmix.OperationStatistics.num_instructions)
+    - [`kickmix.OperationStatistics.num_non_clifford`](#kickmix.OperationStatistics.num_non_clifford)
     - [`kickmix.OperationStatistics.num_t_like`](#kickmix.OperationStatistics.num_t_like)
     - [`kickmix.OperationStatistics.num_toffoli_like`](#kickmix.OperationStatistics.num_toffoli_like)
     - [`kickmix.OperationStatistics.num_z_pow`](#kickmix.OperationStatistics.num_z_pow)
@@ -639,30 +640,6 @@ def html_diagram(
     """
 ```
 
-<a name="kickmix.Circuit.max_magic"></a>
-```python
-# kickmix.Circuit.max_magic
-
-# (in class kickmix.Circuit)
-def max_magic(
-    self,
-) -> int:
-    """Returns an upper bound on the number of CCX/CCZ gates run by the
-    circuit.
-
-    Examples:
-        >>> import kickmix as km
-        >>> circuit = km.Circuit('''
-        ...     X q0
-        ...     CX q0 q1
-        ...     CCX q0 q1 q2
-        ...     CCZ q0 q1 q2
-        ... ''')
-        >>> circuit.max_magic()
-        2
-    """
-```
-
 <a name="kickmix.Circuit.num_bits"></a>
 ```python
 # kickmix.Circuit.num_bits
@@ -1120,6 +1097,46 @@ def ccx(
     """
 ```
 
+<a name="kickmix.CircuitBuilder.ccz"></a>
+```python
+# kickmix.CircuitBuilder.ccz
+
+# (in class kickmix.CircuitBuilder)
+def ccz(
+    self,
+    control1: bool | km.b | km.q | km.array,
+    control2: bool | km.b | km.q | km.array,
+    control3: bool | km.b | km.q | km.array,
+) -> None:
+    """Appends many CCZ gates to the circuit.
+
+    This method broadcasts over km.array arguments. If any of the arguments
+    is a km.array, an append is performed for each array index. When
+    multiple km.array arguments are used, they are combined by zipping
+    (i.e. using two arrays of length n will produce n instructions rather
+    than n*n instructions).
+
+    The exact kind of operation(s) appended to the circuit depends on the
+    types of the controls. For example, if one of the controls is the
+    boolean value True instead of a qubit, then a CZ instruction will be
+    appended instead of a CCZ instruction.
+
+    Args:
+        control1: The first control determining if phasing occurs.
+        control2: The second control determining if phasing occurs.
+        control3: The third control determining if phasing occurs.
+
+    Examples:
+        >>> import kickmix as km
+        >>> builder = km.CircuitBuilder()
+        >>> builder.ccz(km.q(0), km.q(1), km.q(2))
+        >>> builder.finish_circuit()
+        km.Circuit('''
+            CCZ q0 q1 q2
+        ''')
+    """
+```
+
 <a name="kickmix.CircuitBuilder.create_classical_register"></a>
 ```python
 # kickmix.CircuitBuilder.create_classical_register
@@ -1441,7 +1458,9 @@ def del_gf2_div(
         >>> rhs = builder.create_quantum_register(8, name='rhs')
         >>> quotient = builder.init_gf2_div(lhs, rhs)
         >>> builder.del_gf2_div(lhs, rhs, target=quotient)
-        >>> builder.finish_circuit().max_magic()  # 135 to build, 108 to rebuild
+        >>> circuit = builder.finish_circuit()
+        >>> stats = circuit.operation_statistics()
+        >>> stats.num_toffoli_like  # 135 to build, 108 to rebuild
         243
     """
 ```
@@ -1484,7 +1503,9 @@ def del_gf2_div_with_scaffold(
         >>> quotient, scaffold = builder.init_gf2_div_with_scaffold(lhs, rhs)
         >>> builder.del_gf2_div_with_scaffold(
         ...     lhs, rhs, target=quotient, scaffold=scaffold)
-        >>> builder.finish_circuit().max_magic()  # no more than building it once
+        >>> circuit = builder.finish_circuit()
+        >>> stats = circuit.operation_statistics()
+        >>> stats.num_toffoli_like  # no more than building it once
         135
     """
 ```
@@ -1521,7 +1542,9 @@ def del_gf2_inverse(
         >>> inp = builder.create_quantum_register(8, name='inp')
         >>> inv = builder.init_gf2_inverse(inp)
         >>> builder.del_gf2_inverse(inp, target=inv)
-        >>> builder.finish_circuit().max_magic()  # 108 to build, 108 to rebuild
+        >>> circuit = builder.finish_circuit()
+        >>> stats = circuit.operation_statistics()
+        >>> stats.num_toffoli_like  # 108 to build, 108 to rebuild
         216
     """
 ```
@@ -1562,7 +1585,8 @@ def del_gf2_inverse_with_scaffold(
         >>> inv, scaffold = builder.init_gf2_inverse_with_scaffold(inp)
         >>> builder.del_gf2_inverse_with_scaffold(
         ...     inp, target=inv, scaffold=scaffold)
-        >>> builder.finish_circuit().max_magic()  # no more than building it once
+        >>> stats = builder.finish_circuit().operation_statistics()
+        >>> stats.num_toffoli_like  # no more than building it once
         108
     """
 ```
@@ -2346,7 +2370,9 @@ def init_gf2_div(
         >>> lhs = builder.create_quantum_register(8, name='lhs')
         >>> rhs = builder.create_quantum_register(8, name='rhs')
         >>> quotient = builder.init_gf2_div(lhs, rhs)
-        >>> builder.finish_circuit().max_magic()
+        >>> circuit = builder.finish_circuit()
+        >>> stats = circuit.operation_statistics()
+        >>> stats.num_toffoli_like
         135
     """
 ```
@@ -2393,7 +2419,9 @@ def init_gf2_div_with_scaffold(
         >>> quotient, scaffold = builder.init_gf2_div_with_scaffold(lhs, rhs)
         >>> len(scaffold)
         32
-        >>> builder.finish_circuit().max_magic()
+        >>> circuit = builder.finish_circuit()
+        >>> stats = circuit.operation_statistics()
+        >>> stats.num_toffoli_like
         135
     """
 ```
@@ -2484,7 +2512,9 @@ def init_gf2_inverse_with_scaffold(
         >>> inv, scaffold = builder.init_gf2_inverse_with_scaffold(inp)
         >>> len(scaffold)
         24
-        >>> builder.finish_circuit().max_magic()
+        >>> circuit = builder.finish_circuit()
+        >>> stats = circuit.operation_statistics()
+        >>> stats.num_toffoli_like
         108
     """
 ```
@@ -2681,7 +2711,9 @@ def ixor_gf2_div(
         >>> rhs = builder.create_quantum_register(8, name='rhs')
         >>> target = builder.create_quantum_register(8, name='target')
         >>> builder.ixor_gf2_div(lhs, rhs, target=target)
-        >>> builder.finish_circuit().max_magic()
+        >>> circuit = builder.finish_circuit()
+        >>> stats = circuit.operation_statistics()
+        >>> stats.num_toffoli_like
         135
     """
 ```
@@ -4224,6 +4256,36 @@ def num_instructions(
     """
 ```
 
+<a name="kickmix.OperationStatistics.num_non_clifford"></a>
+```python
+# kickmix.OperationStatistics.num_non_clifford
+
+# (in class kickmix.OperationStatistics)
+@property
+def num_non_clifford(
+    self,
+) -> int:
+    """The number of non-Clifford operations that were counted.
+
+    This count includes CCX gates, CCZ gates, CSWAP gates, and Z_POW gates with
+    an exponent that isn't a multiple of 0.5 (i.e. non-Clifford rotations).
+
+    Examples:
+        >>> import kickmix as km
+        >>> c = km.Circuit('''
+        ...     CCX q0 q1 q2
+        ...     CCZ q0 q1 q2
+        ...     CSWAP q0 q1 q2
+        ...     Z_POW q0 0.25
+        ...
+        ...     CZ q0 q1
+        ...     Z_POW q0 0.5
+        ... ''')
+        >>> c.operation_statistics().num_non_clifford
+        4
+    """
+```
+
 <a name="kickmix.OperationStatistics.num_t_like"></a>
 ```python
 # kickmix.OperationStatistics.num_t_like
@@ -4268,6 +4330,15 @@ def num_toffoli_like(
     `CSWAP q0 q1 q2`) and classically conditioned (`CCX q0 q1 q2 if b3`,
     etc.) operations.
 
+    Caution: This doesn't count Z_POW operations! For example, note that a CCZ
+    can be decomposed into seven Z_POW instructions (plus six CNOTs). Different
+    architectures have different costs for different Z_POWs and CCZs, so kickmix
+    leaves merging those costs as a task for the user. (Consider: it takes four
+    T states to produce a CCZ state, but a CCZ state can only be split into two T
+    states [using catalysis], so whether the T-to-CCZ cost ratio is 4:1 or 2:1
+    depends on whether your magic state factories are producing T states or CCZ
+    states.)
+
     Examples:
         >>> import kickmix as km
         >>> c = km.Circuit('''
@@ -4275,6 +4346,7 @@ def num_toffoli_like(
         ...     CCZ q0 q1 q2 if b0
         ...     CSWAP q0 q1 q2
         ...     CX q0 q1
+        ...     Z_POW q0 0.25  # not counted!
         ... ''')
         >>> c.operation_statistics().num_toffoli_like
         3
@@ -5135,7 +5207,9 @@ def __init__(
         >>> with cursor:
         ...     cursor.move_to(2)
         ...     builder.cx(cursor.match_qubit, target[0])
-        >>> builder.finish_circuit().max_magic()
+        >>> circuit = builder.finish_circuit()
+        >>> stats = circuit.operation_statistics()
+        >>> stats.num_toffoli_like
         1
     """
 ```

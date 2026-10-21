@@ -244,8 +244,16 @@ struct Sim {
         }
 
         // Multiplicative resizing ensures no quadratic overhead.
-        min_num_qubits = std::max(num_qubits * 2, min_num_qubits);
-        min_num_bits = std::max(num_bits * 2, min_num_bits);
+        if (min_num_qubits > num_qubits) {
+            min_num_qubits = std::max(num_qubits * 2, min_num_qubits);
+        } else {
+            min_num_qubits = num_qubits;
+        }
+        if (min_num_bits > num_bits) {
+            min_num_bits = std::max(num_bits * 2, min_num_bits);
+        } else {
+            min_num_bits = num_bits;
+        }
 
         std::span<TWord> old_bits = bit_span();
         std::span<TWord> old_qubits = qubit_span();
@@ -465,12 +473,14 @@ struct Sim {
                     current_base_condition &= bits[*data_bit_cond++];
                     condition_stack.push_back(current_base_condition);
                     if constexpr (count_shots) {
-                        cond = ~TWord{};
+                        cond = ~TWord{};  // Always count this operation in stats (not affected by conditions).
                     }
                     break;
 
                 case OpType::POP_CONDITION:
-                    condition_stack.pop_back();
+                    if (!condition_stack.empty()) {
+                        condition_stack.pop_back();
+                    }
                     current_base_condition = condition_stack.empty() ? ~TWord{} : condition_stack.back();
                     if constexpr (count_shots) {
                         cond = ~TWord{};
@@ -479,7 +489,7 @@ struct Sim {
 
                 case OpType::INFO_TAG:
                     if constexpr (count_shots) {
-                        cond = ~TWord{};
+                        cond = ~TWord{};  // Always count this operation in stats (not affected by conditions).
                     }
                     break;
 

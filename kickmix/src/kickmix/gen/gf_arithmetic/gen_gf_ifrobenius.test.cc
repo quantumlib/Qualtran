@@ -130,7 +130,7 @@ TEST(gen_gf_ifrobenius, large_degree_is_linear_and_ancilla_free) {
     gen_gf_ifrobenius(builder, CircuitGenCtx{}, field, target, 100);
     Circuit circuit = builder.finish_circuit();
     ASSERT_EQ(circuit.num_qubits, 128);
-    ASSERT_EQ(circuit.max_magic(), 0);
+    ASSERT_EQ(circuit.estimate_ccz_state_weight(), 0);
 
     // Sanity check the classical map it is synthesized from: it must be an order m automorphism.
     GF2Poly v = GF2Poly::from_str("0x1234567890abcdef1234567890abcdef");

@@ -149,29 +149,6 @@ void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
             .data());
 
     c_circuit.def(
-        "max_magic",
-        [](const Circuit &self) -> size_t {
-            return self.max_magic();
-        },
-        clean_doc_string(R"DOC(
-            @signature def max_magic(self) -> int:
-            Returns an upper bound on the number of CCX/CCZ gates run by the
-            circuit.
-
-            Examples:
-                >>> import kickmix as km
-                >>> circuit = km.Circuit('''
-                ...     X q0
-                ...     CX q0 q1
-                ...     CCX q0 q1 q2
-                ...     CCZ q0 q1 q2
-                ... ''')
-                >>> circuit.max_magic()
-                2
-        )DOC")
-            .data());
-
-    c_circuit.def(
         "operation_statistics",
         &PyOperationStatistics::from_circuit,
         clean_doc_string(R"DOC(

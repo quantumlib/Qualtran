@@ -115,6 +115,9 @@ CircuitBuilderRaiiBit CircuitBuilder::alloc_clean_raii_bit() {
 }
 
 void CircuitBuilder::append_bit_to_register(std::span<const BitId> bits, RegisterId reg) {
+    if (reg.id >= MAX_NUM_REGISTERS) {
+        throw std::invalid_argument("reg.id >= MAX_NUM_REGISTERS");
+    }
     while (mut.register_data.size() <= reg.id) {
         mut.register_data.push_back({});
     }
@@ -123,6 +126,9 @@ void CircuitBuilder::append_bit_to_register(std::span<const BitId> bits, Registe
     }
 }
 void CircuitBuilder::append_qubit_to_register(std::span<const QubitId> qubits, RegisterId reg) {
+    if (reg.id >= MAX_NUM_REGISTERS) {
+        throw std::invalid_argument("reg.id >= MAX_NUM_REGISTERS");
+    }
     while (mut.register_data.size() <= reg.id) {
         mut.register_data.push_back({});
     }
@@ -507,8 +513,8 @@ void CircuitBuilder::ccz(QubitOrBitOrBool c1, QubitOrBitOrBool c2, QubitOrBitOrB
             if (c3.is_qubit()) {
                 cz_if((QubitId)c1, (QubitId)c3, (BitId)c2);
             } else if (c3.is_bit()) {
-                push_condition((BitId)c3);
-                z_if((QubitId)c1, (BitId)c2);
+                push_condition((BitId)c2);
+                z_if((QubitId)c1, (BitId)c3);
                 pop_condition();
             } else if ((bool)c3) {
                 z_if((QubitId)c1, (BitId)c2);
@@ -534,17 +540,21 @@ void CircuitBuilder::ccz(QubitOrBitOrBool c1, QubitOrBitOrBool c2, QubitOrBitOrB
                 z_if((QubitId)c2, (BitId)c1);
             }
         } else if (c2.is_bit()) {
-            push_condition((BitId)c1);
             if (c3.is_qubit()) {
+                push_condition((BitId)c1);
                 z_if((QubitId)c3, (BitId)c2);
+                pop_condition();
             } else if (c3.is_bit()) {
+                push_condition((BitId)c1);
                 push_condition((BitId)c2);
                 neg_if((BitId)c3);
                 pop_condition();
+                pop_condition();
             } else if ((bool)c3) {
+                push_condition((BitId)c1);
                 neg_if((BitId)c2);
+                pop_condition();
             }
-            pop_condition();
         } else if ((bool)c2) {
             if (c3.is_qubit()) {
                 z_if((QubitId)c3, (BitId)c1);

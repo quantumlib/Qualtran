@@ -444,7 +444,7 @@ def test_gf2_mul_and_del_gf2_mul_fuzz(m: int):
     target_d = builder_del.create_quantum_register(m, name="target")
     builder_del.del_gf2_mul(target=target_d, lhs=lhs_d, rhs=rhs_d, field=field)
     circuit_del = builder_del.finish_circuit()
-    assert circuit_del.max_magic() == 0
+    assert circuit_del.operation_statistics().num_non_clifford == 0
 
     assert_fuzz_testing_acts_like(
         circuit_del,
@@ -570,7 +570,7 @@ def test_init_and_del_gf2_inverse_with_scaffold_fuzz(m: int):
     q_inv = del_only.create_quantum_register(m, name="inv")
     anc = del_only.alloc_qubits(len(scaffold))
     del_only.del_gf2_inverse_with_scaffold(q_inp, target=q_inv, scaffold=anc, field=field)
-    assert del_only.finish_circuit().max_magic() == 0
+    assert del_only.finish_circuit().operation_statistics().num_non_clifford == 0
 
 
 @pytest.mark.parametrize("m", [1, 2, 3, 4, 6])
@@ -604,7 +604,7 @@ def test_init_and_del_gf2_div_with_scaffold_fuzz(m: int):
     d_target = del_only.create_quantum_register(m, name="target")
     d_anc = del_only.alloc_qubits(len(scaffold))
     del_only.del_gf2_div_with_scaffold(d_lhs, d_rhs, target=d_target, scaffold=d_anc, field=field)
-    assert del_only.finish_circuit().max_magic() == 0
+    assert del_only.finish_circuit().operation_statistics().num_non_clifford == 0
 
 
 def test_field_does_not_have_inverse_chain_size():
@@ -752,7 +752,7 @@ def test_gf2_phase_by_product_exhaustive(m: int):
     mask = builder.create_classical_register(m, name="mask")
     builder.gf2_phase_by_product(mask=mask, lhs=lhs, rhs=rhs, field=field)
     circuit = builder.finish_circuit()
-    assert circuit.max_magic() == 0
+    assert circuit.operation_statistics().num_non_clifford == 0
 
     size = 1 << m
     cases = [(a, b, c) for a in range(size) for b in range(size) for c in range(size)]

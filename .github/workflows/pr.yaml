@@ -46,6 +46,7 @@ jobs:
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
+          version: ">=0.13.4"
       - name: Install dependencies
         run: |
           uv sync --frozen --no-dev --group test --no-install-project
@@ -70,6 +71,7 @@ jobs:
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
+          version: ">=0.13.4"
       - name: Install dependencies
         run: |
           uv sync --frozen --no-install-project
@@ -95,6 +97,7 @@ jobs:
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
+          version: ">=0.13.4"
       - name: Install dependencies
         run: |
           uv sync --frozen --no-dev --group test --no-install-project
@@ -121,6 +124,7 @@ jobs:
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
+          version: ">=0.13.4"
       - name: Install dependencies
         run: |
           uv sync --frozen --no-dev --group format --no-install-project
@@ -146,6 +150,7 @@ jobs:
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
+          version: ">=0.13.4"
       - name: Install dependencies
         run: |
           uv sync --frozen --no-dev --group lint --no-install-project
@@ -170,6 +175,7 @@ jobs:
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
+          version: ">=0.13.4"
       - name: Install dependencies
         run: |
           uv sync --frozen --no-dev --group typing --no-install-project
@@ -196,6 +202,7 @@ jobs:
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
+          version: ">=0.13.4"
       - name: Install dependencies
         run: |
           uv sync --frozen --no-dev --group doc --no-install-project
@@ -219,6 +226,7 @@ jobs:
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
+          version: ">=0.13.4"
       - name: Install minimal dependencies
         run: |
           uv venv .venv-minimal
@@ -239,7 +247,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # v1
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
         with:
           toolchain: stable
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -248,6 +256,7 @@ jobs:
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           enable-cache: true
+          version: ">=0.13.4"
       - name: Install dependencies
         run: |
           uv sync --frozen --directory experimental/rsqualtran \

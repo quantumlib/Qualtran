@@ -13,6 +13,9 @@
 
 using namespace kickmix;
 
+constexpr uint32_t MAX_CIRCUIT_INSTRUCTIONS = 2000000000;
+constexpr uint32_t MAX_INFO_TAG_DATA = 2000000000;
+
 constexpr std::array<uint8_t, 16> KMB_MAGIC_BYTES{
     0xd7, 0x50, 0xc7, 0xd5, 0xc3, 0x29, 0xd3, 0x26, 0xe3, 0xcc, 0x9f, 0x68, 0x34, 0xf2, 0xb8, 0xbf};
 
@@ -273,14 +276,21 @@ Circuit::Circuit(Circuit &&other) noexcept {
 }
 
 template <typename T>
-static T *aligned_alloc_32(size_t count) {
+static T *aligned_alloc_32_else_throw(size_t count) {
     if (count == 0) {
         return nullptr;
+    }
+    if (count > (SIZE_MAX - 31) / sizeof(T)) {
+        throw std::invalid_argument("Too much memory to allocate.");
     }
     size_t bytes = count * sizeof(T);
     bytes += size_t{31};
     bytes &= ~size_t{31};
-    return (T *)std::aligned_alloc(32, bytes);
+    T *result = (T *)std::aligned_alloc(32, bytes);
+    if (result == nullptr) {
+        throw std::invalid_argument("Failed to allocate.");
+    }
+    return result;
 }
 
 Circuit::Circuit(const Circuit &other) {
@@ -297,18 +307,18 @@ Circuit::Circuit(const Circuit &other) {
     num_info_tags = other.num_info_tags;
     num_info_tag_chars = other.num_info_tag_chars;
 
-    op_types = aligned_alloc_32<OpType>(num_ops);
-    qqq0 = aligned_alloc_32<uint32_t>(num_qqq_ops);
-    qqq1 = aligned_alloc_32<uint32_t>(num_qqq_ops);
-    qqq2 = aligned_alloc_32<uint32_t>(num_qqq_ops);
-    qq0 = aligned_alloc_32<uint32_t>(num_qq_ops);
-    qq1 = aligned_alloc_32<uint32_t>(num_qq_ops);
-    q0 = aligned_alloc_32<uint32_t>(num_q_ops);
-    bc = aligned_alloc_32<uint32_t>(num_c_ops);
-    b0 = aligned_alloc_32<uint32_t>(num_b_ops);
-    angles = aligned_alloc_32<FixedPrecisionAngle128>(num_angle_ops);
-    info_tag_end_offsets = aligned_alloc_32<uint64_t>(num_info_tags);
-    info_tag_chars = aligned_alloc_32<char>(num_info_tag_chars);
+    op_types = aligned_alloc_32_else_throw<OpType>(num_ops);
+    qqq0 = aligned_alloc_32_else_throw<uint32_t>(num_qqq_ops);
+    qqq1 = aligned_alloc_32_else_throw<uint32_t>(num_qqq_ops);
+    qqq2 = aligned_alloc_32_else_throw<uint32_t>(num_qqq_ops);
+    qq0 = aligned_alloc_32_else_throw<uint32_t>(num_qq_ops);
+    qq1 = aligned_alloc_32_else_throw<uint32_t>(num_qq_ops);
+    q0 = aligned_alloc_32_else_throw<uint32_t>(num_q_ops);
+    bc = aligned_alloc_32_else_throw<uint32_t>(num_c_ops);
+    b0 = aligned_alloc_32_else_throw<uint32_t>(num_b_ops);
+    angles = aligned_alloc_32_else_throw<FixedPrecisionAngle128>(num_angle_ops);
+    info_tag_end_offsets = aligned_alloc_32_else_throw<uint64_t>(num_info_tags);
+    info_tag_chars = aligned_alloc_32_else_throw<char>(num_info_tag_chars);
 
     memcpy(op_types, other.op_types, num_ops);
     memcpy(qqq0, other.qqq0, num_qqq_ops * sizeof(uint32_t));
@@ -343,18 +353,18 @@ Circuit &Circuit::operator=(const Circuit &other) {
     num_info_tags = other.num_info_tags;
     num_info_tag_chars = other.num_info_tag_chars;
 
-    op_types = aligned_alloc_32<OpType>(num_ops);
-    qqq0 = aligned_alloc_32<uint32_t>(num_qqq_ops);
-    qqq1 = aligned_alloc_32<uint32_t>(num_qqq_ops);
-    qqq2 = aligned_alloc_32<uint32_t>(num_qqq_ops);
-    qq0 = aligned_alloc_32<uint32_t>(num_qq_ops);
-    qq1 = aligned_alloc_32<uint32_t>(num_qq_ops);
-    q0 = aligned_alloc_32<uint32_t>(num_q_ops);
-    bc = aligned_alloc_32<uint32_t>(num_c_ops);
-    b0 = aligned_alloc_32<uint32_t>(num_b_ops);
-    angles = aligned_alloc_32<FixedPrecisionAngle128>(num_angle_ops);
-    info_tag_end_offsets = aligned_alloc_32<uint64_t>(num_info_tags);
-    info_tag_chars = aligned_alloc_32<char>(num_info_tag_chars);
+    op_types = aligned_alloc_32_else_throw<OpType>(num_ops);
+    qqq0 = aligned_alloc_32_else_throw<uint32_t>(num_qqq_ops);
+    qqq1 = aligned_alloc_32_else_throw<uint32_t>(num_qqq_ops);
+    qqq2 = aligned_alloc_32_else_throw<uint32_t>(num_qqq_ops);
+    qq0 = aligned_alloc_32_else_throw<uint32_t>(num_qq_ops);
+    qq1 = aligned_alloc_32_else_throw<uint32_t>(num_qq_ops);
+    q0 = aligned_alloc_32_else_throw<uint32_t>(num_q_ops);
+    bc = aligned_alloc_32_else_throw<uint32_t>(num_c_ops);
+    b0 = aligned_alloc_32_else_throw<uint32_t>(num_b_ops);
+    angles = aligned_alloc_32_else_throw<FixedPrecisionAngle128>(num_angle_ops);
+    info_tag_end_offsets = aligned_alloc_32_else_throw<uint64_t>(num_info_tags);
+    info_tag_chars = aligned_alloc_32_else_throw<char>(num_info_tag_chars);
 
     memcpy(op_types, other.op_types, num_ops);
     memcpy(qqq0, other.qqq0, num_qqq_ops * sizeof(uint32_t));
@@ -769,8 +779,8 @@ size_t Circuit::reaction_depth() const {
     return compute_reaction_depth(num_qubits, num_bits, ops);
 }
 
-size_t Circuit::max_magic() const {
-    return num_qqq_ops;
+size_t Circuit::estimate_ccz_state_weight() const {
+    return num_qqq_ops + (num_angle_ops + 1) / 2;
 }
 
 void Circuit::write_kmx_to(std::ostream &out) const {
@@ -981,6 +991,9 @@ size_t Circuit::compute_num_bits() const {
     max_bit = std::max(max_bit, max_u32(bc, num_c_ops));
     saw |= num_b_ops > 0;
     max_bit = std::max(max_bit, max_u32(b0, num_b_ops));
+    if (max_bit & TAG_MASK) {
+        throw std::invalid_argument("Malformed circuit data: bit data isn't supposed to be tagged.");
+    }
     for (const auto &r : register_data) {
         for (const auto &e : r.contents) {
             if (e.is_bit()) {
@@ -1001,6 +1014,9 @@ size_t Circuit::compute_num_qubits() const {
     max_qubit = std::max(max_qubit, max_u32(qq0, num_qq_ops));
     max_qubit = std::max(max_qubit, max_u32(qq1, num_qq_ops));
     max_qubit = std::max(max_qubit, max_u32(q0, num_q_ops));
+    if (max_qubit & TAG_MASK) {
+        throw std::invalid_argument("Malformed circuit data: qubit data isn't supposed to be tagged.");
+    }
     for (const auto &r : register_data) {
         for (const auto &e : r.contents) {
             if (e.is_qubit()) {
@@ -1121,8 +1137,10 @@ void Circuit::validate_and_compute_stats() {
     if ((intptr_t)info_tag_chars & 31) {
         throw std::invalid_argument("info_tag_chars isn't aligned to a 32 byte boundary.");
     }
-    if (compute_has_qubit_control_collision()) {
-        throw std::invalid_argument(describe_qubit_control_collision());
+    if (num_ops > MAX_CIRCUIT_INSTRUCTIONS) {
+        std::stringstream ss;
+        ss << "num_ops=" << num_ops << " > MAX_CIRCUIT_INSTRUCTIONS=" << MAX_CIRCUIT_INSTRUCTIONS;
+        throw std::invalid_argument(ss.str());
     }
 
     num_qubits = compute_num_qubits();
@@ -1135,6 +1153,11 @@ void Circuit::validate_and_compute_stats() {
     if (num_bits > MAX_NUM_BITS) {
         std::stringstream ss;
         ss << "num_bits=" << num_bits << " > MAX_NUM_BITS=" << MAX_NUM_BITS;
+        throw std::invalid_argument(ss.str());
+    }
+    if (register_data.size() > MAX_NUM_REGISTERS) {
+        std::stringstream ss;
+        ss << "register_data.size()=" << register_data.size() << " > MAX_NUM_REGISTERS=" << MAX_NUM_REGISTERS;
         throw std::invalid_argument(ss.str());
     }
     if (num_q_ops != compute_num_q()) {
@@ -1177,18 +1200,34 @@ void Circuit::validate_and_compute_stats() {
         ss << "num_info_tags=" << num_info_tags << " != compute_num_info_tags()=" << compute_num_info_tags();
         throw std::invalid_argument(ss.str());
     }
-    bool out_of_order = false;
-    for (size_t k = 1; k < num_info_tags; k++) {
-        out_of_order |= info_tag_end_offsets[k] < info_tag_end_offsets[k - 1];
+
+    {
+        bool out_of_order = false;
+        for (size_t k = 1; k < num_info_tags; k++) {
+            out_of_order |= info_tag_end_offsets[k] < info_tag_end_offsets[k - 1];
+        }
+        if (out_of_order) {
+            throw std::invalid_argument("info_tag_end_offsets is not in monotonic ascending order.");
+        }
     }
-    if (out_of_order) {
-        throw std::invalid_argument("info_tag_end_offsets is not in monotonic ascending order.");
-    }
+
     uint64_t expected_chars = num_info_tags == 0 ? 0 : info_tag_end_offsets[num_info_tags - 1];
     if (num_info_tag_chars != expected_chars) {
         std::stringstream ss;
         ss << "num_info_tag_chars=" << num_info_tag_chars << " != final info_tag_end_offset=" << expected_chars;
         throw std::invalid_argument(ss.str());
+    }
+
+    if (compute_has_qubit_control_collision()) {
+        throw std::invalid_argument(describe_qubit_control_collision());
+    }
+
+    for (size_t k = 0; k < register_data.size(); k++) {
+        for (size_t k2 = k + 1; k2 < register_data.size(); k2++) {
+            if (!register_data[k].name.empty() && register_data[k].name == register_data[k2].name) {
+                throw std::invalid_argument("Duplicate register name: " + register_data[k].name);
+            }
+        }
     }
 }
 
@@ -1271,7 +1310,7 @@ void Circuit::write_kmb_to(FILE *file) const {
     fwrite_else_throw(info_tag_chars, num_info_tag_chars, file);
 }
 
-static uint32_t read_u32_be(FILE *file) {
+inline static uint32_t read_u32_be(FILE *file) {
     uint32_t result{};
     fread_else_throw(&result, sizeof(uint32_t), file);
     if constexpr (std::endian::native == std::endian::big) {
@@ -1280,7 +1319,7 @@ static uint32_t read_u32_be(FILE *file) {
     return result;
 }
 
-static uint64_t read_u64_be(FILE *file) {
+inline static uint64_t read_u64_be(FILE *file) {
     uint64_t result{};
     fread_else_throw(&result, sizeof(uint64_t), file);
     if constexpr (std::endian::native == std::endian::big) {
@@ -1289,7 +1328,17 @@ static uint64_t read_u64_be(FILE *file) {
     return result;
 }
 
-static void read_u64_be_expect(FILE *file, uint64_t expected, const char *message) {
+inline static uint64_t read_u64_be_max_else_throw(FILE *file, uint64_t max_value, const char *lhs, const char *rhs) {
+    uint64_t result = read_u64_be(file);
+    if (result > max_value) {
+        std::stringstream ss;
+        ss << lhs << "=" << result << " is supposed to be at most " << rhs << "=" << max_value;
+        throw std::invalid_argument(ss.str());
+    }
+    return result;
+}
+
+inline static void read_u64_be_expect(FILE *file, uint64_t expected, const char *message) {
     uint64_t actual = read_u64_be(file);
     if (actual != expected) {
         throw std::invalid_argument(message);
@@ -1300,7 +1349,7 @@ template <typename T>
 static void alloc_and_read_T_blob_packet(FILE *file, KmbPacketType type, T **data_out, size_t count) {
     read_u64_be_expect(file, (uint64_t)type, "Payload packets in wrong order.");
     read_u64_be_expect(file, count * sizeof(T), "Size mismatch: actual payload size vs size specified in header.");
-    *data_out = aligned_alloc_32<T>(count);
+    *data_out = aligned_alloc_32_else_throw<T>(count);
     fread_else_throw(*data_out, count * sizeof(T), file);
 }
 
@@ -1322,19 +1371,25 @@ Circuit Circuit::from_kmb_file(FILE *file, bool skip_magic) {
     uint32_t num_qubits = read_u32_be(file);
     uint32_t num_bits = read_u32_be(file);
     uint32_t num_registers = read_u32_be(file);
-    result.num_ops = read_u64_be(file);
-    result.num_qqq_ops = read_u64_be(file);
-    result.num_qq_ops = read_u64_be(file);
-    result.num_q_ops = read_u64_be(file);
-    result.num_b_ops = read_u64_be(file);
-    result.num_c_ops = read_u64_be(file);
-    result.num_angle_ops = read_u64_be(file);
-    result.num_info_tags = read_u64_be(file);
-    result.num_info_tag_chars = read_u64_be(file);
+    if (num_registers > MAX_NUM_REGISTERS) {
+        std::stringstream ss;
+        ss << "num_registers=" << num_registers << " > MAX_NUM_REGISTERS=" << MAX_NUM_REGISTERS;
+        throw std::invalid_argument(ss.str());
+    }
+    result.num_ops = read_u64_be_max_else_throw(file, MAX_CIRCUIT_INSTRUCTIONS, "num_ops", "MAX_CIRCUIT_INSTRUCTIONS");
+    result.num_qqq_ops = read_u64_be_max_else_throw(file, result.num_ops, "num_qqq_ops", "num_ops");
+    result.num_qq_ops = read_u64_be_max_else_throw(file, result.num_ops, "num_qq_ops", "num_ops");
+    result.num_q_ops = read_u64_be_max_else_throw(file, result.num_ops, "num_q_ops", "num_ops");
+    result.num_b_ops = read_u64_be_max_else_throw(file, result.num_ops, "num_b_ops", "num_ops");
+    result.num_c_ops = read_u64_be_max_else_throw(file, result.num_ops, "num_c_ops", "num_ops");
+    result.num_angle_ops = read_u64_be_max_else_throw(file, result.num_ops, "num_angle_ops", "num_ops");
+    result.num_info_tags = read_u64_be_max_else_throw(file, result.num_ops, "num_info_tags", "num_ops");
+    result.num_info_tag_chars =
+        read_u64_be_max_else_throw(file, MAX_INFO_TAG_DATA, "num_info_tag_chars", "MAX_INFO_TAG_DATA");
 
     // Register data.
     for (size_t k = 0; k < num_registers; k++) {
-        read_u64_be_expect(file, (uint64_t)KmbPacketType::REGISTER_TARGETS, "Expected register target data.");
+        read_u64_be_expect(file, (uint64_t)KmbPacketType::REGISTER_TARGETS, "Failed to read register target data.");
         uint64_t register_payload_size = read_u64_be(file);
         size_t name_len = read_u32_be(file);
         size_t reg_len = read_u32_be(file);
@@ -1362,7 +1417,7 @@ Circuit Circuit::from_kmb_file(FILE *file, bool skip_magic) {
     read_u64_be_expect(file, (uint64_t)KmbPacketType::OPERATION_TYPES, "Expected operation type data.");
     read_u64_be_expect(
         file, result.num_ops, "Operation type payload size was inconsistent with amount specified in header.");
-    result.op_types = aligned_alloc_32<OpType>(result.num_ops);
+    result.op_types = aligned_alloc_32_else_throw<OpType>(result.num_ops);
     fread_else_throw((void *)result.op_types, result.num_ops, file);
 
     // Operation target data.
@@ -1390,9 +1445,9 @@ Circuit Circuit::from_kmb_file(FILE *file, bool skip_magic) {
         (result.num_info_tags + 1) * sizeof(uint64_t) + result.num_info_tag_chars,
         "Size mismatch: actual payload size vs size specified in header.");
     read_u64_be_expect(file, result.num_info_tags, "Size mismatch: actual payload size vs size specified in header.");
-    result.info_tag_end_offsets = aligned_alloc_32<uint64_t>(result.num_info_tags);
+    result.info_tag_end_offsets = aligned_alloc_32_else_throw<uint64_t>(result.num_info_tags);
     fread_else_throw(result.info_tag_end_offsets, result.num_info_tags * sizeof(uint64_t), file);
-    result.info_tag_chars = aligned_alloc_32<char>(result.num_info_tag_chars);
+    result.info_tag_chars = aligned_alloc_32_else_throw<char>(result.num_info_tag_chars);
     fread_else_throw(result.info_tag_chars, result.num_info_tag_chars, file);
 
     if (fgetc(file) != EOF) {
@@ -1508,12 +1563,12 @@ void Circuit::write_analysis_svg_to(std::ostream &out, size_t reference_qubit_co
     // Perform circuit analysis.
     std::vector<uint64_t> active_qubits((num_qubits + 63) / 64);
     std::vector<std::string_view> name_stack;
-    std::vector<size_t> toffoli_stack;
+    std::vector<double> ccz_weight_stack;
     std::vector<std::vector<uint64_t>> qubit_touched_stack;
-    size_t toffoli_count = 0;
+    double ccz_weight = 0;  // CCX + CCZ + CSWAP + T/2 + (other non-Clifford rotations) * 4
     std::vector<std::string> group_names;
     std::vector<size_t> group_heights;
-    std::vector<size_t> group_toffoli_counts;
+    std::vector<double> group_ccz_weights;
     std::vector<size_t> group_max_active_qubits;
     std::vector<size_t> group_hits;
     std::string cur_name;
@@ -1522,7 +1577,7 @@ void Circuit::write_analysis_svg_to(std::ostream &out, size_t reference_qubit_co
         cur_name.append(":");
         cur_name.append(name);
         name_stack.push_back(name);
-        toffoli_stack.push_back(toffoli_count);
+        ccz_weight_stack.push_back(ccz_weight);
         qubit_touched_stack.push_back(active_qubits);
     };
 
@@ -1539,14 +1594,14 @@ void Circuit::write_analysis_svg_to(std::ostream &out, size_t reference_qubit_co
         }
         if (k_group == group_names.size()) {
             group_names.push_back(cur_name);
-            group_toffoli_counts.push_back(0);
+            group_ccz_weights.push_back(0);
             group_heights.push_back(name_stack.size());
             group_max_active_qubits.push_back(0);
             group_hits.push_back(0);
         }
 
         // Update group stats.
-        group_toffoli_counts[k_group] += toffoli_count - toffoli_stack.back();
+        group_ccz_weights[k_group] += ccz_weight - ccz_weight_stack.back();
         auto popped_touched = std::move(qubit_touched_stack.back());
         size_t max_active_qubits = 0;
         for (size_t k = 0; k < popped_touched.size(); k++) {
@@ -1557,7 +1612,7 @@ void Circuit::write_analysis_svg_to(std::ostream &out, size_t reference_qubit_co
 
         // Pop stack frame.
         cur_name.resize(cur_name.size() - (name.size() + 1));
-        toffoli_stack.pop_back();
+        ccz_weight_stack.pop_back();
         name_stack.pop_back();
         qubit_touched_stack.pop_back();
     };
@@ -1614,12 +1669,14 @@ void Circuit::write_analysis_svg_to(std::ostream &out, size_t reference_qubit_co
             case OpType::CCX_IF:
             case OpType::CCZ_IF:
             case OpType::CSWAP_IF:
-                toffoli_count += 1;
+                ccz_weight += 1;
                 break;
             case OpType::Z_POW:
             case OpType::Z_POW_IF:
-                if (!op.angle.is_multiple_of_90_degrees()) {
-                    toffoli_count += 1;  // TODO: better handle the conversion from Z_POW to Toffoli
+                if (!op.angle.is_multiple_of_45_degrees()) {
+                    ccz_weight += 4;  // Assumes ~20T ~= 4 Toffoli synthesis.
+                } else if (!op.angle.is_multiple_of_90_degrees()) {
+                    ccz_weight += 0.5;  // Assumes CCZ-to-2T catalysis.
                 }
                 break;
             case OpType::INFO_TAG:
@@ -1664,25 +1721,25 @@ void Circuit::write_analysis_svg_to(std::ostream &out, size_t reference_qubit_co
 
     out << R"SVG(<svg viewBox="-100 -140 1200.0 340.0" style="display: block; margin: auto;" xmlns="http://www.w3.org/2000/svg">)SVG"
         << "\n";
-    double x_scale = 1000.0 / toffoli_count;
+    double x_scale = 1000.0 / std::max(ccz_weight, 1.0);
     double y_scale = 100.0 / num_qubits;
-    std::vector<size_t> layer_xs{0};
+    std::vector<double> layer_xs{0};
     for (size_t k = 0; k < group_names.size(); k++) {
         auto h = group_heights[k];
         while (layer_xs.size() <= h) {
             layer_xs.push_back(0);
         }
-        size_t layer_x = layer_xs[h];
+        double layer_x = layer_xs[h];
         for (size_t k2 = 0; k2 < h; k2++) {
             layer_x = std::max(layer_xs[k2], layer_x);
         }
-        layer_xs[h] = layer_x + group_toffoli_counts[k];
+        layer_xs[h] = layer_x + group_ccz_weights[k];
         std::string_view group_name = group_names[k];
         group_name = group_name.substr(group_name.rfind(':') + 1);
         out << "<rect";
         out << " x=\"" << layer_x * x_scale << "\"";
         out << " y=\"" << -y_scale * group_max_active_qubits[k] << "\"";
-        out << " width=\"" << group_toffoli_counts[k] * x_scale << "\"";
+        out << " width=\"" << group_ccz_weights[k] * x_scale << "\"";
         out << " height=\"" << y_scale * group_max_active_qubits[k] << "\"";
         out << " stroke=\"black\"";
         out << " fill=\"blue\"";
@@ -1691,14 +1748,14 @@ void Circuit::write_analysis_svg_to(std::ostream &out, size_t reference_qubit_co
             out << "<rect";
             out << " x=\"" << layer_x * x_scale << "\"";
             out << " y=\"" << h * 10 - 20 << "\"";
-            out << " width=\"" << group_toffoli_counts[k] * x_scale << "\"";
+            out << " width=\"" << group_ccz_weights[k] * x_scale << "\"";
             out << " height=\"" << 10 << "\"";
             out << " stroke=\"black\"";
             out << " fill=\"red\"";
             out << " opacity=\"0.8\"";
             out << " />\n";
             out << "<text";
-            out << " x=\"" << (layer_x + group_toffoli_counts[k] * 0.5) * x_scale << "\"";
+            out << " x=\"" << (layer_x + group_ccz_weights[k] * 0.5) * x_scale << "\"";
             out << " y=\"" << h * 10 - 13 << "\"";
             std::string title;
             title.append(group_name);
@@ -1707,7 +1764,7 @@ void Circuit::write_analysis_svg_to(std::ostream &out, size_t reference_qubit_co
                 title.append(std::to_string(group_hits[k]));
                 title.append(")");
             }
-            float box_width = group_toffoli_counts[k] * x_scale;
+            float box_width = group_ccz_weights[k] * x_scale;
             float font_size = title.empty() ? 0.5f : box_width / title.size() * 2;
             font_size = std::min(5.0f, font_size);
             font_size = std::max(0.5f, font_size);
@@ -1748,7 +1805,8 @@ void Circuit::write_analysis_svg_to(std::ostream &out, size_t reference_qubit_co
     out << " dominant-baseline=\"bottom\"";
     out << " text-anchor=\"middle\"";
     out << " fill=\"black\"";
-    out << " >" << num_qubits << " qubits, " << max_magic() << " toffolis</text>\n";
+    out << " >" << num_qubits << " qubits, ";
+    out << ccz_weight << " CCZ states (=CCX + CCZ + CSWAP + Z_POW[level=3]/2 + 4 Z_POW[level>=4])</text>\n";
     if (reference_qubit_count > 0) {
         out << "<path";
         out << " d=\"";

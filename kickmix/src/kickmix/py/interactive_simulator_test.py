@@ -432,10 +432,10 @@ def test_read_phase_flipped_across_shots():
     assert sim.read_phase_flipped_across_shots(out=int) == 0
     for k in range(21):
         sim.write_shot_phase(k, k * 0.101)
-    assert sim.read_phase_flipped_across_shots(out=int) == 0b111111111100000
-    np.testing.assert_array_equal(
-        sim.read_phase_flipped_across_shots(), [False] * 5 + [True] * 10 + [False] * 394
-    )
+    with pytest.raises(ValueError, match="angles other than"):
+        sim.read_phase_flipped_across_shots(out=int)
+    with pytest.raises(ValueError, match="angles other than"):
+        sim.read_phase_flipped_across_shots()
 
 
 def test_debug_print(capfd: pytest.CaptureFixture[str]):
