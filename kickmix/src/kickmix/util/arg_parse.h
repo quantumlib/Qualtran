@@ -1,6 +1,7 @@
 #ifndef _KICKMIX_ARG_PARSE_H
 #define _KICKMIX_ARG_PARSE_H
 
+#include <cstdint>
 #include <map>
 #include <sstream>
 #include <vector>

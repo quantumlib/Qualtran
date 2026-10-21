@@ -135,7 +135,7 @@ Circuit Circuit::from_kmx_or_kmb_file(FILE *file) {
         // Read rest of line.
         std::string line;
         while (true) {
-            if (i == EOF || i == '\n') {
+            if (i == EOF || i == '\n' || i == '\r') {
                 break;
             }
             line.push_back((char)i);
@@ -1296,7 +1296,7 @@ inline static uint32_t read_u32_be(FILE *file) {
     uint32_t result{};
     fread_else_throw(&result, sizeof(uint32_t), file);
     if constexpr (std::endian::native == std::endian::big) {
-        result = __builtin_bswap32(result);
+        result = bswap32(result);
     }
     return result;
 }
@@ -1305,7 +1305,7 @@ inline static uint64_t read_u64_be(FILE *file) {
     uint64_t result{};
     fread_else_throw(&result, sizeof(uint64_t), file);
     if constexpr (std::endian::native == std::endian::big) {
-        result = __builtin_bswap64(result);
+        result = bswap64(result);
     }
     return result;
 }

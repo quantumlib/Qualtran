@@ -2,6 +2,9 @@
 #define KICKMIX_SIMD_512_AVX_H
 
 #include <array>
+#include <bit>
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <ostream>
 #include <random>

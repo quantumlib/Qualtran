@@ -2,8 +2,11 @@
 #define KICKMIX_SIMD_64_H
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <ostream>
 #include <random>
+#include <string>
 
 namespace kickmix {
 

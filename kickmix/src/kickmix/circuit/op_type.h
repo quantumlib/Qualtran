@@ -1,8 +1,10 @@
 #ifndef KICKMIX_CIRCUIT_OP_TYPE_H
 #define KICKMIX_CIRCUIT_OP_TYPE_H
 
+#include <array>
 #include <cstdint>
 #include <ostream>
+#include <string_view>
 
 namespace kickmix {
 

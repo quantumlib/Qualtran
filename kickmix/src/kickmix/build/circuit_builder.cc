@@ -1,6 +1,8 @@
 #include "kickmix/build/circuit_builder.h"
 
+#include <array>
 #include <iostream>
+#include <sstream>
 
 using namespace kickmix;
 

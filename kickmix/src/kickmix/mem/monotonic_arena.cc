@@ -1,5 +1,7 @@
 #include "kickmix/mem/monotonic_arena.h"
 
+#include <algorithm>
+
 #include "util.h"
 
 using namespace kickmix;
@@ -80,7 +82,7 @@ char *kickmix::MonotonicArena_Helper::grab_writeable(size_t length, size_t alloc
                 frozen_allocations.push_back(std::span<char>{cur, cur_length_used});
                 total_frozen_length_used += cur_length_used;
             } else {
-                free(cur);
+                free_aligned(cur);
             }
         }
 
@@ -90,13 +92,11 @@ char *kickmix::MonotonicArena_Helper::grab_writeable(size_t length, size_t alloc
         new_size <<= 1;
         new_size += alloc_alignment - 1;
         new_size &= ~size_t{alloc_alignment - 1};
-        cur = (char *)aligned_alloc(alloc_alignment, new_size);
+        cur = nullptr;
         cur_length_used = 0;
+        cur_length_cap = 0;
+        cur = (char *)aligned_alloc_bytes_else_throw(alloc_alignment, new_size);
         cur_length_cap = new_size;
-        if (cur == nullptr) {
-            cur_length_cap = 0;
-            throw std::invalid_argument("Failed to allocate");
-        }
     }
 
     char *result = cur + cur_length_used;

@@ -130,7 +130,7 @@ struct FixedWidthInt {
         if (!(num_bits & 63)) {
             return false;
         }
-        uint64_t mask = ~(-static_cast<uint64_t>(1) << (num_bits & 63));
+        uint64_t mask = (uint64_t{1} << (num_bits & 63)) - 1;
         auto old_word = words[num_words - 1];
         words[num_words - 1] = old_word & mask;
         return old_word != words[num_words - 1];

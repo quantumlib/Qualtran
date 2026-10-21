@@ -1,6 +1,7 @@
 #ifndef KICKGEN_PYBIND_UTIL_H
 #define KICKGEN_PYBIND_UTIL_H
 
+#include <array>
 #include <pybind11/pybind11.h>
 
 namespace kickmix_py {

@@ -8,6 +8,8 @@
 #include <string>
 #include <string_view>
 
+#include "kickmix/util/word_ops.h"
+
 using namespace kickmix;
 
 uint8_t FixedPrecisionAngle128::clifford_hierarchy_level() const {
@@ -116,9 +118,19 @@ FixedPrecisionAngle128 FixedPrecisionAngle128::from_rounded_decimal_half_turns(
     auto step_digit = [&](uint64_t d) {
         uint64_t rem = d;
         for (int i = 7; i >= 0; i--) {
+#if defined(__SIZEOF_INT128__)
             unsigned __int128 cur = (static_cast<unsigned __int128>(rem) << 64) | acc[i];
             acc[i] = static_cast<uint64_t>(cur / 10);
             rem = static_cast<uint64_t>(cur % 10);
+#else
+            uint64_t hi = (rem << 32) | (acc[i] >> 32);
+            uint64_t q_hi = hi / 10;
+            uint64_t r_hi = hi % 10;
+            uint64_t lo = (r_hi << 32) | (acc[i] & 0xFFFFFFFFULL);
+            uint64_t q_lo = lo / 10;
+            rem = lo % 10;
+            acc[i] = (q_hi << 32) | q_lo;
+#endif
         }
     };
 
@@ -167,20 +179,21 @@ inline void to_half_turns_decimal_helper(const FixedPrecisionAngle128 &angle, co
     }
 
     while (w0 != 0 || w1 != 0) {
-        unsigned __int128 low_prod = static_cast<unsigned __int128>(w0) * 10;
-        unsigned __int128 high_prod = static_cast<unsigned __int128>(w1) * 10 + (low_prod >> 64);
-        uint64_t digit = static_cast<uint64_t>(high_prod >> 64);
+        uint64_t carry = 0;
+        uint64_t digit = 0;
+        full_fma64(w0, 10, 0, 0, &w0, &carry);
+        full_fma64(w1, 10, carry, 0, &w1, &digit);
         callback('0' + digit);
-        w0 = static_cast<uint64_t>(low_prod);
-        w1 = static_cast<uint64_t>(high_prod);
     }
 }
 
 FixedPrecisionAngle128 FixedPrecisionAngle128::operator*(uint64_t factor) const {
-    unsigned __int128 cur = (static_cast<unsigned __int128>(words[1]) << 64) | words[0];
-    cur *= factor;
-    auto w0 = (uint64_t)(cur & UINT64_MAX);
-    auto w1 = (uint64_t)(cur >> 64);
+    uint64_t w0 = 0;
+    uint64_t carry = 0;
+    uint64_t w1 = 0;
+    uint64_t unused_high = 0;
+    full_fma64(words[0], factor, 0, 0, &w0, &carry);
+    full_fma64(words[1], factor, carry, 0, &w1, &unused_high);
     return {w0, w1};
 }
 

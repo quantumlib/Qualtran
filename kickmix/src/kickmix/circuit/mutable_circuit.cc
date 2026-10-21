@@ -1,5 +1,6 @@
 #include "mutable_circuit.h"
 
+#include <array>
 #include <iostream>
 #include <sstream>
 
