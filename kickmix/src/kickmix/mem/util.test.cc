@@ -1,7 +1,8 @@
 #include "util.h"
-#include "kickmix/mem/util.h"
 
 #include "gtest/gtest.h"
+
+#include "kickmix/mem/util.h"
 
 using namespace kickmix;
 
@@ -26,24 +27,22 @@ TEST(mem_util, memcpy_repeat) {
     }
     std::vector<uint32_t> dst;
     dst.resize(5);
-    memcpy_repeat(dst.data(), items.data() + 3, 1, 5);
+    memcpy_repeat(dst.data(), items.data() + 3, 1 * sizeof(uint32_t), 5);
     ASSERT_EQ(dst, (std::vector<uint32_t>{3, 3, 3, 3, 3}));
 
     dst.resize(10);
-    memcpy_repeat(dst.data(), items.data() + 3, 2, 5);
+    memcpy_repeat(dst.data(), items.data() + 3, 2 * sizeof(uint32_t), 5);
     ASSERT_EQ(dst, (std::vector<uint32_t>{3, 4, 3, 4, 3, 4, 3, 4, 3, 4}));
 
     dst.resize(items.size() * 64);
-    memcpy_repeat(dst.data(), items.data(), items.size(), 64);
+    memcpy_repeat(dst.data(), items.data(), items.size() * sizeof(uint32_t), 64);
     for (size_t k = 0; k < dst.size(); k++) {
         ASSERT_EQ(dst[k], items[k % items.size()]);
     }
 }
 
 TEST(mem_util, aligned_alloc_else_throw) {
-    ASSERT_THROW({
-        (aligned_alloc_else_throw<uint32_t, 8>(SIZE_MAX));
-    }, std::runtime_error);
+    ASSERT_THROW({ (aligned_alloc_else_throw<uint32_t, 8>(SIZE_MAX)); }, std::runtime_error);
 
     uint32_t *v = aligned_alloc_else_throw<uint32_t, 32>(5);
     ASSERT_EQ((uintptr_t)v & 31, 0);
