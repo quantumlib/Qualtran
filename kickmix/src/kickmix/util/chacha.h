@@ -62,7 +62,12 @@ struct ChaCha {
         buffer_idx = 16;
     }
 
-    __attribute__((noinline)) void refill() {
+#if defined(_MSC_VER)
+    __declspec(noinline)
+#else
+    __attribute__((noinline))
+#endif
+    void refill() {
         TWord x0 = state[0];
         TWord x1 = state[1];
         TWord x2 = state[2];

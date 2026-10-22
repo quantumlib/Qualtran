@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <set>
 #include <span>

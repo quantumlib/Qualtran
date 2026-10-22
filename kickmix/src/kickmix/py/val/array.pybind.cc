@@ -1,5 +1,6 @@
 #include "kickmix/py/val/array.pybind.h"
 
+#include <map>
 #include <pybind11/iostream.h>
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>

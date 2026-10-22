@@ -1,10 +1,13 @@
 #ifndef KICKMIX_SIM_H
 #define KICKMIX_SIM_H
 
+#include <algorithm>
+#include <array>
 #include <functional>
 #include <iostream>
 #include <random>
 #include <span>
+#include <sstream>
 #include <vector>
 
 #include "kickmix/circuit/circuit.h"

@@ -315,7 +315,7 @@ void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
                     return Circuit(pybind11::cast<std::string_view>(content));
                 }
                 auto data = pybind11::cast<std::string_view>(pybind11::bytes(content));
-                file.reset(tmpfile());
+                file.reset(open_tmpfile_else_throw());
                 fwrite_else_throw(data.data(), data.size(), file.get());
                 rewind(file.get());
             } else {
@@ -380,7 +380,7 @@ void kickmix::register_circuit_methods(pybind11::class_<Circuit> &c_circuit) {
                     "Unrecognized format '" + std::string(format) + "'. Expected 'kmx' or 'kmb'.");
             }
             if (pybind11::hasattr(path, "write")) {
-                std::unique_ptr<FILE, int (*)(FILE *)> tmp(tmpfile(), &fclose);
+                std::unique_ptr<FILE, int (*)(FILE *)> tmp(open_tmpfile_else_throw(), &fclose);
                 if (format == "kmx") {
                     self.write_kmx_to(tmp.get());
                 } else {

@@ -31,18 +31,14 @@ static std::mt19937_64 make_rng(const pybind11::object &seed) {
         throw pybind11::type_error(ss.str());
     }
     std::array<uint32_t, 8> seed_words{};
-    if (!seed.equal(pybind11::cast(0))) {
-        Py_ssize_t num_bytes = PyLong_AsNativeBytes(
-            seed.ptr(),
-            seed_words.data(),
-            sizeof(seed_words),
-            Py_ASNATIVEBYTES_LITTLE_ENDIAN | Py_ASNATIVEBYTES_REJECT_NEGATIVE | Py_ASNATIVEBYTES_UNSIGNED_BUFFER);
-        if (num_bytes < 0 || static_cast<size_t>(num_bytes) > sizeof(seed_words)) {
-            PyErr_Clear();
-            std::stringstream ss;
-            ss << "seed=" << pybind11::repr(seed) << " not in range(2**256)";
-            throw std::invalid_argument(ss.str());
-        }
+    try {
+        pybind11::bytes b = seed.attr("to_bytes")(sizeof(seed_words), "little");
+        memcpy(seed_words.data(), PyBytes_AsString(b.ptr()), sizeof(seed_words));
+    } catch (pybind11::error_already_set &) {
+        PyErr_Clear();
+        std::stringstream ss;
+        ss << "seed=" << pybind11::repr(seed) << " not in range(2**256)";
+        throw std::invalid_argument(ss.str());
     }
     std::seed_seq seq(seed_words.begin(), seed_words.end());
     return std::mt19937_64(seq);
@@ -88,24 +84,19 @@ void int_obj_to_bytes_with_max_bits(
     }
 
     size_t max_bytes = (max_bits + 7) / 8;
-    if (int_obj.equal(pybind11::cast(0))) {
-        // Need this special case because PyLong_AsNativeBytes claims 0 takes 8 bytes to store rather than 0.
-        memset(bytes_buffer, 0, max_bytes);
-        return;
+    bool has_err = false;
+    try {
+        pybind11::bytes b = int_obj.attr("to_bytes")(max_bytes, "little");
+        memcpy(bytes_buffer, PyBytes_AsString(b.ptr()), max_bytes);
+        if (max_bits % 8) {
+            uint8_t mask = 0xFF >> (8 - (max_bits % 8));
+            uint8_t last_byte = bytes_buffer[max_bytes - 1];
+            has_err = (last_byte & mask) != last_byte;
+        }
+    } catch (pybind11::error_already_set &) {
+        PyErr_Clear();
+        has_err = true;
     }
-
-    Py_ssize_t non_zero_bytes = PyLong_AsNativeBytes(
-        int_obj.ptr(),
-        bytes_buffer,
-        max_bytes,
-        Py_ASNATIVEBYTES_LITTLE_ENDIAN | Py_ASNATIVEBYTES_REJECT_NEGATIVE | Py_ASNATIVEBYTES_UNSIGNED_BUFFER);
-    bool has_extra = false;
-    if (max_bits % 8) {
-        uint8_t mask = 0xFF >> (8 - (max_bits % 8));
-        uint8_t b = bytes_buffer[max_bytes - 1];
-        has_extra = (b & mask) != b;
-    }
-    bool has_err = non_zero_bytes < 0 || (size_t)non_zero_bytes > max_bytes || has_extra;
     if (has_err) {
         std::stringstream ss;
         ss << value_name << "=" << pybind11::repr(int_obj);
@@ -125,11 +116,8 @@ pybind11::object int_obj_from_bytes_with_max_bits(uint8_t *bytes_buffer, size_t 
         uint8_t mask = 0xFF >> (8 - (max_bits % 8));
         bytes_buffer[bytes_len - 1] &= mask;
     }
-    PyObject *py_long = PyLong_FromUnsignedNativeBytes(bytes_buffer, bytes_len, Py_ASNATIVEBYTES_LITTLE_ENDIAN);
-    if (!py_long) {
-        throw pybind11::error_already_set();
-    }
-    return pybind11::reinterpret_steal<pybind11::object>(py_long);
+    pybind11::bytes b(reinterpret_cast<const char *>(bytes_buffer), bytes_len);
+    return pybind11::reinterpret_borrow<pybind11::object>((PyObject *)&PyLong_Type).attr("from_bytes")(b, "little");
 }
 
 PyInteractiveSimulator::PyInteractiveSimulator(

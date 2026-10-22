@@ -1,5 +1,7 @@
 #include "kickmix/util/fixed_width_int.h"
 
+#include <algorithm>
+#include <bit>
 #include <cstdint>
 #include <cstring>
 #include <iostream>
@@ -7,7 +9,6 @@
 #include <ratio>
 #include <sstream>
 #include <string>
-#include <sys/stat.h>
 
 #include "kickmix/util/word_ops.h"
 
@@ -1190,23 +1191,6 @@ FixedWidthInt &FixedWidthInt::operator*=(const FixedWidthInt &value) {
         }
     }
     return *this;
-}
-
-inline void full_fma64(
-    uint64_t factor1, uint64_t factor2, uint64_t offset1, uint64_t offset2, uint64_t *out_low, uint64_t *out_high) {
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-#endif
-
-    auto result = factor1 * (unsigned __int128)factor2 + (unsigned __int128)offset1 + offset2;
-
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic pop
-#endif
-
-    *out_high = static_cast<uint64_t>(result >> 64);
-    *out_low = static_cast<uint64_t>(result);
 }
 
 FixedWidthInt &FixedWidthInt::operator*=(uint64_t value) {

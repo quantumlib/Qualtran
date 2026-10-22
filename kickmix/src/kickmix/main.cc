@@ -1,5 +1,6 @@
 #include <cstring>
 #include <iostream>
+#include <stdexcept>
 
 #include "cmd/main_util.h"
 

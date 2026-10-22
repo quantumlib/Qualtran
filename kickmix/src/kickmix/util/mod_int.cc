@@ -1,5 +1,6 @@
 #include "mod_int.h"
 
+#include <algorithm>
 #include <cstring>
 #include <iostream>
 #include <sstream>

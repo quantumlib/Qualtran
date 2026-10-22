@@ -4,6 +4,7 @@
 #include <pybind11/pybind11.h>
 
 #include "kickmix/id/stride_span_xz.h"
+#include "kickmix/mem/util.h"
 
 namespace kickmix_py {
 
@@ -28,7 +29,7 @@ struct ConvertedArrayXZ {
     ConvertedArrayXZ &operator=(const ConvertedArrayXZ &) = delete;
     ConvertedArrayXZ &operator=(ConvertedArrayXZ &&other) noexcept {
         if (free_on_destruct != nullptr) {
-            free(free_on_destruct);
+            free_aligned(free_on_destruct);
         }
         span = other.span;
         free_on_destruct = other.free_on_destruct;

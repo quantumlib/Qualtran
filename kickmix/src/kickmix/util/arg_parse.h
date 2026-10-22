@@ -1,8 +1,14 @@
 #ifndef _KICKMIX_ARG_PARSE_H
 #define _KICKMIX_ARG_PARSE_H
 
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
 #include <map>
 #include <sstream>
+#include <stdexcept>
+#include <string>
+#include <string_view>
 #include <vector>
 
 namespace kickmix {

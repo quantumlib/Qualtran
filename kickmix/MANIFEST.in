@@ -1,0 +1,2 @@
+recursive-include src *.h *.inl *.cc
+global-exclude *.test.cc *.test.h *.perf.cc *.perf.h *_test.py
