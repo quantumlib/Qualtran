@@ -15,8 +15,10 @@ import numpy as np
 import pytest
 import sympy
 
+from qualtran import BloqBuilder
 from qualtran._infra.data_types import QAny
 from qualtran._infra.registers import Register
+from qualtran.bloqs.basic_gates import QUIntState
 from qualtran.bloqs.data_loading.qroam_clean import (
     _qroam_clean_multi_data,
     _qroam_clean_multi_dim,
@@ -88,8 +90,8 @@ def test_t_complexity_1d_data_symbolic():
     N, b, k = sympy.symbols('N b k')
     bloq = QROAMClean.build_from_bitsize((N,), (b,), log_block_sizes=(k,))
     K = 2**k
-    expected_toffoli = ceil(N / K) + (K - 1) * b - 2
-    assert bloq.t_complexity().t == 4 * expected_toffoli
+    expected_t = 4 * (ceil(N / K) - 2) + 7 * (K - 1) * b
+    assert sympy.simplify(bloq.t_complexity().t - expected_t) == 0
     bloq_inv = bloq.adjoint()
     assert isinstance(bloq_inv, QROAMCleanAdjointWrapper)
     inv_k = sympy.symbols('kinv')
@@ -104,8 +106,8 @@ def test_t_complexity_2d_data_symbolic():
     N1, N2, b, k1, k2 = sympy.symbols('N1 N2 b k1, k2')
     bloq = QROAMClean.build_from_bitsize((N1, N2), (b,), log_block_sizes=(k1, k2))
     K1, K2 = 2**k1, 2**k2
-    expected_toffoli = ceil(N1 / K1) * ceil(N2 / K2) + (K1 * K2 - 1) * b - 2
-    assert bloq.t_complexity().t == 4 * expected_toffoli
+    expected_t = 4 * (ceil(N1 / K1) * ceil(N2 / K2) - 2) + 7 * (K1 * K2 - 1) * b
+    assert sympy.simplify(bloq.t_complexity().t - expected_t) == 0
     bloq_inv = bloq.adjoint()
     assert isinstance(bloq_inv, QROAMCleanAdjointWrapper)
     inv_k1, inv_k2 = sympy.symbols('kinv1, kinv2')
@@ -227,3 +229,15 @@ def test_qroam_clean_small_bloq_counts():
         qroam_clean=qroam_clean, log_block_sizes=(0,)
     )
     assert qroam_clean_adj_wrapper.t_complexity().t == 0
+
+
+def test_qroam_clean_no_unwanted_phase():
+    qroam = QROAMClean.build_from_data(np.ones(4, dtype=int), log_block_sizes=(1,))
+    bb = BloqBuilder()
+    sel = bb.add(QUIntState(1, 2))
+    psi = bb.finalize(**bb.add_d(qroam, selection=sel)).tensor_contract()
+
+    # The expected state is |0111>, with a positive amplitude.
+    expected = np.zeros(16, dtype=complex)
+    expected[7] = 1
+    assert np.allclose(psi, expected)

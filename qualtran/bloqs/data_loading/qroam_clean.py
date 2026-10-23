@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValT
 
 from qualtran.bloqs.data_loading.select_swap_qrom import _alloc_anc_for_reg, SelectSwapQROM
+from qualtran.bloqs.swap_network.swap_with_zero import SwapWithZero
 
 
 def _alloc_anc_for_reg_except_first(
@@ -361,6 +362,18 @@ class QROAMClean(SelectSwapQROM):
         converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
     )
     use_dirty_ancilla: bool = attrs.field(init=False, default=False, repr=False)
+
+    @cached_property
+    def swap_with_zero_bloqs(self) -> List[SwapWithZero]:
+        return [
+            SwapWithZero(
+                self.log_block_sizes,
+                target_bitsize=target_bitsize,
+                n_target_registers=self.block_sizes,
+                use_exact_cswap=True,
+            )
+            for target_bitsize in self.target_bitsizes
+        ]
 
     @cached_property
     def _target_reg_side(self) -> Side:
