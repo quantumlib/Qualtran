@@ -219,11 +219,13 @@ def _bloq_to_cirq_op(
     # 2. Update the mappings based on output soquets and `out_quregs`.
     for cxn in succ_cxns:
         soq = cxn.left
-        assert soq.reg.name in out_quregs, f"{soq=} should exist in {out_quregs=}."
         if soq.reg.side == Side.RIGHT:
             if not isinstance(soq.reg.dtype, QDType):
                 raise ValueError(f"Output classical wires are not supported in Cirq. {soq=}")
+            assert soq.reg.name in out_quregs, f"{soq=} should exist in {out_quregs=}."
             qvar_to_qreg[soq] = _QReg(out_quregs[soq.reg.name][soq.idx], dtype=soq.reg.dtype)
+        else:
+            assert soq.reg.name in out_quregs, f"{soq=} should exist in {out_quregs=}."
     return op
 
 
