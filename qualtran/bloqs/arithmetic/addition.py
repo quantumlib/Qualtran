@@ -219,7 +219,15 @@ class Add(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         n = self.b_dtype.bitsize
-        n_cnot = (n - 2) * 6 + 3
+        m = self.a_dtype.bitsize
+        if not is_symbolic(n) and n == 1:
+            return {CNOT(): 1}
+        if m == n:
+            n_cnot: SymbolicInt = (n - 2) * 6 + 3
+        elif not is_symbolic(m) and not is_symbolic(n):
+            n_cnot = (n - 2) * 3 + 2 + 3 * m - 3
+        else:
+            n_cnot = (n - 2) * 3 + 2 + sympy.Piecewise((3 * n - 5, sympy.Eq(m, n)), (3 * m - 3, True))
         return {And(): n - 1, And().adjoint(): n - 1, CNOT(): n_cnot}
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
