@@ -15,7 +15,7 @@
 
 import pytest
 
-from qualtran.surface_code import FastDataBlock, LogicalErrorModel, QECScheme
+from qualtran.surface_code import CompactDataBlock, FastDataBlock, LogicalErrorModel, QECScheme
 
 
 @pytest.mark.parametrize(
@@ -28,3 +28,9 @@ def test_fast_block(logical_qubits, logical_qubits_with_routing, data_error):
     assert FastDataBlock(3).data_error(
         n_algo_qubits=logical_qubits, n_cycles=3, logical_error_model=err_model
     ) == pytest.approx(data_error)
+
+
+@pytest.mark.parametrize(["n_algo_qubits", "n_tiles"], [[2, 6], [4, 9], [100, 153]])
+def test_compact_block_n_tiles(n_algo_qubits, n_tiles):
+    # Litinski (2019) https://arxiv.org/abs/1808.02892, page 7, figure 9: "1.5n+3 tiles".
+    assert CompactDataBlock(data_d=3).n_tiles(n_algo_qubits=n_algo_qubits) == n_tiles
