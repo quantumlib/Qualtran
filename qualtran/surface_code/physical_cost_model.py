@@ -159,8 +159,32 @@ class PhysicalCostModel:
 
     @classmethod
     def make_beverland_et_al(
-        cls, data_d: int, data_block_name: str = 'compact', factory_ds: Tuple = (9, 3, 3)
+        cls, data_d: int, data_block_name: str = 'fast', factory_ds: Tuple = (9, 3, 3)
     ):
+        """A cost model with the defaults used by Beverland et al.
+
+        The default data block is the fast block, because that is the layout the paper models.
+        Appendix D of Beverland et al. states: "We assume the fast block layout from
+        Ref. [Litinski2019] (also shown in Fig. 11)." The tile count in
+        `FastDataBlock.get_n_tiles` is Eq. D1 of that appendix.
+
+        The 'compact' block (Litinski 2019, Fig. 9) and the 'intermediate' block
+        (Litinski 2019, Fig. 13a) remain available for other use cases, but they are not the
+        layouts that Beverland et al. model.
+
+        Args:
+            data_d: The code distance of the data block.
+            data_block_name: The data block layout. One of 'fast' (default), 'compact' or
+                'intermediate'.
+            factory_ds: The code distances passed to the `FifteenToOne` factory.
+
+        References:
+            [Assessing requirements to scale to practical quantum advantage](https://arxiv.org/abs/2211.07629).
+            Beverland et al. (2022). Appendix D.
+
+            [A Game of Surface Codes](https://arxiv.org/abs/1808.02892).
+            Litinski (2019).
+        """
         from qualtran.surface_code import (
             CompactDataBlock,
             FastDataBlock,
