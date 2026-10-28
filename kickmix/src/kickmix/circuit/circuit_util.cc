@@ -4,7 +4,12 @@
 
 using namespace kickmix;
 
-size_t kickmix::compute_reaction_depth(size_t num_qubits, size_t num_bits, std::span<const Op> operations) {
+namespace {
+
+// Shared by both entry points. `for_each_op(callback)` must call `callback(op)` for every operation in order;
+// taking ops this way lets Circuit::reaction_depth stream them without materialising a std::vector<Op>.
+template <typename TForEachOp>
+size_t reaction_depth_impl(size_t num_qubits, size_t num_bits, const TForEachOp &for_each_op) {
     // The reaction-depth of determining if a bit flip is present on a qubit.
     std::vector<size_t> x_depth(num_qubits);
     // The reaction-depth of determining if a phase flip is present on a qubit.
@@ -23,7 +28,7 @@ size_t kickmix::compute_reaction_depth(size_t num_qubits, size_t num_bits, std::
     };
 
     std::vector<size_t> condition_depth_stack{0};
-    for (const auto &op : operations) {
+    for_each_op([&](const Op &op) {
         size_t cond_depth = condition_depth_stack.back();
         if (op.c_condition.is_bit()) {
             cond_depth = std::max(cond_depth, c_depth[op.c_condition.untagged_id()]);
@@ -190,7 +195,7 @@ size_t kickmix::compute_reaction_depth(size_t num_qubits, size_t num_bits, std::
             default:
                 throw std::invalid_argument("operation type not handled in reaction_depth: " + op.str());
         }
-    }
+    });
     size_t max_depth = 0;
     for (const auto &e : x_depth) {
         max_depth = std::max(max_depth, e);
@@ -202,6 +207,22 @@ size_t kickmix::compute_reaction_depth(size_t num_qubits, size_t num_bits, std::
         max_depth = std::max(max_depth, e);
     }
     return max_depth;
+}
+
+}  // namespace
+
+size_t kickmix::compute_reaction_depth(size_t num_qubits, size_t num_bits, std::span<const Op> operations) {
+    return reaction_depth_impl(num_qubits, num_bits, [&](const auto &callback) {
+        for (const auto &op : operations) {
+            callback(op);
+        }
+    });
+}
+
+size_t kickmix::compute_reaction_depth(const Circuit &circuit) {
+    return reaction_depth_impl(circuit.num_qubits, circuit.num_bits, [&](const auto &callback) {
+        circuit.iter_ops(callback);
+    });
 }
 
 size_t kickmix::compute_num_touched_qubits(const Circuit &circuit) {
