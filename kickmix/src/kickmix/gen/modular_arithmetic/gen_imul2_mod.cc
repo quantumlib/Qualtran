@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "kickmix/gen/adders/gen_iadd_classical.h"
+#include "kickmix/gen/bits/gen_bit_rotate.h"
 #include "kickmix/gen/comparators/gen_cmp.h"
 
 using namespace kickmix;
@@ -37,7 +38,7 @@ static void gen_imul2_mod_exact(
         control_and_target0 = ctx.take_clean(1)[0];
     }
 
-    builder.cleft_rotate(control, target);
+    gen_left_rotate(builder, ctx, target, 1, control);
 
     // Forward pass of ripple carry subtraction.
     builder.reset(workspace[0]);
@@ -153,7 +154,7 @@ void kickmix::gen_imul2_mod(
     builder.inplace_invert(half_modulus);
 
     builder.cx(anc, target.back());
-    builder.cleft_rotate(control, target);
+    gen_left_rotate(builder, ctx, target, 1, control);
     builder.cx(anc, target[0]);
 
     builder.del_and(control, target[0], anc);
@@ -239,7 +240,7 @@ void kickmix::gen_imul2_inv_mod_with_subcmp_merged_by_inlining(
         builder.x(mx);
     }
 
-    builder.cright_rotate(control, target);
+    gen_right_rotate(builder, ctx, target, 1, control);
 }
 
 void kickmix::gen_imul2_inv_mod(
@@ -274,7 +275,7 @@ void kickmix::gen_imul2_inv_mod(
     builder.reset(ancs[0]);
     builder.cx(target[0], ancs[0]);
     builder.reset_and(ancs[0], control, ancs[1]);
-    builder.cright_rotate(control, target);
+    gen_right_rotate(builder, ctx, target, 1, control);
 
     builder.inplace_invert(half_modulus);
     while (half_modulus.back() == false) {

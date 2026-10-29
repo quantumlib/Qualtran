@@ -1,7 +1,9 @@
 #ifndef KICKMIX_UTIL_FIXED_PRECISION_ANGLE_H
 #define KICKMIX_UTIL_FIXED_PRECISION_ANGLE_H
 
+#include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -15,6 +17,9 @@ struct FixedPrecisionAngle128 {
 
     bool operator==(const FixedPrecisionAngle128 &rhs) const = default;
     explicit operator bool() const;
+
+    /// Returns the Clifford hierarchy level k in [0, 128] of Z^(this angle).
+    uint8_t clifford_hierarchy_level() const;
 
     static FixedPrecisionAngle128 from_power_of_2_half_turns(int exponent);
 

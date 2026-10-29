@@ -1,8 +1,11 @@
+#include <algorithm>
 #include <random>
+#include <sstream>
 
 #include "kickmix/circuit/circuit.h"
 #include "kickmix/sim/sim.h"
 #include "kickmix/util/arg_parse.h"
+#include "kickmix/util/binary_file_tools.h"
 #include "main_util.h"
 
 using namespace kickmix;
@@ -24,12 +27,14 @@ int kickmix::main_sample(int argc, const char **argv) {
             {
                 "--decimal",
                 "--hex",
+                "--in",
                 "--init",
+                "--out",
                 "--shots",
             },
             {},
-            "kickmix sample",
-            nullptr,
+            "kickmix",
+            "sample",
             argc,
             argv);
     } catch (const std::invalid_argument &ex) {
@@ -42,23 +47,30 @@ int kickmix::main_sample(int argc, const char **argv) {
         init_instructions = SimInitInstruction::from_str_many(init_str);
     }
 
-    Circuit circuit = Circuit::from_kmx_file(stdin);
+    FILE *in = find_open_file_argument("--in", stdin, "rb", argc, argv);
+    FILE *out = find_open_file_argument("--out", stdout, "wb", argc, argv);
+    Circuit circuit = Circuit::from_kmx_or_kmb_file(in);
+    if (in != stdin) {
+        fclose(in);
+    }
     Sim<SIM_WORD, false> sim(externally_seeded_rng());
+    sim.set_debug_print_to_stderr();
     sim.configure_for(circuit);
     auto registers = circuit.register_data;
 
+    std::stringstream output;
     std::vector<size_t> col_sizes;
     for (size_t k = 0; k < registers.size(); k++) {
         if (registers[k].name.empty()) {
-            std::cout << "(before)r" << k << ",";
-            std::cout << "r" << k << ",";
+            output << "(before)r" << k << ",";
+            output << "r" << k << ",";
         } else {
-            std::cout << "(before)" << registers[k].name << k << ",";
-            std::cout << registers[k].name << k << ",";
+            output << "(before)" << registers[k].name << ",";
+            output << registers[k].name << ",";
         }
         col_sizes.push_back(std::to_string(k).size() + 6);
     }
-    std::cout << "global_phase\n";
+    output << "global_phase\n";
 
     auto remaining_shots = total_shots;
     while (remaining_shots) {
@@ -74,25 +86,30 @@ int kickmix::main_sample(int argc, const char **argv) {
                 const auto &buf_prev = sim.register_buffers2[shot_idx][reg_idx];
                 auto vv = big_int_to_str(m, buf_prev, decimal, hex);
                 for (size_t c = 0; c + vv.size() < col_sizes[reg_idx]; c++) {
-                    putc(' ', stdout);
+                    output << ' ';
                 }
-                std::cout << vv;
-                std::cout << ",";
+                output << vv;
+                output << ",";
                 vv = big_int_to_str(m, buf_cur, decimal, hex);
                 for (size_t c = 0; c + vv.size() < col_sizes[reg_idx]; c++) {
-                    putc(' ', stdout);
+                    output << ' ';
                 }
-                std::cout << vv;
-                std::cout << ",";
+                output << vv;
+                output << ",";
             }
 
             if (sim.global_phase_ref().bit(shot_idx)) {
-                std::cout << "          -1\n";
+                output << "          -1\n";
             } else {
-                std::cout << "           1\n";
+                output << "           1\n";
             }
         }
         remaining_shots = std::max(static_cast<uint32_t>(sim.BATCH_SIZE), remaining_shots) - sim.BATCH_SIZE;
+    }
+    std::string text = output.str();
+    fwrite_else_throw(text.data(), text.size(), out);
+    if (out != stdout) {
+        fclose(out);
     }
     return 0;
 }

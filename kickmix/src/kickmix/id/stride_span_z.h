@@ -1,7 +1,14 @@
 #ifndef KICKGEN_QC_STRIDE_SPAN_H
 #define KICKGEN_QC_STRIDE_SPAN_H
 
+#include <algorithm>
+#include <bit>
+#include <concepts>
 #include <memory>
+#include <ostream>
+#include <span>
+#include <string>
+#include <vector>
 
 #include "kickmix/mem/stride_span.h"
 #include "qubit_or_bit.h"
@@ -27,7 +34,7 @@ struct stride_span_z {
     /// If it is a specific type, like QXZTypeTag8::QUBIT_ID, then all items have that type.
     QXZTypeTag8 common_type;
 
-    inline stride_span_z() : ptr(nullptr), stride(0), count(0), common_type(QXZTypeTag8::BOOL_VAL) {
+    inline stride_span_z() : ptr(nullptr), stride(0), count(0), common_type(QXZTypeTag8::QUBIT_ID) {
     }
     inline stride_span_z(const QubitOrBitOrBool *items, int64_t stride, size_t len, QXZTypeTag8 common_type)
         : ptr(items), stride(stride), count(len), common_type(common_type) {
@@ -110,14 +117,19 @@ struct stride_span_z {
         return ptr[(int64_t)index * stride];
     }
 
-    bool is_all_qubits() const;
+    bool has_any_qubits() const;
+    bool is_all_qubit_ids() const;
     bool is_all_classical() const;
-    bool is_all_bits() const;
+    bool is_all_bit_ids() const;
+    bool is_all_bools() const;
     stride_span<const QubitId> checked_cast_to_qubit_ids(const char *value_name_for_error) const;
     stride_span<const BitId> checked_cast_to_bit_ids(const char *value_name_for_error) const;
 
     std::string str() const;
 
+    stride_span_z reversed() const {
+        return stride_span_z(ptr + stride * ((int64_t)count - 1), -stride, count, common_type);
+    }
     stride_span_z skip(size_t skip_count) const {
         skip_count = std::min(skip_count, size());
         return stride_span_z(ptr + skip_count * stride, stride, count - skip_count, common_type);
@@ -131,6 +143,12 @@ struct stride_span_z {
     }
     stride_span_z keep_last(size_t keep_count) const {
         return skip(size() - std::min(keep_count, size()));
+    }
+    inline operator stride_span<const QubitOrBitOrBool>() const {
+        return {(QubitOrBitOrBool *)ptr, stride, count};
+    }
+    inline operator stride_ptr<const QubitOrBitOrBool>() const {
+        return {(QubitOrBitOrBool *)ptr, stride};
     }
 
     template <typename T>

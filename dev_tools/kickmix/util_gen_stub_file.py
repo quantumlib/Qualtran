@@ -21,6 +21,8 @@ from typing import Any, cast, Iterator, List, Optional, Tuple
 
 keep = {
     "__add__",
+    "__bool__",
+    "__contains__",
     "__ipow__",
     "__radd__",
     "__eq__",
@@ -117,10 +119,10 @@ class DescribedObject:
 
 def splay_signature(sig: str) -> List[str]:
     # Maintain backwards compatibility with python 3.6
-    sig = sig.replace('list[', 'List[')
-    sig = sig.replace('dict[', 'Dict[')
-    sig = sig.replace('tuple[', 'Tuple[')
-    sig = sig.replace('set[', 'Set[')
+    sig = sig.replace('List[', 'list[')
+    sig = sig.replace('Dict[', 'dict[')
+    sig = sig.replace('Tuple[', 'tuple[')
+    sig = sig.replace('Set[', 'set[')
     sig = sig.replace('pathlib._local.Path', 'pathlib.Path')
 
     assert sig.startswith('def')
@@ -193,7 +195,9 @@ def _handle_pybind_method(
         was_args = 'Args:' in line
 
     if is_property:
-        if hasattr(obj, 'fget'):
+        if sig_handled:
+            sig_name = sig.rstrip(':')
+        elif hasattr(obj, 'fget'):
             sig_name = term_name + obj.fget.__doc__.replace('arg0', 'self').strip()
         else:
             sig_name = f'{term_name}(self)'

@@ -17,6 +17,7 @@ so it's not possible to create loops.
     - [Z_POW instruction](#z-pow-instruction)
     - [NEG instruction](#neg-instruction)
     - [SWAP instruction](#swap-instruction)
+    - [CSWAP instruction](#cswap-instruction)
     - [R instruction](#r-instruction)
     - [HMR instruction](#hmr-instruction)
 - [Classical Instructions](#classical-instructions)
@@ -30,6 +31,7 @@ so it's not possible to create loops.
     - [REGISTER instruction](#register-instruction)
     - [APPEND_TO_REGISTER instruction](#append_to_register-instruction)
     - [DEBUG_PRINT instruction](#debug_print-instruction)
+    - [INFO_TAG instruction](#info_tag-instruction)
 
 # Quantum Instructions
 
@@ -111,7 +113,7 @@ CCX q0 q1 q2
 # A classically-conditioned CCX:
 # If bit b7 is OFF, no operation is performed.
 # If bit b7 is ON, apply a CCX to qubits q2, q3, q4.
-CX q2 q3 q4 if b7
+CCX q2 q3 q4 if b7
 ```
 
 Arguments:
@@ -283,8 +285,8 @@ NEG if b1
 
 # Prepare a qubit in the 1 state, then clear it with
 # measurement-based uncomputation.
-R 0
-X 0
+R q0
+X q0
 HMR q0 b0
 NEG if b0  # Corrects phase kickback from the HMR.
 ```
@@ -324,6 +326,47 @@ Arguments:
 
 ```
 2 Qubits
+Optional Condition Bit
+```
+
+
+## CSWAP instruction
+
+The Controlled-SWAP (Fredkin) gate.
+Exchanges the second and third qubits in the parts of the superposition where
+the first (control) qubit is on.
+Sends
+|000⟩ to |000⟩,
+|001⟩ to |001⟩,
+|010⟩ to |010⟩,
+|011⟩ to |011⟩,
+|100⟩ to |100⟩,
+|101⟩ to |110⟩,
+|110⟩ to |101⟩, and
+|111⟩ to |111⟩.
+
+Examples:
+
+```
+# Swap the values of qubit q1 and qubit q2 in the parts of the superposition
+# where q0 is ON:
+CSWAP q0 q1 q2
+
+# A classically-conditioned CSWAP:
+# If bit b7 is OFF, no operation is performed.
+# If bit b7 is ON, apply a CSWAP with control q0 and targets q1, q2.
+CSWAP q0 q1 q2 if b7
+
+# A decomposition of `CSWAP q0 q1 q2` into CX and CCX gates.
+CX q2 q1
+CCX q0 q1 q2
+CX q2 q1
+```
+
+Arguments:
+
+```
+3 Qubits
 Optional Condition Bit
 ```
 
@@ -399,7 +442,7 @@ HMR q3 b1 if b2
 # based uncomputation using HMR + phase feedback.
 R q2
 CCX q0 q1 q2
-HMR q1 b0
+HMR q2 b0
 CZ q0 q1 if b0
 ```
 
@@ -523,14 +566,14 @@ Pushes a bit's value onto the condition stack.
 Basically: the equivalent of `if (condition) {` in C.
 
 Most instructions won't occur unless all values on the condition stack are TRUE.
-There are four exceptions: `PUSH_CONDITION`, `POP_CONDITION`, `REGISTER`, and `APPEND_TO_REGISTER`.
+There are five exceptions: `PUSH_CONDITION`, `POP_CONDITION`, `REGISTER`, `APPEND_TO_REGISTER`, and `INFO_TAG`.
 `POP_CONDITION` has to ignore the condition stack because otherwise it would be impossible
 to clear the stack.
 `PUSH_CONDITION` has to ignore the condition stack because otherwise it would desync
 from `POP_CONDITION`.
-`REGISTER` and `APPEND_TO_REGISTER` ignore the condition stack
+`REGISTER`, `APPEND_TO_REGISTER`, and `INFO_TAG` ignore the condition stack
 so that it's not necessary to run a simulation in order to identify the shape of the
-registers in a circuit.
+registers or subroutine structure in a circuit.
 
 Note: it's the bit's *current* value that is pushed onto the stack.
 Writing to a bit after pushing it won't change the state of the condition stack.
@@ -661,6 +704,8 @@ Arguments:
 This instruction is a request to please print some information about simulator state.
 Simulators are free to interpret this instruction however they want, including ignoring it.
 
+Arguments:
+
 ```
 optional qubit
 optional bit
@@ -687,4 +732,32 @@ DEBUG_PRINT r0
 # Please print something about nothing.
 # ...maybe print a newline character...?
 DEBUG_PRINT
+```
+
+
+## INFO_TAG instruction
+
+The `INFO_TAG` instruction attaches an arbitrary quoted text string to a point in the circuit.
+Info tags have no effect on circuit simulations, but can be used as debug or structural metadata when analyzing circuits.
+For example, `@enter:subroutine_name` and `@exit:subroutine_name` tags are used to mark where subroutines start and end for flame graph analysis and circuit diagrams.
+
+**This operation ignores conditions from `PUSH_CONDITION`**.
+
+Examples:
+
+```
+# Mark the start and end of a subroutine.
+INFO_TAG "@enter:my_subroutine"
+CCX q0 q1 q2
+CX q0 q1
+INFO_TAG "@exit:my_subroutine"
+
+# Attach an arbitrary debug note.
+INFO_TAG "checkpoint 1"
+```
+
+Arguments:
+
+```
+1 quoted text string
 ```

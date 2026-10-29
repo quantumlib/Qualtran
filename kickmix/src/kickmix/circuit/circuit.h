@@ -21,6 +21,7 @@ struct Op {
     QubitOrFalse q_target;
     BitIdOrFalse c_target;
     BitIdOrFalse c_condition;
+    std::string_view info_tag{};
     bool operator==(const Op &rhs) const = default;
     std::string str() const;
     std::string kmx_str() const;
@@ -47,6 +48,8 @@ struct Circuit {
     uint32_t *bc{};                    // Stores the bit condition of each operation with 1 bit condition.
     uint32_t *b0{};                    // Stores the bit target of each operation with 1 bit target.
     FixedPrecisionAngle128 *angles{};  // Stores the angle of each operation with an angle argument.
+    uint64_t *info_tag_end_offsets{};  // Stores the end offset in info_tag_chars for each INFO_TAG operation.
+    char *info_tag_chars{};            // Stores the concatenated string payloads of all INFO_TAG operations.
     size_t num_ops{};                  // Number of operations.
     size_t num_qqq_ops{};              // Number of operations with 3 qubit targets.
     size_t num_qq_ops{};               // Number of operations with 2 qubit targets.
@@ -54,6 +57,8 @@ struct Circuit {
     size_t num_c_ops{};                // Number of operations with 1 bit condition.
     size_t num_b_ops{};                // Number of operations with 1 bit target.
     size_t num_angle_ops{};            // Number of operations with an angle.
+    size_t num_info_tags{};            // Number of INFO_TAG operations.
+    size_t num_info_tag_chars{};       // Total number of characters across all INFO_TAG operations.
     size_t num_qubits{};               // All qubit identifiers that appear in the circuit are less than this value.
     size_t num_bits{};                 // All bit identifiers that appear in the circuit are less than this value.
 
@@ -71,7 +76,12 @@ struct Circuit {
     static Circuit from_kmb_file(FILE *file, bool skip_magic = false);
     static Circuit from_kmx_or_kmb_file(FILE *file);
 
-    size_t max_magic() const;
+    /// Quick and dirty estimate of how many magic states are needed.
+    /// This estimates Z_pow[level=3] instructions as half a CCZ state (based on CCZ-to-2T catalysis).
+    /// This over-estimates Z_POW[level<3] instructions as half of a CCZ state.
+    /// This under-estimates Z_POW[level>3] instructions as half of a CCZ state.
+    size_t estimate_ccz_state_weight() const;
+
     size_t reaction_depth() const;
     size_t compute_max_condition_depth() const;
     std::string text_diagram() const;
@@ -80,6 +90,7 @@ struct Circuit {
     void write_text_diagram_to(FILE *out, bool use_unicode = false) const;
     void write_text_diagram_to(std::ostream &out_stream, bool use_unicode = false) const;
     void write_svg_or_html_diagram_to(std::ostream &out_stream, bool html) const;
+    void write_analysis_svg_to(std::ostream &out, size_t reference_qubit_count) const;
 
     std::string describe_qubit_control_collision() const;
     bool compute_has_qubit_control_collision() const;
@@ -92,6 +103,8 @@ struct Circuit {
     size_t compute_num_bit_cond() const;
     size_t compute_num_bit_targ() const;
     size_t compute_num_angles() const;
+    bool compute_has_unknown_ops() const;
+    size_t compute_num_info_tags() const;
 
     std::string str() const;
     void write_kmx_to(std::ostream &out) const;
@@ -112,6 +125,8 @@ struct Circuit {
         const uint32_t *ptr_bit_cond = bc;
         const uint32_t *ptr_bit_targ = b0;
         const FixedPrecisionAngle128 *ptr_angles = angles;
+        uint64_t cur_info_tag_start = 0;
+        const uint64_t *ptr_info_tag_end_offsets = info_tag_end_offsets;
 
         for (size_t k = 0; k < num_ops; k++) {
             QubitOrFalse q_control2{};
@@ -120,6 +135,7 @@ struct Circuit {
             BitIdOrFalse c_target{};
             BitIdOrFalse c_condition{};
             FixedPrecisionAngle128 c_angle{};
+            std::string_view c_info_tag{};
             auto q_flag = (uint8_t)op_types[k] & OP_HAS_3Q;
             if (q_flag == OP_HAS_3Q) {
                 q_control2 = QubitId{*ptr_qqq0++};
@@ -139,6 +155,10 @@ struct Circuit {
             }
             if (op_types[k] == OpType::Z_POW || op_types[k] == OpType::Z_POW_IF) {
                 c_angle = *ptr_angles++;
+            } else if (op_types[k] == OpType::INFO_TAG) {
+                uint64_t end = *ptr_info_tag_end_offsets++;
+                c_info_tag = std::string_view{info_tag_chars + cur_info_tag_start, end - cur_info_tag_start};
+                cur_info_tag_start = end;
             }
             op_callback(
                 Op{
@@ -149,6 +169,7 @@ struct Circuit {
                     .q_target = q_target,
                     .c_target = c_target,
                     .c_condition = c_condition,
+                    .info_tag = c_info_tag,
                 });
         }
     }

@@ -1,17 +1,21 @@
 #ifndef KICKMIX_SIM_H
 #define KICKMIX_SIM_H
 
+#include <algorithm>
+#include <array>
+#include <functional>
 #include <iostream>
 #include <random>
 #include <span>
+#include <sstream>
 #include <vector>
 
 #include "kickmix/circuit/circuit.h"
 #include "kickmix/id/qubit_or_bit_or_bool.h"
 #include "kickmix/id/register_id.h"
+#include "kickmix/util/chacha.h"
 #include "kickmix/util/fixed_width_int.h"
 #include "kickmix/util/pop_counter.h"
-#include "kickmix/util/xoshiro_256_plusplus.h"
 
 namespace kickmix {
 
@@ -75,41 +79,53 @@ struct Sim {
     size_t num_qubits;
     size_t num_bits;
     std::mt19937_64 rng;
+    ChaCha8<TWord> chacha_rng;
     std::array<uint64_t, 64> transpose_buffer;
     std::vector<FixedPrecisionAngle128> angles;
     std::vector<RegisterData> registers;
-    bool ignore_debug_print_operations = false;
+    std::function<void(QubitOrBitOrBool target, const TWord &target_val, BitOrBool cond_bit, const TWord &cond_val)>
+        debug_print_handler = [](QubitOrBitOrBool, const TWord &, BitOrBool, const TWord &) {
+        };
 
     // shot_index -> register_index -> word_index
     std::array<std::vector<FixedWidthInt>, BATCH_SIZE> register_buffers;
     std::array<std::vector<FixedWidthInt>, BATCH_SIZE> register_buffers2;
 
     std::conditional_t<count_shots, std::array<PopCounter<TWord>, 256>, EmptyCounters<TWord>> new_op_counters{};
+    std::conditional_t<count_shots, std::array<PopCounter<TWord>, 129>, EmptyCounters<TWord>> z_pow_level_counters{};
+
+    void set_debug_print_to_stderr() {
+        debug_print_handler = [this](
+                                  QubitOrBitOrBool target, const TWord &target_val, BitOrBool, const TWord &cond_val) {
+            if (!cond_val.bit(0)) {
+                return;
+            }
+            if (target.is_bool()) {
+                std::cerr << " (phase=" << read_shot_phase(0) << ")\n";
+            } else {
+                std::cerr << (target_val.bit(0) ? '1' : '0');
+            }
+        };
+    }
 
     inline std::span<TWord> qubit_span() {
-        return {state_block.data() + 5, num_qubits};
+        return {state_block.data() + 1, num_qubits};
     }
     inline std::span<TWord> bit_span() {
-        return {state_block.data() + 5 + num_qubits, num_bits};
+        return {state_block.data() + 1 + num_qubits, num_bits};
     }
     inline TWord &global_phase_ref() {
         return state_block[0];
     }
-    inline std::span<TWord> rng_state_span() {
-        return {&state_block[1], 4};
-    }
 
     inline std::span<const TWord> qubit_span() const {
-        return {state_block.data() + 5, num_qubits};
+        return {state_block.data() + 1, num_qubits};
     }
     inline std::span<const TWord> bit_span() const {
-        return {state_block.data() + 5 + num_qubits, num_bits};
+        return {state_block.data() + 1 + num_qubits, num_bits};
     }
     inline const TWord &global_phase_ref() const {
         return state_block[0];
-    }
-    inline std::span<const TWord> rng_state_span() const {
-        return {&state_block[1], 4};
     }
 
     FixedPrecisionAngle128 read_shot_phase(size_t shot_index) const {
@@ -121,11 +137,8 @@ struct Sim {
     }
 
     explicit Sim(std::mt19937_64 &&rng)
-        : state_block(5), num_qubits(0), num_bits(0), rng(rng), transpose_buffer{}, angles(BATCH_SIZE) {
-        state_block[1].randomize(rng);
-        state_block[2].randomize(rng);
-        state_block[3].randomize(rng);
-        state_block[4].randomize(rng);
+        : state_block(1), num_qubits(0), num_bits(0), rng(rng), chacha_rng{}, transpose_buffer{}, angles(BATCH_SIZE) {
+        chacha_rng.randomize(this->rng);
     }
     Sim(const Sim &sim) = default;
     Sim(Sim &&sim) = default;
@@ -234,20 +247,28 @@ struct Sim {
         }
 
         // Multiplicative resizing ensures no quadratic overhead.
-        min_num_qubits = std::max(num_qubits * 2, min_num_qubits);
-        min_num_bits = std::max(num_bits * 2, min_num_bits);
+        if (min_num_qubits > num_qubits) {
+            min_num_qubits = std::max(num_qubits * 2, min_num_qubits);
+        } else {
+            min_num_qubits = num_qubits;
+        }
+        if (min_num_bits > num_bits) {
+            min_num_bits = std::max(num_bits * 2, min_num_bits);
+        } else {
+            min_num_bits = num_bits;
+        }
 
         std::span<TWord> old_bits = bit_span();
         std::span<TWord> old_qubits = qubit_span();
         std::vector<TWord> old_state = std::move(state_block);
         state_block = std::vector<TWord>();
-        state_block.resize(min_num_qubits + min_num_bits + 5);
+        state_block.resize(min_num_qubits + min_num_bits + 1);
         size_t old_num_qubits = num_qubits;
         size_t old_num_bits = num_bits;
         num_qubits = min_num_qubits;
         num_bits = min_num_bits;
 
-        memcpy(state_block.data(), old_state.data(), 5 * sizeof(TWord));
+        memcpy(state_block.data(), old_state.data(), 1 * sizeof(TWord));
         if (old_num_bits) {
             memcpy(bit_span().data(), old_bits.data(), old_num_bits * sizeof(TWord));
         }
@@ -268,13 +289,12 @@ struct Sim {
 
         num_qubits = circuit.num_qubits;
         num_bits = circuit.num_bits;
-        state_block.resize(num_qubits + num_bits + 5);
+        state_block.resize(num_qubits + num_bits + 1);
         clear_for_shot();
     }
 
     void apply(const Circuit &circuit) {
-        Xoshiro256PlusPlus<TWord> rng_state;
-        memcpy(&rng_state, rng_state_span().data(), sizeof(rng_state));
+        auto &rng_state = chacha_rng;
         const auto qubits = qubit_span();
         const auto bits = bit_span();
         TWord current_base_condition = condition_stack.empty() ? ~TWord{} : condition_stack.back();
@@ -293,6 +313,7 @@ struct Sim {
             auto kind = circuit.op_types[k];
 
             TWord cond = current_base_condition;
+            BitOrBool cond_bit = true;
             switch (kind) {
                 case OpType::CCX_IF:
                     cond &= bits[*data_bit_cond++];
@@ -321,6 +342,23 @@ struct Sim {
                     break;
                 }
 
+                case OpType::CSWAP_IF:
+                    cond &= bits[*data_bit_cond++];
+                case OpType::CSWAP: {
+                    auto qc = *data_qqq0++;
+                    auto q0 = *data_qqq1++;
+                    auto q1 = *data_qqq2++;
+                    auto c = qubits[qc] & cond;
+                    auto a = qubits[q0];
+                    auto b = qubits[q1];
+                    a ^= b;
+                    b ^= a & c;
+                    a ^= b;
+                    qubits[q0] = a;
+                    qubits[q1] = b;
+                    break;
+                }
+
                 case OpType::X_IF:
                     cond &= bits[*data_bit_cond++];
                 case OpType::X:
@@ -343,6 +381,9 @@ struct Sim {
                     cond &= bits[*data_bit_cond++];
                 case OpType::Z_POW: {
                     auto angle = *data_angles++;
+                    if constexpr (count_shots) {
+                        z_pow_level_counters[angle.clifford_hierarchy_level()].masked_increments(cond);
+                    }
                     auto mask = qubits[*data_q0++] & cond;
                     for (size_t b = 0; b < BATCH_SIZE; b++) {
                         if (mask.bit(b)) {
@@ -409,39 +450,50 @@ struct Sim {
                     break;
 
                 case OpType::DEBUG_PRINT_C_IF:
-                    cond &= bits[*data_bit_cond++];
+                    cond_bit = BitId(*data_bit_cond++);
+                    cond &= bits[cond_bit.untagged_id()];
                 case OpType::DEBUG_PRINT_C: {
                     auto b = *data_bit_targ++;
-                    if (cond.bit(0) && !ignore_debug_print_operations) {
-                        std::cerr << (bits[b].bit(0) ? '1' : '0');
-                    }
+                    debug_print_handler(BitId(b), bits[b], cond_bit, cond);
                     break;
                 }
                 case OpType::DEBUG_PRINT_Q_IF:
-                    cond &= bits[*data_bit_cond++];
+                    cond_bit = BitId(*data_bit_cond++);
+                    cond &= bits[cond_bit.untagged_id()];
                 case OpType::DEBUG_PRINT_Q: {
-                    auto q = *data_bit_targ++;
-                    if (cond.bit(0) && !ignore_debug_print_operations) {
-                        std::cerr << (qubits[q].bit(0) ? '1' : '0');
-                    }
+                    auto q = *data_q0++;
+                    debug_print_handler(QubitId(q), qubits[q], cond_bit, cond);
                     break;
                 }
                 case OpType::DEBUG_PRINT_EMPTY_IF:
-                    cond &= bits[*data_bit_cond++];
+                    cond_bit = BitId(*data_bit_cond++);
+                    cond &= bits[cond_bit.untagged_id()];
                 case OpType::DEBUG_PRINT_EMPTY:
-                    if (cond.bit(0) && !ignore_debug_print_operations) {
-                        std::cerr << " (phase=" << read_shot_phase(0) << ")\n";
-                    }
+                    debug_print_handler(false, TWord{}, cond_bit, cond);
                     break;
 
                 case OpType::PUSH_CONDITION:
                     current_base_condition &= bits[*data_bit_cond++];
                     condition_stack.push_back(current_base_condition);
+                    if constexpr (count_shots) {
+                        cond = ~TWord{};  // Always count this operation in stats (not affected by conditions).
+                    }
                     break;
 
                 case OpType::POP_CONDITION:
-                    condition_stack.pop_back();
+                    if (!condition_stack.empty()) {
+                        condition_stack.pop_back();
+                    }
                     current_base_condition = condition_stack.empty() ? ~TWord{} : condition_stack.back();
+                    if constexpr (count_shots) {
+                        cond = ~TWord{};
+                    }
+                    break;
+
+                case OpType::INFO_TAG:
+                    if constexpr (count_shots) {
+                        cond = ~TWord{};  // Always count this operation in stats (not affected by conditions).
+                    }
                     break;
 
                 default: {
@@ -450,13 +502,19 @@ struct Sim {
                     throw std::invalid_argument(ss.str());
                 }
             }
+            // Counted after the switch because `*_IF` cases refine `cond &= bits[*data_bit_cond++]`,
+            // while `PUSH_CONDITION` / `POP_CONDITION` unconditionally set `cond = ~TWord{}`.
             if constexpr (count_shots) {
                 new_op_counters[(uint8_t)kind].masked_increments(cond);
             }
         }
 
         global_phase_ref() = phase;
-        memcpy(rng_state_span().data(), &rng_state, sizeof(rng_state));
+    }
+
+    void clear_operation_statistics() {
+        new_op_counters = {};
+        z_pow_level_counters = {};
     }
 
     void clear_for_shot() {

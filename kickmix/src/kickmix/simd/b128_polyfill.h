@@ -1,6 +1,9 @@
 #ifndef KICKMIX_SIMD_128_H
 #define KICKMIX_SIMD_128_H
 
+#include <array>
+#include <cstddef>
+#include <cstdint>
 #include <ostream>
 #include <random>
 
@@ -34,7 +37,10 @@ struct alignas(sizeof(uint64_t) * 2) b128_polyfill {
     static b128_polyfill random(std::mt19937_64 &rng) {
         return {rng(), rng()};
     }
-    static b128_polyfill from_u32_broadcast(uint32_t v) {
+    inline static b128_polyfill from_u64s(std::array<uint64_t, 2> vs) {
+        return {vs[0], vs[1]};
+    }
+    inline static b128_polyfill from_u32_broadcast(uint32_t v) {
         uint64_t v2 = static_cast<uint64_t>(v);
         uint64_t v3 = v2 | (v2 << 32);
         return {v3, v3};
@@ -98,6 +104,34 @@ struct alignas(sizeof(uint64_t) * 2) b128_polyfill {
     }
     inline b128_polyfill operator|(const b128_polyfill &other) const {
         return {v[0] | other.v[0], v[1] | other.v[1]};
+    }
+    inline b128_polyfill u32_add(const b128_polyfill &other) const {
+        const uint32_t *v1 = (const uint32_t *)&v;
+        const uint32_t *v2 = (const uint32_t *)&other.v;
+        b128_polyfill result;
+        uint32_t *v3 = (uint32_t *)&result.v;
+        for (size_t k = 0; k < BIT_SIZE / 32; k++) {
+            v3[k] = v1[k] + v2[k];
+        }
+        return result;
+    }
+    inline b128_polyfill u32_right_shift(size_t shift) const {
+        const uint32_t *v1 = (const uint32_t *)&v;
+        b128_polyfill result;
+        uint32_t *v3 = (uint32_t *)&result.v;
+        for (size_t k = 0; k < BIT_SIZE / 32; k++) {
+            v3[k] = v1[k] >> shift;
+        }
+        return result;
+    }
+    inline b128_polyfill u32_left_shift(size_t shift) const {
+        const uint32_t *v1 = (const uint32_t *)&v;
+        b128_polyfill result;
+        uint32_t *v3 = (uint32_t *)&result.v;
+        for (size_t k = 0; k < BIT_SIZE / 32; k++) {
+            v3[k] = v1[k] << shift;
+        }
+        return result;
     }
     inline b128_polyfill u32_eq(const b128_polyfill &other) const {
         const uint32_t *v1 = (uint32_t *)&v;

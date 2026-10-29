@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import fractions
 import random
-from typing import Any
 
 import numpy as np
 import pytest
@@ -433,7 +432,236 @@ def test_read_phase_flipped_across_shots():
     assert sim.read_phase_flipped_across_shots(out=int) == 0
     for k in range(21):
         sim.write_shot_phase(k, k * 0.101)
-    assert sim.read_phase_flipped_across_shots(out=int) == 0b111111111100000
-    np.testing.assert_array_equal(
-        sim.read_phase_flipped_across_shots(), [False] * 5 + [True] * 10 + [False] * 394
+    with pytest.raises(ValueError, match="angles other than"):
+        sim.read_phase_flipped_across_shots(out=int)
+    with pytest.raises(ValueError, match="angles other than"):
+        sim.read_phase_flipped_across_shots()
+
+
+def test_debug_print(capfd: pytest.CaptureFixture[str]):
+    c = km.Circuit("""
+        X q0
+        BIT_STORE1 b0
+        DEBUG_PRINT q0
+        DEBUG_PRINT b0
+        DEBUG_PRINT
+    """)
+
+    sim = km.Simulator(batch_size=4)
+    assert sim.debug_print is True
+    sim.do(c)
+    captured = capfd.readouterr()
+    assert "11 (phase=" in captured.err
+
+    sim.debug_print = False
+    assert sim.debug_print is False
+    sim.do(c)
+    captured = capfd.readouterr()
+    assert captured.err == ""
+
+    recorded: list[tuple[km.q | km.b | None, list[bool], km.b | None, list[bool]]] = []
+
+    def handler(
+        target: km.q | km.b | None,
+        target_vals: np.ndarray,
+        cond: km.b | None,
+        cond_vals: np.ndarray,
+    ) -> None:
+        assert target_vals.dtype == np.bool_
+        assert cond_vals.dtype == np.bool_
+        recorded.append((target, target_vals.tolist(), cond, cond_vals.tolist()))
+
+    sim.clear_for_shot()
+    sim.write_across_shots(km.q(2), 0b1010)
+    sim.write_across_shots(km.b(0), 0b0101)
+    sim.write_across_shots(km.b(1), 0b0011)
+    sim.debug_print = handler
+    assert sim.debug_print is handler
+    sim.do(km.Circuit("""
+        DEBUG_PRINT q2
+        DEBUG_PRINT b1 if b0
+        PUSH_CONDITION if b1
+        DEBUG_PRINT if b0
+        POP_CONDITION
+    """))
+    assert capfd.readouterr().err == ""
+    assert recorded == [
+        (km.q(2), [False, True, False, True], None, [True, True, True, True]),
+        (km.b(1), [True, True, False, False], km.b(0), [True, False, True, False]),
+        (None, [False, False, False, False], km.b(0), [True, False, False, False]),
+    ]
+
+    chunk_shapes: list[tuple[km.q | km.b | None, tuple[int, ...], tuple[int, ...]]] = []
+    sim_chunked = km.Simulator(
+        batch_size=300,
+        debug_print=lambda t, tv, c, cv: chunk_shapes.append((t, tv.shape, cv.shape)),
     )
+    sim_chunked.do(km.Circuit("DEBUG_PRINT q0"))
+    assert chunk_shapes == [(km.q(0), (256,), (256,)), (km.q(0), (44,), (44,))]
+
+    sim_quiet = km.Simulator(batch_size=300, debug_print=False)
+    assert sim_quiet.debug_print is False
+    sim_quiet.do(c)
+    assert capfd.readouterr().err == ""
+
+    with pytest.raises(TypeError, match="debug_print"):
+        sim.debug_print = 123  # type: ignore[assignment]
+
+
+def test_counting_operations():
+    sim = km.Simulator(batch_size=4)
+    assert not sim.counting_operations
+    with pytest.raises(AttributeError):
+        sim.counting_operations = True  # type: ignore[misc]
+    with pytest.raises(ValueError, match="Operation counting is not enabled"):
+        sim.operation_statistics()
+
+    sim = km.Simulator(batch_size=4, counting_operations=True, debug_print=False)
+    assert sim.counting_operations
+    with pytest.raises(AttributeError):
+        sim.counting_operations = False  # type: ignore[misc]
+    assert sim.operation_statistics().num_instructions == 0
+    assert all(v == 0 for v in sim.operation_statistics().values())
+
+    # Set b0 in shots 0 and 2 (0b0101), b1 in shots 0 and 1 (0b0011)
+    sim.write_across_shots(km.b(0), 0b0101)
+    sim.write_across_shots(km.b(1), 0b0011)
+
+    c = km.Circuit("""
+        X q0
+        CX q0 q1 if b0
+        PUSH_CONDITION if b0
+        CCX q0 q1 q2
+        CCZ q0 q1 q2 if b1
+        CSWAP q0 q1 q2 if b1
+        Z_POW q0 0.25
+        INFO_TAG "tag"
+        POP_CONDITION
+        Z_POW q0 0.125 if b1
+        DEBUG_PRINT
+        DEBUG_PRINT q0
+        DEBUG_PRINT b0 if b1
+    """)
+    sim.do(c)
+
+    stats = sim.operation_statistics()
+    totals = dict(stats)
+    assert stats["X"] == 4
+    assert stats["CZ"] == 0
+    assert "CZ" not in stats
+    assert totals == {
+        "X": 4,
+        "CX": 2,
+        "CSWAP": 1,
+        "CCX": 2,
+        "CCZ": 1,
+        "Z_POW": 4,
+        "INFO_TAG": 4,
+        "DEBUG_PRINT": 4 + 4 + 2,
+        "POP_CONDITION": 4,
+        "PUSH_CONDITION": 4,
+    }
+    assert stats.num_toffoli_like == 4
+    assert stats.num_t_like == 2
+    assert stats.num_z_pow(min_clifford_hierarchy_level=4) == 2
+    assert stats.z_pow_clifford_hierarchy_counts == {3: 2, 4: 2}
+
+    shots = [sim.operation_statistics(k) for k in range(4)]
+    assert [s["X"] for s in shots] == [1, 1, 1, 1]
+    assert [s["CX"] for s in shots] == [1, 0, 1, 0]
+    assert [s["CCX"] for s in shots] == [1, 0, 1, 0]
+    assert [s["CCZ"] for s in shots] == [1, 0, 0, 0]
+    assert [s["CSWAP"] for s in shots] == [1, 0, 0, 0]
+    assert [s["INFO_TAG"] for s in shots] == [1, 1, 1, 1]
+    assert [s["Z_POW"] for s in shots] == [2, 1, 1, 0]
+    assert [s["DEBUG_PRINT"] for s in shots] == [3, 3, 2, 2]
+    assert [s.num_toffoli_like for s in shots] == [3, 0, 1, 0]
+    assert [s.num_t_like for s in shots] == [1, 0, 1, 0]
+    assert [s.num_z_pow(min_clifford_hierarchy_level=4) for s in shots] == [1, 1, 0, 0]
+
+    with pytest.raises(IndexError, match="batch_size"):
+        sim.operation_statistics(-1)
+    with pytest.raises(IndexError, match="batch_size"):
+        sim.operation_statistics(4)
+
+    # Counts persist across clear_for_shot() and accumulate across multiple do() calls.
+    sim.clear_for_shot()
+    sim.do(km.Circuit("X q0"))
+    assert sim.operation_statistics()["X"] == 8
+
+    # clear_operation_statistics() resets all counters (including Z_POW levels) to 0.
+    sim.clear_operation_statistics()
+    assert sim.operation_statistics().num_instructions == 0
+    assert sim.operation_statistics().z_pow_clifford_hierarchy_counts == {}
+    assert all(v == 0 for v in sim.operation_statistics().values())
+
+
+@pytest.mark.parametrize("batch_size", [0, 1, 5, 255, 256, 257, 513])
+def test_counting_operations_batch_sizes(batch_size: int):
+    sim = km.Simulator(batch_size=batch_size, counting_operations=True)
+    if batch_size > 0:
+        sim.write_across_shots(km.b(0), 1 << (batch_size - 1))
+    sim.do(km.Circuit("""
+        X q0
+        Z_POW q0 0.25 if b0
+    """))
+    stats = sim.operation_statistics()
+    assert stats["X"] == batch_size
+    assert stats.num_t_like == (1 if batch_size > 0 else 0)
+    assert stats.num_instructions == batch_size + (1 if batch_size > 0 else 0)
+    if batch_size > 0:
+        last_shot = sim.operation_statistics(batch_size - 1)
+        assert last_shot["X"] == 1
+        assert last_shot.num_t_like == 1
+        if batch_size > 1:
+            assert sim.operation_statistics(0).num_t_like == 0
+    with pytest.raises(IndexError, match="batch_size"):
+        sim.operation_statistics(batch_size)
+
+
+def test_simulator_seed():
+    import hashlib
+
+    circuit = km.Circuit("""
+        X q0
+        X q1
+        HMR q0 b0
+        R q1
+    """)
+    sha_seed = int(hashlib.sha256(str(circuit).encode()).hexdigest(), 16)
+    sim1 = km.Simulator(batch_size=512, seed=sha_seed)
+    sim2 = km.Simulator(batch_size=512, seed=sha_seed, counting_operations=True)
+    # Differ only in the highest bit (bit 255) to verify all 256 seed bits are used.
+    sim3 = km.Simulator(batch_size=512, seed=sha_seed ^ (1 << 255))
+    sim1.do(circuit)
+    sim2.do(circuit)
+    sim3.do(circuit)
+
+    b0_1 = sim1.read_across_shots(km.b(0), out=int)
+    b0_2 = sim2.read_across_shots(km.b(0), out=int)
+    b0_3 = sim3.read_across_shots(km.b(0), out=int)
+    phase_1 = sim1.read_phase_flipped_across_shots(out=int)
+    phase_2 = sim2.read_phase_flipped_across_shots(out=int)
+    phase_3 = sim3.read_phase_flipped_across_shots(out=int)
+
+    # Identical seeds produce identical HMR and R outcomes across all chunks.
+    assert b0_1 == b0_2
+    assert phase_1 == phase_2
+    # Different seeds (even differing only in bit 255) produce different outcomes.
+    assert b0_1 != b0_3
+    assert phase_1 != phase_3
+    # Independent 256-shot chunks within the same simulator do not repeat the same 256 bits.
+    assert (b0_1 & ((1 << 256) - 1)) != (b0_1 >> 256)
+
+    # Boundary values 0 and 2**256 - 1 are accepted.
+    km.Simulator(batch_size=256, seed=0)
+    km.Simulator(batch_size=256, seed=(1 << 256) - 1)
+
+    with pytest.raises(ValueError, match="not in range"):
+        km.Simulator(batch_size=256, seed=-1)
+    with pytest.raises(ValueError, match="not in range"):
+        km.Simulator(batch_size=256, seed=1 << 256)
+    with pytest.raises(TypeError, match="Expected seed to be an int or None"):
+        km.Simulator(batch_size=256, seed=True)  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="Expected seed to be an int or None"):
+        km.Simulator(batch_size=256, seed="bad")  # type: ignore[arg-type]

@@ -125,6 +125,7 @@ TEST(sim, supports_all_gates) {
 
     testing::internal::CaptureStderr();  // The debug instructions can produce stderr output.
     sim.apply(circuit);
+    testing::internal::GetCapturedStderr();
 }
 
 TEST(sim, SimInitInstruction_from_str_many) {
@@ -161,6 +162,8 @@ TEST(sim, count_instructions) {
     size_t ccx = 0;
     size_t ccz = 0;
     size_t cx = 0;
+    size_t push_cond = 0;
+    size_t pop_cond = 0;
     for (size_t k = 0; k < 64; k++) {
         ccx += sim.new_op_counters[(size_t)OpType::CCX].compute_total(k);
         ccx += sim.new_op_counters[(size_t)OpType::CCX_IF].compute_total(k);
@@ -168,10 +171,14 @@ TEST(sim, count_instructions) {
         ccz += sim.new_op_counters[(size_t)OpType::CCZ_IF].compute_total(k);
         cx += sim.new_op_counters[(size_t)OpType::CX].compute_total(k);
         cx += sim.new_op_counters[(size_t)OpType::CX_IF].compute_total(k);
+        push_cond += sim.new_op_counters[(size_t)OpType::PUSH_CONDITION].compute_total(k);
+        pop_cond += sim.new_op_counters[(size_t)OpType::POP_CONDITION].compute_total(k);
     }
     EXPECT_TRUE(3200 - 200 < ccx && ccx < 3200 + 200) << "ccx=" << ccx;
     EXPECT_TRUE(1600 - 200 < ccz && ccz < 1600 + 200) << "ccz=" << ccz;
     EXPECT_TRUE(3200 - 200 < cx && cx < 3200 + 200) << "cx=" << cx;
+    EXPECT_EQ(push_cond, 6400);
+    EXPECT_EQ(pop_cond, 6400);
 }
 
 TEST(sim, hmr_condition) {
@@ -212,7 +219,7 @@ TEST(sim, safe_read_val_bounds) {
     Sim<b64, false> sim(INDEPENDENT_TEST_RNG());
     sim.num_qubits = 2;
     sim.num_bits = 2;
-    sim.state_block.assign(5 + 4, ~b64{});
+    sim.state_block.assign(1 + 4, ~b64{});
     ASSERT_EQ(sim.safe_read_val(QubitId(0)), ~b64{});
     ASSERT_EQ(sim.safe_read_val(QubitId(1)), ~b64{});
     ASSERT_EQ(sim.safe_read_val(QubitId(2)), b64{});
@@ -249,4 +256,95 @@ TEST(sim, z_pow_if) {
     ASSERT_EQ(sim.angles[1], FixedPrecisionAngle128::from_half_turns_exact_double(0.0));
     ASSERT_EQ(sim.angles[2], FixedPrecisionAngle128::from_half_turns_exact_double(0.0));
     ASSERT_EQ(sim.angles[3], FixedPrecisionAngle128::from_half_turns_exact_double(0.0));
+}
+
+TEST(sim, debug_print_q_and_b) {
+    Sim<b64, false> sim(INDEPENDENT_TEST_RNG());
+    sim.set_debug_print_to_stderr();
+    Circuit circuit(R"CIRCUIT(
+        X q2
+        BIT_STORE1 b1
+        DEBUG_PRINT q2
+        DEBUG_PRINT b1
+    )CIRCUIT");
+    sim.configure_for(circuit);
+    sim.clear_for_shot();
+    testing::internal::CaptureStderr();
+    sim.apply(circuit);
+    std::string output = testing::internal::GetCapturedStderr();
+    EXPECT_EQ(output, "11");
+
+    sim.debug_print_handler = [](QubitOrBitOrBool, const b64 &, BitOrBool, const b64 &) {
+    };
+    testing::internal::CaptureStderr();
+    sim.apply(circuit);
+    output = testing::internal::GetCapturedStderr();
+    EXPECT_EQ(output, "");
+
+    std::vector<std::pair<QubitOrBitOrBool, BitOrBool>> observed;
+    sim.debug_print_handler = [&](QubitOrBitOrBool target, const b64 &, BitOrBool cond_bit, const b64 &) {
+        observed.emplace_back(target, cond_bit);
+    };
+    Circuit circuit_cond(R"CIRCUIT(
+        DEBUG_PRINT q2
+        DEBUG_PRINT b1 if b0
+        DEBUG_PRINT
+    )CIRCUIT");
+    sim.configure_for(circuit_cond);
+    sim.apply(circuit_cond);
+    ASSERT_EQ(observed.size(), 3);
+    EXPECT_EQ(observed[0].first, QubitId(2));
+    EXPECT_EQ(observed[0].second, BitOrBool(true));
+    EXPECT_EQ(observed[1].first, BitId(1));
+    EXPECT_EQ(observed[1].second, BitId(0));
+    EXPECT_EQ(observed[2].first, QubitOrBitOrBool(false));
+    EXPECT_EQ(observed[2].second, BitOrBool(true));
+}
+
+TEST(sim, cswap) {
+    Sim<b64, false> sim(INDEPENDENT_TEST_RNG());
+    Circuit circuit(R"CIRCUIT(
+        CSWAP q0 q1 q2
+    )CIRCUIT");
+    sim.configure_for(circuit);
+    sim.clear_for_shot();
+    sim.qubit_span()[0] = b64::from_u32_broadcast(0b11110000);
+    sim.qubit_span()[1] = b64::from_u32_broadcast(0b11001100);
+    sim.qubit_span()[2] = b64::from_u32_broadcast(0b10101010);
+    sim.apply(circuit);
+    ASSERT_EQ(sim.qubit_span()[0], b64::from_u32_broadcast(0b11110000));
+    ASSERT_EQ(sim.qubit_span()[1], b64::from_u32_broadcast(0b10101100));
+    ASSERT_EQ(sim.qubit_span()[2], b64::from_u32_broadcast(0b11001010));
+    ASSERT_EQ(sim.global_phase_ref(), b64{});
+}
+
+TEST(sim, cswap_if) {
+    Sim<b64, false> sim(INDEPENDENT_TEST_RNG());
+    Circuit circuit(R"CIRCUIT(
+        CSWAP q0 q1 q2 if b0
+    )CIRCUIT");
+    sim.configure_for(circuit);
+    sim.clear_for_shot();
+    sim.bit_span()[0] = b64::from_u32_broadcast(0b1111111100000000);
+    sim.qubit_span()[0] = b64::from_u32_broadcast(0b1111000011110000);
+    sim.qubit_span()[1] = b64::from_u32_broadcast(0b1100110011001100);
+    sim.qubit_span()[2] = b64::from_u32_broadcast(0b1010101010101010);
+    sim.apply(circuit);
+    ASSERT_EQ(sim.bit_span()[0], b64::from_u32_broadcast(0b1111111100000000));
+    ASSERT_EQ(sim.qubit_span()[0], b64::from_u32_broadcast(0b1111000011110000));
+    ASSERT_EQ(sim.qubit_span()[1], b64::from_u32_broadcast(0b1010110011001100));
+    ASSERT_EQ(sim.qubit_span()[2], b64::from_u32_broadcast(0b1100101010101010));
+    ASSERT_EQ(sim.global_phase_ref(), b64{});
+}
+
+TEST(sim, ensure_big_enough_state_for_independent_dimensions) {
+    Sim<b64, false> sim(INDEPENDENT_TEST_RNG());
+    sim.ensure_big_enough_state_for(840, 0);
+    size_t initial_num_qubits = sim.num_qubits;
+    ASSERT_GE(initial_num_qubits, 840);
+    for (size_t b = 1; b <= 50000; b++) {
+        sim.ensure_big_enough_state_for(0, b);
+    }
+    ASSERT_EQ(sim.num_qubits, initial_num_qubits);
+    ASSERT_GE(sim.num_bits, 50000);
 }

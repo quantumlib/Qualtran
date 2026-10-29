@@ -1,6 +1,10 @@
 #ifndef KICKMIX_SIMD_256_AVX_H
 #define KICKMIX_SIMD_256_AVX_H
 
+#include <array>
+#include <bit>
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
 #ifdef __AVX__
 #include <immintrin.h>
@@ -76,6 +80,9 @@ struct alignas(sizeof(uint64_t) * 4) b256_avx {
     inline b256_avx operator|(const b256_avx &other) const {
         return {_mm256_or_si256(v, other.v)};
     }
+    inline static b256_avx from_u64s(std::array<uint64_t, 4> vs) {
+        return {_mm256_setr_epi64x(vs[0], vs[1], vs[2], vs[3])};
+    }
     inline static b256_avx from_u32_broadcast(uint32_t v) {
         return {_mm256_set1_epi32(std::bit_cast<int32_t>(v))};
     }
@@ -91,6 +98,15 @@ struct alignas(sizeof(uint64_t) * 4) b256_avx {
     }
     inline b256_avx u64_left_shift(size_t shift) const {
         return {_mm256_slli_epi64(v, shift)};
+    }
+    inline b256_avx u32_add(const b256_avx &other) const {
+        return {_mm256_add_epi32(v, other.v)};
+    }
+    inline b256_avx u32_right_shift(size_t shift) const {
+        return {_mm256_srli_epi32(v, shift)};
+    }
+    inline b256_avx u32_left_shift(size_t shift) const {
+        return {_mm256_slli_epi32(v, shift)};
     }
     inline b256_avx u32_eq(const b256_avx &other) const {
         return {_mm256_cmpeq_epi32(v, other.v)};

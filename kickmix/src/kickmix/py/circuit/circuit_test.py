@@ -17,6 +17,30 @@ from __future__ import annotations
 import kickmix as km
 
 
+def test_repr():
+    assert repr(km.Circuit()) == """km.Circuit()"""
+
+    assert (
+        repr(km.Circuit('''
+        REGISTER r0 "test"
+    '''))
+        == """km.Circuit('''
+    REGISTER r0 "test"
+''')"""
+    )
+
+    assert (
+        repr(km.Circuit('''
+        CCX q0 q1 q2
+        CZ q0 q1
+    '''))
+        == """km.Circuit('''
+    CCX q0 q1 q2
+    CZ q0 q1
+''')"""
+    )
+
+
 def test_add():
     a = km.Circuit('''
         CCX q0 q1 q2

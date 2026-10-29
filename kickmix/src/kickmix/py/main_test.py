@@ -165,3 +165,120 @@ def test_circuit_file_io_errors(tmp_path: pathlib.Path):
         km.Circuit.from_file(123)  # type: ignore[arg-type]
     with pytest.raises(TypeError):
         circuit.to_file(123)  # type: ignore[arg-type]
+
+
+def test_circuit_operation_statistics_resources():
+    empty_stats = km.Circuit("").operation_statistics()
+    assert empty_stats.num_toffoli_like == 0
+    assert empty_stats.num_t_like == 0
+    assert empty_stats.num_instructions == 0
+    assert empty_stats.num_z_pow() == 0
+    assert empty_stats.z_pow_clifford_hierarchy_counts == {}
+
+    c = km.Circuit("""
+        CCX q0 q1 q2
+        CCZ q0 q1 q2 if b0
+        Z q0
+        Z_POW q0 0.0
+        Z_POW q0 0.5
+        Z_POW q0 1.0
+        Z_POW q0 1.5
+        Z_POW q0 -0.5 if b0
+        Z_POW q0 0.25
+        Z_POW q0 0.75
+        Z_POW q0 -0.25 if b0
+        Z_POW q0 0.125
+        Z_POW q0 0.1 if b1
+    """)
+    stats = c.operation_statistics()
+    assert stats.num_toffoli_like == 2
+    assert stats.num_t_like == 3
+    assert stats.num_z_pow() == 10
+    assert stats.num_z_pow(max_clifford_hierarchy_level=2) == 5
+    assert stats.num_z_pow(min_clifford_hierarchy_level=3, max_clifford_hierarchy_level=3) == 3
+    assert stats.num_z_pow(min_clifford_hierarchy_level=4) == 2
+    assert stats.num_instructions == 13
+    assert stats.z_pow_clifford_hierarchy_counts[0] == 1
+    assert stats.z_pow_clifford_hierarchy_counts[1] == 1
+    assert stats.z_pow_clifford_hierarchy_counts[2] == 3
+    assert stats.z_pow_clifford_hierarchy_counts[3] == 3
+    assert stats.z_pow_clifford_hierarchy_counts[4] == 1
+    assert sum(stats.z_pow_clifford_hierarchy_counts.values()) == 10
+    assert stats == km.Circuit(str(c)).operation_statistics()
+    assert stats != empty_stats
+    assert (
+        repr(stats)
+        == "<km.OperationStatistics num_instructions=13 num_toffoli_like=2 num_t_like=3>"
+    )
+
+
+def test_circuit_operation_statistics_mapping():
+    empty_stats = km.Circuit("").operation_statistics()
+    assert not empty_stats
+    assert len(empty_stats) == 0
+    assert dict(empty_stats) == {}
+    assert "X" not in empty_stats
+    assert empty_stats["X"] == 0
+    assert empty_stats.get("X") is None
+    assert empty_stats.get("X", 0) == 0
+
+    c = km.Circuit("""
+        X q0
+        X q0 if b0
+        CX q0 q1
+        CX q0 q1 if b0
+        PUSH_CONDITION if b0
+        CCX q0 q1 q2
+        CCZ q0 q1 q2 if b1
+        CSWAP q0 q1 q2
+        CSWAP q0 q1 q2 if b1
+        Z_POW q0 0.25
+        Z_POW q0 0.125 if b1
+        INFO_TAG "hello"
+        POP_CONDITION
+        DEBUG_PRINT
+        DEBUG_PRINT q0
+        DEBUG_PRINT b0 if b1
+    """)
+    stats = c.operation_statistics()
+    counts = dict(stats)
+    assert bool(stats)
+    assert len(stats) == 10
+    assert "X" in stats
+    assert "CSWAP" in stats
+    assert "INFO_TAG" in stats
+    assert "CZ" not in stats
+    assert "NOT_AN_OP" not in stats
+    assert 123 not in stats
+    assert stats["X"] == 2
+    assert stats["CSWAP"] == 2
+    assert stats["INFO_TAG"] == 1
+    assert stats.num_toffoli_like == 4
+    assert stats["CZ"] == 0
+    assert stats["HMR"] == 0
+    assert stats.get("X") == 2
+    assert stats.get("CZ") is None
+    assert stats.get("CZ", 0) == 0
+    assert stats.get("NOT_AN_OP") is None
+    assert stats.get("NOT_AN_OP", 99) == 99
+    assert counts == {
+        "X": 2,
+        "CX": 2,
+        "CSWAP": 2,
+        "CCX": 1,
+        "CCZ": 1,
+        "Z_POW": 2,
+        "INFO_TAG": 1,
+        "DEBUG_PRINT": 3,
+        "POP_CONDITION": 1,
+        "PUSH_CONDITION": 1,
+    }
+    assert list(stats) == stats.keys()
+    assert stats.items() == list(counts.items())
+    assert stats.values() == list(counts.values())
+
+    with pytest.raises(KeyError):
+        _ = stats["NOT_AN_OP"]
+
+    sim = km.Simulator(batch_size=4, counting_operations=True, debug_print=False)
+    assert dict(sim.operation_statistics()) == {}

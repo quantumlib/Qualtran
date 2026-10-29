@@ -3,11 +3,13 @@
 #include "circuit.pybind.h"
 #include "kickmix/py/circuit/ops/bit_store.pybind.h"
 #include "kickmix/py/circuit/ops/ccx.pybind.h"
+#include "kickmix/py/circuit/ops/ccz.pybind.h"
 #include "kickmix/py/circuit/ops/cswap.pybind.h"
 #include "kickmix/py/circuit/ops/cx.pybind.h"
 #include "kickmix/py/circuit/ops/cz.pybind.h"
 #include "kickmix/py/circuit/ops/swap.pybind.h"
 #include "kickmix/py/circuit/ops/x.pybind.h"
+#include "kickmix/py/circuit/ops/z.pybind.h"
 #include "kickmix/py/circuit/subs/bit_rotate.pybind.h"
 #include "kickmix/py/circuit/subs/flip_if_cmp.pybind.h"
 #include "kickmix/py/circuit/subs/gf_arithmetic.pybind.h"
@@ -21,19 +23,34 @@
 using namespace kickmix;
 using namespace kickmix_py;
 
-void broadcast_cz_struct(PyCircuitBuilder &self, const stride_span_z &c1, const stride_span_z &c2) {
-    if (c1.count != c2.count) {
-        throw std::invalid_argument("Incompatible lengths.");
-    }
-    for (size_t k = 0; k < c1.count; k++) {
-        // TODO: fancier type-specific broadcasts
-        self.builder.cz(c1[k], c2[k]);
-    }
+void kickmix_py::register_circuit_builder_mark_class(pybind11::module &m) {
+    pybind11::class_<PyCircuitBuilderMark>(m, "_CircuitBuilderMark")
+        .def(
+            "__enter__",
+            [](PyCircuitBuilderMark &self) -> PyCircuitBuilderMark & {
+                std::stringstream ss;
+                ss << "@enter:";
+                ss << self.name;
+                self.py_builder->builder.info_tag(ss.str());
+                return self;
+            })
+        .def(
+            "__exit__",
+            [](PyCircuitBuilderMark &self, const pybind11::object &, const pybind11::object &, const pybind11::object &)
+                -> bool {
+                std::stringstream ss;
+                ss << "@exit:";
+                ss << self.name;
+                self.py_builder->builder.info_tag(ss.str());
+                return false;
+            })
+        .def("__repr__", [](const PyCircuitBuilderMark &self) -> std::string {
+            return "<km._CircuitBuilderMark name=" + pybind11::repr(pybind11::str(self.name)).cast<std::string>() + ">";
+        });
 }
 
-void append_z_obj(PyCircuitBuilder &self, pybind11::object target_obj) {
-    QubitOrBitOrBool t = obj_to_qubit_or_bit_or_bool(target_obj, "target");
-    self.builder.z(t);
+static void info_tag(PyCircuitBuilder &self, std::string_view text) {
+    self.builder.info_tag(text);
 }
 
 static void z_pow_obj(PyCircuitBuilder &self, const pybind11::object &target_obj, const pybind11::object &angle_obj) {
@@ -107,34 +124,15 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         }),
         clean_doc_string(R"DOC(
             Initializes a new circuit builder.
-        )DOC")
-            .data());
 
-    c_circuit_builder.def(
-        "start_auto_free_scope",
-        [](PyCircuitBuilder &self) {
-            self.start_auto_free_scope();
-        },
-        clean_doc_string(R"DOC(
-            Starts a scope that automatically frees allocations.
-
-            Call builder.end_auto_free_scope() to free allocations performed during the
-            scope. If multiple scopes are being used, they operate in LIFO order (i.e. like
-            a stack).
-        )DOC")
-            .data());
-
-    c_circuit_builder.def(
-        "end_auto_free_scope",
-        [](PyCircuitBuilder &self) {
-            self.end_auto_free_scope();
-        },
-        clean_doc_string(R"DOC(
-            Ends a scope that automatically frees allocations.
-
-            Allocations since the corresponding builder.start_auto_free_scope() will be
-            freed. If multiple scopes are being used, they operate in LIFO order (i.e. like
-            a stack).
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.x(km.q(0))
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    X q0
+                ''')
         )DOC")
             .data());
 
@@ -147,7 +145,17 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
             return pybind11::cast(self.max_qubits);
         },
         clean_doc_string(R"DOC(
+            @signature def max_qubits(self) -> int | float:
             Returns the maximum number of qubits allowed when building circuits.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.max_qubits
+                inf
+                >>> builder.set_max_qubits(500)
+                >>> builder.max_qubits
+                500
         )DOC")
             .data());
 
@@ -160,7 +168,21 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
             return pybind11::cast((int64_t)self.max_qubits - (int64_t)self.allocated_qubits);
         },
         clean_doc_string(R"DOC(
-            Returns the maximum number of qubits allowed when building circuits.
+            @signature def num_free_qubits(self) -> int | float:
+            Returns how many more qubits can be allocated before hitting max_qubits.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> _ = builder.alloc_qubits(4)
+                >>> builder.num_free_qubits
+                inf
+                >>> builder.set_max_qubits(500)
+                >>> builder.num_free_qubits
+                496
+                >>> _ = builder.alloc_qubits(4)
+                >>> builder.num_free_qubits
+                492
         )DOC")
             .data());
 
@@ -207,7 +229,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         },
         pybind11::arg("limit"),
         clean_doc_string(R"DOC(
-            @signature def set_max_qubits(limit: int | float) -> None:
+            @signature def set_max_qubits(self, limit: int | float) -> None:
 
             Sets the maximum number of qubits allowed when building circuits.
 
@@ -218,6 +240,16 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
             Args:
                 limit: The maximum number of qubits that can be allocated.
                     Set to `float('inf')` to disable the limit.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.set_max_qubits(4)
+                >>> builder.max_qubits
+                4
+                >>> q = builder.alloc_qubits(3)
+                >>> builder.num_free_qubits
+                1
         )DOC")
             .data());
 
@@ -244,27 +276,45 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
             return wrapped;
         },
         pybind11::arg("count"),
-        R"DOC(
+        clean_doc_string(R"DOC(
             Allocates clean qubits to use as workspace in a circuit.
 
-            Allocated qubits can be deallocated by using the `CircuitBuilder.free` method.
-            Qubits allocated within a `with builder.scope(auto_free=True):` block are
-            deallocated automatically upon execution exiting the block.
+            Allocated qubits can be deallocated with the `km.CircuitBuilder.free` method.
 
-            Although the qubits returned by this method *should* be clean, nothing *enforces*
-            this. If a prior user of the allocated qubit failed to correctly clean some qubits
-            before freeing them, the returned qubits may contain their buggy garbage. As such,
-            it's recommended that you reset the qubits before using them. Reset gates also
-            have the nice side effect of clearly indicating in circuit diagrams when a new
-            usage of a qubit has begun.
+            If the allocation would push `km.CircuitBuilder.num_allocated_qubits` above
+            `km.CircuitBuilder.max_qubits` (which defaults to infinity), it will raise
+            an exception instead of returning a result.
+
+            Although the qubits returned by this method *should* be clean, nothing
+            *enforces* this. If a prior user of the allocated qubits failed to
+            correctly clean some qubits before freeing them, the returned qubits may
+            contain their buggy garbage. As such, it's recommended that you reset
+            the qubits before using them. Reset gates also have the nice side effect
+            of clearly indicating in circuit diagrams when a new usage of a qubit
+            has begun.
 
             Args:
-                length: The number of qubits to allocate.
+                count: The number of qubits to allocate.
 
             Returns:
-                An array containing the ids of the allocated qubits. Until these ids are
-                freed, they won't be returned by any other allocation calls.
-        )DOC");
+                An array containing the ids of the allocated qubits. Until these ids
+                are freed, they won't be returned by any other allocation calls.
+
+            Raises:
+                ValueError:
+                    Attempted to allocate more qubits than the maximum (if set).
+                    See also `km.CircuitBuilder.num_free_qubits`.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> q = builder.alloc_qubits(3)
+                >>> q
+                km.array([km.q(0), km.q(1), km.q(2)])
+                >>> builder.num_allocated_qubits
+                3
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "alloc_bits",
@@ -279,8 +329,27 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
             return wrapped;
         },
         pybind11::arg("count"),
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            Allocates classical bits to use as workspace in a circuit.
+
+            Allocated bits can be deallocated with the `km.CircuitBuilder.free` method.
+
+            Args:
+                count: The number of classical bits to allocate.
+
+            Returns:
+                An array containing the ids of the allocated bits. Until these ids
+                are freed, they won't be returned by any other allocation calls.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> b = builder.alloc_bits(3)
+                >>> b
+                km.array([km.b(0), km.b(1), km.b(2)])
+                >>> builder.free(b)
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "free",
@@ -311,9 +380,21 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
             }
         },
         pybind11::arg("arg"),
-        R"DOC(
+        clean_doc_string(R"DOC(
+            @signature def free(self, arg: km.q | km.b | km.array | Sequence[km.q | km.b]) -> None:
             Frees allocated qubits or bits, so that they can be allocated again.
-        )DOC");
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> q = builder.alloc_qubits(2)
+                >>> builder.num_allocated_qubits
+                2
+                >>> builder.free(q)
+                >>> builder.num_allocated_qubits
+                0
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "create_quantum_register",
@@ -338,19 +419,35 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         },
         pybind11::arg("length"),
         pybind11::arg("name"),
-        R"DOC(
+        clean_doc_string(R"DOC(
             Creates a quantum register.
 
-            Reserves the given number of qubits for the register, and emits instructions
-            defining the register.
+            Reserves the given number of qubits for the register, and emits
+            instructions defining the register.
 
             Args:
-                name: A name for the register, which can be used to refer to it.
                 length: The number of qubits in the register.
+                name: A name for the register, which can be used to refer to it.
 
             Returns:
-                A kickmix.CircuitRegister containing the allocated qubits.
-        )DOC");
+                A km.array containing the allocated qubits.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> reg = builder.create_quantum_register(2, name='data')
+                >>> reg
+                km.array([km.q(0), km.q(1)])
+                >>> builder.x(reg[0])
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    APPEND_TO_REGISTER q0 r0
+                    APPEND_TO_REGISTER q1 r0
+                    REGISTER r0 "data"
+                    X q0
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "create_classical_register",
@@ -363,87 +460,331 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         },
         pybind11::arg("length"),
         pybind11::arg("name"),
-        R"DOC(
+        clean_doc_string(R"DOC(
             Creates a classical register.
 
-            Reserves the given number of bits for the register, and emits instructions
-            defining the register.
+            Reserves the given number of bits for the register, and emits
+            instructions defining the register.
 
             Args:
-                name: A name for the register, which can be used to refer to it.
                 length: The number of bits in the register.
+                name: A name for the register, which can be used to refer to it.
 
             Returns:
-                A kickmix.CircuitRegister containing the allocated qubits.
-        )DOC");
+                A km.array containing the allocated bits.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> reg = builder.create_classical_register(2, name='meas')
+                >>> reg
+                km.array([km.b(0), km.b(1)])
+                >>> builder.bit_store(reg[0], True)
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    APPEND_TO_REGISTER b0 r0
+                    APPEND_TO_REGISTER b1 r0
+                    REGISTER r0 "meas"
+                    BIT_STORE1 b0
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "finish_circuit",
         [](PyCircuitBuilder &self) -> Circuit {
             return self.builder.finish_circuit();
         },
-        R"DOC(
+        clean_doc_string(R"DOC(
             Returns the circuit built by the circuit builder.
-        )DOC");
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.x(km.q(0))
+                >>> builder.cx(km.q(0), km.q(1))
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    X q0
+                    CX q0 q1
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
-        "flame_chart_svg",
-        [](PyCircuitBuilder &self) -> std::string {
-            std::stringstream ss;
-            self.builder.write_analysis_svg_to(ss, 100);
-            return ss.str();
+        "mark",
+        [](PyCircuitBuilder &self, std::string_view name) -> PyCircuitBuilderMark {
+            return PyCircuitBuilderMark{&self, *self.mark_names.emplace(name).first};
         },
-        R"DOC(
-            Returns a flame chart of CCX+CCZ and qubit utilization of the circuit being built.
-        )DOC");
+        pybind11::arg("name"),
+        pybind11::keep_alive<0, 1>(),
+        clean_doc_string(R"DOC(
+            @signature def mark(self, name: str) -> Any:
+            Returns a context manager that emits @enter/@exit INFO_TAG instructions.
+
+            These INFO_TAG instructions are intended as debug information about entering
+            and exiting subroutines. For example, they are used by
+            `km.Circuit.flame_chart_svg()`.
+
+            Args:
+                name: Label shown for the block in `builder.flame_chart_svg()`.
+
+            Returns:
+                A context manager that marks blocks under `name`.
+
+            Examples:
+                >>> import pathlib
+                >>> import tempfile
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> address = builder.create_quantum_register(4, name='address')
+                >>> total = builder.create_quantum_register(8, name='total')
+                >>> lookup_mark = builder.mark('iadd_lookup')
+                >>> def iadd_lookup(table: list[int], idx: km.array, dst: km.array):
+                ...     with lookup_mark:
+                ...         buf = builder.alloc_qubits(len(dst))
+                ...         builder.init_lookup(table=table, address=idx, target=buf)
+                ...         builder.iadd(buf, target=dst)
+                ...         builder.del_lookup(table=table, address=idx, target=buf)
+                ...         builder.free(buf)
+                >>> with builder.mark('accumulate_tables'):
+                ...     iadd_lookup([3 * k for k in range(16)], address, total)
+                ...     iadd_lookup([k * k for k in range(16)], address, total)
+                >>> circuit = builder.finish_circuit()
+                >>> with tempfile.TemporaryDirectory() as d:
+                ...     with open(pathlib.Path(d) / 'flame_chart.svg', 'w') as f:
+                ...         print(circuit.flame_chart_svg(), file=f)
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "x",
         &broadcast_x_obj,
         pybind11::arg("target"),
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            @signature def x(self, target: km.q | km.b | km.xb | km.xbool | Literal['|+>', '|->'] | km.array | Sequence[km.q | km.b | km.xb | km.xbool]) -> None:
+            Appends NOT gates (or their classical/phase equivalents) to the circuit.
+
+            This method broadcasts over `km.array` and sequence arguments.
+            Depending on the type of `target`, it emits `X` for qubits (`km.q`),
+            `BIT_INVERT` for classical bits (`km.b`), `NEG_IF` for X-basis bits
+            (`km.xb`), and `NEG` for `km.xbool(True)` or `'|->'`.
+
+            Args:
+                target: The qubit, bit, X-basis bit, X-basis bool, or
+                    array/sequence of them to flip.
+
+            Raises:
+                ValueError: Attempted to invert a compile-time `bool`.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.x(km.q(0))
+                >>> builder.x(km.b(1))
+                >>> builder.x(km.xb(2))
+                >>> builder.x('|->')
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    X q0
+                    BIT_INVERT b1
+                    NEG if b2
+                    NEG
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "z",
-        &append_z_obj,
+        &broadcast_z_obj,
         pybind11::arg("target"),
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            @signature def z(self, target: km.q | km.b | bool | km.array | Sequence[km.q | km.b | bool]) -> None:
+            Appends Z gates (or their classical/constant equivalents) to the circuit.
+
+            This method broadcasts over `km.array` and sequence arguments.
+            Depending on the type of `target`, this emits `Z` for a qubit
+            (`km.q`), `NEG_IF` for a classical bit (`km.b`), `NEG` for `True`,
+            and nothing for `False`.
+
+            Args:
+                target: The qubit, classical bit, boolean, or array/sequence of
+                    them determining if phasing occurs.
+
+            Raises:
+                TypeError: `target` is not a `km.q`, `km.b`, `bool`, or
+                    array/sequence of them.
+                ValueError: `target` contains X-basis values (`km.xb` or
+                    `km.xbool`).
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.z(km.q(0))
+                >>> builder.z(km.b(1))
+                >>> builder.z(True)
+                >>> builder.z(False)
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    Z q0
+                    NEG if b1
+                    NEG
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "neg",
         &append_neg_obj,
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            Appends a NEG instruction that flips the global phase by -1.
+
+            Inside a classical condition block (see `push_condition`), or when
+            tracking shot phases in `km.Simulator`, `NEG` negates the amplitude
+            of the current branch.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.neg()
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    NEG
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "neg_if",
         &append_neg_if_obj,
         pybind11::arg("condition"),
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            @signature def neg_if(self, condition: km.b) -> None:
+            Appends a classically-conditioned NEG instruction to the circuit.
+
+            Flips the global phase by -1 in shots where the given classical bit
+            is True.
+
+            Args:
+                condition: The classical bit (`km.b`) that controls whether the
+                    phase flip occurs.
+
+            Raises:
+                TypeError: `condition` is not a `km.b`.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.neg_if(km.b(0))
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    NEG if b0
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "push_condition",
         &append_push_condition_obj,
         pybind11::arg("condition"),
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            @signature def push_condition(self, condition: km.b) -> None:
+            Appends a PUSH_CONDITION instruction to push a bit onto the condition stack.
+
+            All subsequent instructions in the circuit will only execute in
+            shots where all bits currently on the condition stack are True,
+            until a matching `pop_condition` is called.
+
+            Args:
+                condition: The classical bit (`km.b`) to push onto the condition
+                    stack.
+
+            Raises:
+                TypeError: `condition` is not a `km.b`.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.push_condition(km.b(0))
+                >>> builder.x(km.q(0))
+                >>> builder.pop_condition()
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    PUSH_CONDITION if b0
+                    X q0
+                    POP_CONDITION
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "pop_condition",
         &append_pop_condition_obj,
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            Appends a POP_CONDITION instruction to pop from the condition stack.
+
+            Should be paired with a preceding call to `push_condition`. A POP_CONDITION
+            without a prior PUSH_CONDITION has no effect on simulation state.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.push_condition(km.b(0))
+                >>> builder.x(km.q(0))
+                >>> builder.pop_condition()
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    PUSH_CONDITION if b0
+                    X q0
+                    POP_CONDITION
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "cx",
         &broadcast_cx_obj,
         pybind11::arg("control"),
         pybind11::arg("target"),
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            @signature def cx(self, control: bool | km.b | km.q | km.array, target: km.q | km.b | km.xb | km.xbool | km.array) -> None:
+            Appends controlled-NOT gates (or classical/phase equivalents) to the circuit.
+
+            This method broadcasts over `km.array` and sequence arguments. When
+            multiple array arguments are given, they are combined by zipping.
+
+            The exact instruction(s) emitted depend on the types of `control`
+            and `target`. For example, a qubit control and qubit target emit
+            `CX`; a classical bit control and qubit target emit `X_IF`; a
+            classical bit control and classical bit target emit `BIT_INVERT_IF`;
+            and an X-basis target (`km.xb` or `km.xbool`) converts the operation
+            into a phase flip (such as `Z_IF` or `Z`).
+
+            Args:
+                control: The control (qubit, bit, bool, or array) determining
+                    if the target is flipped.
+                target: The target (qubit, bit, X-basis bit/bool, or array) to
+                    flip when `control` is active.
+
+            Raises:
+                ValueError: Broadcast array lengths do not match, or `control`
+                    and `target` have incompatible types (such as a qubit
+                    control with a classical bit target).
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.cx(km.q(0), km.q(1))
+                >>> builder.cx(km.b(0), km.q(1))
+                >>> builder.cx(True, km.q(1))
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    CX q0 q1
+                    X q1 if b0
+                    X q1
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "ccx",
@@ -452,7 +793,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("control2"),
         pybind11::arg("target"),
         R"DOC(
-            @signature def ccx(self, control1: bool | b | q | km.array, control2: bool | b | q | km.array, target: q | km.array) -> None:
+            @signature def ccx(self, control1: bool | km.b | km.q | km.array, control2: bool | km.b | km.q | km.array, target: km.q | km.array) -> None:
             Appends many doubly-controlled NOT gates to the circuit.
 
             This method broadcasts over km.array arguments. If any of the arguments is a
@@ -556,8 +897,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("control1"),
         pybind11::arg("control2"),
         pybind11::arg("target"),
-        R"DOC(
-            @signature def init_and(self, control1: bool | b | q | km.array, control2: bool | b | q | km.array, target: q | km.array) -> None:
+        clean_doc_string(R"DOC(
+            @signature def init_and(self, control1: bool | km.b | km.q | km.array, control2: bool | km.b | km.q | km.array, target: km.q | km.array) -> None:
             Initializes a qubit to `control1 and control2`, resetting it first.
 
             This is the computation partner of `del_and`. It resets `target`
@@ -582,7 +923,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                     R q2
                     CCX q0 q1 q2
                 ''')
-        )DOC");
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "del_and",
@@ -590,9 +932,9 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("control1"),
         pybind11::arg("control2"),
         pybind11::arg("target"),
-        R"DOC(
-            @signature def del_and(self, control1: bool | b | q | km.array, control2: bool | b | q | km.array, target: q | km.array) -> None:
-            Clears a qubit holding `control1 and control2`, using only Cliffords and measurement.
+        clean_doc_string(R"DOC(
+            @signature def del_and(self, control1: bool | km.b | km.q | km.array, control2: bool | km.b | km.q | km.array, target: km.q | km.array) -> None:
+            Clears a qubit holding `control1 and control2` using stabilizer operations.
 
             This is the uncomputation partner of `init_and`, or of a `ccx` into
             a qubit that started at |0>. It applies an `HMR` (X-basis
@@ -620,39 +962,120 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                     HMR q2 b0
                     CZ q0 q1 if b0
                 ''')
-        )DOC");
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "cz",
         &broadcast_cz_obj,
         pybind11::arg("control1"),
         pybind11::arg("control2"),
-        R"DOC(
-            @signature def cz(self, control1: bool | b | q | km.array, control2: bool | b | q | km.array) -> None:
+        clean_doc_string(R"DOC(
+            @signature def cz(self, control1: bool | km.b | km.q | km.array, control2: bool | km.b | km.q | km.array) -> None:
             Appends many CZ gates to the circuit.
 
-            This method broadcasts over km.array arguments. If any of the arguments is a
-            km.array, an append is performed for each array index. When multiple km.array
-            arguments are used, they are combined by zipping (i.e. using two arrays of
-            length n will produce n instructions rather than n*n instructions).
+            This method broadcasts over km.array arguments. If any of the arguments
+            is a km.array, an append is performed for each array index. When
+            multiple km.array arguments are used, they are combined by zipping
+            (i.e. using two arrays of length n will produce n instructions rather
+            than n*n instructions).
 
-            The exact kind of operation(s) appended to the circuit depends on the types of
-            the controls. For example, if one of the controls is the boolean value True
-            instead of a qubit, then a Z instruction will be appended instead of a CZ
-            instruction.
+            The exact kind of operation(s) appended to the circuit depends on the
+            types of the controls. For example, if one of the controls is the
+            boolean value True instead of a qubit, then a Z instruction will be
+            appended instead of a CZ instruction.
 
             Args:
                 control1: One of the controls determining if phasing occurs.
                 control2: The other controls determining if phasing occurs.
-        )DOC");
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.cz(km.q(0), km.q(1))
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    CZ q0 q1
+                ''')
+        )DOC")
+            .data());
+
+    c_circuit_builder.def(
+        "ccz",
+        &broadcast_ccz_obj,
+        pybind11::arg("control1"),
+        pybind11::arg("control2"),
+        pybind11::arg("control3"),
+        clean_doc_string(R"DOC(
+            @signature def ccz(self, control1: bool | km.b | km.q | km.array, control2: bool | km.b | km.q | km.array, control3: bool | km.b | km.q | km.array) -> None:
+            Appends many CCZ gates to the circuit.
+
+            This method broadcasts over km.array arguments. If any of the arguments
+            is a km.array, an append is performed for each array index. When
+            multiple km.array arguments are used, they are combined by zipping
+            (i.e. using two arrays of length n will produce n instructions rather
+            than n*n instructions).
+
+            The exact kind of operation(s) appended to the circuit depends on the
+            types of the controls. For example, if one of the controls is the
+            boolean value True instead of a qubit, then a CZ instruction will be
+            appended instead of a CCZ instruction.
+
+            Args:
+                control1: The first control determining if phasing occurs.
+                control2: The second control determining if phasing occurs.
+                control3: The third control determining if phasing occurs.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.ccz(km.q(0), km.q(1), km.q(2))
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    CCZ q0 q1 q2
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "swap",
         &broadcast_swap_obj,
         pybind11::arg("target1"),
         pybind11::arg("target2"),
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            @signature def swap(self, target1: km.q | km.b | km.xb | km.array, target2: km.q | km.b | km.xb | km.array) -> None:
+            Appends SWAP gates to the circuit.
+
+            Swaps the values of `target1` and `target2`. This method broadcasts
+            over `km.array` and sequence arguments.
+
+            Swapping qubits emits `SWAP` instructions. Swapping classical bits
+            (`km.b` or `km.xb`) emits three `BIT_INVERT ... if ...` instructions.
+
+            Args:
+                target1: The first qubit, bit, or register to swap.
+                target2: The second qubit, bit, or register to swap.
+
+            Raises:
+                ValueError: Broadcast array lengths do not match, or `target1`
+                    and `target2` do not have matching swappable types.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> x = builder.create_quantum_register(2, name='x')
+                >>> y = builder.create_quantum_register(2, name='y')
+                >>> builder.swap(x, y)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -x[0]-SWAP------
+                          |
+                q1: -x[1]-|----SWAP-
+                          |    |
+                q2: -y[0]-SWAP-|----
+                               |
+                q3: -y[1]------SWAP-
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "cswap",
@@ -660,22 +1083,22 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("control"),
         pybind11::arg("target1"),
         pybind11::arg("target2"),
-        R"DOC(
-            @signature def cswap(self, control: q | b | bool, target1: km.array, target2: km.array) -> None:
-            Appends operations to conditionally swap two equal-length registers.
+        clean_doc_string(R"DOC(
+            @signature def cswap(self, control: bool | km.b | km.q | km.array, target1: km.q | km.array, target2: km.q | km.array) -> None:
+            Appends controlled-SWAP (Fredkin) gates to the circuit.
 
-            Performs `if control: target1, target2 = target2, target1`, pairing the
-            registers index by index.
+            Performs `if control: target1, target2 = target2, target1`.
+            This method broadcasts over km.array arguments.
 
-            The cost depends on the control. A qubit control expands to a
-            cx/ccx/cx triple per index. A classical bit control pushes a
-            classical condition around plain swaps, costing no Toffolis. A
-            control of True reduces to a plain swap, and False emits nothing.
+            The cost depends on the control. A qubit control emits a CSWAP
+            instruction (costing one Toffoli) per index. A classical bit control
+            emits a classically-conditioned SWAP instruction, costing no Toffolis.
+            A control of True reduces to a plain SWAP, and False emits nothing.
 
             Args:
                 control: Determines if the swap happens.
-                target1: The first register.
-                target2: The second register, which must be the same length as the first.
+                target1: The first qubit or register to swap.
+                target2: The second qubit or register to swap.
 
             Examples:
                 >>> import kickmix as km
@@ -685,16 +1108,17 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 >>> y = builder.create_quantum_register(2, name='y')
                 >>> builder.cswap(c, x, y)
                 >>> print(builder.finish_circuit().text_diagram())
-                q0: -c[0]---@-----@---
-                            |     |
-                q1: -x[0]-@-X-@---|---
-                          | | |   |
-                q2: -x[1]-|-|-|-@-X-@-
-                          | | | | | |
-                q3: -y[0]-X-@-X-|-|-|-
-                                | | |
-                q4: -y[1]-------X-@-X-
-        )DOC");
+                q0: -c[0]-@----@----
+                          |    |
+                q1: -x[0]-SWAP-|----
+                          |    |
+                q2: -x[1]-|----SWAP-
+                          |    |
+                q3: -y[0]-SWAP-|----
+                               |
+                q4: -y[1]------SWAP-
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "bit_store",
@@ -703,8 +1127,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("value"),
         pybind11::kw_only(),
         pybind11::arg("control") = true,
-        R"DOC(
-            @signature def bit_store(self, target: b | km.array, value: bool, *, control: b | bool | km.array = True) -> None:
+        clean_doc_string(R"DOC(
+            @signature def bit_store(self, target: km.b | km.array, value: bool, *, control: km.b | bool | km.array = True) -> None:
             Appends operations to perform `if control: target = value`.
 
             Writes a constant into classical bits. The control must be
@@ -739,29 +1163,108 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                     BIT_STORE1 b2 if b0
                     BIT_STORE1 b2 if b1
                 ''')
-        )DOC");
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "debug_print",
         &append_debug_print_obj,
         pybind11::arg("arg"),
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            @signature def debug_print(self, arg: km.q | km.b | bool | km.xb | km.xbool | km.array | Sequence[km.q | km.b | bool | km.xb | km.xbool]) -> None:
+            Appends DEBUG_PRINT instructions to print the given values during simulation.
+
+            Emits a `DEBUG_PRINT` instruction for each item in `arg`, followed
+            by an empty `DEBUG_PRINT` instruction (which ends the debug output
+            line).
+
+            Args:
+                arg: The qubit, bit, boolean, or array/sequence of values to
+                    print.
+
+            Raises:
+                TypeError: `arg` cannot be converted to printable kickmix items.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.debug_print([km.q(0), km.b(1)])
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    DEBUG_PRINT q0
+                    DEBUG_PRINT b1
+                    DEBUG_PRINT
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "reset",
         &broadcast_reset_obj,
         pybind11::arg("target"),
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            @signature def reset(self, target: km.q | km.array | Sequence[km.q]) -> None:
+            Appends Z-basis reset (R) instructions to the circuit.
+
+            Resets each target qubit to the |0> state. This method broadcasts
+            over `km.array` and sequence arguments.
+
+            Args:
+                target: The qubit or array/sequence of qubits to reset.
+
+            Raises:
+                ValueError: `target` contains non-qubit items.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> q = builder.alloc_qubits(2)
+                >>> builder.reset(q)
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    R q0
+                    R q1
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "hmr",
         &broadcast_hmr_obj,
         pybind11::arg("target"),
         pybind11::arg("output"),
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            @signature def hmr(self, target: km.q | km.array | Sequence[km.q], output: km.b | km.array | Sequence[km.b]) -> None:
+            Appends HMR (X-basis measurement and Z-basis reset) instructions.
+
+            Measures each target qubit in the X basis (storing the measurement
+            outcome into the corresponding `output` bit) and resets the qubit to
+            the |0> state. This method broadcasts over `km.array` and sequence
+            arguments of equal length.
+
+            Args:
+                target: The qubit or array/sequence of qubits to measure in the
+                    X basis and reset to |0>.
+                output: The classical bit or array/sequence of classical bits to
+                    store the measurement results into.
+
+            Raises:
+                ValueError: `target` and `output` have different lengths, or
+                    contain non-qubit / non-bit items.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> q = builder.alloc_qubits(2)
+                >>> b = builder.alloc_bits(2)
+                >>> builder.hmr(q, b)
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    HMR q0 b0
+                    HMR q1 b1
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "init_lookup",
@@ -770,23 +1273,44 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("table"),
         pybind11::arg("address"),
         pybind11::arg("target"),
-        R"DOC(
+        clean_doc_string(R"DOC(
             @signature def init_lookup(self, *, table: Iterable[int], address: km.array, target: km.array) -> None:
             Appends operations to perform `let target := table[address]`.
 
             Looks up a value from a classical table, indexed by a quantum register.
 
-            Because this is an `init` method, the target qubits must start in the 0 state.
-            The target qubits will be reset before being used, transforming any bit errors
-            into probabilistic phase errors.
+            Because this is an `init` method, the target qubits must start in the 0
+            state. The target qubits will be reset before being used, transforming
+            any bit errors into probabilistic phase errors.
 
             Args:
                 table: The table of classical values, as a list of python integers.
-                    The integers are interpreted in a little-endian fashion, meaning that
-                    `table_data[address, out_index] == (table[address] >> out_index) & 1`.
+                    The integers are interpreted in a little-endian fashion, meaning
+                    that `table_data[address, out_index] ==
+                    (table[address] >> out_index) & 1`.
                 address: The address used to select a value from the table.
                 target: The clean qubits to store the output into.
-        )DOC");
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> address = builder.create_quantum_register(2, name='address')
+                >>> target = builder.create_quantum_register(4, name='target')
+                >>> builder.init_lookup(
+                ...     table=[2, 3, 5, 7],
+                ...     address=address,
+                ...     target=target,
+                ... )
+                >>> circuit = builder.finish_circuit()
+                >>> sim = km.Simulator(batch_size=4)
+                >>> sim.use_same_registers_as(circuit)
+                >>> for a in range(4):
+                ...     sim.write_within_shot('address', a, a)
+                >>> sim.do(circuit)
+                >>> [sim.read_within_shot('target', a, out=int) for a in range(4)]
+                [2, 3, 5, 7]
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "del_lookup",
@@ -795,23 +1319,43 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("table"),
         pybind11::arg("address"),
         pybind11::arg("target"),
-        R"DOC(
+        clean_doc_string(R"DOC(
             @signature def del_lookup(self, *, table: Iterable[int], address: km.array, target: km.array) -> None:
             Appends operations to perform `del target := table[address]`.
 
-            Clears a value created by looking up a value from a classical table, indexed by
-            a quantum register.
+            Clears a value created by looking up a value from a classical table,
+            indexed by a quantum register.
 
-            Because this is a `del` method, the target qubits will end in the 0 state.
+            Because this is a `del` method, the target qubits will end in the 0
+            state.
 
             Args:
                 table: The table of classical values, as a list of python integers.
-                    The integers are interpreted in a little-endian fashion, meaning that
-                    `table_data[address, out_index] == (table[address] >> out_index) & 1`.
+                    The integers are interpreted in a little-endian fashion, meaning
+                    that `table_data[address, out_index] ==
+                    (table[address] >> out_index) & 1`.
                 address: The address used to select a value from the table.
                     Qubits are in little-endian order.
                 target: The qubits to clear the lookup result from.
-        )DOC");
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> address = builder.create_quantum_register(2, name='address')
+                >>> target = builder.create_quantum_register(4, name='target')
+                >>> table = [2, 3, 5, 7]
+                >>> builder.init_lookup(table=table, address=address, target=target)
+                >>> builder.del_lookup(table=table, address=address, target=target)
+                >>> circuit = builder.finish_circuit()
+                >>> sim = km.Simulator(batch_size=4)
+                >>> sim.use_same_registers_as(circuit)
+                >>> for a in range(4):
+                ...     sim.write_within_shot('address', a, a)
+                >>> sim.do(circuit)
+                >>> [sim.read_within_shot('target', a, out=int) for a in range(4)]
+                [0, 0, 0, 0]
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "iadd",
@@ -821,8 +1365,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("target"),
         pybind11::arg("control") = true,
         pybind11::arg("btol") = INFINITY,
-        R"DOC(
-            @signature def iadd(self, offset: km.array | int, *, target: km.array, control: q | b | bool = True, btol: float = float('inf')) -> None:
+        clean_doc_string(R"DOC(
+            @signature def iadd(self, offset: km.array | int, *, target: km.array, control: km.q | km.b | bool = True, btol: float = float('inf')) -> None:
             Appends operations to perform `if control: target += offset`.
 
             Performs an inplace 2s-complement addition modulo 2**len(target).
@@ -864,7 +1408,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 q2: -b[0]-@-@-|-
                               |
                 q3: -b[1]-----@-
-        )DOC");
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "isub",
@@ -874,8 +1419,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("target"),
         pybind11::arg("control") = true,
         pybind11::arg("btol") = INFINITY,
-        R"DOC(
-            @signature def isub(self, offset: km.array | int, *, target: km.array, control: q | b | bool = True, btol: float = float('inf')) -> None:
+        clean_doc_string(R"DOC(
+            @signature def isub(self, offset: km.array | int, *, target: km.array, control: km.q | km.b | bool = True, btol: float = float('inf')) -> None:
             Appends operations to perform `if control: target -= offset`.
 
             Performs an inplace 2s-complement subtraction modulo 2**len(target).
@@ -917,24 +1462,211 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 q2: -b[0]---@-@-|---
                                 |
                 q3: -b[1]-------@---
-        )DOC");
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "left_rotate",
         &append_left_rotate_obj,
         pybind11::arg("target"),
+        pybind11::arg("shift") = 1,
         pybind11::kw_only(),
         pybind11::arg("control") = true,
         R"DOC(
+            @signature def left_rotate(self, target: km.array | Sequence[km.q], shift: int | km.array | Sequence[km.q | km.b | bool] = 1, *, control: km.q | km.b | bool = True) -> None:
+            Left rotates the given qubits, cyclically permuting them.
+
+            A left rotation is a permutation that moves the value of the qubit target[k]
+            into the qubit target[(k + shift) % len(target)].
+
+            Args:
+                target: The qubits to permute.
+                shift: Defaults to 1. A little-endian value specifying how much to
+                    left-rotate the target qubits.
+                control: Defaults to True. Determines if the left rotation actually occurs.
+
+            Examples:
+                >>> import kickmix as km
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(8, name='target')
+                >>> builder.left_rotate(target)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]-SWAP-------------------------------
+                               |
+                q1: -target[1]-|----SWAP-----------SWAP-----------
+                               |    |              |
+                q2: -target[2]-|----|----SWAP------|----SWAP------
+                               |    |    |         |    |
+                q3: -target[3]-|----|----|----SWAP-|----|----SWAP-
+                               |    |    |    |    |    |    |
+                q4: -target[4]-|----|----|----SWAP-|----|----|----
+                               |    |    |         |    |    |
+                q5: -target[5]-|----|----SWAP------|----|----SWAP-
+                               |    |              |    |
+                q6: -target[6]-|----SWAP-----------|----SWAP------
+                               |                   |
+                q7: -target[7]-SWAP----------------SWAP-----------
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(8, name='target')
+                >>> builder.left_rotate(target, 3)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]-SWAP-----------SWAP-----------
+                               |              |
+                q1: -target[1]-|----SWAP------|--------------
+                               |    |         |
+                q2: -target[2]-|----|----SWAP-SWAP-----------
+                               |    |    |
+                q3: -target[3]-|----|----|----SWAP-SWAP------
+                               |    |    |    |    |
+                q4: -target[4]-|----|----|----SWAP-|----SWAP-
+                               |    |    |         |    |
+                q5: -target[5]-|----|----SWAP------|----|----
+                               |    |              |    |
+                q6: -target[6]-|----SWAP-----------|----SWAP-
+                               |                   |
+                q7: -target[7]-SWAP----------------SWAP------
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(4, name='target')
+                >>> control = builder.create_quantum_register(1, name='control')[0]
+                >>> builder.left_rotate(target, 2, control=control)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]--SWAP------SWAP------
+                                |         |
+                q1: -target[1]--|----SWAP-SWAP------
+                                |    |    |
+                q2: -target[2]--|----SWAP-|----SWAP-
+                                |    |    |    |
+                q3: -target[3]--SWAP-|----|----SWAP-
+                                |    |    |    |
+                q4: -control[0]-@----@----@----@----
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(6, name='target')
+                >>> shift = builder.create_quantum_register(3, name='shift')
+                >>> builder.left_rotate(target, shift)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]-SWAP-------------SWAP----------SWAP--------SWAP------
+                               |                |             |           |
+                q1: -target[1]-SWAP-------------|-------------|----SWAP---|---------
+                               |                |             |    |      |
+                q2: -target[2]-|----SWAP--------SWAP----------|----|------SWAP------
+                               |    |           |             |    |      |
+                q3: -target[3]-|----|----SWAP---|----SWAP-----|----SWAP---|----SWAP-
+                               |    |    |      |    |        |    |      |    |
+                q4: -target[4]-|----|----SWAP---|----|--------SWAP-|------|----|----
+                               |    |    |      |    |        |    |      |    |
+                q5: -target[5]-|----SWAP-|------|----SWAP-----|----|------|----SWAP-
+                               |    |    |      |    |        |    |      |    |
+                q6: -shift[0]--@----@----@----@-|----|----@---|----|------|----|----
+                                              | |    |    |   |    |      |    |
+                q7: -shift[1]-----------------X-@----@----X-@-|----|----@-|----|----
+                                                            | |    |    | |    |
+                q8: -shift[2]-------------------------------X-@----@----X-@----@----
         )DOC");
 
     c_circuit_builder.def(
         "right_rotate",
         &append_right_rotate_obj,
         pybind11::arg("target"),
+        pybind11::arg("shift") = 1,
         pybind11::kw_only(),
         pybind11::arg("control") = true,
         R"DOC(
+            @signature def right_rotate(self, target: km.array | Sequence[km.q], shift: int | km.array | Sequence[km.q | km.b | bool] = 1, *, control: km.q | km.b | bool = True) -> None:
+            Right rotates the given qubits, cyclically permuting them.
+
+            A right rotation is a permutation that moves the value of the qubit target[k]
+            into the qubit target[(k - shift) % len(target)].
+
+            Args:
+                target: The qubits to permute.
+                shift: Defaults to 1. A little-endian value specifying how much to
+                    right-rotate the target qubits.
+                control: Defaults to True. Determines if the right rotation actually occurs.
+
+            Examples:
+                >>> import kickmix as km
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(8, name='target')
+                >>> builder.right_rotate(target)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]-SWAP----------------SWAP-----------
+                               |                   |
+                q1: -target[1]-|----SWAP-----------|----SWAP------
+                               |    |              |    |
+                q2: -target[2]-|----|----SWAP------|----|----SWAP-
+                               |    |    |         |    |    |
+                q3: -target[3]-|----|----|----SWAP-|----|----|----
+                               |    |    |    |    |    |    |
+                q4: -target[4]-|----|----|----SWAP-|----|----SWAP-
+                               |    |    |         |    |
+                q5: -target[5]-|----|----SWAP------|----SWAP------
+                               |    |              |
+                q6: -target[6]-|----SWAP-----------SWAP-----------
+                               |
+                q7: -target[7]-SWAP-------------------------------
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(8, name='target')
+                >>> builder.right_rotate(target, 3)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]-SWAP----------------SWAP------
+                               |                   |
+                q1: -target[1]-|----SWAP-----------|----SWAP-
+                               |    |              |    |
+                q2: -target[2]-|----|----SWAP------|----|----
+                               |    |    |         |    |
+                q3: -target[3]-|----|----|----SWAP-|----SWAP-
+                               |    |    |    |    |
+                q4: -target[4]-|----|----|----SWAP-SWAP------
+                               |    |    |
+                q5: -target[5]-|----|----SWAP-----------SWAP-
+                               |    |                   |
+                q6: -target[6]-|----SWAP----------------|----
+                               |                        |
+                q7: -target[7]-SWAP---------------------SWAP-
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(4, name='target')
+                >>> control = builder.create_quantum_register(1, name='control')[0]
+                >>> builder.right_rotate(target, 2, control=control)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]--SWAP------SWAP------
+                                |         |
+                q1: -target[1]--|----SWAP-SWAP------
+                                |    |    |
+                q2: -target[2]--|----SWAP-|----SWAP-
+                                |    |    |    |
+                q3: -target[3]--SWAP-|----|----SWAP-
+                                |    |    |    |
+                q4: -control[0]-@----@----@----@----
+
+                >>> builder = km.CircuitBuilder()
+                >>> target = builder.create_quantum_register(6, name='target')
+                >>> shift = builder.create_quantum_register(3, name='shift')
+                >>> builder.right_rotate(target, shift)
+                >>> print(builder.finish_circuit().text_diagram())
+                q0: -target[0]-SWAP-------------SWAP----------SWAP--------SWAP------
+                               |                |             |           |
+                q1: -target[1]-|----SWAP--------|----SWAP-----|-----------|----SWAP-
+                               |    |           |    |        |           |    |
+                q2: -target[2]-|----|----SWAP---|----|--------SWAP--------|----|----
+                               |    |    |      |    |        |           |    |
+                q3: -target[3]-|----|----SWAP---|----SWAP-----|----SWAP---|----SWAP-
+                               |    |    |      |    |        |    |      |    |
+                q4: -target[4]-|----SWAP-|------SWAP-|--------|----|------SWAP-|----
+                               |    |    |      |    |        |    |      |    |
+                q5: -target[5]-SWAP-|----|------|----|--------|----SWAP---|----|----
+                               |    |    |      |    |        |    |      |    |
+                q6: -shift[0]--@----@----@----@-|----|----@---|----|------|----|----
+                                              | |    |    |   |    |      |    |
+                q7: -shift[1]-----------------X-@----@----X-@-|----|----@-|----|----
+                                                            | |    |    | |    |
+                q8: -shift[2]-------------------------------X-@----@----X-@----@----
         )DOC");
 
     c_circuit_builder.def(
@@ -942,8 +1674,43 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         &multi_control_x_obj,
         pybind11::arg("controls"),
         pybind11::arg("target"),
-        R"DOC(
-        )DOC");
+        clean_doc_string(R"DOC(
+            @signature def multi_controlled_x(self, controls: km.array | Sequence[km.q | km.b | bool], target: km.q | km.array | Sequence[km.q]) -> None:
+            Appends a multi-controlled NOT operation to the circuit.
+
+            Flips every qubit in `target` when all `controls` are satisfied.
+            When there are 3 or more quantum controls, temporary workspace
+            qubits are allocated from the builder to compute the AND ladder and
+            uncomputed using measurement-based uncomputation (`del_and`).
+
+            Args:
+                controls: A sequence or `km.array` of quantum controls (`km.q`),
+                    classical bit controls (`km.b`), or boolean constants
+                    (`bool`) that must all be satisfied for the target qubits to
+                    flip.
+                target: The qubit or array/sequence of qubits to flip when all
+                    controls are satisfied.
+
+            Raises:
+                TypeError: `controls` is not a sequence or `km.array`.
+                ValueError: `controls` or `target` contains invalid item types.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> c = builder.alloc_qubits(3)
+                >>> t = builder.alloc_qubits(1)[0]
+                >>> builder.multi_controlled_x(c, t)
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    R q4
+                    CCX q0 q1 q4
+                    CCX q2 q4 q3
+                    HMR q4 b0
+                    CZ q1 q0 if b0
+                ''')
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "flip_if_less_than",
@@ -955,8 +1722,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("or_equal") = false,
         pybind11::arg("control") = true,
         pybind11::arg("btol") = INFINITY,
-        R"DOC(
-            @signature def flip_if_less_than(self, lhs: km.array, rhs: km.array | int, *, target: q, or_equal: q | b | bool = false, control: q | b | bool = True, btol: float = float('inf')) -> None:
+        clean_doc_string(R"DOC(
+            @signature def flip_if_less_than(self, lhs: km.array, rhs: km.array | int, *, target: km.q, or_equal: km.q | km.b | bool = False, control: km.q | km.b | bool = True, btol: float = float('inf')) -> None:
             Appends operations to perform `if control: target ^= lhs < rhs + or_equal`.
 
             Xors the result of an unsigned integer comparison into a target qubit.
@@ -1002,13 +1769,16 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                     REGISTER r1 "lhs"
                     APPEND_TO_REGISTER q2 r2
                     REGISTER r2 "rhs"
+                    INFO_TAG "@enter:flip_if_lt"
                     CX q2 q1
                     CCX q1 q2 q0
                     X q1
                     X q1
                     CX q2 q1
+                    INFO_TAG "@exit:flip_if_lt"
                 ''')
-        )DOC");
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "flip_if_greater_than",
@@ -1021,7 +1791,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("control") = true,
         pybind11::arg("btol") = INFINITY,
         R"DOC(
-            @signature def flip_if_greater_than(self, lhs: km.array, rhs: km.array | int, *, target: q, or_equal: q | b | bool = false, control: q | b | bool = True, btol: float = float('inf')) -> None:
+            @signature def flip_if_greater_than(self, lhs: km.array, rhs: km.array | int, *, target: km.q, or_equal: km.q | km.b | bool = False, control: km.q | km.b | bool = True, btol: float = float('inf')) -> None:
             Appends operations to perform `if control: target ^= lhs > rhs - or_equal`.
 
             Xors the result of an unsigned integer comparison into a target qubit.
@@ -1144,8 +1914,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::kw_only(),
         pybind11::arg("target"),
         pybind11::arg("control") = true,
-        R"DOC(
-            @signature def flip_if_equal(self, lhs: km.array, rhs: km.array | int, *, target: q, control: q | b | bool = True) -> None:
+        clean_doc_string(R"DOC(
+            @signature def flip_if_equal(self, lhs: km.array, rhs: km.array | int, *, target: km.q, control: km.q | km.b | bool = True) -> None:
             Appends operations to perform `if control: target ^= lhs == rhs`.
 
             Xors the result of an unsigned integer comparison into a target qubit.
@@ -1193,7 +1963,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 q5:           |0>-X---@-|--------@-----HMR=b0
                                       | |
                 q6:               |0>-X-@-HMR=b0
-        )DOC");
+        )DOC")
+            .data());
 
     c_circuit_builder.def(
         "gf2_iadd",
@@ -1204,7 +1975,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("field") = pybind11::none(),
         pybind11::arg("control") = true,
         clean_doc_string(R"DOC(
-            @signature def gf2_iadd(self, offset: km.array | int, *, target: km.array, field: km.GF2Field | int | None = None, control: q | b | bool = True) -> None:
+            @signature def gf2_iadd(self, offset: km.array | int, *, target: km.array, field: km.GF2Field | None = None, control: km.q | km.b | bool = True) -> None:
             Appends operations to perform `if control: target ^= offset` in GF(2^m).
 
             Addition in a binary extension field is bitwise XOR, realized as a
@@ -1214,8 +1985,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
             Args:
                 offset: The register or classical constant (int) to add. Left unchanged.
                 target: The register to add into in place.
-                field: Optional field or modulus polynomial. If provided, its
-                    degree must equal `len(target)`.
+                field: Optional `km.GF2Field`. If provided, its degree must
+                    equal `len(target)`.
                 control: Defaults to True. Determines if the addition occurs.
 
             Examples:
@@ -1233,9 +2004,13 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                     APPEND_TO_REGISTER q2 r1
                     APPEND_TO_REGISTER q3 r1
                     REGISTER r1 "offset"
+                    INFO_TAG "@enter:gf_iadd"
                     CX q2 q0
                     CX q3 q1
+                    INFO_TAG "@exit:gf_iadd"
+                    INFO_TAG "@enter:gf_iadd"
                     X q0
+                    INFO_TAG "@exit:gf_iadd"
                 ''')
         )DOC")
             .data());
@@ -1248,7 +2023,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("target"),
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def gf2_imul(self, factor: int, *, target: km.array, field: km.GF2Field | int | None = None) -> None:
+            @signature def gf2_imul(self, factor: int, *, target: km.array, field: km.GF2Field | None = None) -> None:
             Appends operations to perform `target = (target * factor) % modulus`.
 
             Multiplies a GF(2^m) register in place by a non-zero classical factor
@@ -1260,8 +2035,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
             Args:
                 factor: The non-zero classical field element to multiply by.
                 target: The GF(2^m) register to multiply in place.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(target))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(target))`.
 
             Examples:
                 >>> import kickmix as km
@@ -1283,7 +2058,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("target"),
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def gf2_idiv(self, divisor: int, *, target: km.array, field: km.GF2Field | int | None = None) -> None:
+            @signature def gf2_idiv(self, divisor: int, *, target: km.array, field: km.GF2Field | None = None) -> None:
             Appends operations to perform `target = (target / divisor) % modulus`.
 
             Divides a GF(2^m) register in place by a non-zero classical divisor.
@@ -1295,8 +2070,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
             Args:
                 divisor: The non-zero classical field element to divide by.
                 target: The GF(2^m) register to divide in place.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(target))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(target))`.
 
             Examples:
                 >>> import kickmix as km
@@ -1320,7 +2095,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("field") = pybind11::none(),
         pybind11::arg("control") = true,
         clean_doc_string(R"DOC(
-            @signature def init_gf2_mul(self, lhs: km.array, rhs: km.array, *, target: km.array | str = "alloc", field: km.GF2Field | int | None = None, control: q | b | bool = True) -> km.array:
+            @signature def init_gf2_mul(self, lhs: km.array, rhs: km.array, *, target: km.array | str = "alloc", field: km.GF2Field | None = None, control: km.q | km.b | bool = True) -> km.array:
             Initializes a GF(2^m) register to `(lhs * rhs) % modulus`, resetting it first.
 
             This is the computation partner of `del_gf2_mul`. Resets `target`
@@ -1331,8 +2106,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 rhs: The second factor register. Left unchanged.
                 target: The GF(2^m) register to initialize. Defaults to "alloc",
                     which allocates a register of the field's degree.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(lhs))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(lhs))`.
                 control: Defaults to True. Determines if the operation occurs.
 
             Returns:
@@ -1369,7 +2144,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("field") = pybind11::none(),
         pybind11::arg("control") = true,
         clean_doc_string(R"DOC(
-            @signature def ixor_gf2_mul(self, lhs: km.array, rhs: km.array, *, target: km.array, field: km.GF2Field | int | None = None, control: q | b | bool = True) -> None:
+            @signature def ixor_gf2_mul(self, lhs: km.array, rhs: km.array, *, target: km.array, field: km.GF2Field | None = None, control: km.q | km.b | bool = True) -> None:
             Appends operations to perform `if control: target ^= (lhs * rhs) % modulus`.
 
             Out-of-place multiplication accumulating the product into `target`
@@ -1380,8 +2155,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 lhs: The first factor register. Left unchanged.
                 rhs: The second factor register. Left unchanged.
                 target: The GF(2^m) register to XOR the product into.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(target))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(target))`.
                 control: Defaults to True. Determines if the operation occurs.
 
             Examples:
@@ -1416,7 +2191,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("field") = pybind11::none(),
         pybind11::arg("control") = true,
         clean_doc_string(R"DOC(
-            @signature def del_gf2_mul(self, lhs: km.array, rhs: km.array, *, target: km.array, field: km.GF2Field | int | None = None, control: q | b | bool = True) -> None:
+            @signature def del_gf2_mul(self, lhs: km.array, rhs: km.array, *, target: km.array, field: km.GF2Field | None = None, control: km.q | km.b | bool = True) -> None:
             Clears a GF(2^m) register known to hold `(lhs * rhs) % modulus`.
 
             This is the uncomputation partner of `init_gf2_mul`. When
@@ -1427,8 +2202,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 lhs: The first factor register. Left unchanged.
                 rhs: The second factor register. Left unchanged.
                 target: The GF(2^m) register holding `lhs * rhs`, cleared to 0.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(target))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(target))`.
                 control: Defaults to True. Determines if the operation occurs.
 
             Examples:
@@ -1456,7 +2231,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("mask"),
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def gf2_phase_by_product(self, lhs: km.array, rhs: km.array, *, mask: km.array, field: km.GF2Field | int | None = None) -> None:
+            @signature def gf2_phase_by_product(self, lhs: km.array, rhs: km.array, *, mask: km.array, field: km.GF2Field | None = None) -> None:
             Negates amplitudes where `popcount(mask & (lhs * rhs) % modulus)` is odd.
 
             Kicks back the phase of the product directly without computing it
@@ -1467,8 +2242,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 lhs: The first factor register. Left unchanged.
                 rhs: The second factor register. Left unchanged.
                 mask: Classical bits selecting which product bits contribute.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(lhs))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(lhs))`.
 
             Examples:
                 >>> import kickmix as km
@@ -1497,7 +2272,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("target") = "alloc",
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def init_gf2_inverse(self, input: km.array, *, target: km.array | str = "alloc", field: km.GF2Field | int | None = None) -> km.array:
+            @signature def init_gf2_inverse(self, input: km.array, *, target: km.array | str = "alloc", field: km.GF2Field | None = None) -> km.array:
             Initializes `target := input ** -1` in GF(2^m) (mapping 0 to 0).
 
             This is the computation partner of `del_gf2_inverse`. Resets
@@ -1511,8 +2286,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 input: The GF(2^m) register to invert. Left unchanged.
                 target: The register to store the inverse into. Defaults to
                     "alloc", which allocates a register of the field's degree.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(input))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(input))`.
 
             Returns:
                 The initialized register.
@@ -1541,7 +2316,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("target") = "alloc",
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def init_gf2_inverse_with_scaffold(self, input: km.array, *, target: km.array | str = "alloc", field: km.GF2Field | int | None = None) -> tuple[km.array, km.array]:
+            @signature def init_gf2_inverse_with_scaffold(self, input: km.array, *, target: km.array | str = "alloc", field: km.GF2Field | None = None) -> tuple[km.array, km.array]:
             Initializes `target := input ** -1`, keeping the addition chain.
 
             Same as `init_gf2_inverse`, except the Itoh-Tsujii addition chain
@@ -1555,8 +2330,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 input: The GF(2^m) register to invert. Left unchanged.
                 target: The register to store the inverse into. Defaults to
                     "alloc", which allocates a register of the field's degree.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(input))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(input))`.
 
             Returns:
                 A tuple of the initialized register and the scaffold register
@@ -1569,7 +2344,9 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 >>> inv, scaffold = builder.init_gf2_inverse_with_scaffold(inp)
                 >>> len(scaffold)
                 24
-                >>> builder.finish_circuit().max_magic()
+                >>> circuit = builder.finish_circuit()
+                >>> stats = circuit.operation_statistics()
+                >>> stats.num_toffoli_like
                 108
         )DOC")
             .data());
@@ -1582,7 +2359,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("target"),
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def del_gf2_inverse(self, input: km.array, *, target: km.array, field: km.GF2Field | int | None = None) -> None:
+            @signature def del_gf2_inverse(self, input: km.array, *, target: km.array, field: km.GF2Field | None = None) -> None:
             Clears `target` (holding `input ** -1` in GF(2^m)) back to 0.
 
             This is the uncomputation partner of `init_gf2_inverse`. Temporary
@@ -1594,8 +2371,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
             Args:
                 input: The inverted GF(2^m) register. Left unchanged.
                 target: The register holding `input ** -1`, cleared to 0.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(target))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(target))`.
 
             Examples:
                 >>> import kickmix as km
@@ -1603,7 +2380,9 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 >>> inp = builder.create_quantum_register(8, name='inp')
                 >>> inv = builder.init_gf2_inverse(inp)
                 >>> builder.del_gf2_inverse(inp, target=inv)
-                >>> builder.finish_circuit().max_magic()  # 108 to build, 108 to rebuild
+                >>> circuit = builder.finish_circuit()
+                >>> stats = circuit.operation_statistics()
+                >>> stats.num_toffoli_like  # 108 to build, 108 to rebuild
                 216
         )DOC")
             .data());
@@ -1617,7 +2396,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("scaffold"),
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def del_gf2_inverse_with_scaffold(self, input: km.array, *, target: km.array, scaffold: km.array, field: km.GF2Field | int | None = None) -> None:
+            @signature def del_gf2_inverse_with_scaffold(self, input: km.array, *, target: km.array, scaffold: km.array, field: km.GF2Field | None = None) -> None:
             Clears `target` and its scaffold, using only Cliffords and measurement.
 
             This is the uncomputation partner of
@@ -1631,8 +2410,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 target: The register holding `input ** -1`, cleared to 0.
                 scaffold: The addition chain from
                     `init_gf2_inverse_with_scaffold`, also cleared to 0.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(target))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(target))`.
 
             Examples:
                 >>> import kickmix as km
@@ -1641,7 +2420,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 >>> inv, scaffold = builder.init_gf2_inverse_with_scaffold(inp)
                 >>> builder.del_gf2_inverse_with_scaffold(
                 ...     inp, target=inv, scaffold=scaffold)
-                >>> builder.finish_circuit().max_magic()  # no more than building it once
+                >>> stats = builder.finish_circuit().operation_statistics()
+                >>> stats.num_toffoli_like  # no more than building it once
                 108
         )DOC")
             .data());
@@ -1655,7 +2435,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("target") = "alloc",
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def init_gf2_div(self, lhs: km.array, rhs: km.array, *, target: km.array | str = "alloc", field: km.GF2Field | int | None = None) -> km.array:
+            @signature def init_gf2_div(self, lhs: km.array, rhs: km.array, *, target: km.array | str = "alloc", field: km.GF2Field | None = None) -> km.array:
             Initializes a GF(2^m) register to `(lhs / rhs) % modulus`, resetting it first.
 
             This is the computation partner of `del_gf2_div`. Resets `target`
@@ -1669,8 +2449,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 rhs: The divisor register. Left unchanged.
                 target: The GF(2^m) register to initialize. Defaults to "alloc",
                     which allocates a register of the field's degree.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(lhs))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(lhs))`.
 
             Returns:
                 The initialized register.
@@ -1681,7 +2461,9 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 >>> lhs = builder.create_quantum_register(8, name='lhs')
                 >>> rhs = builder.create_quantum_register(8, name='rhs')
                 >>> quotient = builder.init_gf2_div(lhs, rhs)
-                >>> builder.finish_circuit().max_magic()
+                >>> circuit = builder.finish_circuit()
+                >>> stats = circuit.operation_statistics()
+                >>> stats.num_toffoli_like
                 135
         )DOC")
             .data());
@@ -1695,7 +2477,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("target") = "alloc",
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def init_gf2_div_with_scaffold(self, lhs: km.array, rhs: km.array, *, target: km.array | str = "alloc", field: km.GF2Field | int | None = None) -> tuple[km.array, km.array]:
+            @signature def init_gf2_div_with_scaffold(self, lhs: km.array, rhs: km.array, *, target: km.array | str = "alloc", field: km.GF2Field | None = None) -> tuple[km.array, km.array]:
             Initializes `target := lhs / rhs`, keeping the division workspace.
 
             Same as `init_gf2_div`, except the divisor's inverse and its
@@ -1710,8 +2492,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 rhs: The divisor register. Left unchanged.
                 target: The GF(2^m) register to initialize. Defaults to "alloc",
                     which allocates a register of the field's degree.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(lhs))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(lhs))`.
 
             Returns:
                 A tuple of the initialized register and the scaffold register
@@ -1725,7 +2507,9 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 >>> quotient, scaffold = builder.init_gf2_div_with_scaffold(lhs, rhs)
                 >>> len(scaffold)
                 32
-                >>> builder.finish_circuit().max_magic()
+                >>> circuit = builder.finish_circuit()
+                >>> stats = circuit.operation_statistics()
+                >>> stats.num_toffoli_like
                 135
         )DOC")
             .data());
@@ -1739,7 +2523,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("target"),
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def ixor_gf2_div(self, lhs: km.array, rhs: km.array, *, target: km.array, field: km.GF2Field | int | None = None) -> None:
+            @signature def ixor_gf2_div(self, lhs: km.array, rhs: km.array, *, target: km.array, field: km.GF2Field | None = None) -> None:
             Appends operations to perform `target ^= (lhs / rhs) % modulus`.
 
             Out-of-place division accumulating the quotient into `target` via
@@ -1751,8 +2535,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 lhs: The dividend register. Left unchanged.
                 rhs: The divisor register. Left unchanged.
                 target: The GF(2^m) register to XOR the quotient into.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(target))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(target))`.
 
             Examples:
                 >>> import kickmix as km
@@ -1761,7 +2545,9 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 >>> rhs = builder.create_quantum_register(8, name='rhs')
                 >>> target = builder.create_quantum_register(8, name='target')
                 >>> builder.ixor_gf2_div(lhs, rhs, target=target)
-                >>> builder.finish_circuit().max_magic()
+                >>> circuit = builder.finish_circuit()
+                >>> stats = circuit.operation_statistics()
+                >>> stats.num_toffoli_like
                 135
         )DOC")
             .data());
@@ -1775,7 +2561,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("target"),
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def del_gf2_div(self, lhs: km.array, rhs: km.array, *, target: km.array, field: km.GF2Field | int | None = None) -> None:
+            @signature def del_gf2_div(self, lhs: km.array, rhs: km.array, *, target: km.array, field: km.GF2Field | None = None) -> None:
             Clears a GF(2^m) register known to hold `(lhs / rhs) % modulus` to 0.
 
             This is the uncomputation partner of `init_gf2_div`. Temporary
@@ -1787,8 +2573,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 lhs: The dividend register. Left unchanged.
                 rhs: The divisor register. Left unchanged.
                 target: The register holding `lhs / rhs`, cleared to 0.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(target))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(target))`.
 
             Examples:
                 >>> import kickmix as km
@@ -1797,7 +2583,9 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 >>> rhs = builder.create_quantum_register(8, name='rhs')
                 >>> quotient = builder.init_gf2_div(lhs, rhs)
                 >>> builder.del_gf2_div(lhs, rhs, target=quotient)
-                >>> builder.finish_circuit().max_magic()  # 135 to build, 108 to rebuild
+                >>> circuit = builder.finish_circuit()
+                >>> stats = circuit.operation_statistics()
+                >>> stats.num_toffoli_like  # 135 to build, 108 to rebuild
                 243
         )DOC")
             .data());
@@ -1812,7 +2600,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("scaffold"),
         pybind11::arg("field") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def del_gf2_div_with_scaffold(self, lhs: km.array, rhs: km.array, *, target: km.array, scaffold: km.array, field: km.GF2Field | int | None = None) -> None:
+            @signature def del_gf2_div_with_scaffold(self, lhs: km.array, rhs: km.array, *, target: km.array, scaffold: km.array, field: km.GF2Field | None = None) -> None:
             Clears `target` and its scaffold, using only Cliffords and measurement.
 
             This is the uncomputation partner of `init_gf2_div_with_scaffold`.
@@ -1826,8 +2614,8 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 target: The register holding `lhs / rhs`, cleared to 0.
                 scaffold: The workspace from `init_gf2_div_with_scaffold`, also
                     cleared to 0.
-                field: Optional `km.GF2Field` or irreducible polynomial int.
-                    Defaults to `km.GF2Field(len(target))`.
+                field: Optional `km.GF2Field`. Defaults to
+                    `km.GF2Field(len(target))`.
 
             Examples:
                 >>> import kickmix as km
@@ -1837,7 +2625,9 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 >>> quotient, scaffold = builder.init_gf2_div_with_scaffold(lhs, rhs)
                 >>> builder.del_gf2_div_with_scaffold(
                 ...     lhs, rhs, target=quotient, scaffold=scaffold)
-                >>> builder.finish_circuit().max_magic()  # no more than building it once
+                >>> circuit = builder.finish_circuit()
+                >>> stats = circuit.operation_statistics()
+                >>> stats.num_toffoli_like  # no more than building it once
                 135
         )DOC")
             .data());
@@ -1851,7 +2641,7 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
         pybind11::arg("control") = true,
         pybind11::keep_alive<0, 1>(),
         clean_doc_string(R"DOC(
-            @signature def unary_iteration(self, address: km.array, address_values: range | None = None, *, control: q | b | bool = True) -> km.UnaryIterationCursor:
+            @signature def unary_iteration(self, address: km.array, address_values: range | None = None, *, control: km.q | km.b | bool = True) -> km.UnaryIterationCursor:
             Returns a cursor for stepping through values of `address`.
 
             Use `with builder.unary_iteration(...) as it:` to open a pass. Inside the
@@ -1933,6 +2723,33 @@ void kickmix_py::register_circuit_builder_methods(pybind11::class_<PyCircuitBuil
                 5: 1
                 6: 0
                 7: 1
+        )DOC")
+            .data());
+
+    c_circuit_builder.def(
+        "info_tag",
+        &info_tag,
+        pybind11::arg("text"),
+        clean_doc_string(R"DOC(
+            @signature def info_tag(self, text: str) -> None:
+            Appends an INFO_TAG instruction into the circuit.
+
+            INFO_TAG instructions have no effect on simulations, but can be used to make
+            debug information available. For example, the start of a  subroutine can be
+            hinted with `INFO_TAG "@enter:subroutine_name"` and its end can be indicated
+            with `INFO_TAG "@exit:subroutine_name"`.
+
+            Args:
+                text: The content of the INFO_TAG instruction.
+
+            Examples:
+                >>> import kickmix as km
+                >>> builder = km.CircuitBuilder()
+                >>> builder.info_tag("test")
+                >>> builder.finish_circuit()
+                km.Circuit('''
+                    INFO_TAG "test"
+                ''')
         )DOC")
             .data());
 }

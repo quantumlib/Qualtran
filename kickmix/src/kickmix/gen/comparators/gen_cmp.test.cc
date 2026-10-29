@@ -22,7 +22,7 @@ TEST(icmp, cost) {
         auto clean = builder.reserve_qubits(n);
         gen_flip_if_lt(builder, CircuitGenCtx{.clean_workspace = clean}, lhs, rhs, target, or_equal, control, INFINITY);
         auto circuit = builder.finish_circuit();
-        EXPECT_LE(circuit.max_magic(), n + 2) << n;
+        EXPECT_LE(circuit.estimate_ccz_state_weight(), n + 2) << n;
     }
 }
 
@@ -37,7 +37,7 @@ TEST(icmp, cost_low_workspace) {
         auto clean = builder.reserve_qubits(5);
         gen_flip_if_lt(builder, CircuitGenCtx{.clean_workspace = clean}, lhs, rhs, target, or_equal, control, INFINITY);
         auto circuit = builder.finish_circuit();
-        EXPECT_LE(circuit.max_magic(), 3 * n) << n;
+        EXPECT_LE(circuit.estimate_ccz_state_weight(), 3 * n) << n;
     }
 }
 

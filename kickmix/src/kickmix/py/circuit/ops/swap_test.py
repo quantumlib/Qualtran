@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import io
 from typing import Any
 
 import op_testing_util as util
@@ -77,6 +78,58 @@ def test_builder_broadcast_swap_behaves_identically_to_repeated_appends(c1: Any,
     assert circuit == reference_circuit
 
 
+def test_builder_cswap_simple():
+    builder = km.CircuitBuilder()
+    qs = [km.q(k) for k in range(10)]
+
+    builder.cswap(qs[0], qs[1], qs[2])
+    builder.cswap(True, qs[1], qs[2])
+    builder.cswap(False, qs[1], qs[2])
+    builder.cswap(km.b(0), qs[1], qs[2])
+    assert builder.finish_circuit() == km.Circuit("""
+        CSWAP q0 q1 q2
+        SWAP q1 q2
+        SWAP q1 q2 if b0
+    """)
+
+
+@pytest.mark.parametrize("c", util.z_cases(0))
+@pytest.mark.parametrize("t1", util.x_cases_q(1))
+@pytest.mark.parametrize("t2", util.x_cases_q(2))
+def test_builder_cswap_produces_a_circuit_behaving_as_expected(c: Any, t1: Any, t2: Any):
+    builder = km.CircuitBuilder()
+    builder.cswap(c, t1, t2)
+
+    sim = km.Simulator(batch_size=64)
+    c_val = util.store64(sim, c, util.U64_BIT0)
+    t1_val = util.store64(sim, t1, util.U64_BIT1)
+    t2_val = util.store64(sim, t2, util.U64_BIT2)
+
+    sim.do(builder.finish_circuit())
+    d = (t1_val ^ t2_val) & c_val
+    assert util.read64(sim, c) == c_val
+    assert util.read64(sim, t1) == t1_val ^ d
+    assert util.read64(sim, t2) == t2_val ^ d
+    assert sim.read_phase_flipped_across_shots(out=int) == 0
+
+
+@pytest.mark.parametrize("c", util.z_list_cases(0, 32))
+@pytest.mark.parametrize("t1", util.x_list_cases(32, 32, include_x_bits=False))
+@pytest.mark.parametrize("t2", util.x_list_cases(64, 32, include_x_bits=False))
+def test_builder_cswap_behaves_identically_to_repeated_appends(c: Any, t1: Any, t2: Any):
+    builder = km.CircuitBuilder()
+    builder.cswap(c, t1, t2)
+    circuit = builder.finish_circuit()
+
+    reference_builder = km.CircuitBuilder()
+    c, t1, t2 = util.broadcast_logic(c, t1, t2)
+    for k in range(len(c)):
+        reference_builder.cswap(c[k], t1[k], t2[k])
+    reference_circuit = reference_builder.finish_circuit()
+
+    assert circuit == reference_circuit
+
+
 @pytest.mark.parametrize("control", [km.q(10), km.b(0), True, False])
 def test_builder_cswap(control: Any):
     builder = km.CircuitBuilder()
@@ -84,6 +137,24 @@ def test_builder_cswap(control: Any):
     r2 = builder.create_quantum_register(4, name="r2")
     builder.cswap(control, r1, r2)
     circuit = builder.finish_circuit()
+
+    if control == km.q(10):
+        assert circuit == km.Circuit("""
+            REGISTER r0 "r1"
+            APPEND_TO_REGISTER q0 r0
+            APPEND_TO_REGISTER q1 r0
+            APPEND_TO_REGISTER q2 r0
+            APPEND_TO_REGISTER q3 r0
+            REGISTER r1 "r2"
+            APPEND_TO_REGISTER q4 r1
+            APPEND_TO_REGISTER q5 r1
+            APPEND_TO_REGISTER q6 r1
+            APPEND_TO_REGISTER q7 r1
+            CSWAP q10 q0 q4
+            CSWAP q10 q1 q5
+            CSWAP q10 q2 q6
+            CSWAP q10 q3 q7
+        """)
 
     sim = km.Simulator(batch_size=2)
     sim.use_same_registers_as(circuit)
@@ -99,3 +170,41 @@ def test_builder_cswap(control: Any):
         active = control if isinstance(control, bool) else bool(shot)
         assert sim.read_within_shot("r1", shot, out=int) == (0b0101 if active else 0b1010)
         assert sim.read_within_shot("r2", shot, out=int) == (0b1010 if active else 0b0101)
+
+
+def test_cswap_kmx_and_sim():
+    c = km.Circuit("""
+        CSWAP q0 q1 q2
+        CSWAP q3 q4 q5 if b0
+    """)
+    assert str(c).strip() == "CSWAP q0 q1 q2\nCSWAP q3 q4 q5 if b0"
+    assert c.operation_statistics().num_non_clifford == 2
+    assert c.reaction_depth() == 1
+    bio = io.BytesIO()
+    c.to_file(bio, format="kmb")
+    bio.seek(0)
+    assert km.Circuit.from_file(bio, format="kmb") == c
+    sim = km.Simulator(batch_size=2)
+    sim.write_within_shot(km.q(0), 0, 0)
+    sim.write_within_shot(km.q(0), 1, 1)
+    sim.write_within_shot(km.q(1), 0, 1)
+    sim.write_within_shot(km.q(1), 1, 1)
+    sim.write_within_shot(km.q(2), 0, 0)
+    sim.write_within_shot(km.q(2), 1, 0)
+    sim.write_within_shot(km.b(0), 0, 0)
+    sim.write_within_shot(km.b(0), 1, 1)
+    sim.write_within_shot(km.q(3), 0, 1)
+    sim.write_within_shot(km.q(3), 1, 1)
+    sim.write_within_shot(km.q(4), 0, 1)
+    sim.write_within_shot(km.q(4), 1, 1)
+    sim.write_within_shot(km.q(5), 0, 0)
+    sim.write_within_shot(km.q(5), 1, 0)
+    sim.do(c)
+    assert sim.read_within_shot(km.q(1), 0, out=int) == 1
+    assert sim.read_within_shot(km.q(2), 0, out=int) == 0
+    assert sim.read_within_shot(km.q(1), 1, out=int) == 0
+    assert sim.read_within_shot(km.q(2), 1, out=int) == 1
+    assert sim.read_within_shot(km.q(4), 0, out=int) == 1
+    assert sim.read_within_shot(km.q(5), 0, out=int) == 0
+    assert sim.read_within_shot(km.q(4), 1, out=int) == 0
+    assert sim.read_within_shot(km.q(5), 1, out=int) == 1

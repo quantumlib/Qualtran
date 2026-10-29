@@ -1,6 +1,10 @@
 #ifndef KICKMIX_SIMD_128_SSE_H
 #define KICKMIX_SIMD_128_SSE_H
 
+#include <array>
+#include <bit>
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <ostream>
 #include <random>
@@ -81,6 +85,9 @@ struct alignas(sizeof(uint64_t) * 2) b128_sse {
     inline b128_sse operator|(const b128_sse &other) const {
         return {_mm_or_si128(v, other.v)};
     }
+    inline static b128_sse from_u64s(std::array<uint64_t, 2> vs) {
+        return {_mm_set_epi64x(vs[1], vs[0])};
+    }
     inline static b128_sse from_u32_broadcast(uint32_t v) {
         return {_mm_set1_epi32(std::bit_cast<int32_t>(v))};
     }
@@ -96,6 +103,15 @@ struct alignas(sizeof(uint64_t) * 2) b128_sse {
     }
     inline b128_sse u64_left_shift(size_t shift) const {
         return {_mm_slli_epi64(v, shift)};
+    }
+    inline b128_sse u32_add(const b128_sse &other) const {
+        return {_mm_add_epi32(v, other.v)};
+    }
+    inline b128_sse u32_right_shift(size_t shift) const {
+        return {_mm_srli_epi32(v, shift)};
+    }
+    inline b128_sse u32_left_shift(size_t shift) const {
+        return {_mm_slli_epi32(v, shift)};
     }
     inline b128_sse u32_eq(const b128_sse &other) const {
         return {_mm_cmpeq_epi32(v, other.v)};

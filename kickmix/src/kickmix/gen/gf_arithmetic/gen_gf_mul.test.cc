@@ -47,7 +47,7 @@ TEST(gen_gf_mul, poly_mul_uses_no_ancillas_and_beats_schoolbook) {
         Circuit circuit = builder.finish_circuit();
         ASSERT_EQ(circuit.num_qubits, 4 * n - 1) << n;
         // Karatsuba uses 3^ceil(log2(n)) Toffolis, which is well under the schoolbook n^2.
-        ASSERT_LT(circuit.max_magic(), n * n) << n;
+        ASSERT_LT(circuit.estimate_ccz_state_weight(), n * n) << n;
     }
 }
 
@@ -140,7 +140,7 @@ TEST(gen_gf_mul, unmul_is_toffoli_free) {
     auto lhs = builder.append_register(16);
     auto rhs = builder.append_register(16);
     gen_gf_unmul(builder, CircuitGenCtx{}, field, product, lhs, rhs);
-    ASSERT_EQ(builder.finish_circuit().max_magic(), 0);
+    ASSERT_EQ(builder.finish_circuit().estimate_ccz_state_weight(), 0);
 }
 
 TEST(gen_gf_mul, controlled_unmul_undoes_controlled_mul_fuzz) {
@@ -188,7 +188,7 @@ TEST(gen_gf_mul, phase_by_product_matches_product_parity_fuzz) {
 }
 
 TEST(gen_gf_mul, large_degree_is_buildable) {
-    // The original implementation capped the field degree at 63. Building at 512 must work, and
+    // Building at the maximum supported degree (512) must work, and
     // must stay far below the m^2 Toffolis a schoolbook product would need.
     GF2Field field(512);
     CircuitBuilder builder;
@@ -198,7 +198,7 @@ TEST(gen_gf_mul, large_degree_is_buildable) {
     gen_gf_mul(builder, CircuitGenCtx{}, field, target, lhs, rhs);
     Circuit circuit = builder.finish_circuit();
     ASSERT_EQ(circuit.num_qubits, 3 * 512);
-    ASSERT_LT(circuit.max_magic(), 512 * 512 / 4);
+    ASSERT_LT(circuit.estimate_ccz_state_weight(), 512 * 512 / 4);
 }
 
 TEST(gen_gf_mul, toffoli_gate_counts) {
@@ -219,7 +219,7 @@ TEST(gen_gf_mul, toffoli_gate_counts) {
         auto rhs = builder.append_register(m);
         gen_gf_mul(builder, CircuitGenCtx{}, field, target, lhs, rhs);
         Circuit circuit = builder.finish_circuit();
-        ASSERT_EQ(circuit.max_magic(), expected_toffolis) << "m=" << m;
+        ASSERT_EQ(circuit.estimate_ccz_state_weight(), expected_toffolis) << "m=" << m;
     }
 }
 
