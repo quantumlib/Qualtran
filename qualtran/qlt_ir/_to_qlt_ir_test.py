@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import io
+from typing import Any
 
 import pytest
 
@@ -578,7 +579,11 @@ def test_max_depth_and_force_extern_keep_qcasts():
 
     bloq = Add(qdt.QUInt(4))
 
-    for mb_kwargs in [dict(max_depth=1), dict(force_extern_pred=lambda b: b != bloq)]:
+    all_mb_kwargs: list[dict[str, Any]] = [
+        dict(max_depth=1),
+        dict(force_extern_pred=lambda b: b != bloq),
+    ]
+    for mb_kwargs in all_mb_kwargs:
         mb = QltModuleBuilder()
         mb.add_bloqs(bloq, **mb_kwargs)
         by_bloq = {q.bloq: q for q in mb.qdefs}
