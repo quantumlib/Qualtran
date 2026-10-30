@@ -454,3 +454,116 @@ def test_bloq_with_no_output_registers_emits_return():
     assert "return" in qlt_txt
     loaded = load_module(qlt_txt)
     assert "QIntEffect(-5)" in loaded
+
+
+def test_dump_qlt_ir_max_depth_negate():
+    from qualtran.bloqs.arithmetic import BitwiseNot, Negate
+    from qualtran.qlt_ir import load_module, parse_module
+
+    bloq = Negate(qdt.QInt(8))
+
+    # max_depth=0 emits even the root as extern.
+    txt_d0 = dump_qlt_ir(bloq, max_depth=0)
+    assert txt_d0 is not None
+    mod_d0 = parse_module(txt_d0)
+    assert [q.bloq_key for q in mod_d0.qdefs] == ['Negate']
+    assert isinstance(mod_d0.qdefs[0], QDefExternNode)
+
+    # max_depth=1 matches root-only output.
+    assert dump_qlt_ir(bloq, max_depth=1) == dump_qlt_ir(
+        bloq, force_extern_pred=lambda b: b != bloq
+    )
+    assert dump_qlt_ir(bloq, max_depth=1, extern_only_from=True) == dump_root_qlt_ir(bloq)
+
+    # max_depth=2 gives Negate, BitwiseNot, and AddK bodies while keeping their callees extern.
+    txt_d2 = dump_qlt_ir(bloq, max_depth=2)
+    assert txt_d2 is not None
+    mod_d2 = parse_module(txt_d2)
+    impl_keys = {q.bloq_key for q in mod_d2.qdefs if isinstance(q, QDefImplNode)}
+    extern_keys = {q.bloq_key for q in mod_d2.qdefs if isinstance(q, QDefExternNode)}
+    assert impl_keys == {'Negate', 'BitwiseNot(8)', 'AddK(k=1)'}
+    assert extern_keys == {'X(oneach=8)', 'Allocate', 'XorK(1)', 'Add', 'Free(QInt(8))'}
+    loaded_d2 = load_module(txt_d2)
+    assert set(loaded_d2.keys()) == impl_keys | extern_keys
+
+    # force_extern_pred combines with max_depth via logical OR.
+    txt_d2_pred = dump_qlt_ir(
+        bloq, max_depth=2, force_extern_pred=lambda b: isinstance(b, BitwiseNot)
+    )
+    assert txt_d2_pred is not None
+    mod_d2_pred = parse_module(txt_d2_pred)
+    impl_keys_pred = {q.bloq_key for q in mod_d2_pred.qdefs if isinstance(q, QDefImplNode)}
+    extern_keys_pred = {q.bloq_key for q in mod_d2_pred.qdefs if isinstance(q, QDefExternNode)}
+    assert impl_keys_pred == {'Negate', 'AddK(k=1)'}
+    assert 'BitwiseNot(8)' in extern_keys_pred
+    assert 'X(oneach=8)' not in extern_keys_pred
+
+    # A large max_depth matches max_depth=None.
+    assert dump_qlt_ir(bloq, max_depth=100) == dump_qlt_ir(bloq)
+
+
+def test_add_bloqs_max_depth_uses_minimum_depth():
+    """A shared sub-bloq reached on both a long path (at cutoff) and a shorter path gets a body."""
+    import attrs
+
+    @attrs.frozen
+    class _Shared(qlt.Bloq):
+        @property
+        def signature(self) -> qlt.Signature:
+            return qlt.Signature([Register('q', qdt.QBit())])
+
+        def build_composite_bloq(self, bb, q):
+            q = bb.add(TGate(), q=q)
+            return {'q': q}
+
+    @attrs.frozen
+    class _Step2(qlt.Bloq):
+        @property
+        def signature(self) -> qlt.Signature:
+            return qlt.Signature([Register('q', qdt.QBit())])
+
+        def build_composite_bloq(self, bb, q):
+            q = bb.add(_Shared(), q=q)
+            return {'q': q}
+
+    @attrs.frozen
+    class _LongBranch(qlt.Bloq):
+        @property
+        def signature(self) -> qlt.Signature:
+            return qlt.Signature([Register('q', qdt.QBit())])
+
+        def build_composite_bloq(self, bb, q):
+            q = bb.add(_Step2(), q=q)
+            return {'q': q}
+
+    @attrs.frozen
+    class _ShortBranch(qlt.Bloq):
+        @property
+        def signature(self) -> qlt.Signature:
+            return qlt.Signature([Register('q', qdt.QBit())])
+
+        def build_composite_bloq(self, bb, q):
+            q = bb.add(_Shared(), q=q)
+            return {'q': q}
+
+    @attrs.frozen
+    class _DiamondRoot(qlt.Bloq):
+        @property
+        def signature(self) -> qlt.Signature:
+            return qlt.Signature([Register('q', qdt.QBit())])
+
+        def build_composite_bloq(self, bb, q):
+            # Long path (_DiamondRoot -> _LongBranch -> _Step2 -> _Shared, depth 3) comes first;
+            # short path (_DiamondRoot -> _ShortBranch -> _Shared, depth 2) comes second.
+            q = bb.add(_LongBranch(), q=q)
+            q = bb.add(_ShortBranch(), q=q)
+            return {'q': q}
+
+    mb = QltModuleBuilder()
+    mb.add_bloqs(_DiamondRoot(), max_depth=3)
+    by_key = {q.bloq_key: q for q in mb.qdefs}
+    # _Shared has minimum depth 2 (< 3), so it must be implemented, while TGate (depth 3) is extern.
+    assert by_key['_Shared'].implemented is True
+    assert isinstance(by_key['_Shared'].qdef, QDefImplNode)
+    assert by_key['T'].implemented is False
+    assert isinstance(by_key['T'].qdef, QDefExternNode)
