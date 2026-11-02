@@ -45,7 +45,7 @@ class FifteenToOne(MagicStateFactory):
     d_m: int
 
     def __attrs_post_init__(self):
-        assert 0 < self.d_X <= 3 * self.d_m
+        assert 0 < self.d_Z <= self.d_X <= 3 * self.d_m
         assert self.d_m > 0
         assert self.d_Z > 0
 
