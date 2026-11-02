@@ -192,7 +192,7 @@ class IntermediateDataBlock(DataBlock):
     data_d: int
 
     def n_tiles(self, n_algo_qubits: int) -> int:
-        return math.ceil(2 * n_algo_qubits + 4)
+        return 2 * n_algo_qubits + 4
 
     @property
     def n_steps_to_consume_a_magic_state(self) -> int:
