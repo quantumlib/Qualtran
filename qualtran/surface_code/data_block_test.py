@@ -30,5 +30,7 @@ def test_fast_block(logical_qubits, logical_qubits_with_routing, data_error):
     ) == pytest.approx(data_error)
 
 
-def test_intermediate_block():
-    assert IntermediateDataBlock(data_d=3).n_tiles(n_algo_qubits=100) == 204
+@pytest.mark.parametrize(("n_algo_qubits", "expected_tiles"), [(5, 14), (100, 204)])
+def test_intermediate_block_n_tiles(n_algo_qubits, expected_tiles):
+    block = IntermediateDataBlock(data_d=3)
+    assert block.n_tiles(n_algo_qubits) == expected_tiles
