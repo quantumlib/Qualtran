@@ -200,6 +200,16 @@ def test_dirtyoutofplacemontgomerymodmul_classical_action(n, m, p):
     qlt_testing.assert_consistent_classical_action(b, x=range(1, p), y=range(1, p))
 
 
+@pytest.mark.parametrize(
+    ['n', 'm', 'p'], [(4, 1, 7), (4, 2, 7), (4, 4, 7), (6, 1, 13), (6, 1, 21), (6, 2, 23)]
+)
+def test_dirtyoutofplacemontgomerymodmul_final_reduction(n, m, p):
+    # Regression test: when the pre-reduction value lies in [p, 2p), the final
+    # conditional correction must subtract p (it previously added p).
+    b = DirtyOutOfPlaceMontgomeryModMul(n, m, p, False)
+    qlt_testing.assert_consistent_classical_action(b, x=range(1, p), y=range(1, p))
+
+
 @pytest.mark.parametrize('p', (3, 5, 7))
 @pytest.mark.parametrize(
     ['n', 'm'], [(n, m) for n in range(5, 8) for m in range(1, n + 1) if n % m == 0]
