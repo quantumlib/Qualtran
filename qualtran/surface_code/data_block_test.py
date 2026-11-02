@@ -15,7 +15,7 @@
 
 import pytest
 
-from qualtran.surface_code import FastDataBlock, LogicalErrorModel, QECScheme
+from qualtran.surface_code import FastDataBlock, IntermediateDataBlock, LogicalErrorModel, QECScheme
 
 
 @pytest.mark.parametrize(
@@ -28,3 +28,7 @@ def test_fast_block(logical_qubits, logical_qubits_with_routing, data_error):
     assert FastDataBlock(3).data_error(
         n_algo_qubits=logical_qubits, n_cycles=3, logical_error_model=err_model
     ) == pytest.approx(data_error)
+
+
+def test_intermediate_block():
+    assert IntermediateDataBlock(data_d=3).n_tiles(n_algo_qubits=100) == 204
