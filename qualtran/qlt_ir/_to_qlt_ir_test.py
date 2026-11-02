@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import io
+from typing import Any
 
 import pytest
 
@@ -567,3 +568,37 @@ def test_add_bloqs_max_depth_uses_minimum_depth():
     assert isinstance(by_key['_Shared'].qdef, QDefImplNode)
     assert by_key['T'].implemented is False
     assert isinstance(by_key['T'].qdef, QDefExternNode)
+
+
+def test_max_depth_and_force_extern_keep_qcasts():
+    """Casting bloqs have no body to hide, so they stay `qcast` below `max_depth`."""
+    from qualtran.bloqs.arithmetic import Add
+    from qualtran.bloqs.bookkeeping import Join, Split
+    from qualtran.qlt_ir import parse_module
+    from qualtran.qlt_ir.nodes import QCastNode
+
+    bloq = Add(qdt.QUInt(4))
+
+    all_mb_kwargs: list[dict[str, Any]] = [
+        dict(max_depth=1),
+        dict(force_extern_pred=lambda b: b != bloq),
+    ]
+    for mb_kwargs in all_mb_kwargs:
+        mb = QltModuleBuilder()
+        mb.add_bloqs(bloq, **mb_kwargs)
+        by_bloq = {q.bloq: q for q in mb.qdefs}
+        assert isinstance(by_bloq[bloq].qdef, QDefImplNode)
+        casts = [b for b in by_bloq if isinstance(b, (Split, Join))]
+        assert casts, 'Add(QUInt(4)) decomposition should contain splits/joins'
+        for b in casts:
+            assert isinstance(by_bloq[b].qdef, QCastNode), b
+        for b, q in by_bloq.items():
+            if b != bloq and not isinstance(b, (Split, Join)):
+                assert isinstance(q.qdef, QDefExternNode), b
+
+    txt = dump_root_qlt_ir(bloq)
+    assert txt is not None
+    assert 'extern qdef Split' not in txt
+    assert 'extern qdef Join' not in txt
+    mod = parse_module(txt)
+    assert any(isinstance(q, QCastNode) for q in mod.qdefs)
