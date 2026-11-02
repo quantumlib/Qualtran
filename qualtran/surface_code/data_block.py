@@ -178,7 +178,7 @@ class CompactDataBlock(DataBlock):
 class IntermediateDataBlock(DataBlock):
     r"""The intermediate data block uses a fixed code distance and routing overhead.
 
-    The intermediate data block lays $n$ qubit batches in grid of shape (2, $2n+2$) where
+    The intermediate data block lays $n$ qubit batches in grid of shape (2, $n+2$) where
     the data batches are lined in the first row with the second row being an ancilla region.
 
     Attributes:
@@ -192,7 +192,7 @@ class IntermediateDataBlock(DataBlock):
     data_d: int
 
     def n_tiles(self, n_algo_qubits: int) -> int:
-        return math.ceil(2 * n_algo_qubits)
+        return 2 * n_algo_qubits + 4
 
     @property
     def n_steps_to_consume_a_magic_state(self) -> int:
