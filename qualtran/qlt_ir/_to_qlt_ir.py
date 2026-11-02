@@ -573,11 +573,10 @@ def bloq_to_ast(
     # Signature
     qdb.add_signature(bloq.signature)
 
-    if force_extern:
-        return qdb.finalize_extern(reason='force_extern'), []
-
     # Detect bookkeeping / casting bloqs and emit as qcast.
     # Alloc and Free are _BookkeepingBloqs but are *not* casts.
+    # These checks come before `force_extern`: a cast has no body to hide, so it is
+    # always emitted as a `qcast` (and alloc/free are always `extern` anyways).
     from qualtran.bloqs.bookkeeping.allocate import Allocate
     from qualtran.bloqs.bookkeeping.free import Free
 
@@ -585,6 +584,10 @@ def bloq_to_ast(
         return qdb.finalize_extern(reason='alloc/free'), []
     if _is_qcast_bloq(bloq):
         return qdb.finalize_qcast(), []
+
+    if force_extern:
+        return qdb.finalize_extern(reason='force_extern'), []
+
     if isinstance(bloq, qlt.CompositeBloq):
         cbloq = bloq
     else:
@@ -656,7 +659,7 @@ class QltModuleBuilder:
             include_annotations: Whether to include visual display annotations derived
                 from `bloq.wire_symbol`.
             extern_only_from: Whether to only include a `from` clause for `extern` bloqs.
-            force_extern_pred: A predicate selecting bloqs to force to `extern`.
+            force_extern_pred: A predicate selecting non-cast bloqs to force to `extern`.
             max_depth: If provided, only decompose bloqs whose minimum depth below
                 `root` is less than `max_depth`, emitting bloqs at or beyond `max_depth`
                 as `extern qdef`. `None` (the default) decomposes fully.
@@ -760,7 +763,7 @@ def dump_qlt_ir(
         include_annotations: Whether to include visual display annotations derived
             from `bloq.wire_symbol` (defaults to `False`).
         extern_only_from: Whether to only include a `from` clause for `extern` bloqs.
-        force_extern_pred: A predicate selecting bloqs to force to `extern`.
+        force_extern_pred: A predicate selecting non-cast bloqs to force to `extern`.
         max_depth: If provided, only decompose bloqs whose minimum depth below
             `bloq` is less than `max_depth`, emitting bloqs at or beyond `max_depth`
             as `extern qdef`. `None` (the default) decomposes fully.
