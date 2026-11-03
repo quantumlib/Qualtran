@@ -754,11 +754,7 @@ size_t Circuit::compute_max_condition_depth() const {
 }
 
 size_t Circuit::reaction_depth() const {
-    std::vector<Op> ops;
-    iter_ops([&](Op op) {
-        ops.push_back(op);
-    });
-    return compute_reaction_depth(num_qubits, num_bits, ops);
+    return compute_reaction_depth(*this);
 }
 
 size_t Circuit::estimate_ccz_state_weight() const {
