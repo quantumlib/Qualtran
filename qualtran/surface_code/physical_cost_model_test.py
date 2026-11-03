@@ -14,6 +14,12 @@
 import pytest
 
 import qualtran.testing as qlt_testing
+from qualtran.surface_code import FastDataBlock, PhysicalCostModel
+
+
+def test_make_beverland_et_al_default_data_block_is_fast():
+    cost_model = PhysicalCostModel.make_beverland_et_al(data_d=25)
+    assert isinstance(cost_model.data_block, FastDataBlock)
 
 
 @pytest.mark.notebook
