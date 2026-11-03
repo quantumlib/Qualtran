@@ -167,7 +167,7 @@ class CompactDataBlock(DataBlock):
     data_d: int
 
     def n_tiles(self, n_algo_qubits: int) -> int:
-        return math.ceil(1.5 * n_algo_qubits)
+        return math.ceil(1.5 * (n_algo_qubits + 2))
 
     @property
     def n_steps_to_consume_a_magic_state(self) -> int:
