@@ -32,6 +32,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
+from qualtran.bloqs.basic_gates import CSwap
 from qualtran.bloqs.swap_network.cswap_approx import CSwapApprox
 from qualtran.drawing import TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
@@ -128,6 +129,7 @@ class SwapWithZero(GateWithRegisters):
     target_bitsize: SymbolicInt
     n_target_registers: Tuple[SymbolicInt, ...] = attrs.field(converter=_to_tuple)
     uncompute: bool = False
+    use_exact_cswap: bool = False
 
     def __attrs_post_init__(self):
         assert len(self.n_target_registers) == len(self.selection_bitsizes)
@@ -154,7 +156,9 @@ class SwapWithZero(GateWithRegisters):
         return Signature([*self.selection_registers, *self.target_registers])
 
     @cached_property
-    def cswap_n(self) -> 'CSwapApprox':
+    def cswap_n(self) -> Union['CSwapApprox', 'CSwap']:
+        if self.use_exact_cswap:
+            return CSwap(self.target_bitsize)
         return CSwapApprox(self.target_bitsize)
 
     @cached_property
