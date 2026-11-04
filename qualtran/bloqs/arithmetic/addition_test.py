@@ -33,6 +33,7 @@ from qualtran.bloqs.arithmetic.addition import (
     _add_small,
     _add_symb,
     Add,
+    AddWithCarry,
     AddK,
     OutOfPlaceAdder,
 )
@@ -42,6 +43,7 @@ from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
 from qualtran.resource_counting import get_cost_value, QubitCount
 from qualtran.resource_counting.generalizers import ignore_split_join
+
 from qualtran.simulation.classical_sim import (
     format_classical_truth_table,
     get_classical_truth_table,
@@ -203,6 +205,13 @@ def test_addition_gate_counts(n: int):
     assert add.t_complexity() == add.decompose_bloq().t_complexity()
     assert add.t_complexity() == add_reference_t_complexity(add)
     qlt_testing.assert_equivalent_bloq_counts(add, ignore_split_join)
+
+@pytest.mark.parametrize("n", range(3, 10))
+def test_add_with_carry_gate_counts(n: int):
+    bloq = AddWithCarry(QUInt(n))
+    qlt_testing.assert_valid_bloq_decomposition(bloq)
+
+    qlt_testing.assert_equivalent_bloq_counts(bloq, ignore_split_join)
 
 
 @pytest.mark.parametrize('a,b', itertools.product(range(2**3), repeat=2))
@@ -454,3 +463,54 @@ def test_controlled_add_from_add():
 def test_add_k_str():
     add_k = AddK(QUInt(5), k=3)
     assert str(add_k) == "AddK(k=3)"
+def test_add_with_carry_classical_spec():
+    bloq = AddWithCarry(QUInt(3))
+
+    assert bloq.call_classically(a=5, b=6, carry_out=0) == (5, 3, 1)
+    assert bloq.call_classically(a=1, b=2, carry_out=0) == (1, 3, 0)
+    assert bloq.call_classically(a=7, b=7, carry_out=1) == (7, 6, 0)
+
+@pytest.mark.parametrize(
+    'a,b,carry_in',
+    [
+        (5, 6, 0),
+        (1, 2, 0),
+        (7, 7, 1),
+        (7, 1, 0),
+        (0, 0, 1),
+    ],
+)
+def test_add_with_carry_decomposition(a: int, b: int, carry_in: int):
+    num_bits = 3
+    gate = AddWithCarry(QUInt(num_bits))
+    qubits = cirq.LineQubit.range(2 * num_bits + 1)
+    greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
+    context = cirq.DecompositionContext(greedy_mm)
+    circuit = cirq.Circuit(
+        gate.decompose_from_registers(
+            context=context,
+            a=np.array(qubits[:num_bits]),
+            b=np.array(qubits[num_bits : 2 * num_bits]),
+            carry_out=np.array(qubits[2 * num_bits :]),
+        )
+    )
+
+    ancillas = sorted(circuit.all_qubits() - set(qubits))
+    initial_state = (
+        QUInt(num_bits).to_bits(a)
+        + QUInt(num_bits).to_bits(b)
+        + [carry_in]
+        + [0] * len(ancillas)
+    )
+
+    total = a + b
+    final_state = (
+        QUInt(num_bits).to_bits(a)
+        + QUInt(num_bits).to_bits(total % (1 << num_bits))
+        + [carry_in ^ (total >> num_bits)]
+        + [0] * len(ancillas)
+    )
+
+    assert_circuit_inp_out_cirqsim(
+        circuit, qubits + ancillas, initial_state, final_state
+    )
