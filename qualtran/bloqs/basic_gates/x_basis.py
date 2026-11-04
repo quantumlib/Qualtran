@@ -339,6 +339,9 @@ class MeasureX(Bloq):
     def qcall(cls, q: 'QVar') -> 'QVar':
         return q.bb.add(cls(), q=q)
 
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic.")
+
     def on_classical_vals(self, q: int) -> Dict[str, 'ClassicalValRetT']:
         if q not in [0, 1]:
             raise ValueError(f"Invalid classical value encountered in {self}: {q}")
@@ -370,6 +373,16 @@ class MeasureX(Bloq):
             data=data, inds=[(incoming['q'], 0), (q_trace, 0), (outgoing['c'], 0)], tags=[str(self)]
         )
         return [t, DiscardInd((q_trace, 0))]
+
+    def as_cirq_op(
+        self,
+        qubit_manager: 'cirq.QubitManager',
+        **cirq_quregs: 'CirqQuregT',  # type: ignore[type-var]
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
+        import cirq
+
+        (q,) = cirq_quregs['q']
+        return cirq.measure_single_paulistring(cirq.X(q)), {}
 
 
 @bloq_example

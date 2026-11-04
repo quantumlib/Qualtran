@@ -201,3 +201,18 @@ def test_meas_z_supertensor():
     rho = cbloq.tensor_contract(superoperator=True)
     should_be = np.asarray([[1, 0], [0, 0]])
     np.testing.assert_allclose(rho, should_be, atol=1e-8)
+
+
+def test_meas_x_as_cirq_op():
+    q = cirq.NamedQubit('q')
+    qm = cirq.ops.SimpleQubitManager()
+    op, out_quregs = MeasureX().as_cirq_op(qubit_manager=qm, q=np.array([q]))
+    assert op == cirq.measure_single_paulistring(cirq.X(q))
+    assert out_quregs == {}
+
+    bb = BloqBuilder()
+    q_soq = bb.add(PlusState())
+    c_soq = bb.add(MeasureX(), q=q_soq)
+    cbloq = bb.finalize(c=c_soq)
+    with pytest.raises(ValueError, match="Output classical wires are not supported in Cirq"):
+        _ = cbloq.to_cirq_circuit()
