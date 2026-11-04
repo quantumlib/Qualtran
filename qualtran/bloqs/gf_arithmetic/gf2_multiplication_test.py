@@ -135,6 +135,22 @@ def test_multiply_by_constant_mod_classical_action(m_x):
             assert blq.call_classically(g=g) == cblq.call_classically(g=g)
 
 
+def test_multiply_by_constant_controlled_decomposition():
+    gf = QGF(2, 3, Poly.Degrees([0, 1, 3]))
+    bloq = GF2MulK(gf, 5).controlled()
+    cbloq = bloq.decompose_bloq().flatten()
+
+    for g in range(8):
+        value = gf.gf_type(g)
+
+        result = cbloq.call_classically(ctrl=0, g=value)
+        assert result[0] == 0
+        assert int(result[1]) == g
+
+        result = cbloq.call_classically(ctrl=1, g=value)
+        assert result[0] == 1
+        assert result[1] == value * gf.gf_type(5)
+
 @pytest.mark.parametrize(
     ['m_x', 'f_x', 'cnot_count'],
     [
