@@ -205,10 +205,7 @@ def test_addition_gate_counts(n: int):
     qlt_testing.assert_equivalent_bloq_counts(add, ignore_split_join)
 
 
-@pytest.mark.parametrize(
-    "m,n",
-    [(a, b) for b in range(1, 7) for a in range(1, b + 1)],
-)
+@pytest.mark.parametrize("m,n", [(a, b) for b in range(1, 7) for a in range(1, b + 1)])
 def test_addition_gate_counts_unequal_bitsizes(m: int, n: int):
     add = Add(QUInt(m), QUInt(n))
     qlt_testing.assert_valid_bloq_decomposition(add)
@@ -249,9 +246,7 @@ def test_add_call_classically_overflow():
 def test_add_truth_table():
     bloq = Add(QUInt(2))
     classical_truth_table = format_classical_truth_table(*get_classical_truth_table(bloq))
-    assert (
-        classical_truth_table
-        == """\
+    assert classical_truth_table == """\
 a  b  |  a  b
 --------------
 0, 0 -> 0, 0
@@ -270,7 +265,6 @@ a  b  |  a  b
 3, 1 -> 3, 0
 3, 2 -> 3, 1
 3, 3 -> 3, 2"""
-    )
 
 
 def test_add_in_cbloq():

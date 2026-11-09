@@ -227,7 +227,9 @@ class Add(Bloq):
         elif not is_symbolic(m) and not is_symbolic(n):
             n_cnot = (n - 2) * 3 + 2 + 3 * m - 3
         else:
-            n_cnot = (n - 2) * 3 + 2 + sympy.Piecewise((3 * n - 5, sympy.Eq(m, n)), (3 * m - 3, True))
+            n_cnot = (
+                (n - 2) * 3 + 2 + sympy.Piecewise((3 * n - 5, sympy.Eq(m, n)), (3 * m - 3, True))
+            )
         return {And(): n - 1, And().adjoint(): n - 1, CNOT(): n_cnot}
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
