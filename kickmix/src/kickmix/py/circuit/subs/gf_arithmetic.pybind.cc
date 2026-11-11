@@ -1,6 +1,7 @@
 #include "kickmix/py/circuit/subs/gf_arithmetic.pybind.h"
 
 #include <cstring>
+#include <optional>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <sstream>
@@ -54,32 +55,144 @@ pybind11::int_ gf2_poly_to_py_int(const GF2Poly &poly) {
     return pybind11::int_(0).attr("from_bytes")(bytes_obj, "little");
 }
 
-GF2Field make_checked_gf2_field(size_t degree, const pybind11::int_ &modulus_int, const char *name) {
-    GF2Poly modulus = py_int_to_gf2_poly(modulus_int, name);
-    GF2Field field(degree, modulus);
-    if (!gf2_is_irreducible(field.modulus())) {
-        throw std::invalid_argument("GF2Field: modulus is not irreducible over GF(2)");
+bool is_py_int(const pybind11::handle &obj) {
+    return pybind11::isinstance<pybind11::int_>(obj) && !pybind11::isinstance<pybind11::bool_>(obj);
+}
+
+std::string py_repr(const pybind11::handle &obj) {
+    return pybind11::cast<std::string>(pybind11::repr(obj));
+}
+
+bool is_galois_field_obj(const pybind11::handle &obj) {
+    return pybind11::hasattr(obj, "characteristic") && pybind11::hasattr(obj, "degree") &&
+           pybind11::hasattr(obj, "irreducible_poly");
+}
+
+bool is_galois_poly_obj(const pybind11::handle &obj) {
+    return pybind11::hasattr(obj, "field") && pybind11::hasattr(obj, "degree") && pybind11::hasattr(obj, "coeffs");
+}
+
+// Throws unless `char_obj` (a galois `.characteristic` attribute) is the int 2.
+void require_characteristic_2(const pybind11::object &char_obj, const char *what) {
+    if (!is_py_int(char_obj) || !char_obj.equal(pybind11::int_(2))) {
+        throw std::invalid_argument(
+            std::string("GF2Field: ") + what + " must be over GF(2) (characteristic 2), got characteristic " +
+            py_repr(char_obj) + ".");
     }
-    return field;
+}
+
+// Range-checks a Python int degree before casting it, so huge ints give a ValueError instead of an
+// opaque cast failure.
+size_t parse_degree_arg(const pybind11::int_ &deg_int) {
+    if (deg_int < pybind11::int_(1) || deg_int > pybind11::int_(GF2_MAX_DEGREE)) {
+        throw std::invalid_argument(
+            "GF2Field: degree must be between 1 and " + std::to_string(GF2_MAX_DEGREE) + ", got " + py_repr(deg_int) +
+            ". For example, use GF2Field(8).");
+    }
+    return pybind11::cast<size_t>(deg_int);
+}
+
+// Parses a polynomial argument given as an int, a `galois.Poly` over GF(2), or a polynomial string.
+GF2Poly parse_poly_arg(const pybind11::object &obj, const char *name) {
+    if (pybind11::isinstance<pybind11::str>(obj)) {
+        return GF2Poly::from_str(pybind11::cast<std::string_view>(obj));
+    }
+    if (is_galois_poly_obj(obj)) {
+        require_characteristic_2(obj.attr("field").attr("characteristic"), name);
+        return py_int_to_gf2_poly(pybind11::int_(obj), name);
+    }
+    // galois field elements are int-like, and expose the field's characteristic on their class.
+    pybind11::object cls = pybind11::type::of(obj);
+    if (pybind11::hasattr(cls, "characteristic")) {
+        require_characteristic_2(cls.attr("characteristic"), name);
+    }
+    if (pybind11::isinstance<pybind11::bool_>(obj) || !pybind11::hasattr(obj, "__index__")) {
+        throw std::invalid_argument(
+            std::string(name) + " must be an int, a galois.Poly, or a polynomial string (e.g. \"x^4 + x + 1\").");
+    }
+    return py_int_to_gf2_poly(pybind11::int_(obj), name);
+}
+
+// Builds a field from a validated degree (or none, to infer it from the modulus), an optional
+// modulus argument and an optional primitive element argument.
+GF2Field make_gf2_field(
+    std::optional<size_t> degree, const pybind11::object &modulus_obj, const pybind11::object &primitive_element_obj) {
+    if (modulus_obj.is_none()) {
+        if (!degree.has_value()) {
+            throw std::invalid_argument(
+                "GF2Field requires a degree, a modulus, or a galois.GF(2^m) field (e.g. GF2Field(8), "
+                "GF2Field(modulus=\"x^4 + x + 1\"), or GF2Field(galois.GF(2**8))).");
+        }
+        if (primitive_element_obj.is_none()) {
+            return GF2Field(*degree);
+        }
+        return GF2Field(
+            *degree, gf2_default_irreducible_poly(*degree), parse_poly_arg(primitive_element_obj, "primitive_element"));
+    }
+    GF2Poly modulus = parse_poly_arg(modulus_obj, "modulus");
+    if (primitive_element_obj.is_none()) {
+        return degree.has_value() ? GF2Field(*degree, modulus) : GF2Field(modulus);
+    }
+    GF2Poly prim = parse_poly_arg(primitive_element_obj, "primitive_element");
+    return degree.has_value() ? GF2Field(*degree, modulus, prim) : GF2Field(modulus, prim);
+}
+
+// Builds a field from a `galois.GF(2**m)` class (duck typed on `.characteristic`, `.degree`,
+// `.irreducible_poly` and optionally `.primitive_element`).
+GF2Field gf2_field_from_galois_obj(
+    const pybind11::handle &obj, const pybind11::object &primitive_element_obj = pybind11::none()) {
+    require_characteristic_2(obj.attr("characteristic"), "galois field");
+    pybind11::object deg_obj = obj.attr("degree");
+    if (!is_py_int(deg_obj)) {
+        throw std::invalid_argument("GF2Field: galois field degree must be an int, got " + py_repr(deg_obj) + ".");
+    }
+    size_t degree = parse_degree_arg(pybind11::reinterpret_borrow<pybind11::int_>(deg_obj));
+    pybind11::object prim = primitive_element_obj;
+    if (prim.is_none() && pybind11::hasattr(obj, "primitive_element")) {
+        prim = obj.attr("primitive_element");
+    }
+    return make_gf2_field(degree, obj.attr("irreducible_poly"), prim);
 }
 
 GF2Field resolve_gf2_field(const pybind11::object &field_obj, size_t expected_degree) {
     if (field_obj.is_none()) {
         return GF2Field(expected_degree);
     }
-    if (pybind11::isinstance<GF2Field>(field_obj)) {
-        const GF2Field &field = field_obj.cast<const GF2Field &>();
-        if (field.degree() != expected_degree) {
-            std::stringstream ss;
-            ss << "field.degree (" << field.degree() << ") != len(target) (" << expected_degree << ")";
-            throw std::invalid_argument(ss.str());
+    GF2Field field = [&]() -> GF2Field {
+        if (pybind11::isinstance<GF2Field>(field_obj)) {
+            return field_obj.cast<const GF2Field &>();
         }
-        return field;
+        if (is_galois_field_obj(field_obj)) {
+            return gf2_field_from_galois_obj(field_obj);
+        }
+        throw std::invalid_argument(
+            "field must be None, a km.GF2Field, or a galois.GF(2^m) field (e.g. field=None or field=km.GF2Field(" +
+            std::to_string(expected_degree) + ")).");
+    }();
+    if (field.degree() != expected_degree) {
+        std::stringstream ss;
+        ss << "field.degree (" << field.degree() << ") does not match the register size (" << expected_degree
+           << "). For example, pass field=km.GF2Field(" << expected_degree << ") or field=None.";
+        throw std::invalid_argument(ss.str());
     }
-    if (pybind11::isinstance<pybind11::int_>(field_obj) && !pybind11::isinstance<pybind11::bool_>(field_obj)) {
-        return make_checked_gf2_field(expected_degree, pybind11::cast<pybind11::int_>(field_obj), "field");
+    return field;
+}
+
+// Converts a classical constant argument into a GF2Poly that is required to be an element of
+// `field` (0 <= value < 2**degree), rather than silently reducing it modulo the field polynomial.
+GF2Poly py_int_to_field_element(const pybind11::object &value_obj, const GF2Field &field, const char *name) {
+    if (!is_py_int(value_obj)) {
+        throw std::invalid_argument(std::string(name) + " must be an int, got " + py_repr(value_obj) + ".");
     }
-    throw std::invalid_argument("field must be None, an int modulus, or a km.GF2Field.");
+    GF2Poly value = py_int_to_gf2_poly(pybind11::reinterpret_borrow<pybind11::int_>(value_obj), name);
+    if (!field.is_element(value)) {
+        std::stringstream ss;
+        ss << name << " " << pybind11::cast<std::string>(pybind11::repr(value_obj)) << " is not an element of GF(2^"
+           << field.degree() << "); expected 0 < " << name << " < 2**" << field.degree()
+           << ". Reduce it first with field.mod(" << name << ") if that is what you intended.";
+        throw std::invalid_argument(ss.str());
+    }
+    return value;
 }
 
 // Allocates `n` fresh qubits and returns them as an owning km.array object.
@@ -115,7 +228,26 @@ pybind11::object resolve_init_target_obj(PyCircuitBuilder &self, const pybind11:
         }
         return alloc_qubit_array_obj(self, n);
     }
+    auto target_conv = ConvertedArrayXZ::from_obj(target_obj, "target");
+    auto target = target_conv.span.checked_cast_to_qubit_ids("target");
+    if (target.size() != n) {
+        std::stringstream ss;
+        ss << "target has " << target.size() << " qubits but the field degree is " << n << ". Pass a register of size "
+           << n << R"(, or target="alloc".)";
+        throw std::invalid_argument(ss.str());
+    }
     return target_obj;
+}
+
+// Throws unless the register `obj` has exactly `n` qubits.
+void check_register_size(const pybind11::object &obj, size_t n, const char *name, const char *context) {
+    auto conv = ConvertedArrayXZ::from_obj(obj, name);
+    auto qubits = conv.span.checked_cast_to_qubit_ids(name);
+    if (qubits.size() != n) {
+        std::stringstream ss;
+        ss << context << ": Q_" << name << ".size() != field.degree()";
+        throw std::invalid_argument(ss.str());
+    }
 }
 
 }  // namespace
@@ -139,6 +271,8 @@ pybind11::class_<GF2Field> kickmix_py::register_gf2_field_class(pybind11::module
                 4
                 >>> hex(field.modulus)
                 '0x13'
+                >>> field.primitive_element
+                2
                 >>> field.mul(3, 5)
                 15
         )DOC")
@@ -147,27 +281,62 @@ pybind11::class_<GF2Field> kickmix_py::register_gf2_field_class(pybind11::module
 
 void kickmix_py::register_gf2_field_methods(pybind11::class_<GF2Field> &c) {
     c.def(
-        pybind11::init([](size_t degree, const pybind11::object &modulus_obj) -> GF2Field {
-            if (modulus_obj.is_none()) {
-                return GF2Field(degree);
-            }
-            if (pybind11::isinstance<pybind11::int_>(modulus_obj) &&
-                !pybind11::isinstance<pybind11::bool_>(modulus_obj)) {
-                return make_checked_gf2_field(degree, pybind11::cast<pybind11::int_>(modulus_obj), "modulus");
-            }
-            throw std::invalid_argument("modulus must be None or an int.");
-        }),
-        pybind11::arg("degree"),
+        pybind11::init(
+            [](const pybind11::object &degree_obj,
+               const pybind11::object &modulus_obj,
+               const pybind11::object &primitive_element_obj) -> GF2Field {
+                if (is_galois_field_obj(degree_obj)) {
+                    if (!modulus_obj.is_none()) {
+                        throw std::invalid_argument(
+                            "modulus must be None when constructing GF2Field from a galois field.");
+                    }
+                    return gf2_field_from_galois_obj(degree_obj, primitive_element_obj);
+                }
+                std::optional<size_t> degree;
+                if (!degree_obj.is_none()) {
+                    if (pybind11::isinstance<pybind11::str>(degree_obj)) {
+                        std::string repr_str = py_repr(degree_obj);
+                        throw std::invalid_argument(
+                            "degree must be an int or None; to construct from a polynomial string, pass it as "
+                            "modulus=... (e.g. GF2Field(modulus=" +
+                            repr_str + ") or GF2Field(4, " + repr_str + ")).");
+                    }
+                    if (!is_py_int(degree_obj)) {
+                        throw std::invalid_argument(
+                            "degree must be an int, a galois.GF(2^m) field, or None (e.g. GF2Field(4) or "
+                            "GF2Field(modulus=\"x^4 + x + 1\")), got " +
+                            py_repr(degree_obj) + ".");
+                    }
+                    degree = parse_degree_arg(pybind11::reinterpret_borrow<pybind11::int_>(degree_obj));
+                }
+                return make_gf2_field(degree, modulus_obj, primitive_element_obj);
+            }),
+        pybind11::arg("degree") = pybind11::none(),
         pybind11::arg("modulus") = pybind11::none(),
+        pybind11::arg("primitive_element") = pybind11::none(),
         clean_doc_string(R"DOC(
-            @signature def __init__(self, degree: int, modulus: int | None = None) -> None:
+            @overload def __init__(self, degree: int | None = None, modulus: int | str | Any | None = None, primitive_element: int | str | Any | None = None) -> None:
+            @overload def __init__(self, galois_field: Any) -> None:
+            @signature def __init__(self, degree: int | Any | None = None, modulus: int | str | Any | None = None, primitive_element: int | str | Any | None = None) -> None:
             Creates the binary extension field GF(2^degree).
 
+            Can also be constructed directly from a `galois.GF(2**m)` field
+            class (e.g. `km.GF2Field(galois.GF(2**8))`), extracting its degree,
+            irreducible polynomial, and primitive element.
+
             Args:
-                degree: The extension degree m (1 <= m <= 512).
+                degree: The extension degree m (1 <= m <= 512), or a
+                    `galois.GF(2**m)` field class. If None, m is inferred from
+                    the degree of `modulus`.
                 modulus: Optional irreducible reduction polynomial of degree m,
-                    encoded as an int where bit k is the coefficient of x^k. If
-                    None, a low-weight default irreducible polynomial is chosen.
+                    encoded as an int where bit k is the coefficient of x^k, a
+                    `galois.Poly` over GF(2), or a polynomial string such as
+                    "x^4 + x + 1" or "0x13". If None, a low-weight primitive
+                    polynomial is chosen, so that x (2) is a primitive element.
+                primitive_element: Optional multiplicative generator of GF(2^m)*
+                    (of order 2^m - 1), encoded as an int, a `galois.Poly`, or a
+                    polynomial string. Validated if provided; if None, the
+                    smallest primitive element in integer order is used.
 
             Examples:
                 >>> import kickmix as km
@@ -176,9 +345,20 @@ void kickmix_py::register_gf2_field_methods(pybind11::class_<GF2Field> &c) {
                 4
                 >>> hex(field.modulus)
                 '0x13'
-                >>> custom_field = km.GF2Field(4, modulus=0x19)
-                >>> hex(custom_field.modulus)
-                '0x19'
+                >>> field.primitive_element
+                2
+                >>> aes_field = km.GF2Field(8, modulus=0x11B)
+                >>> hex(aes_field.modulus)
+                '0x11b'
+                >>> aes_field.primitive_element
+                3
+                >>> str_field = km.GF2Field(modulus="x^4 + x^3 + 1")
+                >>> str_field == km.GF2Field(4, modulus=0x19)
+                True
+                >>> import galois  # doctest: +SKIP
+                >>> GF = galois.GF(2**8, irreducible_poly=0x11B)  # doctest: +SKIP
+                >>> km.GF2Field(GF) == aes_field  # doctest: +SKIP
+                True
         )DOC")
             .data());
 
@@ -199,6 +379,16 @@ void kickmix_py::register_gf2_field_methods(pybind11::class_<GF2Field> &c) {
         },
         clean_doc_string(R"DOC(
             The irreducible reduction polynomial of degree m, including the x^m bit.
+        )DOC")
+            .data());
+
+    c.def_property_readonly(
+        "primitive_element",
+        [](const GF2Field &self) -> pybind11::int_ {
+            return gf2_poly_to_py_int(self.primitive_element());
+        },
+        clean_doc_string(R"DOC(
+            The primitive element (multiplicative generator of order 2**m - 1) of GF(2^m).
         )DOC")
             .data());
 
@@ -301,9 +491,7 @@ void kickmix_py::register_gf2_field_methods(pybind11::class_<GF2Field> &c) {
             pybind11::bytes bytes_obj = exp_int.attr("to_bytes")(num_bytes, "little");
             std::string_view bytes_view = bytes_obj;
             FixedWidthInt fwi(bit_len);
-            for (size_t k = 0; k < bit_len; k++) {
-                fwi.bit_ref(k) = ((uint8_t)bytes_view[k / 8] >> (k % 8)) & 1;
-            }
+            std::memcpy(fwi.words, bytes_view.data(), num_bytes);
             return gf2_poly_to_py_int(self.pow(pa, fwi));
         },
         pybind11::arg("a"),
@@ -421,6 +609,30 @@ void kickmix_py::register_gf2_field_methods(pybind11::class_<GF2Field> &c) {
         )DOC")
             .data());
 
+    c.def(
+        "is_primitive_element",
+        [](const GF2Field &self, const pybind11::int_ &a) -> bool {
+            if (a < pybind11::int_(0) || pybind11::cast<size_t>(a.attr("bit_length")()) > self.degree()) {
+                return false;
+            }
+            return self.is_primitive_element(py_int_to_gf2_poly(a, "a"));
+        },
+        pybind11::arg("a"),
+        clean_doc_string(R"DOC(
+            @signature def is_primitive_element(self, a: int) -> bool:
+            Returns True if a is a primitive element of GF(2^m) (multiplicative
+            order 2**degree - 1).
+
+            Examples:
+                >>> import kickmix as km
+                >>> aes = km.GF2Field(8, modulus=0x11B)
+                >>> aes.is_primitive_element(2)
+                False
+                >>> aes.is_primitive_element(3)
+                True
+        )DOC")
+            .data());
+
     c.def_static(
         "is_irreducible",
         [](const pybind11::int_ &poly_int) -> bool {
@@ -444,47 +656,34 @@ void kickmix_py::register_gf2_field_methods(pybind11::class_<GF2Field> &c) {
     c.def(
         "__eq__",
         [](const GF2Field &self, const pybind11::object &other) -> bool {
-            if (!pybind11::isinstance<GF2Field>(other)) {
-                return false;
-            }
-            const GF2Field &o = other.cast<const GF2Field &>();
-            return self.degree() == o.degree() && self.modulus() == o.modulus();
+            return pybind11::isinstance<GF2Field>(other) && self == other.cast<const GF2Field &>();
         },
         pybind11::arg("other"),
         clean_doc_string(R"DOC(
             @signature def __eq__(self, other: object) -> bool:
-            Returns True if other is a GF2Field with the same degree and modulus.
-        )DOC")
-            .data());
-
-    c.def(
-        "__ne__",
-        [](const GF2Field &self, const pybind11::object &other) -> bool {
-            if (!pybind11::isinstance<GF2Field>(other)) {
-                return true;
-            }
-            const GF2Field &o = other.cast<const GF2Field &>();
-            return self.degree() != o.degree() || self.modulus() != o.modulus();
-        },
-        pybind11::arg("other"),
-        clean_doc_string(R"DOC(
-            @signature def __ne__(self, other: object) -> bool:
-            Returns True if other is not a GF2Field with the same degree and modulus.
+            Returns True if other is a GF2Field with the same degree, modulus,
+            and primitive_element.
         )DOC")
             .data());
 
     c.def(
         "__hash__",
         [](const GF2Field &self) -> size_t {
+            auto mix = [](size_t h, uint64_t w) {
+                return h ^ (std::hash<uint64_t>{}(w) + 0x9e3779b9 + (h << 6) + (h >> 2));
+            };
             size_t h = self.degree();
             for (uint64_t w : self.modulus().words) {
-                h ^= std::hash<uint64_t>{}(w) + 0x9e3779b9 + (h << 6) + (h >> 2);
+                h = mix(h, w);
+            }
+            for (uint64_t w : self.primitive_element().words) {
+                h = mix(h, w);
             }
             return h;
         },
         clean_doc_string(R"DOC(
             @signature def __hash__(self) -> int:
-            Returns a hash of the field's degree and modulus.
+            Returns a hash of the field's degree, modulus, and primitive_element.
         )DOC")
             .data());
 
@@ -495,6 +694,9 @@ void kickmix_py::register_gf2_field_methods(pybind11::class_<GF2Field> &c) {
             ss << "km.GF2Field(" << self.degree();
             if (self.modulus() != gf2_default_irreducible_poly(self.degree())) {
                 ss << ", modulus=" << self.modulus().str();
+            }
+            if (self.primitive_element() != self.x()) {
+                ss << ", primitive_element=" << self.primitive_element().str();
             }
             ss << ")";
             return ss.str();
@@ -547,7 +749,7 @@ void kickmix_py::append_gf2_imul_obj(
     const pybind11::object &constant_obj,
     const pybind11::object &target_obj,
     const pybind11::object &field_obj) {
-    if (!pybind11::isinstance<pybind11::int_>(constant_obj) || pybind11::isinstance<pybind11::bool_>(constant_obj)) {
+    if (!is_py_int(constant_obj)) {
         PyErr_SetString(
             PyExc_NotImplementedError, "gf2_imul currently only supports classical constant integer factors.");
         throw pybind11::error_already_set();
@@ -555,7 +757,7 @@ void kickmix_py::append_gf2_imul_obj(
     auto target_conv = ConvertedArrayXZ::from_obj(target_obj, "target");
     auto target = target_conv.span.checked_cast_to_qubit_ids("target");
     GF2Field field = resolve_gf2_field(field_obj, target.size());
-    GF2Poly constant_poly = py_int_to_gf2_poly(pybind11::reinterpret_borrow<pybind11::int_>(constant_obj), "constant");
+    GF2Poly constant_poly = py_int_to_field_element(constant_obj, field, "factor");
     gen_gf_imul_classical(self.builder, CircuitGenCtx{{}}, field, target, constant_poly);
 }
 
@@ -564,7 +766,7 @@ void kickmix_py::append_gf2_idiv_obj(
     const pybind11::object &constant_obj,
     const pybind11::object &target_obj,
     const pybind11::object &field_obj) {
-    if (!pybind11::isinstance<pybind11::int_>(constant_obj) || pybind11::isinstance<pybind11::bool_>(constant_obj)) {
+    if (!is_py_int(constant_obj)) {
         PyErr_SetString(
             PyExc_NotImplementedError, "gf2_idiv currently only supports classical constant integer divisors.");
         throw pybind11::error_already_set();
@@ -572,7 +774,7 @@ void kickmix_py::append_gf2_idiv_obj(
     auto target_conv = ConvertedArrayXZ::from_obj(target_obj, "target");
     auto target = target_conv.span.checked_cast_to_qubit_ids("target");
     GF2Field field = resolve_gf2_field(field_obj, target.size());
-    GF2Poly constant_poly = py_int_to_gf2_poly(pybind11::reinterpret_borrow<pybind11::int_>(constant_obj), "constant");
+    GF2Poly constant_poly = py_int_to_field_element(constant_obj, field, "divisor");
     gen_gf_idiv_classical(self.builder, CircuitGenCtx{{}}, field, target, constant_poly);
 }
 
@@ -588,6 +790,7 @@ pybind11::object kickmix_py::append_init_gf2_mul_obj(
     auto lhs_conv = ConvertedArrayXZ::from_obj(lhs_obj, "lhs");
     auto lhs = lhs_conv.span.checked_cast_to_qubit_ids("lhs");
     GF2Field field = resolve_gf2_field(field_obj, lhs.size());
+    check_register_size(rhs_obj, field.degree(), "rhs", "gen_gf_mul");
     pybind11::object resolved = resolve_init_target_obj(self, target_obj, field.degree());
 
     auto target_conv = ConvertedArrayXZ::from_obj(resolved, "target");
@@ -784,6 +987,7 @@ pybind11::object kickmix_py::append_init_gf2_div_obj(
     auto lhs_conv = ConvertedArrayXZ::from_obj(lhs_obj, "lhs");
     auto lhs = lhs_conv.span.checked_cast_to_qubit_ids("lhs");
     GF2Field field = resolve_gf2_field(field_obj, lhs.size());
+    check_register_size(rhs_obj, field.degree(), "rhs", "gen_gf_div");
     pybind11::object resolved = resolve_init_target_obj(self, target_obj, field.degree());
 
     auto target_conv = ConvertedArrayXZ::from_obj(resolved, "target");

@@ -92,6 +92,9 @@ dependencies = [
 [tool.hatch.version]
 path = "qualtran/_version.py"
 
+[tool.uv]
+required-version = ">=0.13.4"
+
 [dependency-groups]
 dev = [
     { include-group = "test"},

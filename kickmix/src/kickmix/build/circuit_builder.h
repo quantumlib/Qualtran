@@ -1,8 +1,13 @@
 #ifndef KICKMIX_CIRCUIT_BUILDER_H
 #define KICKMIX_CIRCUIT_BUILDER_H
 
+#include <array>
 #include <functional>
 #include <span>
+#include <stdexcept>
+#include <string_view>
+#include <type_traits>
+#include <vector>
 
 #include "circuit_gen_ctx.h"
 #include "circuit_pattern.h"
@@ -92,19 +97,14 @@ template <class T>
 concept ClassicalControlLike =
     std::is_same<T, bool>::value || std::is_same<T, BitId>::value || std::is_same<T, BitOrBool>::value;
 
-struct Mark {
-    bool enter_else_exit;
-    std::string_view name;
-    size_t offset;
-};
 struct RaiiDeferredMark {
     CircuitBuilder *builder;
-    Mark deferred;
+    std::string_view name;
     RaiiDeferredMark() = delete;
-    RaiiDeferredMark(CircuitBuilder *builder, Mark deferred) : builder(builder), deferred(deferred) {
+    RaiiDeferredMark(CircuitBuilder *builder, std::string_view name) : builder(builder), name(name) {
     }
     RaiiDeferredMark(const RaiiDeferredMark &) = delete;
-    RaiiDeferredMark(RaiiDeferredMark &&other) noexcept : builder(other.builder), deferred(other.deferred) {
+    RaiiDeferredMark(RaiiDeferredMark &&other) noexcept : builder(other.builder), name(other.name) {
         other.builder = nullptr;
     }
     RaiiDeferredMark &operator=(const RaiiDeferredMark &) = delete;
@@ -129,15 +129,14 @@ struct CircuitBuilder {
     std::vector<QubitId> c_resolve_qubit_controls;
     std::vector<BitId> c_resolve_bit_controls;
     bool c_resolve_has_false_control = false;
-    std::vector<Mark> marks;
     // Determines if validation is skipped, to reduce runtime cost.
     bool skip_validation = false;
     CircuitPattern pattern;
     MutableCircuit mut;
 
+    void info_tag(std::string_view text);
     RaiiDeferredMark raii_mark_block_entry(std::string_view name);
     Circuit finish_circuit() const;
-    void write_analysis_svg_to(std::ostream &out, size_t reference_qubit_count);
 
     void for_each(size_t start, size_t end, const std::function<void(LoopBuilder &out, iota k)> &func);
     void for_each_reversed(size_t start, size_t end, const std::function<void(LoopBuilder &out, iota k)> &func);
@@ -329,17 +328,15 @@ struct CircuitBuilder {
         const stride_span<const BitId> &targets, bool value, const stride_span<const bool> &controls);
     void broadcast_bit_store(const stride_span<const BitId> &targets, bool value, const stride_span_z &controls);
 
+    void cswap(QubitId control, QubitId q1, QubitId q2);
+    void cswap_if(QubitId control, QubitId q1, QubitId q2, BitId cond);
+    void swap_if(QubitId q1, QubitId q2, BitId cond);
     void cswap(BitId control, QubitId q1, QubitId q2);
     void cswap(QubitOrBitOrBool control, QubitId q1, QubitId q2);
     void broadcast_cswap(QubitOrTrue control, stride_span<const QubitId> q1, stride_span<const QubitId> q2);
     void broadcast_hmr(stride_span<const QubitId> target, stride_span<const BitId> output);
 
     RaiiCircuitBuilderPopPushedCondition raii_push_condition(BitId control);
-
-    void left_rotate(stride_span<const QubitId> reg);
-    void right_rotate(stride_span<const QubitId> reg);
-    void cleft_rotate(QubitOrTrue control, stride_span<const QubitId> reg);
-    void cright_rotate(QubitOrTrue control, stride_span<const QubitId> reg);
 
     void reset_and(QubitOrBitOrBool control1, QubitOrBitOrBool control2, QubitId target);
     void del_zero(QubitId target);

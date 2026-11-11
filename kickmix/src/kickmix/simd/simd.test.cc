@@ -199,6 +199,36 @@ TEST_EACH_SIZE_W(val, u64_add, {
     }
 })
 
+TEST_EACH_SIZE_W(val, u32_add, {
+    auto rng = INDEPENDENT_TEST_RNG();
+    auto val1 = W::random(rng);
+    auto val2 = W::random(rng);
+    auto val3 = val1.u32_add(val2);
+    for (size_t k = 0; k < val1.BIT_SIZE / 32; k += 1) {
+        ASSERT_EQ(val3.u32(k), val1.u32(k) + val2.u32(k));
+    }
+})
+
+TEST_EACH_SIZE_W(val, u32_right_shift, {
+    auto rng = INDEPENDENT_TEST_RNG();
+    auto val1 = W::random(rng);
+    auto shift = rng() & 31;
+    auto val3 = val1.u32_right_shift(shift);
+    for (size_t k = 0; k < val1.BIT_SIZE / 32; k += 1) {
+        ASSERT_EQ(val3.u32(k), val1.u32(k) >> shift);
+    }
+})
+
+TEST_EACH_SIZE_W(val, u32_left_shift, {
+    auto rng = INDEPENDENT_TEST_RNG();
+    auto val1 = W::random(rng);
+    auto shift = rng() & 31;
+    auto val3 = val1.u32_left_shift(shift);
+    for (size_t k = 0; k < val1.BIT_SIZE / 32; k += 1) {
+        ASSERT_EQ(val3.u32(k), val1.u32(k) << shift);
+    }
+})
+
 TEST_EACH_SIZE_W(val, equate, {
     auto rng = INDEPENDENT_TEST_RNG();
     auto val1 = W::random(rng);
@@ -272,3 +302,15 @@ TEST_EACH_SIZE_W(val, u32_eq, {
     }
     ASSERT_EQ((std::bit_cast<W>(v1).u32_eq(std::bit_cast<W>(v2))), (std::bit_cast<W>(v3)));
 });
+
+TEST_EACH_SIZE_W(val, from_u64s, {
+    auto rng = INDEPENDENT_TEST_RNG();
+    std::array<uint64_t, W::BIT_SIZE / 64> vals{};
+    for (auto &e : vals) {
+        e = rng();
+    }
+    auto val = W::from_u64s(vals);
+    for (size_t k = 0; k < W::BIT_SIZE / 64; k++) {
+        ASSERT_EQ(val.u64(k), vals[k]);
+    }
+})

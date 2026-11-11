@@ -3,11 +3,13 @@
 #include <iostream>
 #include <sstream>
 
+#include "kickmix/mem/util.h"
+
 using namespace kickmix;
 
 array_xz array_xz::alloc_noinit(size_t count, QXZTypeTag8 tag) {
     array_xz result;
-    result.items = (QubitOrXZBitOrXZBool *)malloc(count * sizeof(uint32_t));
+    result.items = alloc_else_throw<QubitOrXZBitOrXZBool>(count);
     result.count = count;
     result.common_type = tag;
     return result;
@@ -29,7 +31,7 @@ array_xz &array_xz::operator=(array_xz &&other) noexcept {
         return *this;
     }
     if (items != nullptr) {
-        free(items);
+        free_aligned(items);
     }
     items = other.items;
     count = other.count;
@@ -41,7 +43,7 @@ array_xz &array_xz::operator=(array_xz &&other) noexcept {
 
 array_xz::~array_xz() {
     if (items != nullptr) {
-        free(items);
+        free_aligned(items);
     }
 }
 
@@ -74,7 +76,7 @@ std::ostream &kickmix::operator<<(std::ostream &out, const array_xz &v) {
 array_xz array_xz::copy_of_concat(const stride_span_xz &lhs, const stride_span_xz &rhs) {
     array_xz result;
     size_t n = lhs.size() + rhs.size();
-    result.items = (QubitOrXZBitOrXZBool *)malloc(n * sizeof(QubitOrXZBitOrXZBool));
+    result.items = alloc_else_throw<QubitOrXZBitOrXZBool>(n);
     result.count = n;
 
     // Copy data.

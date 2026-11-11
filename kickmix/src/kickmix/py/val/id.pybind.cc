@@ -133,6 +133,15 @@ QubitOrXZBitOrXZBool kickmix_py::obj_to_qubit_or_xzbit_or_xzbool(
             PyErr_Clear();
         }
     }
+    if (type_ptr == &PyUnicode_Type) {
+        auto value = pybind11::cast<std::string_view>(obj);
+        if (value == "|+>") {
+            return XBool(false);
+        }
+        if (value == "|->") {
+            return XBool(true);
+        }
+    }
 
     std::stringstream ss;
     ss << "Expected a km.q | km.b | bool | km.xbool | km.xb but got ";
@@ -163,7 +172,7 @@ BitId kickmix_py::obj_to_bit_id(const pybind11::handle &obj, const char *context
     }
 
     std::stringstream ss;
-    ss << "Expected a qm.b but got ";
+    ss << "Expected a km.b but got ";
     ss << context_value_name;
     ss << "=" << pybind11::repr(obj);
     throw pybind11::type_error(ss.str());
@@ -178,6 +187,11 @@ void kickmix_py::register_bid_methods(pybind11::class_<BitId> &c_bid) {
         pybind11::pos_only(),
         clean_doc_string(R"DOC(
             Initializes a bit identifier with the given value.
+
+            Examples:
+                >>> import kickmix as km
+                >>> print(km.b(5))
+                b5
         )DOC")
             .data());
 
@@ -188,6 +202,11 @@ void kickmix_py::register_bid_methods(pybind11::class_<BitId> &c_bid) {
         },
         clean_doc_string(R"DOC(
             Returns the index of the bit.
+
+            Examples:
+                >>> import kickmix as km
+                >>> km.b(5).id
+                5
         )DOC")
             .data());
 
@@ -205,7 +224,7 @@ void kickmix_py::register_bid_methods(pybind11::class_<BitId> &c_bid) {
         "__repr__",
         [](BitId &self) -> std::string {
             std::stringstream ss;
-            ss << "b(";
+            ss << "km.b(";
             ss << self.untagged_id();
             ss << ")";
             return ss.str();
@@ -259,7 +278,12 @@ void kickmix_py::register_rid_methods(pybind11::class_<RegisterId> &c_rid) {
         pybind11::arg("arg"),
         pybind11::pos_only(),
         clean_doc_string(R"DOC(
-            Returns a register identifier with the given index.
+            Initializes a register identifier with the given index.
+
+            Examples:
+                >>> import kickmix as km
+                >>> print(km.r(5))
+                r5
         )DOC")
             .data());
 
@@ -269,7 +293,12 @@ void kickmix_py::register_rid_methods(pybind11::class_<RegisterId> &c_rid) {
             return self.id;
         },
         clean_doc_string(R"DOC(
-            Returns the index of the bit.
+            Returns the index of the register.
+
+            Examples:
+                >>> import kickmix as km
+                >>> km.r(5).id
+                5
         )DOC")
             .data());
 
@@ -279,7 +308,7 @@ void kickmix_py::register_rid_methods(pybind11::class_<RegisterId> &c_rid) {
             return pybind11::hash(pybind11::cast(self.id));
         },
         clean_doc_string(R"DOC(
-            Returns a hash of the bit.
+            Returns a hash of the register.
         )DOC")
             .data());
 
@@ -293,7 +322,7 @@ void kickmix_py::register_rid_methods(pybind11::class_<RegisterId> &c_rid) {
             return ss.str();
         },
         clean_doc_string(R"DOC(
-            Returns a parseable text representation of the bit.
+            Returns a parseable text representation of the register.
         )DOC")
             .data());
 
@@ -306,6 +335,22 @@ void kickmix_py::register_rid_methods(pybind11::class_<RegisterId> &c_rid) {
         },
         clean_doc_string(R"DOC(
             Returns a description of the register identifier.
+        )DOC")
+            .data());
+
+    c_rid.def(
+        "__lt__",
+        [](RegisterId &self, const pybind11::object &rhs) {
+            if ((void *)Py_TYPE(rhs.ptr()) == PYBIND_TYPE_PTR_REGISTER_ID) {
+                return self.id < unsafe_pyobject_ptr_to_register_id_ptr(rhs.ptr())->id;
+            }
+            std::stringstream ss;
+            ss << "Don't know how to compare to ";
+            ss << pybind11::repr(rhs);
+            throw pybind11::type_error(ss.str());
+        },
+        clean_doc_string(R"DOC(
+            Does a less-than comparison.
         )DOC")
             .data());
 
@@ -331,7 +376,12 @@ void kickmix_py::register_xbid_methods(pybind11::class_<XBitId> &c_xbid) {
         pybind11::arg("arg"),
         pybind11::pos_only(),
         clean_doc_string(R"DOC(
-            Returns an xb with the given index.
+            Initializes an x-basis bit identifier.
+
+            Examples:
+                >>> import kickmix as km
+                >>> print(km.xb(5))
+                xb5
         )DOC")
             .data());
 
@@ -341,7 +391,12 @@ void kickmix_py::register_xbid_methods(pybind11::class_<XBitId> &c_xbid) {
             return self.untagged_id();
         },
         clean_doc_string(R"DOC(
-            Returns the index of the xb.
+            Returns the index of the bit.
+
+            Examples:
+                >>> import kickmix as km
+                >>> km.xb(5).id
+                5
         )DOC")
             .data());
 
@@ -351,7 +406,7 @@ void kickmix_py::register_xbid_methods(pybind11::class_<XBitId> &c_xbid) {
             return pybind11::hash(pybind11::cast(self.tagged_id));
         },
         clean_doc_string(R"DOC(
-            Returns a hash of the xb.
+            Returns a hash of the x-basis bit id.
         )DOC")
             .data());
 
@@ -359,13 +414,13 @@ void kickmix_py::register_xbid_methods(pybind11::class_<XBitId> &c_xbid) {
         "__repr__",
         [](XBitId &self) -> std::string {
             std::stringstream ss;
-            ss << "xb(";
+            ss << "km.xb(";
             ss << self.untagged_id();
             ss << ")";
             return ss.str();
         },
         clean_doc_string(R"DOC(
-            Returns a parseable text representation of the xb.
+            Returns a parseable text representation of the x-basis bit id.
         )DOC")
             .data());
 
@@ -413,7 +468,12 @@ void kickmix_py::register_qid_methods(pybind11::class_<QubitId> &c_qid) {
         pybind11::arg("arg"),
         pybind11::pos_only(),
         clean_doc_string(R"DOC(
-            Returns a q with the given index.
+            Initializes a qubit identifier.
+
+            Examples:
+                >>> import kickmix as km
+                >>> print(km.q(5))
+                q5
         )DOC")
             .data());
 
@@ -423,7 +483,12 @@ void kickmix_py::register_qid_methods(pybind11::class_<QubitId> &c_qid) {
             return self.untagged_id();
         },
         clean_doc_string(R"DOC(
-            Returns the index of the q.
+            Returns the index of the qubit.
+
+            Examples:
+                >>> import kickmix as km
+                >>> km.q(5).id
+                5
         )DOC")
             .data());
 
@@ -433,7 +498,7 @@ void kickmix_py::register_qid_methods(pybind11::class_<QubitId> &c_qid) {
             return pybind11::hash(pybind11::cast(self.tagged_id));
         },
         clean_doc_string(R"DOC(
-            Returns a hash of the bit.
+            Returns a hash of the qubit.
         )DOC")
             .data());
 
@@ -453,7 +518,7 @@ void kickmix_py::register_qid_methods(pybind11::class_<QubitId> &c_qid) {
         "__repr__",
         [](QubitId &self) -> std::string {
             std::stringstream ss;
-            ss << "q(";
+            ss << "km.q(";
             ss << self.untagged_id();
             ss << ")";
             return ss.str();
@@ -473,7 +538,6 @@ void kickmix_py::register_qid_methods(pybind11::class_<QubitId> &c_qid) {
         )DOC")
             .data());
 
-    c_qid.def(pybind11::self < pybind11::self, "Compares two QIds.");
     c_qid.def(pybind11::self == pybind11::self, "Determines if two QIds are equal.");
     c_qid.def(pybind11::self != pybind11::self, "Determines if two QIds are not equal.");
 
@@ -496,7 +560,14 @@ void kickmix_py::register_xbool_methods(pybind11::class_<XBool> &c_xbool) {
         pybind11::arg("arg"),
         pybind11::pos_only(),
         clean_doc_string(R"DOC(
-            Returns an xbool of the given boolean.
+            Initializes an xbool with the given boolean value.
+
+            Examples:
+                >>> import kickmix as km
+                >>> km.xbool(False)
+                km.xbool(False)
+                >>> km.xbool(True)
+                km.xbool(True)
         )DOC")
             .data());
 
@@ -506,17 +577,47 @@ void kickmix_py::register_xbool_methods(pybind11::class_<XBool> &c_xbool) {
             return pybind11::hash(pybind11::cast(self.tagged_id));
         },
         clean_doc_string(R"DOC(
-            Returns a hash of the bit.
+            Returns a hash of the xbool.
+        )DOC")
+            .data());
+
+    c_xbool.def(
+        "__bool__",
+        [](XBool &self) -> bool {
+            return self.is_minus_ket();
+        },
+        clean_doc_string(R"DOC(
+            Converts the xbool into a bool.
+
+            Returns:
+                True if the xbool represents a minus state, else False.
+
+            Examples:
+                >>> import kickmix as km
+                >>> bool(km.xbool(True))
+                True
+                >>> bool(km.xbool(False))
+                False
         )DOC")
             .data());
 
     c_xbool.def(
         "__repr__",
         [](XBool &self) -> std::string_view {
-            return self.is_minus_ket() ? "xbool(True)" : "xbool(False)";
+            return self.is_minus_ket() ? "km.xbool(True)" : "km.xbool(False)";
         },
         clean_doc_string(R"DOC(
             Returns a parseable text representation of the xbool.
+        )DOC")
+            .data());
+
+    c_xbool.def(
+        "__str__",
+        [](XBool &self) -> std::string_view {
+            return self.is_minus_ket() ? "xbool(True)" : "xbool(False)";
+        },
+        clean_doc_string(R"DOC(
+            Returns a text representation of the xbool.
         )DOC")
             .data());
 

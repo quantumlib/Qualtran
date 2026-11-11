@@ -1,6 +1,10 @@
 #ifndef KICKMIX_SIMD_512_AVX_H
 #define KICKMIX_SIMD_512_AVX_H
 
+#include <array>
+#include <bit>
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <ostream>
 #include <random>
@@ -77,6 +81,9 @@ struct alignas(sizeof(uint64_t) * 8) b512_avx {
     inline b512_avx operator|(const b512_avx &other) const {
         return {_mm512_or_si512(v, other.v)};
     }
+    inline static b512_avx from_u64s(std::array<uint64_t, 8> vs) {
+        return {_mm512_setr_epi64(vs[0], vs[1], vs[2], vs[3], vs[4], vs[5], vs[6], vs[7])};
+    }
     inline static b512_avx from_u32_broadcast(uint32_t v) {
         return {_mm512_set1_epi32(std::bit_cast<int32_t>(v))};
     }
@@ -92,6 +99,15 @@ struct alignas(sizeof(uint64_t) * 8) b512_avx {
     }
     inline b512_avx u64_left_shift(size_t shift) const {
         return {_mm512_slli_epi64(v, shift)};
+    }
+    inline b512_avx u32_add(const b512_avx &other) const {
+        return {_mm512_add_epi32(v, other.v)};
+    }
+    inline b512_avx u32_right_shift(size_t shift) const {
+        return {_mm512_srli_epi32(v, shift)};
+    }
+    inline b512_avx u32_left_shift(size_t shift) const {
+        return {_mm512_slli_epi32(v, shift)};
     }
     inline b512_avx u32_eq(const b512_avx &other) const {
         return {_mm512_movm_epi32(_mm512_cmpeq_epi32_mask(v, other.v))};

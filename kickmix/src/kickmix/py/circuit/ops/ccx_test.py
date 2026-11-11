@@ -80,7 +80,7 @@ def test_builder_del_and_clears_the_target_without_toffolis():
     circuit = builder.finish_circuit()
 
     # Only the two computing CCXs are magic; the uncomputation is free.
-    assert circuit.max_magic() == 2
+    assert circuit.operation_statistics().num_non_clifford == 2
 
     sim = km.Simulator(batch_size=4)
     sim.use_same_registers_as(circuit)

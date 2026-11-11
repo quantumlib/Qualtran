@@ -21,7 +21,7 @@ BENCHMARK(gen_gf_ifrobenius__m256_k1) {
 }
 
 BENCHMARK(gen_gf_ifrobenius__m256_k128) {
-    // A large power is where the original 64 bit implementation overflowed. Building the matrix
+    // A large power (2^k with k >= 64 does not fit in a machine word). Building the matrix
     // costs k squarings plus m multiplies, so the cost grows only mildly with k.
     GF2Field field(256);
 

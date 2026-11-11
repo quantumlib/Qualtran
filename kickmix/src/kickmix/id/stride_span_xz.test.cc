@@ -998,7 +998,7 @@ TEST(stride_span_xz, has_same_contents_as) {
     ASSERT_FALSE(q.has_same_contents_as(q2));
 }
 
-TEST(stride_span_z, preserves_stride_from_bit_and_mixed_spans) {
+TEST(stride_span_xz, preserves_stride_from_bit_and_mixed_spans) {
     std::vector<BitId> bits{BitId(1), BitId(2), BitId(3)};
     stride_span<const BitId> rev_bits = stride_span<const BitId>(bits).reversed();
     stride_span_z z_bits(rev_bits);
@@ -1014,7 +1014,7 @@ TEST(stride_span_z, preserves_stride_from_bit_and_mixed_spans) {
     ASSERT_EQ(z_mixed[2], QubitOrBitOrBool(QubitId(4)));
 }
 
-TEST(stride_span_z, vector_constructors_preserve_pointer) {
+TEST(stride_span_xz, vector_constructors_preserve_pointer) {
     std::vector<QubitId> qubits{QubitId(1), QubitId(2)};
     stride_span_z z_q(qubits);
     ASSERT_EQ(z_q.data(), reinterpret_cast<const QubitOrBitOrBool *>(qubits.data()));

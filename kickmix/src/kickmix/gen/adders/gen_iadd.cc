@@ -9,8 +9,9 @@ void kickmix::gen_iadd(
     const CircuitGenCtx &ctx,
     stride_span<const QubitId> target,
     stride_span<const QubitId> offset,
-    QubitOrTrue control) {
-    auto mark = builder.raii_mark_block_entry("iadd");
+    QubitOrTrue control,
+    std::string_view tag_name) {
+    auto mark = builder.raii_mark_block_entry(tag_name);
 
     const size_t n = target.size();
     const size_t m = offset.size();
@@ -30,7 +31,8 @@ void kickmix::gen_iadd(
         // Offset can be truncated.
         // DIDNTDO: Cancel this CX against a CX in the recursion.
         builder.ccx(control, offset[n - 1], target[n - 1]);
-        gen_iadd(builder, ctx.with_more_dirty_qubits(offset.subspan(n - 1)), target, offset.subspan(0, n - 1), control);
+        gen_iadd(
+            builder, ctx.with_more_dirty_qubits(offset.subspan(n - 1)), target, offset.subspan(0, n - 1), control, "");
         return;
     }
     if (n > m + 1) {
@@ -47,7 +49,7 @@ void kickmix::gen_iadd(
         for (size_t k = 0; k < padding_qubits; k++) {
             extended_offset.push_back(ctx.clean_workspace[k]);
         }
-        gen_iadd(builder, ctx.with_clean_subspan(padding_qubits), target, extended_offset, control);
+        gen_iadd(builder, ctx.with_clean_subspan(padding_qubits), target, extended_offset, control, "");
         return;
     }
     QubitId carry;
@@ -140,9 +142,10 @@ void kickmix::gen_isub(
     const CircuitGenCtx &ctx,
     stride_span<const QubitId> target,
     stride_span<const QubitId> offset,
-    QubitOrTrue control) {
-    auto mark = builder.raii_mark_block_entry("isub");
+    QubitOrTrue control,
+    std::string_view tag_name) {
+    auto mark = builder.raii_mark_block_entry(tag_name);
     builder.broadcast_x(target);
-    gen_iadd(builder, ctx, target, offset, control);
+    gen_iadd(builder, ctx, target, offset, control, "");
     builder.broadcast_x(target);
 }

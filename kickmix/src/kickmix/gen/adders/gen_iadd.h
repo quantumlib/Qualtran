@@ -25,14 +25,16 @@ void gen_iadd(
     const CircuitGenCtx &ctx,
     stride_span<const QubitId> target,
     stride_span<const QubitId> offset,
-    QubitOrTrue control = true);
+    QubitOrTrue control = true,
+    std::string_view tag_name = "iadd");
 
 void gen_isub(
     CircuitBuilder &builder,
     const CircuitGenCtx &ctx,
     stride_span<const QubitId> target,
     stride_span<const QubitId> offset,
-    QubitOrTrue control = true);
+    QubitOrTrue control = true,
+    std::string_view tag_name = "isub");
 
 }  // namespace kickmix
 

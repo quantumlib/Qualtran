@@ -734,10 +734,49 @@ TEST(CircuitBuilder, parity_cccz) {
     }
 }
 
-TEST(CircuitBuilder, write_analysis_svg_to_every_gate) {
+TEST(CircuitBuilder, cswap) {
+    for (QubitOrBitOrBool c : qz_cases(0)) {
+        CircuitBuilder builder;
+        QubitId t1{1};
+        QubitId t2{2};
+        builder.cswap(c, t1, t2);
+        builder.z(QubitId{10});
+        builder.z(BitId{10});
+
+        std::map<Key, uint32_t> vals;
+        uint32_t phase = 0;
+        vals[c] = B0;
+        vals[t1] = B1;
+        vals[t2] = B2;
+        apply_to(builder.finish_circuit(), vals, phase);
+        ASSERT_EQ(phase, 0) << c;
+        ASSERT_EQ(vals[t1], (vals[c] & B2) | (~vals[c] & B1)) << c;
+        ASSERT_EQ(vals[t2], (vals[c] & B1) | (~vals[c] & B2)) << c;
+        ASSERT_TRUE(c.is_bool() || vals[c] == B0);
+    }
+}
+
+TEST(CircuitBuilder, raii_mark_block_entry) {
     CircuitBuilder builder;
-    builder.mut.append(circuit_with_every_operation());
-    std::stringstream ss;
-    builder.write_analysis_svg_to(ss, 10);
-    ASSERT_TRUE(!ss.str().empty());
+    {
+        auto m1 = builder.raii_mark_block_entry("outer");
+        builder.x(QubitId{0});
+        {
+            auto m2 = builder.raii_mark_block_entry("inner_empty");
+        }
+        {
+            auto m3 = builder.raii_mark_block_entry("inner");
+            builder.cx(QubitId{0}, QubitId{1});
+        }
+    }
+    ASSERT_EQ(builder.finish_circuit(), Circuit(R"CIRCUIT(
+            INFO_TAG "@enter:outer"
+            X q0
+            INFO_TAG "@enter:inner_empty"
+            INFO_TAG "@exit:inner_empty"
+            INFO_TAG "@enter:inner"
+            CX q0 q1
+            INFO_TAG "@exit:inner"
+            INFO_TAG "@exit:outer"
+        )CIRCUIT"));
 }

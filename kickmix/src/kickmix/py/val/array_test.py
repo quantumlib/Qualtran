@@ -153,3 +153,9 @@ def test_array_repr():
     actual = eval(repr(expected), {'km': km}, {})
     assert actual == expected
     assert repr(actual) == repr(expected)
+
+
+def test_array_ket_strings():
+    assert km.array(["|+>", "|->"]) == km.array([km.xbool(False), km.xbool(True)])
+    with pytest.raises(TypeError):
+        km.array("|+>")

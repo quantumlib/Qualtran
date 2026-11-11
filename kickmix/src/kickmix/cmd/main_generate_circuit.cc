@@ -234,10 +234,12 @@ int kickmix::main_generate_circuit(int argc, const char **argv) {
         }
     }
 
+    Circuit circuit = builder.finish_circuit();
+
     const char *flame_out = find_argument("--flame_out", argc, argv);
     if (flame_out != nullptr) {
         std::ofstream flame_out_file(flame_out);
-        builder.write_analysis_svg_to(flame_out_file, n >= 0 ? (size_t)n : 0);
+        circuit.write_analysis_svg_to(flame_out_file, n >= 0 ? (size_t)n : 0);
     }
 
     if (find_bool_argument("--skip_output", argc, argv)) {
@@ -245,12 +247,12 @@ int kickmix::main_generate_circuit(int argc, const char **argv) {
     }
 
     if (diagram) {
-        builder.finish_circuit().write_text_diagram_to(out_file, true);
+        circuit.write_text_diagram_to(out_file, true);
         putc('\n', out_file);
     } else if (kmb) {
-        builder.finish_circuit().write_kmb_to(out_file);
+        circuit.write_kmb_to(out_file);
     } else {
-        builder.finish_circuit().write_kmx_to(out_file);
+        circuit.write_kmx_to(out_file);
     }
 
     if (out_file != stdout) {

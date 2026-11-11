@@ -64,7 +64,7 @@ TEST(gen_cmp_qq, cost) {
             gen_flip_if_lt_qq(builder, ctx, lhs, rhs, target, or_equal, control);
             auto circuit = builder.finish_circuit();
             auto expected = std::max((int)n, 2 * (int)n - std::max((int)c - 1, 1));
-            auto actual = circuit.max_magic();
+            auto actual = circuit.estimate_ccz_state_weight();
             EXPECT_EQ(actual, expected) << n << ", " << c;
         }
     }

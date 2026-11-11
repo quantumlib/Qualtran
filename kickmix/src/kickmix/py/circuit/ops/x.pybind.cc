@@ -55,6 +55,13 @@ static void x(PyCircuitBuilder &self, QubitOrXZBitOrXZBool t) {
 
 static inline void broadcast_x_leaf(PyCircuitBuilder &self, const stride_ptr<const QubitOrXZBitOrXZBool> &t, size_t n) {
     for (size_t k = 0; k < n; k++) {
+        if (t[k].tag() == QXZTypeTag8::BOOL_VAL) {
+            std::stringstream ss;
+            ss << "Can't bit flip " << t[k];
+            throw std::invalid_argument(ss.str());
+        }
+    }
+    for (size_t k = 0; k < n; k++) {
         x(self, t[k]);
     }
 }

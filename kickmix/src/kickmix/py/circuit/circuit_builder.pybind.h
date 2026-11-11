@@ -1,9 +1,11 @@
 #ifndef KICKGEN_PYBIND_CIRCUIT_BUILDER_H
 #define KICKGEN_PYBIND_CIRCUIT_BUILDER_H
 
-#include <iostream>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <string>
+#include <string_view>
+#include <unordered_set>
 
 #include "kickmix/build/circuit_builder.h"
 #include "kickmix/py/val/array.pybind.h"
@@ -20,39 +22,15 @@ struct PyCircuitBuilder {
     size_t max_qubits = SIZE_MAX;
     size_t allocated_qubits = 0;
     size_t allocated_bits = 0;
-    std::vector<std::vector<uint32_t>> scope_qubit_allocations;
-    std::vector<std::vector<uint32_t>> scope_bit_allocations;
+    /// Backing storage for the `std::string_view` names referenced by `builder.marks`.
+    std::unordered_set<std::string> mark_names;
 
-    void start_auto_free_scope() {
-        scope_qubit_allocations.push_back({});
-        scope_bit_allocations.push_back({});
-    }
-    void end_auto_free_scope() {
-        if (!scope_qubit_allocations.empty()) {
-            while (!scope_qubit_allocations.back().empty()) {
-                uint32_t id = scope_qubit_allocations.back().back();
-                scope_qubit_allocations.back().pop_back();
-                if (id < qubit_allocations.size() && qubit_allocations[id]) {
-                    free_qids.push_back(kickmix::QubitId{id});
-                    qubit_allocations[id] = false;
-                }
-                allocated_qubits -= 1;
-            }
-            scope_qubit_allocations.pop_back();
-        }
-        if (!scope_bit_allocations.empty()) {
-            while (!scope_bit_allocations.back().empty()) {
-                uint32_t id = scope_bit_allocations.back().back();
-                scope_bit_allocations.back().pop_back();
-                if (id < bit_allocations.size() && bit_allocations[id]) {
-                    free_qids.push_back(kickmix::QubitId{id});
-                    bit_allocations[id] = false;
-                }
-                allocated_bits -= 1;
-            }
-            scope_bit_allocations.pop_back();
-        }
-    }
+    // Move-only: copies would keep `string_view`s into the original's `mark_names`.
+    PyCircuitBuilder() = default;
+    PyCircuitBuilder(const PyCircuitBuilder &) = delete;
+    PyCircuitBuilder &operator=(const PyCircuitBuilder &) = delete;
+    PyCircuitBuilder(PyCircuitBuilder &&) = default;
+    PyCircuitBuilder &operator=(PyCircuitBuilder &&) = default;
 
     kickmix::QubitId alloc_qubit() {
         kickmix::QubitId result;
@@ -66,9 +44,6 @@ struct PyCircuitBuilder {
             qubit_allocations.push_back(false);
         }
         qubit_allocations[result.untagged_id()] = true;
-        if (!scope_qubit_allocations.empty()) {
-            scope_qubit_allocations.back().push_back(result.untagged_id());
-        }
         allocated_qubits += 1;
         return result;
     }
@@ -85,9 +60,6 @@ struct PyCircuitBuilder {
             bit_allocations.push_back(false);
         }
         bit_allocations[result.untagged_id()] = true;
-        if (!scope_bit_allocations.empty()) {
-            scope_bit_allocations.back().push_back(result.untagged_id());
-        }
         allocated_bits += 1;
         return result;
     }
@@ -121,6 +93,13 @@ struct PyCircuitBuilder {
     }
 };
 
+/// Python context manager returned by `CircuitBuilder.mark`.
+struct PyCircuitBuilderMark {
+    PyCircuitBuilder *py_builder = nullptr;
+    std::string_view name;
+};
+
+void register_circuit_builder_mark_class(pybind11::module &m);
 void register_circuit_builder_methods(pybind11::class_<PyCircuitBuilder> &c_circuit_builder);
 
 kickmix::array_z read_python_int_list_into_table_data(const pybind11::object &table, size_t word_length);

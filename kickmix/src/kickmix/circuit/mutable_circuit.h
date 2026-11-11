@@ -23,6 +23,9 @@ struct MutableCircuit {
     MonotonicArena<uint32_t, 32> bc;      // Stores the bit condition of each operation with 1 bit condition.
     MonotonicArena<uint32_t, 32> b0;      // Stores the bit target of each operation with 1 bit target.
     MonotonicArena<FixedPrecisionAngle128, 32> angles;  // Stores the angle of each operation with an angle argument.
+    MonotonicArena<uint64_t, 32>
+        info_tag_end_offsets;                 // Stores the end offset in info_tag_chars for each INFO_TAG operation.
+    MonotonicArena<char, 32> info_tag_chars;  // Stores the concatenated string payloads of all INFO_TAG operations.
 
     MutableCircuit() = default;
     MutableCircuit(MutableCircuit &&) noexcept = default;
@@ -42,7 +45,9 @@ struct MutableCircuit {
           q0(),
           bc(),
           b0(),
-          angles() {
+          angles(),
+          info_tag_end_offsets(),
+          info_tag_chars() {
         op_types.push_back_many(other.op_types);
         qqq0.push_back_many(other.qqq0);
         qqq1.push_back_many(other.qqq1);
@@ -53,6 +58,8 @@ struct MutableCircuit {
         bc.push_back_many(other.bc);
         b0.push_back_many(other.b0);
         angles.push_back_many(other.angles);
+        info_tag_end_offsets.push_back_many(other.info_tag_end_offsets);
+        info_tag_chars.push_back_many(other.info_tag_chars);
     }
     // (this has to be explicit because MonotonicArena has no copy assignment,
     // since it is used in cases where data cannot move and copy assignment
@@ -79,6 +86,10 @@ struct MutableCircuit {
         b0.push_back_many(other.b0);
         angles.clear();
         angles.push_back_many(other.angles);
+        info_tag_end_offsets.clear();
+        info_tag_end_offsets.push_back_many(other.info_tag_end_offsets);
+        info_tag_chars.clear();
+        info_tag_chars.push_back_many(other.info_tag_chars);
         return *this;
     }
 
@@ -99,11 +110,16 @@ struct MutableCircuit {
     void append_from_kmx_file(FILE *file);
     void append_from_kmx_line(std::string_view kmx_line);
 
+    /// Appends an INFO_TAG operation with the given text payload to this circuit.
+    void append_info_tag(std::string_view text);
+
     /// Appends all operations from the other circuit to this circuit.
     void append(const Circuit &other);
     /// Appends all operations from the other circuit to this circuit.
     void append(const MutableCircuit &other);
     /// Appends all operations from the other circuit to this circuit, but in reversed order.
+    /// Note that this doesn't invert the operations. `Z_POW q0 0.25` will not become
+    /// `Z_POW q0 -0.25` in the reversed circuit, it will stay as `Z_POW q0 0.25`.
     void append_reversed(const MutableCircuit &other);
 
     /// Clears all circuit data.

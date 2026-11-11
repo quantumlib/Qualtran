@@ -123,14 +123,14 @@ TEST(gen_gf_ifrobenius, rejects_bad_register_size) {
 }
 
 TEST(gen_gf_ifrobenius, large_degree_is_linear_and_ancilla_free) {
-    // The matrix construction must not overflow for k >= 64, which the original 64 bit code did.
+    // The matrix construction must not overflow for k >= 64 (i.e. exponents 2^k beyond 64 bits).
     GF2Field field(128);
     CircuitBuilder builder;
     auto target = builder.append_register(128, "target");
     gen_gf_ifrobenius(builder, CircuitGenCtx{}, field, target, 100);
     Circuit circuit = builder.finish_circuit();
     ASSERT_EQ(circuit.num_qubits, 128);
-    ASSERT_EQ(circuit.max_magic(), 0);
+    ASSERT_EQ(circuit.estimate_ccz_state_weight(), 0);
 
     // Sanity check the classical map it is synthesized from: it must be an order m automorphism.
     GF2Poly v = GF2Poly::from_str("0x1234567890abcdef1234567890abcdef");

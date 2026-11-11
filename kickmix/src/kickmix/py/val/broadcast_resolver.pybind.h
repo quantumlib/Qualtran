@@ -1,6 +1,9 @@
 #ifndef KICKGEN_PYBIND_BROADCAST_RESOLVER_H
 #define KICKGEN_PYBIND_BROADCAST_RESOLVER_H
 
+#include <array>
+#include <sstream>
+
 #include "kickmix/py/val/converted_array.pybind.h"
 
 namespace kickmix_py {

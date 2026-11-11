@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include "kickmix/gen/bits/gen_bit_rotate.h"
 #include "perf.perf.h"
 
 using namespace kickmix;
@@ -10,11 +11,10 @@ BENCHMARK(builder_c_left_rotate) {
     CircuitBuilder builder;
     QubitId control = builder.append_register(1)[0];
     std::vector<QubitId> target = builder.append_register(256);
-    builder.cleft_rotate(control, target);
     size_t n = 0;
 
     benchmark_go([&]() {
-        builder.cleft_rotate(control, target);
+        gen_left_rotate(builder, CircuitGenCtx{}, target, 1, control);
         n += builder.mut.op_types.size();
         builder.mut.op_types.clear();
         builder.mut.qqq0.clear();

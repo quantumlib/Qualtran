@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 
 #include "kickmix/build/circuit_builder.h"
 
@@ -59,8 +60,8 @@ void CircuitBuilder::broadcast_cz(
         throw std::invalid_argument("broadcast_cz: len(controls1) != len(controls2)");
     }
     size_t n = controls1.size();
-    pattern.pattern_push_condition(controls2);
-    pattern.pattern_neg_if(controls1);
+    pattern.pattern_push_condition(controls1);
+    pattern.pattern_neg_if(controls2);
     pattern.pattern_pop_condition();
     pattern.dump_into(mut, 0, n, false);
 }
@@ -98,6 +99,19 @@ void CircuitBuilder::broadcast_cz(
     }
 }
 
+static void validate_cz_pair(QubitOrXZBitOrXZBool c1, QubitOrXZBitOrXZBool c2) {
+    if (!c1.is_qubit_or_bit_or_bool()) {
+        std::stringstream ss;
+        ss << "cz: control1 must be a qubit, bit, or bool, but got " << c1;
+        throw std::invalid_argument(ss.str());
+    }
+    if (!c2.is_qubit_or_bit_or_bool()) {
+        std::stringstream ss;
+        ss << "cz: control2 must be a qubit, bit, or bool, but got " << c2;
+        throw std::invalid_argument(ss.str());
+    }
+}
+
 void CircuitBuilder::mux_broadcast_cz(
     const stride_span<const QubitOrXZBitOrXZBool> &controls1,
     const stride_span<const QubitOrXZBitOrXZBool> &controls2) {
@@ -105,6 +119,9 @@ void CircuitBuilder::mux_broadcast_cz(
         throw std::invalid_argument("broadcast_cz: len(controls1) != len(controls2)");
     }
     size_t n = controls1.size();
+    for (size_t k = 0; k < n; k++) {
+        validate_cz_pair(controls1[k], controls2[k]);
+    }
     for (size_t k = 0; k < n; k++) {
         mux_cz(controls1[k], controls2[k]);
     }
@@ -117,9 +134,8 @@ void CircuitBuilder::cz(QubitId v1, QubitId v2) {
 }
 
 void CircuitBuilder::mux_cz(QubitOrXZBitOrXZBool c1, QubitOrXZBitOrXZBool c2) {
-    if (c1.is_qubit_or_bit_or_bool() && c2.is_qubit_or_bit_or_bool()) {
-        cz((QubitOrBitOrBool)c1, (QubitOrBitOrBool)c2);
-    }
+    validate_cz_pair(c1, c2);
+    cz((QubitOrBitOrBool)c1, (QubitOrBitOrBool)c2);
 }
 void CircuitBuilder::cz(QubitOrBitOrBool c1, QubitOrBitOrBool c2) {
     if (c1.is_qubit()) {
@@ -134,8 +150,8 @@ void CircuitBuilder::cz(QubitOrBitOrBool c1, QubitOrBitOrBool c2) {
         if (c2.is_qubit()) {
             z_if((QubitId)c2, (BitId)c1);
         } else if (c2.is_bit()) {
-            push_condition((BitId)c2);
-            neg_if((BitId)c1);
+            push_condition((BitId)c1);
+            neg_if((BitId)c2);
             pop_condition();
         } else if ((bool)c2) {
             neg_if((BitId)c1);
@@ -192,7 +208,11 @@ void CircuitBuilder::mux_broadcast_cz(const stride_span_xz &controls1, const str
             broadcast_cz(controls1.cast_data<QubitId>(), controls2.cast_data<QubitId>());
             break;
         default: {
-            broadcast_cz(controls1.cast_data<QubitOrBitOrBool>(), controls2.cast_data<QubitOrBitOrBool>());
+            stride_span_z c1 = controls1.checked_cast_to_qubit_or_bit_or_bool("control1");
+            stride_span_z c2 = controls2.checked_cast_to_qubit_or_bit_or_bool("control2");
+            broadcast_cz(
+                stride_span<const QubitOrBitOrBool>(c1.ptr, c1.stride, c1.count),
+                stride_span<const QubitOrBitOrBool>(c2.ptr, c2.stride, c2.count));
         }
     }
 }

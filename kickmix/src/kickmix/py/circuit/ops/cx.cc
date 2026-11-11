@@ -1,3 +1,5 @@
+#include <sstream>
+
 #include "kickmix/build/circuit_builder.h"
 
 using namespace kickmix;
@@ -133,14 +135,32 @@ void CircuitBuilder::broadcast_cx(const stride_span<const bool> &controls, const
         throw std::invalid_argument("broadcast_cx: len(controls) != len(targets)");
     }
     size_t n = targets.size();
-    uint32_t *out = mut.bc.grab_writeable(n);
+    uint32_t *out = mut.b0.grab_writeable(n);
     uint32_t *out_start = out;
     for (size_t k = 0; k < n; k++) {
         *out = targets[k].tagged_id;
         out += controls[k];
     }
-    mut.bc.rewind_tail(out);
+    mut.b0.rewind_tail(out);
     mut.op_types.push_back_repeat(OpType::BIT_INVERT, out - out_start);
+}
+
+static void validate_cx_pair(QubitOrXZBitOrXZBool control, QubitOrXZBitOrXZBool target) {
+    if (!control.is_qubit_or_bit_or_bool()) {
+        std::stringstream ss;
+        ss << "cx: control must be a qubit, bit, or bool, but got " << control;
+        throw std::invalid_argument(ss.str());
+    }
+    if (target.is_bool()) {
+        std::stringstream ss;
+        ss << "cx: target cannot be a compile-time bool, got " << target;
+        throw std::invalid_argument(ss.str());
+    }
+    if (target.is_bit() && control.is_qubit()) {
+        std::stringstream ss;
+        ss << "cx: cannot flip classical bit target " << target << " with quantum control " << control;
+        throw std::invalid_argument(ss.str());
+    }
 }
 
 void CircuitBuilder::mux_cx(
@@ -150,19 +170,16 @@ void CircuitBuilder::mux_cx(
     }
     size_t n = targets.size();
     for (size_t k = 0; k < n; k++) {
+        validate_cx_pair(controls[k], targets[k]);
+    }
+    for (size_t k = 0; k < n; k++) {
         mux_cx(controls[k], targets[k]);
     }
 }
 
 void CircuitBuilder::mux_broadcast_cx(
     const stride_span<const QubitOrXZBitOrXZBool> &controls, const stride_span<const QubitOrXZBitOrXZBool> &targets) {
-    if (controls.size() != targets.size()) {
-        throw std::invalid_argument("broadcast_cx: len(controls) != len(targets)");
-    }
-    size_t n = targets.size();
-    for (size_t k = 0; k < n; k++) {
-        mux_cx(controls[k], targets[k]);
-    }
+    mux_cx(controls, targets);
 }
 
 void CircuitBuilder::broadcast_cx(const stride_span_z &controls, const stride_span_x &targets) {
@@ -216,8 +233,11 @@ void CircuitBuilder::mux_broadcast_cx(const stride_span_xz &controls, const stri
 }
 
 void CircuitBuilder::mux_cx(QubitOrXZBitOrXZBool control, QubitOrXZBitOrXZBool target) {
-    if (control.is_qubit_or_bit_or_bool() && target.is_qubit_or_xbit_or_xbool()) {
+    validate_cx_pair(control, target);
+    if (target.is_qubit_or_xbit_or_xbool()) {
         cx((QubitOrBitOrBool)control, (QubitOrXBitOrXBool)target);
+    } else if (target.is_bit()) {
+        cx(control.is_bit() ? BitOrBool((BitId)control) : BitOrBool((bool)control), (BitId)target);
     }
 }
 

@@ -78,3 +78,35 @@ def test_builder_broadcast_cx_behaves_identically_to_repeated_appends(c: Any, t:
     reference_circuit = reference_builder.finish_circuit()
 
     assert circuit == reference_circuit
+
+
+def test_builder_cx_bit_targets():
+    builder = km.CircuitBuilder()
+    builder.cx(km.b(0), km.b(1))
+    builder.cx(True, km.b(2))
+    builder.cx(False, km.b(3))
+    builder.cx(True, km.array([km.b(4), km.b(5)]))
+    builder.cx(km.array([km.b(0), True]), km.array([km.b(6), km.b(7)]))
+    assert builder.finish_circuit() == km.Circuit("""
+        BIT_INVERT b1 if b0
+        BIT_INVERT b2
+        BIT_INVERT b4
+        BIT_INVERT b5
+        BIT_INVERT b6 if b0
+        BIT_INVERT b7
+    """)
+
+
+def test_builder_cx_errors():
+    builder = km.CircuitBuilder()
+    with pytest.raises((TypeError, ValueError)):
+        builder.cx(km.q(0), km.b(1))
+    with pytest.raises((TypeError, ValueError)):
+        builder.cx(km.xb(0), km.q(1))
+    with pytest.raises((TypeError, ValueError)):
+        builder.cx(km.xbool(True), km.q(1))
+    with pytest.raises((TypeError, ValueError)):
+        builder.cx(km.q(0), True)
+    with pytest.raises((TypeError, ValueError)):
+        builder.cx(km.array([km.q(0), km.q(1)]), km.array([km.q(2), km.b(3)]))
+    assert builder.finish_circuit() == km.Circuit()

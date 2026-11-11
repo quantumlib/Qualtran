@@ -263,7 +263,7 @@ void kickmix_py::register_unary_iteration_methods(pybind11::class_<PyUnaryIterat
         pybind11::arg("control") = true,
         pybind11::keep_alive<1, 2>(),
         clean_doc_string(R"DOC(
-            @signature def __init__(self, builder: km.CircuitBuilder, address: km.array, address_values: range | None = None, *, control: q | b | bool = True) -> None:
+            @signature def __init__(self, builder: km.CircuitBuilder, address: km.array, address_values: range | None = None, *, control: km.q | km.b | bool = True) -> None:
             Initializes a reusable unary iteration cursor over `address`.
 
             Args:
@@ -284,7 +284,9 @@ void kickmix_py::register_unary_iteration_methods(pybind11::class_<PyUnaryIterat
                 >>> with cursor:
                 ...     cursor.move_to(2)
                 ...     builder.cx(cursor.match_qubit, target[0])
-                >>> builder.finish_circuit().max_magic()
+                >>> circuit = builder.finish_circuit()
+                >>> stats = circuit.operation_statistics()
+                >>> stats.num_toffoli_like
                 1
         )DOC")
             .data());
@@ -362,7 +364,7 @@ void kickmix_py::register_unary_iteration_methods(pybind11::class_<PyUnaryIterat
             return self;
         },
         clean_doc_string(R"DOC(
-            @signature def __iter__(self) -> Iterator[tuple[int, q]]:
+            @signature def __iter__(self) -> Iterator[tuple[int, km.q]]:
             Yields `(address_value, match_qubit)` pairs for each configured value.
 
             The cursor must already be open inside a `with` block. Finishing or breaking
@@ -379,7 +381,7 @@ void kickmix_py::register_unary_iteration_methods(pybind11::class_<PyUnaryIterat
             return self.next();
         },
         clean_doc_string(R"DOC(
-            @signature def __next__(self) -> tuple[int, q]:
+            @signature def __next__(self) -> tuple[int, km.q]:
             Advances to the next value and returns `(address_value, match_qubit)`.
 
             Raises:
@@ -394,7 +396,7 @@ void kickmix_py::register_unary_iteration_methods(pybind11::class_<PyUnaryIterat
             return self.match_qubit();
         },
         clean_doc_string(R"DOC(
-            @signature def match_qubit(self) -> q:
+            @signature def match_qubit(self) -> km.q:
             Returns the qubit that is ON in the parts of the superposition where `control`
             is active and `address == cur_address_value`.
 

@@ -1,6 +1,9 @@
 #ifndef KICKMIX_SIMD_256_H
 #define KICKMIX_SIMD_256_H
 
+#include <array>
+#include <cstddef>
+#include <cstdint>
 #include <ostream>
 #include <random>
 
@@ -33,6 +36,9 @@ struct alignas(sizeof(uint64_t) * 4) b256_polyfill {
     }
     inline uint32_t u32(size_t k) const {
         return static_cast<uint32_t>(v[k / 2] >> ((k % 2) * 32));
+    }
+    inline static b256_polyfill from_u64s(std::array<uint64_t, 4> vs) {
+        return {vs[0], vs[1], vs[2], vs[3]};
     }
     inline static b256_polyfill from_u32_broadcast(uint32_t v) {
         uint64_t v2 = static_cast<uint64_t>(v);
@@ -129,6 +135,34 @@ struct alignas(sizeof(uint64_t) * 4) b256_polyfill {
             v[2] | other.v[2],
             v[3] | other.v[3],
         };
+    }
+    inline b256_polyfill u32_add(const b256_polyfill &other) const {
+        const uint32_t *v1 = (const uint32_t *)&v;
+        const uint32_t *v2 = (const uint32_t *)&other.v;
+        b256_polyfill result;
+        uint32_t *v3 = (uint32_t *)&result.v;
+        for (size_t k = 0; k < BIT_SIZE / 32; k++) {
+            v3[k] = v1[k] + v2[k];
+        }
+        return result;
+    }
+    inline b256_polyfill u32_right_shift(size_t shift) const {
+        const uint32_t *v1 = (const uint32_t *)&v;
+        b256_polyfill result;
+        uint32_t *v3 = (uint32_t *)&result.v;
+        for (size_t k = 0; k < BIT_SIZE / 32; k++) {
+            v3[k] = v1[k] >> shift;
+        }
+        return result;
+    }
+    inline b256_polyfill u32_left_shift(size_t shift) const {
+        const uint32_t *v1 = (const uint32_t *)&v;
+        b256_polyfill result;
+        uint32_t *v3 = (uint32_t *)&result.v;
+        for (size_t k = 0; k < BIT_SIZE / 32; k++) {
+            v3[k] = v1[k] << shift;
+        }
+        return result;
     }
     inline b256_polyfill u32_eq(const b256_polyfill &other) const {
         const uint32_t *v1 = (uint32_t *)&v;

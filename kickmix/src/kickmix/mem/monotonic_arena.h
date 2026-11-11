@@ -78,9 +78,9 @@ struct MonotonicArena {
     ///
     /// This method is intended to be used in combination with `grab_writeable` in
     /// order to efficiently reserve space for appending items without doing a
-    /// capacity check for each append. If `p is the pointer returned by
+    /// capacity check for each append. If `p` is the pointer returned by
     /// `grab_writeable(n)`, then the pointer `q` given to this method should
-    /// satisfy `p <= q && q <= p + n`. Otherwise undefined behavior occurs.
+    /// satisfy `p <= q && q <= p + n`. Otherwise, undefined behavior occurs.
     inline void rewind_tail(T *end) {
         content.rewind_tail((char *)end);
     }
@@ -88,7 +88,7 @@ struct MonotonicArena {
     /// Allocates enough memory for the given number of items and returns a pointer
     /// to the beginning of the range. If the caller doesn't end up using the entire
     /// range, they MUST return the unused tail by using `arena.rewind_tail(end)`.
-    /// Otherwise iterating items in the arena will iterate over the unused items.
+    /// Otherwise, iterating items in the arena will iterate over the unused items.
     inline T *grab_writeable(size_t count) {
         return (T *)content.grab_writeable(count * sizeof(T), alignment);
     }

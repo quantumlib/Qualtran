@@ -1,6 +1,9 @@
 #ifndef KICKMIX_SIMD_512_H
 #define KICKMIX_SIMD_512_H
 
+#include <array>
+#include <cstddef>
+#include <cstdint>
 #include <ostream>
 #include <random>
 
@@ -33,6 +36,9 @@ struct alignas(sizeof(uint64_t) * 8) b512_polyfill {
     }
     inline uint32_t u32(size_t k) const {
         return static_cast<uint32_t>(v[k / 2] >> ((k % 2) * 32));
+    }
+    inline static b512_polyfill from_u64s(std::array<uint64_t, 8> vs) {
+        return {vs[0], vs[1], vs[2], vs[3], vs[4], vs[5], vs[6], vs[7]};
     }
     inline static b512_polyfill from_u32_broadcast(uint32_t v) {
         uint64_t v2 = static_cast<uint64_t>(v);
@@ -192,6 +198,34 @@ struct alignas(sizeof(uint64_t) * 8) b512_polyfill {
             v[6] | other.v[6],
             v[7] | other.v[7],
         };
+    }
+    inline b512_polyfill u32_add(const b512_polyfill &other) const {
+        const uint32_t *v1 = (const uint32_t *)&v;
+        const uint32_t *v2 = (const uint32_t *)&other.v;
+        b512_polyfill result;
+        uint32_t *v3 = (uint32_t *)&result.v;
+        for (size_t k = 0; k < BIT_SIZE / 32; k++) {
+            v3[k] = v1[k] + v2[k];
+        }
+        return result;
+    }
+    inline b512_polyfill u32_right_shift(size_t shift) const {
+        const uint32_t *v1 = (const uint32_t *)&v;
+        b512_polyfill result;
+        uint32_t *v3 = (uint32_t *)&result.v;
+        for (size_t k = 0; k < BIT_SIZE / 32; k++) {
+            v3[k] = v1[k] >> shift;
+        }
+        return result;
+    }
+    inline b512_polyfill u32_left_shift(size_t shift) const {
+        const uint32_t *v1 = (const uint32_t *)&v;
+        b512_polyfill result;
+        uint32_t *v3 = (uint32_t *)&result.v;
+        for (size_t k = 0; k < BIT_SIZE / 32; k++) {
+            v3[k] = v1[k] << shift;
+        }
+        return result;
     }
     inline b512_polyfill u32_eq(const b512_polyfill &other) const {
         const uint32_t *v1 = (uint32_t *)&v;

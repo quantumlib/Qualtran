@@ -62,3 +62,14 @@ def test_builder_broadcast_cz_behaves_identically_to_repeated_appends(c1: Any, c
     reference_circuit = reference_builder.finish_circuit()
 
     assert circuit == reference_circuit
+
+
+def test_builder_cz_errors():
+    builder = km.CircuitBuilder()
+    with pytest.raises((TypeError, ValueError)):
+        builder.cz(km.xb(0), km.q(1))
+    with pytest.raises((TypeError, ValueError)):
+        builder.cz(km.q(0), km.xbool(True))
+    with pytest.raises((TypeError, ValueError)):
+        builder.cz(km.array([km.q(0), km.q(1)]), km.array([km.q(2), km.xb(3)]))
+    assert builder.finish_circuit() == km.Circuit()

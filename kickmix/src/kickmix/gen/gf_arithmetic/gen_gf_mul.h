@@ -96,8 +96,9 @@ void gen_gf_unmul(
 /// The product bits are never computed. Instead the low half of the unreduced product contributes
 /// directly (bit i of the low half is hit by mask bit i), while the high half contributes through
 /// the transpose of the "multiply by x^m" matrix, whose columns are folded into one parity bit at a
-/// time. Since the reduction polynomial is a trinomial or pentanomial those columns have weight
-/// two to four, so the folding costs only a handful of classical CNOTs per column.
+/// time. Each column costs about two classical CNOTs per set entry, so the folding is cheap for the
+/// low weight default moduli and grows toward O(m^2) classical CNOTs for dense custom moduli. The
+/// quantum cost (m^2 classically conditioned CZs) does not depend on the modulus.
 ///
 /// Args:
 ///     builder: Where to append the circuit operations.
