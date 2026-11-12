@@ -33,7 +33,7 @@ def cosh(x):
     return (l_value**x + l_value ** (-x)) / 2
 
 
-class TestState:
+class StateTestSuite:
     @pytest.mark.parametrize("s", tu.make_states(10))
     def test_skew(self, s: lattice_state.SelingerState):
         np.testing.assert_allclose(

@@ -81,3 +81,11 @@ def test_math_config_transcendental_helpers(config):
     assert config.arctan2(1.0, 1.0) == pytest.approx(math.pi / 4)
     assert config.arcsin(0.5) == pytest.approx(math.pi / 6)
     assert config.arccos(0.5) == pytest.approx(math.pi / 3)
+
+
+def test_math_config_hash_uses_name():
+    first = mc.MathConfig(name="custom")
+    same_name = mc.MathConfig(name="custom", pi=3.0)
+
+    assert hash(first) == hash(same_name)
+    assert hash(first) == hash("custom")

@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import json
+
 import cirq
 import numpy as np
 import pytest
@@ -29,10 +31,55 @@ def _make_gates(n_seqs: int, n_gates: int, seed: int):
         yield [gates[i] for i in rng.choice(len(gates), n_gates)]
 
 
-@pytest.mark.parametrize("gates", _make_gates(10, 4, 0))
+@pytest.mark.parametrize("gates", list(_make_gates(10, 4, 0)))
 def test_unitary_from_sequence(gates):
     u = ch.UnitaryChannel.from_sequence(gates)
     assert u.to_matrix() == _su2_ct.SU2CliffordT.from_sequence(gates)
+
+
+def test_unitary_channel_to_quirk_returns_circuit_url():
+    channel = ch.UnitaryChannel.from_sequence(["H", "Tz"])
+
+    url = channel.to_quirk()
+
+    assert url.startswith("https://algassert.com/quirk#circuit=")
+    circuit = json.loads(url.partition("#circuit=")[2])
+    assert circuit["cols"]
+
+
+def test_projective_channel_to_quirk_returns_circuit_url():
+    unitary = ch.UnitaryChannel.from_sequence(["H", "Tz"])
+    channel = ch.ProjectiveChannel(unitary, unitary)
+
+    url = channel.to_quirk()
+
+    assert url.startswith("https://algassert.com/quirk#circuit=")
+    circuit = json.loads(url.partition("#circuit=")[2])
+    assert circuit["cols"]
+    assert any(
+        item == "Measure"
+        for column in circuit["cols"]
+        for item in column
+        if isinstance(item, str)
+    )
+
+
+@pytest.mark.parametrize("method", ["to_cirq", "to_quirk"])
+def test_unitary_channel_export_rejects_twirl(method):
+    channel = ch.UnitaryChannel.from_sequence(["H"], twirl=True)
+
+    with pytest.raises(ValueError, match="twirl=True"):
+        getattr(channel, method)()
+
+
+@pytest.mark.parametrize("method", ["to_cirq", "to_quirk"])
+def test_projective_channel_export_rejects_non_unitary_correction(method):
+    unitary = ch.UnitaryChannel.from_sequence(["I"])
+    correction = ch.ProbabilisticChannel(unitary, unitary)
+    channel = ch.ProjectiveChannel(unitary, correction)
+
+    with pytest.raises(ValueError, match="non unitary|non unitary correction|type"):
+        getattr(channel, method)()
 
 
 @pytest.mark.parametrize(
