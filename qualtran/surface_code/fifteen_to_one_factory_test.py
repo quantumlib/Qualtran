@@ -59,6 +59,6 @@ def test_compare_with_paper(test: FifteenToOneTestCase):
 
 
 def test_validation():
-    for bad_args in (1, 1, -1), (1, -1, 1), (-1, 1, 1), (5, 1, 1):
+    for bad_args in (1, 1, -1), (1, -1, 1), (-1, 1, 1), (5, 1, 1), (3, 5, 3):
         with pytest.raises(AssertionError):
             _ = FifteenToOne(*bad_args)
