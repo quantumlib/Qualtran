@@ -1,7 +1,14 @@
 #ifndef KICKGEN_QC_STRIDE_SPAN_H
 #define KICKGEN_QC_STRIDE_SPAN_H
 
+#include <algorithm>
+#include <bit>
+#include <concepts>
 #include <memory>
+#include <ostream>
+#include <span>
+#include <string>
+#include <vector>
 
 #include "kickmix/mem/stride_span.h"
 #include "qubit_or_bit.h"

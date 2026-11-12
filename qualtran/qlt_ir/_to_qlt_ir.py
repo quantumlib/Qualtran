@@ -573,11 +573,10 @@ def bloq_to_ast(
     # Signature
     qdb.add_signature(bloq.signature)
 
-    if force_extern:
-        return qdb.finalize_extern(reason='force_extern'), []
-
     # Detect bookkeeping / casting bloqs and emit as qcast.
     # Alloc and Free are _BookkeepingBloqs but are *not* casts.
+    # These checks come before `force_extern`: a cast has no body to hide, so it is
+    # always emitted as a `qcast` (and alloc/free are always `extern` anyways).
     from qualtran.bloqs.bookkeeping.allocate import Allocate
     from qualtran.bloqs.bookkeeping.free import Free
 
@@ -585,6 +584,10 @@ def bloq_to_ast(
         return qdb.finalize_extern(reason='alloc/free'), []
     if _is_qcast_bloq(bloq):
         return qdb.finalize_qcast(), []
+
+    if force_extern:
+        return qdb.finalize_extern(reason='force_extern'), []
+
     if isinstance(bloq, qlt.CompositeBloq):
         cbloq = bloq
     else:
@@ -645,9 +648,26 @@ class QltModuleBuilder:
         include_annotations: bool = False,
         extern_only_from: bool = True,
         force_extern_pred: Callable[['qlt.Bloq'], bool] = lambda b: False,
+        max_depth: Optional[int] = None,
         skip_aliases: bool = False,
     ) -> BloqKey:
+        """Add `root` and its decomposition sub-bloqs to this module builder.
 
+        Args:
+            root: The root bloq to add.
+            annotate_costs: Whether to annotate the output with cost information.
+            include_annotations: Whether to include visual display annotations derived
+                from `bloq.wire_symbol`.
+            extern_only_from: Whether to only include a `from` clause for `extern` bloqs.
+            force_extern_pred: A predicate selecting non-cast bloqs to force to `extern`.
+            max_depth: If provided, only decompose bloqs whose minimum depth below
+                `root` is less than `max_depth`, emitting bloqs at or beyond `max_depth`
+                as `extern qdef`. `None` (the default) decomposes fully.
+            skip_aliases: Whether to skip generating alias declarations for long bloq keys.
+
+        Returns:
+            The `BloqKey` assigned to `root`.
+        """
         # Queue of (Bloq, level) indices where `level` is the level of recursion
         subbloqs: deque[Tuple[qlt.Bloq, int]] = deque([(root, 0)])
 
@@ -660,7 +680,7 @@ class QltModuleBuilder:
             if bloq in self.done:
                 continue
 
-            force_extern = force_extern_pred(bloq)
+            force_extern = force_extern_pred(bloq) or (max_depth is not None and level >= max_depth)
 
             qdef, new_subbloqs = bloq_to_ast(
                 bloq=bloq,
@@ -725,6 +745,7 @@ def dump_qlt_ir(
     include_annotations: bool = False,
     extern_only_from: bool = False,
     force_extern_pred: Callable[['qlt.Bloq'], bool] = lambda b: False,
+    max_depth: Optional[int] = None,
     skip_aliases: bool = False,
     nodes: QltNodes = qualtran_qlt_nodes,
 ) -> Optional[str]:
@@ -742,7 +763,10 @@ def dump_qlt_ir(
         include_annotations: Whether to include visual display annotations derived
             from `bloq.wire_symbol` (defaults to `False`).
         extern_only_from: Whether to only include a `from` clause for `extern` bloqs.
-        force_extern_pred: A predicate selecting bloqs to force to `extern`.
+        force_extern_pred: A predicate selecting non-cast bloqs to force to `extern`.
+        max_depth: If provided, only decompose bloqs whose minimum depth below
+            `bloq` is less than `max_depth`, emitting bloqs at or beyond `max_depth`
+            as `extern qdef`. `None` (the default) decomposes fully.
         skip_aliases: Whether to skip generating alias declarations for long bloq keys.
         nodes: The set of QLT IR AST node classes to build with (advanced).
 
@@ -762,6 +786,7 @@ def dump_qlt_ir(
         include_annotations=include_annotations,
         extern_only_from=extern_only_from,
         force_extern_pred=force_extern_pred,
+        max_depth=max_depth,
         skip_aliases=skip_aliases,
     )
     qlt_mod = qlt_mb.finalize()
@@ -781,24 +806,15 @@ def dump_root_qlt_ir(
     skip_aliases: bool = False,
     nodes: QltNodes = qualtran_qlt_nodes,
 ) -> str:
-    from ._ast_to_code import QltASTPrinter
-
-    def extern_all_but_root(b: qlt.Bloq) -> bool:
-        if b == bloq:
-            return False
-        return True
-
-    qlt_mb = QltModuleBuilder(nodes=nodes)
-    _root_bloq_key = qlt_mb.add_bloqs(
-        root=bloq,
+    qlt_txt = dump_qlt_ir(
+        bloq,
         include_annotations=include_annotations,
         extern_only_from=True,
-        force_extern_pred=extern_all_but_root,
+        max_depth=1,
         skip_aliases=skip_aliases,
+        nodes=nodes,
     )
-    qlt_mod = qlt_mb.finalize()
-    qlt_txt = QltASTPrinter().visit(qlt_mod)
-
+    assert qlt_txt is not None
     return qlt_txt
 
 

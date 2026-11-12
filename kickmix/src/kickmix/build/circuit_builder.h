@@ -1,8 +1,13 @@
 #ifndef KICKMIX_CIRCUIT_BUILDER_H
 #define KICKMIX_CIRCUIT_BUILDER_H
 
+#include <array>
 #include <functional>
 #include <span>
+#include <stdexcept>
+#include <string_view>
+#include <type_traits>
+#include <vector>
 
 #include "circuit_gen_ctx.h"
 #include "circuit_pattern.h"

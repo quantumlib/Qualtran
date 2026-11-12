@@ -2,6 +2,9 @@
 #define KICKMIX_SIMD_256_AVX_H
 
 #include <array>
+#include <bit>
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
 #ifdef __AVX__
 #include <immintrin.h>

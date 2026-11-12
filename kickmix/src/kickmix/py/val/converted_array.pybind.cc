@@ -11,7 +11,7 @@ using namespace kickmix_py;
 
 ConvertedArrayXZ::~ConvertedArrayXZ() {
     if (free_on_destruct != nullptr) {
-        free(free_on_destruct);
+        free_aligned(free_on_destruct);
         free_on_destruct = nullptr;
     }
 }
@@ -20,24 +20,6 @@ static const QubitOrXZBitOrXZBool GLOBAL_TRUE = true;
 static const QubitOrXZBitOrXZBool GLOBAL_FALSE = false;
 static const QubitOrXZBitOrXZBool GLOBAL_PLUS = XBool(false);
 static const QubitOrXZBitOrXZBool GLOBAL_MINUS = XBool(true);
-
-template <typename T>
-static T *aligned_alloc_32_else_throw(size_t count) {
-    if (count == 0) {
-        return nullptr;
-    }
-    if (count > (SIZE_MAX - 31) / sizeof(T)) {
-        throw std::invalid_argument("Too much memory to allocate.");
-    }
-    size_t bytes = count * sizeof(T);
-    bytes += size_t{31};
-    bytes &= ~size_t{31};
-    T *result = (T *)std::aligned_alloc(32, bytes);
-    if (result == nullptr) {
-        throw std::invalid_argument("Failed to allocate.");
-    }
-    return result;
-}
 
 ConvertedArrayXZ ConvertedArrayXZ::from_obj_expecting_list(
     const pybind11::handle &obj, const char *context_value_name) {
@@ -51,7 +33,7 @@ ConvertedArrayXZ ConvertedArrayXZ::from_obj_expecting_list(
     // Treat list-like objects as km.array.
     if (pybind11::hasattr(obj, "__len__") && type_ptr != &PyUnicode_Type && type_ptr != &PyBytes_Type) {
         size_t n = pybind11::len(obj);
-        QubitOrXZBitOrXZBool *out = aligned_alloc_32_else_throw<QubitOrXZBitOrXZBool>(n);
+        QubitOrXZBitOrXZBool *out = aligned_alloc_else_throw<QubitOrXZBitOrXZBool, 32>(n);
         ConvertedArrayXZ result(stride_span_xz(out, 1, n, QXZTypeTag8::MAY_BE_MIXED), out, false);
         for (const auto &e : obj) {
             *out++ = obj_to_qubit_or_xzbit_or_xzbool(e, "item");
@@ -134,7 +116,7 @@ ConvertedArrayXZ ConvertedArrayXZ::from_obj(const pybind11::handle &obj, const c
     // Treat list-like objects as kmarrays.
     if (pybind11::hasattr(obj, "__len__") && type_ptr != &PyUnicode_Type && type_ptr != &PyBytes_Type) {
         size_t n = pybind11::len(obj);
-        QubitOrXZBitOrXZBool *out = aligned_alloc_32_else_throw<QubitOrXZBitOrXZBool>(n);
+        QubitOrXZBitOrXZBool *out = aligned_alloc_else_throw<QubitOrXZBitOrXZBool, 32>(n);
         ConvertedArrayXZ result(stride_span_xz(out, 1, n, QXZTypeTag8::MAY_BE_MIXED), out, false);
         for (const auto &e : obj) {
             *out++ = obj_to_qubit_or_xzbit_or_xzbool(e, "item");
@@ -166,7 +148,7 @@ ConvertedArrayXZ ConvertedArrayXZ::from_obj_or_int(
             ss << ", 1 << n)";
             throw std::invalid_argument(ss.str());
         }
-        QubitOrXZBitOrXZBool *out = aligned_alloc_32_else_throw<QubitOrXZBitOrXZBool>(int_num_bits);
+        QubitOrXZBitOrXZBool *out = aligned_alloc_else_throw<QubitOrXZBitOrXZBool, 32>(int_num_bits);
         if (int_num_bits <= 64) {
             uint64_t u = pybind11::cast<uint64_t>(val);
             for (size_t k = 0; k < int_num_bits; k++) {

@@ -1,7 +1,9 @@
 #ifndef KICKMIX_UTIL_FIXED_PRECISION_ANGLE_H
 #define KICKMIX_UTIL_FIXED_PRECISION_ANGLE_H
 
+#include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <iostream>
 #include <string>
 #include <string_view>

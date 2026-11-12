@@ -34,8 +34,12 @@ parts/
 sdist/
 var/
 wheels/
+wheelhouse/
+python_build_kickmix/
 pip-wheel-metadata/
 share/python-wheels/
+wheelhouse/
+python_build_kickmix/
 *.egg-info/
 .installed.cfg
 *.egg

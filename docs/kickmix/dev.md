@@ -39,6 +39,19 @@ pip install bazel-bin/kickmix/kickmix-0.0.dev0-py3-none-any.whl
 PYTHONPATH=kickmix pytest kickmix/src
 ```
 
+## Build Portable Python Wheel (with cibuildwheel)
+
+```bash
+sudo apt install podman
+pip install cibuildwheel
+
+# See https://cibuildwheel.readthedocs.io/en/stable/options/#build-skip for --only values
+STORAGE_OPTS="overlay.ignore_chown_errors=true" \
+CIBW_CONTAINER_ENGINE=podman \
+cibuildwheel kickmix --only cp313-manylinux_x86_64
+# output is in wheelhouse/
+```
+
 ## Auto-format code (using clang-format-21)
 
 The project includes a `.clang-format` file that clang format will use automatically.

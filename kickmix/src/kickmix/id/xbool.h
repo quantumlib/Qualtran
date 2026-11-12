@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <ostream>
+#include <string>
 
 #include "id_tagging.h"
 

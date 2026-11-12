@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <ostream>
+#include <string>
 
 namespace kickmix {
 struct RegisterId {

@@ -1,5 +1,6 @@
 #include "kickmix/util/gf2_matrix.h"
 
+#include <algorithm>
 #include <bit>
 #include <numeric>
 #include <ostream>

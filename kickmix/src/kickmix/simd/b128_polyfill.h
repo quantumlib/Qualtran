@@ -2,6 +2,8 @@
 #define KICKMIX_SIMD_128_H
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <ostream>
 #include <random>
 

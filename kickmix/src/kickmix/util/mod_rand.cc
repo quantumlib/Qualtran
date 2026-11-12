@@ -1,5 +1,6 @@
 #include "kickmix/util/mod_rand.h"
 
+#include <bit>
 #include <cstring>
 #include <iostream>
 

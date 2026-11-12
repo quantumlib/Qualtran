@@ -1,5 +1,7 @@
 #include "kickmix/circuit/circuit_util.h"
 
+#include <algorithm>
+
 using namespace kickmix;
 
 size_t kickmix::compute_reaction_depth(size_t num_qubits, size_t num_bits, std::span<const Op> operations) {

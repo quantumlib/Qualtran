@@ -1,5 +1,6 @@
 #include "binary_file_tools.h"
 
+#include <algorithm>
 #include <array>
 #include <cstring>
 
@@ -15,7 +16,7 @@ void kickmix::write_u32_block_be(FILE *file, const uint32_t *data, size_t count)
             memcpy(buf.data(), data, n * sizeof(uint32_t));
             data += n;
             for (size_t k2 = 0; k2 < n; k2++) {
-                buf[k2] = __builtin_bswap32(buf[k2]);
+                buf[k2] = bswap32(buf[k2]);
             }
             fwrite_else_throw(buf.data(), n * sizeof(uint32_t), file);
         }

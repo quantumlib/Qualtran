@@ -1,15 +1,21 @@
 #include "kickmix/mem/monotonic_arena.h"
 
+#include <algorithm>
+
+#include "util.h"
+
+using namespace kickmix;
+
 static void dealloc(kickmix::MonotonicArena_Helper &buf) {
     for (const auto &e : buf.frozen_allocations) {
-        free(e.data());
+        free_aligned(e.data());
     }
     buf.frozen_allocations.clear();
     buf.cur_length_used = 0;
     buf.total_frozen_length_used = 0;
     buf.cur_length_cap = 0;
     if (buf.cur != nullptr) {
-        free(buf.cur);
+        free_aligned(buf.cur);
         buf.cur = nullptr;
     }
 }
@@ -52,7 +58,7 @@ kickmix::MonotonicArena_Helper::~MonotonicArena_Helper() {
 
 void kickmix::MonotonicArena_Helper::clear() {
     for (const auto &e : frozen_allocations) {
-        free(e.data());
+        free_aligned(e.data());
     }
     frozen_allocations.clear();
     cur_length_used = 0;
@@ -76,7 +82,7 @@ char *kickmix::MonotonicArena_Helper::grab_writeable(size_t length, size_t alloc
                 frozen_allocations.push_back(std::span<char>{cur, cur_length_used});
                 total_frozen_length_used += cur_length_used;
             } else {
-                free(cur);
+                free_aligned(cur);
             }
         }
 
@@ -86,13 +92,11 @@ char *kickmix::MonotonicArena_Helper::grab_writeable(size_t length, size_t alloc
         new_size <<= 1;
         new_size += alloc_alignment - 1;
         new_size &= ~size_t{alloc_alignment - 1};
-        cur = (char *)aligned_alloc(alloc_alignment, new_size);
+        cur = nullptr;
         cur_length_used = 0;
+        cur_length_cap = 0;
+        cur = (char *)aligned_alloc_bytes_else_throw(alloc_alignment, new_size);
         cur_length_cap = new_size;
-        if (cur == nullptr) {
-            cur_length_cap = 0;
-            throw std::invalid_argument("Failed to allocate");
-        }
     }
 
     char *result = cur + cur_length_used;

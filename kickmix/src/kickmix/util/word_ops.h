@@ -50,6 +50,44 @@ inline uint64_t extract_bits_u64(uint64_t value, uint64_t mask) {
 #endif
 }
 
+/// Computes factor1 * factor2 + offset1 + offset2 as a 128-bit unsigned integer.
+inline void full_fma64(
+    uint64_t factor1, uint64_t factor2, uint64_t offset1, uint64_t offset2, uint64_t *out_low, uint64_t *out_high) {
+#if defined(__SIZEOF_INT128__)
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
+    auto result = factor1 * (unsigned __int128)factor2 + (unsigned __int128)offset1 + offset2;
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+    *out_high = static_cast<uint64_t>(result >> 64);
+    *out_low = static_cast<uint64_t>(result);
+#else
+    uint64_t a_lo = factor1 & 0xFFFFFFFFULL;
+    uint64_t a_hi = factor1 >> 32;
+    uint64_t b_lo = factor2 & 0xFFFFFFFFULL;
+    uint64_t b_hi = factor2 >> 32;
+
+    uint64_t p0 = a_lo * b_lo;
+    uint64_t p1 = a_lo * b_hi;
+    uint64_t p2 = a_hi * b_lo;
+    uint64_t p3 = a_hi * b_hi;
+
+    uint64_t mid = (p0 >> 32) + (p1 & 0xFFFFFFFFULL) + (p2 & 0xFFFFFFFFULL);
+    uint64_t lo = (p0 & 0xFFFFFFFFULL) | (mid << 32);
+    uint64_t hi = p3 + (p1 >> 32) + (p2 >> 32) + (mid >> 32);
+
+    unsigned long long sum1 = 0;
+    bool c1 = add_carry_u64(false, lo, offset1, &sum1);
+    unsigned long long sum2 = 0;
+    bool c2 = add_carry_u64(false, sum1, offset2, &sum2);
+    *out_low = sum2;
+    *out_high = hi + c1 + c2;
+#endif
+}
+
 }  // namespace kickmix
 
 #endif

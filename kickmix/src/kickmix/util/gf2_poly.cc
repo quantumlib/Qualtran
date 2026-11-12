@@ -1,5 +1,6 @@
 #include "kickmix/util/gf2_poly.h"
 
+#include <algorithm>
 #include <bit>
 #include <ostream>
 #include <sstream>
