@@ -33,7 +33,7 @@ def cosh(x):
     return (l_value**x + l_value ** (-x)) / 2
 
 
-class TestState:
+class StateTestSuite:
     @pytest.mark.parametrize("s", tu.make_states(10))
     def test_skew(self, s: lattice_state.SelingerState):
         np.testing.assert_allclose(
@@ -66,6 +66,14 @@ class TestState:
         ratio = new_state.skew(config) / state.skew(config)
         err_msg = f"{ratio=} | b={state.m1.parametric_form(config).b} z={state.m1.parametric_form(config).z} zeta={state.m2.parametric_form(config).z}"
         assert ratio <= 0.9, err_msg
+
+    @pytest.mark.parametrize("state", list(tu.make_states(10)))
+    def test_apply_with_grid_operator(self, state: lattice_state.SelingerState):
+        direct = state.apply(go.RSqrt2, mc.NumpyConfig)
+        via_action = state.apply(lattice_state.GridOperatorAction(go.RSqrt2), mc.NumpyConfig)
+
+        np.testing.assert_allclose(direct.m1.D, via_action.m1.D)
+        np.testing.assert_allclose(direct.m2.D, via_action.m2.D)
 
     @pytest.mark.parametrize("state", tu.make_states(100))
     def test_apply_r(self, state: lattice_state.SelingerState):

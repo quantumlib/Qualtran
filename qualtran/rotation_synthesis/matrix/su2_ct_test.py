@@ -165,3 +165,14 @@ _SHT_parity_numpy = np.array([[1, 1, 0], [0, 0, 0], [1, 1, 0]])
 def test_bloch_form_parity(g: _su2_ct.SU2CliffordT, parity: np.ndarray):
     g_parity = g.bloch_form_parity()
     np.testing.assert_equal(g_parity, parity)
+
+
+def test_su2_ct_add_and_sub():
+    g1 = _su2_ct.ISqrt2
+    g2 = _su2_ct.HSqrt2
+
+    added = g1 + g2
+    np.testing.assert_array_equal(added.matrix, g1.matrix + g2.matrix)
+
+    subbed = g1 - g2
+    np.testing.assert_array_equal(subbed.matrix, g1.matrix - g2.matrix)

@@ -26,7 +26,7 @@ _SQRT_2 = np.sqrt(2)
 _LAMBDA = 1 + _SQRT_2
 
 
-class TestGridOperator:
+class GridOperatorTestSuite:
     @pytest.mark.parametrize(
         ["g", "u"],
         [
