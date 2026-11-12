@@ -19,6 +19,7 @@ limitations under the License.
 
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
+from qualtran.protos import sympy_pb2 as _sympy_pb2
 import builtins as _builtins
 import sys
 import typing as _typing
@@ -37,12 +38,13 @@ class IntOrSympy(_message.Message):
     INT_VAL_FIELD_NUMBER: _builtins.int
     SYMPY_EXPR_FIELD_NUMBER: _builtins.int
     int_val: _builtins.int
-    sympy_expr: _builtins.str
+    @_builtins.property
+    def sympy_expr(self) -> _sympy_pb2.Term: ...
     def __init__(
         self,
         *,
         int_val: _builtins.int = ...,
-        sympy_expr: _builtins.str = ...,
+        sympy_expr: _sympy_pb2.Term | None = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _typing.Literal["int_val", b"int_val", "sympy_expr", b"sympy_expr", "val", b"val"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
