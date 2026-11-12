@@ -320,6 +320,21 @@ def test_meas_z_supertensor():
     np.testing.assert_allclose(rho, should_be, atol=1e-8)
 
 
+def test_meas_z_as_cirq_op():
+    q = cirq.NamedQubit('q')
+    qm = cirq.ops.SimpleQubitManager()
+    op, out_quregs = MeasureZ().as_cirq_op(qubit_manager=qm, q=np.array([q]))
+    assert op == cirq.measure(q)
+    assert out_quregs == {}
+
+    bb = BloqBuilder()
+    q_soq = bb.add(ZeroState())
+    c_soq = bb.add(MeasureZ(), q=q_soq)
+    cbloq = bb.finalize(c=c_soq)
+    with pytest.raises(ValueError, match="Output classical wires are not supported in Cirq"):
+        _ = cbloq.to_cirq_circuit()
+
+
 def test_meas_z_classical():
     bb = BloqBuilder()
     q = bb.add(IntState(val=52, bitsize=8))
