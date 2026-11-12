@@ -58,7 +58,7 @@ def test_protocol_plot_uses_supplied_axes_and_honors_legend(problem):
 )
 def test_protocol_plot_creates_figure_and_legend(problem, monkeypatch: pytest.MonkeyPatch):
     shown_figures = []
-    monkeypatch.setattr(Figure, "show", lambda fig: shown_figures.append(fig))
+    monkeypatch.setattr(Figure, "show", lambda fig: shown_figures.append(fig))  # noqa: PLW0108
 
     ax = problem.plot(1)
     try:
@@ -140,4 +140,32 @@ def test_split_region_collector_lifecycle_and_boundary_assignment():
     assert right == (
         channels.UnitaryChannel(boundary, q, 2),
         channels.UnitaryChannel(negative, q, 4),
+    )
+
+
+def test_split_region_collector_waiting_left_and_boundary_fallback():
+    collector = protocols.SplitRegionCollector((1, 0, 0), target_count=2)
+    positive = rings.ZW((1, 0, 0, 0))
+    negative = rings.ZW((-1, 0, 0, 0))
+    boundary = rings.ZW((0, 0, 0, 0))
+    q = rings.ZW((1, 0, 0, 0))
+
+    collector.add_point(negative, q, 1, mc.NumpyConfig)
+    collector.add_point(negative, q, 2, mc.NumpyConfig)
+    assert collector.status() == "waiting left"
+    assert not collector.is_done()
+
+    collector.add_point(boundary, q, 3, mc.NumpyConfig)
+    collector.add_point(positive, q, 4, mc.NumpyConfig)
+    assert collector.status() == "ready"
+    assert collector.is_done()
+
+    left, right = collector.result()
+    assert left == (
+        channels.UnitaryChannel(boundary, q, 3),
+        channels.UnitaryChannel(positive, q, 4),
+    )
+    assert right == (
+        channels.UnitaryChannel(negative, q, 1),
+        channels.UnitaryChannel(negative, q, 2),
     )

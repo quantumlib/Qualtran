@@ -82,6 +82,21 @@ def test_projective_channel_export_rejects_non_unitary_correction(method):
         getattr(channel, method)()
 
 
+def test_projective_channel_to_cirq_custom_qubits():
+    unitary = ch.UnitaryChannel.from_sequence(["H", "Tz"])
+    channel = ch.ProjectiveChannel(unitary, unitary)
+    q0, q1 = cirq.NamedQubit("a"), cirq.NamedQubit("b")
+
+    circuit = channel.to_cirq(qs=(q0, q1))
+
+    assert circuit.all_qubits() == {q0, q1}
+
+
+def test_unitary_channel_from_unitaries_empty():
+    with pytest.raises(ValueError, match="at least one unitary"):
+        ch.UnitaryChannel.from_unitaries()
+
+
 @pytest.mark.parametrize(
     ["gates", "theta", "distance"],
     [
@@ -240,7 +255,7 @@ def test_diamond_distance_for_mixed_diagonal(seq1, seq2, theta, distance):
 
 
 @pytest.mark.parametrize(
-    ["proj_1", "seq_11", "seq_12", "proj_2", "seq_21", "seq_22", "theta", "distance"],
+    "data",
     [
         [
             ["I", "Z", "H", "S", "Tz", "Tx", "Ty", "Tx"],
@@ -334,9 +349,8 @@ def test_diamond_distance_for_mixed_diagonal(seq1, seq2, theta, distance):
         ],
     ],
 )
-def test_diamond_distance_for_mixed_fallback(
-    proj_1, seq_11, seq_12, proj_2, seq_21, seq_22, theta, distance
-):
+def test_diamond_distance_for_mixed_fallback(data):
+    proj_1, seq_11, seq_12, proj_2, seq_21, seq_22, theta, distance = data
     p1 = ch.ProjectiveChannel(
         ch.UnitaryChannel.from_sequence(proj_1),
         correction=ch.ProbabilisticChannel.from_unitary_channels(
