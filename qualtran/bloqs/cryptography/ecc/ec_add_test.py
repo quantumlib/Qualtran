@@ -28,6 +28,7 @@ from qualtran.bloqs.cryptography.ecc.ec_add import (
     _ECAddStepTwo,
     ECAdd,
 )
+from qualtran.bloqs.mod_arithmetic import DirtyOutOfPlaceMontgomeryModMul
 from qualtran.resource_counting._bloq_counts import QECGatesCost
 from qualtran.resource_counting._costing import get_cost_value
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
@@ -276,6 +277,37 @@ def test_ec_add_steps_classical(n: int, m: int, a: int, b: int, x: int, y: int) 
 @pytest.mark.parametrize('x,y', [(15, 13), (5, 8), (10, 15), (1, 12), (3, 0), (1, 5), (10, 2)])
 def test_ec_add_classical(n: int, m: int, a: int, b: int, x: int, y: int) -> None:
     assert_consistent_ec_add(n, m, a, b, x, y)
+
+
+# Simulates ECAdd with each DirtyOutOfPlaceMontgomeryModMul replaced by its actual decomposition,
+# so that the final modular correction of the Montgomery multiplier is exercised.
+@pytest.mark.parametrize('a,b,x,y', [(15, 13, 1, 12), (15, 13, 3, 0)])
+def test_ec_add_classical_through_montgomery_mul(a: int, b: int, x: int, y: int) -> None:
+    n, m, p = 7, 7, 17
+    bloq = ECAdd(n=n, mod=p, window_size=m)
+    keep = (
+        ECAdd,
+        _ECAddStepOne,
+        _ECAddStepTwo,
+        _ECAddStepThree,
+        _ECAddStepFour,
+        _ECAddStepFive,
+        _ECAddStepSix,
+        DirtyOutOfPlaceMontgomeryModMul,
+    )
+    cbloq = bloq.decompose_bloq().flatten(lambda binst: isinstance(binst.bloq, keep))
+    lam_num = (3 * a**2) % p
+    lam_denom = (2 * b) % p
+    lam_r = p if b == 0 else (lam_num * pow(lam_denom, -1, mod=p)) % p
+    dtype = QMontgomeryUInt(n, p)
+    kwargs = dict(
+        a=dtype.uint_to_montgomery(a),
+        b=dtype.uint_to_montgomery(b),
+        x=dtype.uint_to_montgomery(x),
+        y=dtype.uint_to_montgomery(y),
+        lam_r=dtype.uint_to_montgomery(lam_r),
+    )
+    assert bloq.call_classically(**kwargs) == cbloq.call_classically(**kwargs)
 
 
 @pytest.mark.parametrize('p', (7, 9, 11))

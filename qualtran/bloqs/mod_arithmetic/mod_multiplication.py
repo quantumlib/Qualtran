@@ -529,7 +529,7 @@ class _DirtyOutOfPlaceMontgomeryModMulImpl(Bloq):
         reduced = bb.add(XGate(), q=reduced)
         target, reduced = bb.add(LessThanConstant(self.bitsize, self.mod), x=target, target=reduced)
         reduced, target = bb.add(
-            AddK(QUInt(self.bitsize), self.mod).controlled(), ctrl=reduced, x=target
+            AddK(QUInt(self.bitsize), -self.mod).controlled(), ctrl=reduced, x=target
         )
 
         return {'x': x, 'y': y, 'target': target, 'qrom_indices': qrom_indices, 'reduced': reduced}
@@ -537,7 +537,7 @@ class _DirtyOutOfPlaceMontgomeryModMulImpl(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
         num_windows = (self.bitsize + self.window_size - 1) // self.window_size
         return {
-            AddK(QUInt(self.bitsize), self.mod).controlled(): 1,
+            AddK(QUInt(self.bitsize), -self.mod).controlled(): 1,
             LessThanConstant(bitsize=self.bitsize, less_than_val=self.mod): 1,
             XGate(): 1,
             self._window: num_windows,
