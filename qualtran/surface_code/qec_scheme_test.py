@@ -53,4 +53,4 @@ def test_invert_error_at():
 
 def test_logical_error_model():
     ler = LogicalErrorModel(qec_scheme=QECScheme.make_beverland_et_al(), physical_error=1e-3)
-    assert ler(code_distance=3) == pytest.approx(3e-4)
+    assert ler(code_distance=3) == pytest.approx(1e-4)

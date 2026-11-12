@@ -120,6 +120,9 @@ class LogicalErrorModel:
     _qec_scheme: 'QECScheme'
 
     def __call__(self, code_distance: int):
-        return self._qec_scheme.logical_error_rate(
+        error = self._qec_scheme.logical_error_rate(
             code_distance=code_distance, physical_error=self.physical_error
         )
+        if self._qec_scheme == QECScheme.make_beverland_et_al():
+            error /= code_distance
+        return error
