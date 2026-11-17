@@ -23,6 +23,7 @@ from qualtran.serialization.registers import (
     registers_from_proto,
     registers_to_proto,
 )
+from qualtran.serialization.sympy_to_proto import sympy_expr_from_proto
 
 
 @pytest.mark.parametrize(
@@ -43,13 +44,13 @@ def test_registers_to_proto(bitsize, shape, side):
     reg_proto = register_to_proto(reg)
     assert reg_proto.name == 'my_reg'
     if shape and isinstance(shape[0], sympy.Expr):
-        assert tuple(sympy.parse_expr(s.sympy_expr) for s in reg_proto.shape) == shape
+        assert tuple(sympy_expr_from_proto(s.sympy_expr) for s in reg_proto.shape) == shape
     else:
         assert tuple(s.int_val for s in reg_proto.shape) == shape
     if isinstance(bitsize, int):
         assert reg_proto.dtype.qany.bitsize.int_val == bitsize
     else:
-        assert sympy.parse_expr(reg_proto.dtype.qany.bitsize.sympy_expr) == bitsize
+        assert sympy_expr_from_proto(reg_proto.dtype.qany.bitsize.sympy_expr) == bitsize
     assert reg_proto.side == side.value
 
     assert register_from_proto(reg_proto) == reg

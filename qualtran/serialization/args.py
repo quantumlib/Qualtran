@@ -12,25 +12,29 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from io import BytesIO
-from typing import Union
+from typing import cast, Union
 
 import numpy as np
 import sympy
-from sympy.parsing import parse_expr
 
 from qualtran.protos import args_pb2
+from qualtran.serialization.sympy_to_proto import sympy_expr_from_proto, sympy_expr_to_proto
 
 
 def int_or_sympy_to_proto(val: Union[int, sympy.Expr]) -> args_pb2.IntOrSympy:
     return (
-        args_pb2.IntOrSympy(sympy_expr=str(val))
+        args_pb2.IntOrSympy(sympy_expr=sympy_expr_to_proto(val))
         if isinstance(val, sympy.Expr)
         else args_pb2.IntOrSympy(int_val=val)
     )
 
 
 def int_or_sympy_from_proto(val: args_pb2.IntOrSympy) -> Union[int, sympy.Expr]:
-    return val.int_val if val.HasField('int_val') else parse_expr(val.sympy_expr)
+    return (
+        val.int_val
+        if val.HasField('int_val')
+        else cast(sympy.Expr, sympy_expr_from_proto(val.sympy_expr))
+    )
 
 
 def ndarray_to_proto(arr: np.ndarray) -> args_pb2.NDArray:

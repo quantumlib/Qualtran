@@ -22,19 +22,20 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
+from qualtran.protos import sympy_pb2 as qualtran_dot_protos_dot_sympy__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1aqualtran/protos/args.proto\x12\x08qualtran\"<\n\nIntOrSympy\x12\x11\n\x07int_val\x18\x01 \x01(\x03H\x00\x12\x14\n\nsympy_expr\x18\x02 \x01(\tH\x00\x42\x05\n\x03val\"\x1a\n\x07NDArray\x12\x0f\n\x07ndarray\x18\x01 \x01(\x0c\"%\n\x07\x43omplex\x12\x0c\n\x04real\x18\x01 \x01(\x02\x12\x0c\n\x04imag\x18\x02 \x01(\x02\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1aqualtran/protos/args.proto\x12\x08qualtran\x1a\x1bqualtran/protos/sympy.proto\"L\n\nIntOrSympy\x12\x11\n\x07int_val\x18\x01 \x01(\x03H\x00\x12$\n\nsympy_expr\x18\x02 \x01(\x0b\x32\x0e.qualtran.TermH\x00\x42\x05\n\x03val\"\x1a\n\x07NDArray\x12\x0f\n\x07ndarray\x18\x01 \x01(\x0c\"%\n\x07\x43omplex\x12\x0c\n\x04real\x18\x01 \x01(\x02\x12\x0c\n\x04imag\x18\x02 \x01(\x02\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'qualtran.protos.args_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_INTORSYMPY']._serialized_start=40
-  _globals['_INTORSYMPY']._serialized_end=100
-  _globals['_NDARRAY']._serialized_start=102
-  _globals['_NDARRAY']._serialized_end=128
-  _globals['_COMPLEX']._serialized_start=130
-  _globals['_COMPLEX']._serialized_end=167
+  _globals['_INTORSYMPY']._serialized_start=69
+  _globals['_INTORSYMPY']._serialized_end=145
+  _globals['_NDARRAY']._serialized_start=147
+  _globals['_NDARRAY']._serialized_end=173
+  _globals['_COMPLEX']._serialized_start=175
+  _globals['_COMPLEX']._serialized_end=212
 # @@protoc_insertion_point(module_scope)

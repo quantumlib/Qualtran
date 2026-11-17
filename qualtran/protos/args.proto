@@ -16,12 +16,14 @@
 
 syntax = "proto3";
 
+import "qualtran/protos/sympy.proto";
+
 package qualtran;
 
 message IntOrSympy {
   oneof val {
     int64 int_val = 1;
-    string sympy_expr = 2;
+    Term sympy_expr = 2;
   }
 }
 
