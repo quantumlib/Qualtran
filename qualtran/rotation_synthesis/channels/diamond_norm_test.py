@@ -15,6 +15,7 @@
 import cirq
 import numpy as np
 import pytest
+import scipy.optimize
 
 import qualtran.rotation_synthesis as rs
 import qualtran.rotation_synthesis.channels as ch
@@ -78,6 +79,18 @@ def test_orthogonal_unitaries_are_maximally_distant():
 )
 def test_diamond_norm_rejects_choi_matrix_that_is_not_a_qubit_map(choi):
     with pytest.raises(ValueError):
+        ch.diamond_norm(choi)
+
+
+def test_diamond_norm_raises_when_maximization_does_not_converge(monkeypatch):
+    def unconverged(*args, **kwargs):
+        return scipy.optimize.OptimizeResult(
+            fun=-1.0, success=False, message="Maximum number of iterations has been exceeded."
+        )
+
+    monkeypatch.setattr(scipy.optimize, "minimize", unconverged)
+    choi = cirq.kraus_to_choi(_dephasing(0.1)) - cirq.kraus_to_choi([I])
+    with pytest.raises(RuntimeError, match="did not converge"):
         ch.diamond_norm(choi)
 
 

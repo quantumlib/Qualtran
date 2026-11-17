@@ -49,7 +49,25 @@ def _sqrt_density_matrix(bloch_vector: np.ndarray) -> np.ndarray:
 
 
 def _scaled_trace_norm(bloch_vector: np.ndarray, choi: np.ndarray) -> float:
-    r"""Returns $\|(I \otimes \sqrt{\sigma}) J (I \otimes \sqrt{\sigma})\|_1$."""
+    r"""Returns $\|(I \otimes \sqrt{\sigma}) J (I \otimes \sqrt{\sigma})\|_1$.
+
+    With $J = \sum_{j,l} \Delta(|j\rangle\langle l|) \otimes |j\rangle\langle l|$ (output space
+    first, as in `cirq.kraus_to_choi`), the matrix is
+    $(\Delta \otimes I)(|\psi\rangle\langle\psi|)$ for the purification
+    $|\psi\rangle = (I \otimes \sqrt{\sigma}) \sum_j |j\rangle|j\rangle$ of $\sigma^T$. The trace
+    norm only depends on the reduced state of the input, so maximizing over $\sigma$ maximizes
+    over all pure inputs, which is the diamond norm. The matrix is hermitian up to rounding, so
+    its trace norm is the sum of the absolute values of its eigenvalues.
+
+    Args:
+        bloch_vector: The bloch vector $\vec{r}$ of
+            $\sigma = (I + r_x X + r_y Y + r_z Z)/2$. A vector outside the bloch ball is
+            projected onto its surface.
+        choi: The 4x4 Choi matrix $J$ of the map $\Delta$.
+
+    Returns:
+        The trace norm of $(I \otimes \sqrt{\sigma}) J (I \otimes \sqrt{\sigma})$.
+    """
     root = np.kron(np.eye(2), _sqrt_density_matrix(bloch_vector))
     scaled = root @ choi @ root
     return float(np.abs(np.linalg.eigvalsh((scaled + scaled.conj().T) / 2)).sum())
@@ -85,6 +103,7 @@ def diamond_norm(choi: np.ndarray) -> float:
 
     Raises:
         ValueError: If the Choi matrix is not the 4x4 Choi matrix of a single qubit map.
+        RuntimeError: If the maximization did not converge from any starting point.
     """
     choi = np.asarray(choi, dtype=np.complex128)
     if choi.shape != (4, 4):
@@ -94,16 +113,21 @@ def diamond_norm(choi: np.ndarray) -> float:
     # The map is hermiticity preserving, restore the symmetry lost to rounding.
     choi = (choi + choi.conj().T) / 2
 
-    best = 0.0
-    for start in _STARTING_POINTS:
-        result = scipy.optimize.minimize(
+    results = [
+        scipy.optimize.minimize(
             lambda vector: -_scaled_trace_norm(vector, choi),
             start,
             method="Nelder-Mead",
             options={"xatol": 1e-12, "fatol": 1e-14, "maxiter": 5000},
         )
-        best = max(best, -float(result.fun))
-    return best
+        for start in _STARTING_POINTS
+    ]
+    if not any(result.success for result in results):
+        messages = sorted({result.message for result in results})
+        raise RuntimeError(f"the diamond norm maximization did not converge: {messages}")
+    # Every evaluated point is a valid density matrix, so the value of a run that stopped early
+    # is still a lower bound on the norm and can safely be included in the maximum.
+    return max(-float(result.fun) for result in results)
 
 
 def _qubit_unitary(kraus_list: Sequence[np.ndarray]) -> Optional[np.ndarray]:
@@ -117,7 +141,29 @@ def _qubit_unitary(kraus_list: Sequence[np.ndarray]) -> Optional[np.ndarray]:
 
 
 def _unitary_diamond_norm_distance(u: np.ndarray, v: np.ndarray) -> float:
-    """Returns the diamond norm distance between two single qubit unitary channels."""
+    r"""Returns the diamond norm distance between two single-qubit unitary channels.
+
+    For general unitaries $U$ and $V$, the diamond norm distance depends on the 
+    numerical range $W(V^\dagger U)$ (the convex hull of its eigenvalues):
+
+    $$
+    \|U \cdot U^\dagger - V \cdot V^\dagger\|_\diamond = 2 \sqrt{1 - \min_{w \in W(V^\dagger U)} |w|^2}
+    $$
+
+    As a special case for single-qubit unitaries, $V^\dagger U$ has exactly two 
+    eigenvalues, $e^{i\alpha}$ and $e^{i\beta}$. Because the numerical range is 
+    simply the one-dimensional chord connecting them, its minimum distance to the 
+    origin is exactly $|\cos((\alpha - \beta)/2)|$. 
+    
+    This algebraically simplifies the diamond norm distance to the absolute 
+    difference of the two eigenvalues (Theorem B.1 of arXiv:2203.10064):
+
+    $$
+    \|U \cdot U^\dagger - V \cdot V^\dagger\|_\diamond = 2 \left|\sin\left(\frac{\alpha - \beta}{2}\right)\right| = |e^{i\alpha} - e^{i\beta}|
+    $$
+
+    This formulation is naturally independent of the global phases of $U$ and $V$.
+    """
     eigenvalues = np.linalg.eigvals(v.conj().T @ u)
     return float(abs(eigenvalues[1] - eigenvalues[0]))
 
