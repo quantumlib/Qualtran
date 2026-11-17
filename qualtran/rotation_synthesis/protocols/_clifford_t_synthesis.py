@@ -512,3 +512,125 @@ def magnitude_approx(
     return channels.UnitaryChannel.from_unitaries(
         rz1_approx, _su2_ct.HSqrt2, rx_approx, _su2_ct.HSqrt2.adjoint(), rz2_approx
     )
+
+
+def mixed_magnitude_approx(
+    unitary: np.ndarray,
+    eps: rst.Real,
+    max_n: int,
+    config: mc.MathConfig,
+    eps_split: Optional[tuple[rst.Real, rst.Real, rst.Real]] = None,
+    relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
+    verbose: bool = False,
+):
+    """Approximates a unitary using the mixed magnitude approximation protocol.
+
+    This protocol does the following:
+        *   Like magnitude approximation, reduces a unitary to a series of rotations ZXZ.
+        *   Approximates X under- and over-rotations by producing Z rotations via mixed diagonal
+            approximation of equal rotational degree, and rotates it by applying an H channel.
+        *   Based on the X approximations, approximates the two Z rotations.
+        *   Computes a probability of each produced gate sequence and returns the probability
+            channel.
+
+    Args:
+        unitary: the target unitary, this can be 2x2 numpy array of mpmath.mpc objects.
+        eps: Target error.
+        max_n: Maximum number of T gates to check.
+        config: A math config.
+        eps_split: Optional splitting of the error budget for three rotations.
+            Note: `eps_split` defaults to an even `eps / 3` split for the rotations. This algorithm
+            guarantees a $3\epsilon$ approximation to the target unitary, which may be broken by
+            modifying this split (see Proposition 3.22).
+        relative_norm_solver: The relative norm solver to use.
+        verbose: whether to print debug statements or not.
+    Returns:
+        A ProbabilisticChannel or None.
+
+    References:
+        [Shorter quantum circuits via single-qubit gate approximation](https://arxiv.org/abs/2203.10064)
+        section 3.5
+    """
+    eps = config.number(eps)
+    if eps_split is None:
+        eps_split = eps / 3, eps / 3, eps / 3
+
+    alpha, theta, beta = rsad.su_unitary_to_zxz_angles(unitary, config)
+
+    rz_prob_approx = mixed_diagonal_protocol(
+        theta=-theta / 2,
+        eps=eps_split[1],
+        max_n=max_n,
+        config=config,
+        relative_norm_solver=relative_norm_solver,
+        verbose=verbose,
+    )
+    if rz_prob_approx is None:
+        return None
+
+    rx_under_rotation = channels.UnitaryChannel.from_unitaries(
+        _su2_ct.HSqrt2, rz_prob_approx.c1, _su2_ct.HSqrt2.adjoint()
+    )
+    rx_over_rotation = channels.UnitaryChannel.from_unitaries(
+        _su2_ct.HSqrt2, rz_prob_approx.c2, _su2_ct.HSqrt2.adjoint()
+    )
+
+    zxz_under_rotation = rsad.su_unitary_to_zxz_angles(
+        rx_under_rotation.to_matrix().numpy(config), config
+    )
+    zxz_over_rotation = rsad.su_unitary_to_zxz_angles(
+        rx_over_rotation.to_matrix().numpy(config), config
+    )
+
+    z_under_rotations = (
+        diagonal_unitary_approx(
+            theta=-(alpha - zxz_under_rotation[0]) / 2,
+            eps=eps_split[0],
+            max_n=max_n,
+            config=config,
+            relative_norm_solver=relative_norm_solver,
+            verbose=verbose,
+        ),
+        diagonal_unitary_approx(
+            theta=-(beta - zxz_under_rotation[2]) / 2,
+            eps=eps_split[2],
+            max_n=max_n,
+            config=config,
+            relative_norm_solver=relative_norm_solver,
+            verbose=verbose,
+        ),
+    )
+
+    z_over_rotations = (
+        diagonal_unitary_approx(
+            theta=-(alpha - zxz_over_rotation[0]) / 2,
+            eps=eps,
+            max_n=max_n,
+            config=config,
+            relative_norm_solver=relative_norm_solver,
+            verbose=verbose,
+        ),
+        diagonal_unitary_approx(
+            theta=-(beta - zxz_over_rotation[2]) / 2,
+            eps=eps,
+            max_n=max_n,
+            config=config,
+            relative_norm_solver=relative_norm_solver,
+            verbose=verbose,
+        ),
+    )
+
+    if None in [*z_under_rotations, *z_over_rotations]:
+        return None
+
+    prob_channel = channels.ProbabilisticChannel(
+        c1=channels.UnitaryChannel.from_unitaries(
+            z_under_rotations[0], rx_under_rotation, z_under_rotations[1]
+        ),
+        c2=channels.UnitaryChannel.from_unitaries(
+            z_over_rotations[0], rx_over_rotation, z_over_rotations[1]
+        ),
+        probability=rz_prob_approx.probability,
+    )
+
+    return prob_channel

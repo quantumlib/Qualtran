@@ -18,6 +18,7 @@ from qualtran.rotation_synthesis.protocols._clifford_t_synthesis import (
     magnitude_approx,
     mixed_diagonal_protocol,
     mixed_fallback_protocol,
+    mixed_magnitude_approx,
 )
 from qualtran.rotation_synthesis.protocols._diagonal import Diagonal
 from qualtran.rotation_synthesis.protocols._fallback import Fallback
