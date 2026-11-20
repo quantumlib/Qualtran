@@ -76,9 +76,7 @@ class _ConcreteApproxProblem(protocols.ApproxProblem):
     def make_real_bound_fn(self, n: int, config: mc.MathConfig) -> Callable[[rings.ZW], bool]:
         raise NotImplementedError
 
-    def get_points(
-        self, config: mc.MathConfig, verbose: bool
-    ) -> Iterator[tuple[int, rings.ZW]]:
+def get_points(self, config: mc.MathConfig, verbose: bool) -> Iterator[tuple[int, rings.ZW]]:
         return iter(())
 
 
