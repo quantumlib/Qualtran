@@ -17,6 +17,7 @@ import mpmath
 import numpy as np
 import pytest
 from matplotlib.figure import Figure
+from matplotlib.patches import Ellipse as MplEllipse
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
@@ -91,6 +92,8 @@ def test_ellipse_plot_creates_axes_and_labeled_patch(monkeypatch: pytest.MonkeyP
         assert len(ax.patches) == 1
 
         patch = ax.patches[0]
+        assert isinstance(patch, MplEllipse)
+
         theta = float(ellipse.tilt(mc.NumpyConfig))
         rotated = ellipse.rotate(theta, mc.NumpyConfig)
 
@@ -98,9 +101,14 @@ def test_ellipse_plot_creates_axes_and_labeled_patch(monkeypatch: pytest.MonkeyP
         assert patch.width == pytest.approx(2 / np.sqrt(rotated.D[0, 0]))
         assert patch.height == pytest.approx(2 / np.sqrt(rotated.D[1, 1]))
         assert patch.angle == pytest.approx(-theta * 180 / np.pi)
-        assert patch.get_label().startswith("theta=")
+
+        label = patch.get_label()
+        assert isinstance(label, str)
+        assert label.startswith("theta=")
+
         assert ax.get_legend() is not None
     finally:
+        assert isinstance(ax.figure, Figure)
         plt.close(ax.figure)
 
 
