@@ -49,6 +49,7 @@ Bloqs Library
     basic_gates/identity.ipynb
     mcmt/ctrl_spec_and.ipynb
     mcmt/controlled_via_and.ipynb
+    mcmt/approx_multi_toffoli_reference.ipynb
 
 .. toctree::
     :maxdepth: 2
