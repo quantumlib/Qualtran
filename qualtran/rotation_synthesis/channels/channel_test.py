@@ -57,8 +57,8 @@ def test_projective_channel_to_quirk_returns_circuit_url():
     circuit = json.loads(url.partition("#circuit=")[2])
     assert circuit["cols"]
     assert any(
-    item == "Measure" for column in circuit["cols"] for item in column if isinstance(item, str)
-)
+        item == "Measure" for column in circuit["cols"] for item in column if isinstance(item, str)
+    )
 
 
 @pytest.mark.parametrize("method", ["to_cirq", "to_quirk"])
