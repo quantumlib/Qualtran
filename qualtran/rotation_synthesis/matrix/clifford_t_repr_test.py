@@ -82,6 +82,45 @@ def test_to_quirk(g: _su2_ct.SU2CliffordT, fmt: str, expected: tuple[str, ...]):
     assert ctr.to_quirk(g, fmt) == expected
 
 
+@pytest.mark.parametrize(
+    ["name", "allow_global_phase", "expected"],
+    [
+        ["I", True, "1"],
+        ["X", True, '"X"'],
+        ["Y", True, '"Y"'],
+        ["Z", True, '"Z"'],
+        ["H", True, '"H"'],
+        ["S", True, '"Z^½"'],
+        ["S*", True, '"Z^-½"'],
+        ["T", True, '"Z^¼"'],
+        ["Tx*", True, '"X^-¼"'],
+        ["Tx", True, '"X^¼"'],
+        ["I", False, "1"],
+        ["H", False, '"H"'],
+        ["X", False, '{"id":"Rxft","arg":"-pi"}'],
+        ["Y", False, '{"id":"Ryft","arg":"-pi"}'],
+        ["Z", False, '{"id":"Rzft","arg":"-pi"}'],
+        ["S", False, '{"id":"Rzft","arg":"pi/2"}'],
+        ["S*", False, '{"id":"Rzft","arg":"-pi/2"}'],
+        ["T", False, '{"id":"Rzft","arg":"pi/4"}'],
+        ["Tx*", False, '{"id":"Rxft","arg":"-pi/4"}'],
+        ["Tx", False, '{"id":"Rxft","arg":"pi/4"}'],
+    ],
+)
+def test_to_quirk_name(name: str, allow_global_phase: bool, expected: str):
+    assert ctr._to_quirk_name(name, allow_global_phase) == expected
+
+
+def test_to_quirk_name_invalid_raises():
+    with pytest.raises(ValueError, match="is not supported"):
+        ctr._to_quirk_name("INVALID")
+
+
+def test_to_sequence_invalid_format_raises():
+    with pytest.raises(ValueError, match="is not supported"):
+        ctr.to_sequence(_su2_ct.ISqrt2, fmt="invalid")
+
+
 @pytest.mark.parametrize("g", _make_random_su(50, 10, random_cliffords=True, seed=0))
 def test_to_matsumoto_amano_seq(g: _su2_ct.SU2CliffordT):
     g = g.rescale()
