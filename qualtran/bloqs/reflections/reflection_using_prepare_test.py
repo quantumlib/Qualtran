@@ -279,6 +279,32 @@ def test_reflection_around_zero():
     assert np.allclose(bloq.tensor_contract(), ref_state(3))
 
 
+@pytest.mark.parametrize('global_phase', [+1, -1, 1j, -1j, np.exp(1j * np.pi / 4)])
+@pytest.mark.parametrize('control_val', [None, 0, 1])
+def test_adjoint_conjugates_global_phase(global_phase, control_val):
+    gate = ReflectionUsingPrepare(
+        PrepareIdentity.from_bitsizes([2]), global_phase=global_phase, control_val=control_val
+    )
+    adjoint = gate.adjoint()
+    assert adjoint.global_phase == np.conj(global_phase)
+    assert adjoint.adjoint() == gate
+
+    def _unitary(g: ReflectionUsingPrepare) -> NDArray:
+        helper = GateHelper(g)
+        context = cirq.DecompositionContext(cirq.GreedyQubitManager(prefix='anc'))
+        circuit = cirq.Circuit(cirq.decompose(helper.operation, context=context))
+        system = list(itertools.chain(*helper.quregs.values()))
+        ancilla = sorted(circuit.all_qubits() - set(system))
+        u = circuit.unitary(qubit_order=system + ancilla)
+        n, a = len(system), len(ancilla)
+        # Restrict to the subspace where the ancillas start and end in |0>.
+        return u.reshape(2**n, 2**a, 2**n, 2**a)[:, 0, :, 0]
+
+    u, u_adj = _unitary(gate), _unitary(adjoint)
+    np.testing.assert_allclose(u @ u_adj, np.eye(u.shape[0]), atol=1e-8)
+    np.testing.assert_allclose(u_adj, u.conj().T, atol=1e-8)
+
+
 @pytest.mark.parametrize('global_phase', [+1, -1j])
 @pytest.mark.parametrize('control_val', [None, 0, 1])
 def test_call_graph_matches_decomp(global_phase, control_val):
