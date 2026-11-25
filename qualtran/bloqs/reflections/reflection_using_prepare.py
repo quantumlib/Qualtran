@@ -194,7 +194,8 @@ class ReflectionUsingPrepare(GateWithRegisters):
         return costs
 
     def adjoint(self) -> 'ReflectionUsingPrepare':
-        return self
+        # The reflection is Hermitian, so only the global phase changes under the adjoint.
+        return attrs.evolve(self, global_phase=complex(self.global_phase).conjugate())
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
