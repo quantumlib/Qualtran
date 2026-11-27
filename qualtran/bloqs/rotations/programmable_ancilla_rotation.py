@@ -18,7 +18,10 @@ import numpy as np
 import sympy
 from attrs import field, frozen
 
-from qualtran import Bloq, bloq_example, BloqBuilder, QBit, Register, Side, Signature, SoquetT
+from qualtran import (
+    Bloq, bloq_example, BloqBuilder, BloqDocSpec,
+    QBit, Register, Side, Signature, SoquetT,
+)
 from qualtran.bloqs.basic_gates import CNOT, Hadamard, MeasureZ, XGate, ZPowGate
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.symbolics import ceil, is_symbolic, log2, SymbolicFloat, SymbolicInt
@@ -186,3 +189,12 @@ def _zpow_using_programmed_ancilla_symb_rounds() -> ZPowUsingProgrammedAncilla:
         phi / sympy.pi, n_rounds=n
     )
     return zpow_using_programmed_ancilla_symb_rounds
+
+_ZPOW_USING_PROGRAMMED_ANCILLA_DOC = BloqDocSpec(
+    bloq_cls=ZPowUsingProgrammedAncilla,
+    examples=(
+        _zpow_using_programmed_ancilla,
+        _zpow_using_programmed_ancilla_symb,
+        _zpow_using_programmed_ancilla_symb_rounds,
+    ),
+)
